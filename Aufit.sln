@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KFStreamReader", "KFStreamReader\KFStreamReader.csproj", "{B1ABABCF-24FE-41D8-A707-99F4C3C5FB8B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KFStreamInfo", "KFStreamInfo\KFStreamInfo.csproj", "{C676744A-6898-435C-83E0-C0A701AFA81D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B1ABABCF-24FE-41D8-A707-99F4C3C5FB8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1ABABCF-24FE-41D8-A707-99F4C3C5FB8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1ABABCF-24FE-41D8-A707-99F4C3C5FB8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1ABABCF-24FE-41D8-A707-99F4C3C5FB8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C676744A-6898-435C-83E0-C0A701AFA81D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C676744A-6898-435C-83E0-C0A701AFA81D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C676744A-6898-435C-83E0-C0A701AFA81D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C676744A-6898-435C-83E0-C0A701AFA81D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
