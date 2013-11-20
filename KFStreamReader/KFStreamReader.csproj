@@ -43,8 +43,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="External\KFStreamReader.dcf" />
-    <None Include="External\KFStreamReader.dox" />
+    <None Include="KFStreamReader.dcf" />
+    <None Include="KFStreamReader.dox" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
