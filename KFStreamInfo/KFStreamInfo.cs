@@ -53,8 +53,8 @@ namespace KFStreamInfoNS {
 			bool nflag = false; // information flag
 			bool hflag = false; // histogram flag
 			Index[] index;		// pointer to an Index structure
-			int[] fluxes;		// pointer to a Flux array
-			string info;		// pointer to the string that contains the info
+			int[] fluxes;		// pointer to a FluxValues array
+			string info;		// pointer to the string that contains the _info
 			Stopwatch time = new Stopwatch();
 			int count;
 
@@ -118,38 +118,38 @@ namespace KFStreamInfoNS {
 			Console.Write("Decode time = {0}\r\n\r\n", time.Elapsed);
 
 			if (fflag) {
-				fluxes = stream.getFluxes(); // get pointer to Index array
-				count = stream.getFluxCount(); // get number of element in the array
+				fluxes = stream.FluxValues; // get pointer to Index array
+				count = stream.FluxCount; // get number of element in the array
 				Console.Write("***** Flux Array Information *****");
 				Console.Write("\r\n");
 
 				for (int i = 0; i < count; i++) {
-					Console.Write("Flux[{0}]={1:F5}\r\n", i,fluxes[i] * (1000000.0 / (stream.sampleClk())) );
+					Console.Write("Flux[{0}]={1:F5}\r\n", i,fluxes[i] * (1000000.0 / (stream.SampleClock)) );
 				} // output values in the array
 			} // flux transition requested
 
 			if (iflag) {
-				index = stream.getIndexes(); // get pointer to Index array
-				count = stream.getIndexCount(); // get number of element in the array
-				fluxes = stream.getFluxes(); // get pointer to Index array
+				index = stream.Indexes; // get pointer to Index array
+				count = stream.IndexCount; // get number of element in the array
+				fluxes = stream.FluxValues; // get pointer to Index array
 				Console.Write("***** Index Array Information *****");
 				Console.Write("\r\n");
 
 				for (int i = 0; i < count; i++) {
 					Console.Write("Index[{0}] in Flux[{1,6}]={2:F3} pre={3:F3} Elapsed={4,7:F3}\r\n",
-						i, index[i].fluxIndex, fluxes[index[i].fluxIndex] * (1000000.0 / (stream.sampleClk())),
-						index[i].preIndexTime * (1000000.0 / (stream.sampleClk())),
-						index[i].indexTime * (1000.0 / (stream.sampleClk())) );
+						i, index[i].fluxPosition, fluxes[index[i].fluxPosition] * (1000000.0 / (stream.SampleClock)),
+						index[i].preIndexTime * (1000000.0 / (stream.SampleClock)),
+						index[i].rotationTime * (1000.0 / (stream.SampleClock)) );
 				}
 				Console.Write("\r\n");
 			} // index requested
 
 			if (nflag) {
-				info = stream.getInfoString();
+				info = stream.InfoString;
 				Console.Write("***** Kryoflux HW Information *****\r\n");
 
-				// if existent display KryoFlux information - one info per line
-				if (info != null) {
+				// if existent display KryoFlux information - one _info per line
+				if (info != "") {
 					count = info.Length;
 					for (int i = 0; i < count; i++) {
 						if (info[i] == ',') {
@@ -173,13 +173,13 @@ namespace KFStreamInfoNS {
 			if (hflag) {
 				Console.Write("***** Histogram Information (non null entries) *****");
 				Console.Write("\r\n");
-				Statistic s = stream.getStreamStat();
+				Statistic s = stream.StreamStat;
 				int max = s.maxFlux + 1;
 				uint[] histogram = new uint[max];
 				for (int i = 0; i < max; i++)
 					histogram[i] = 0;
-				int[] f = stream.getFluxes();
-				for (int i = 0; i < stream.getFluxCount(); i++) {
+				int[] f = stream.FluxValues;
+				for (int i = 0; i < stream.FluxCount; i++) {
 					Debug.Assert(f[i] < max);
 					histogram[f[i]]++;
 				}
@@ -187,7 +187,7 @@ namespace KFStreamInfoNS {
 				int hist_tab = 0;
 				for (int i = 0; i < max; i++) {
 					if (histogram[i] > 0) {
-						Console.Write("histogram[{0,4} {1,10:F3}] --> {2}\r\n", i, i * (1000000.0 / (stream.sampleClk())), histogram[i]);
+						Console.Write("histogram[{0,4} {1,10:F3}] --> {2}\r\n", i, i * (1000000.0 / (stream.SampleClock)), histogram[i]);
 						hist_tab++;
 					}
 				}
@@ -198,18 +198,18 @@ namespace KFStreamInfoNS {
 			}
 
 			// display some statistic
-			Statistic imgStat = stream.getStreamStat();
+			Statistic imgStat = stream.StreamStat;
 			Console.Write("***** Statistical Information *****\r\n");
 			Console.Write("USB Transfer Rate {0:F0} BPS\r\n", imgStat.avgbps);
 			Console.Write("Rotation Per Minute (min/avg/max) {0:F3} / {1:F3} / {2:F3}\r\n",
 				imgStat.minrpm, imgStat.avgrpm, imgStat.maxrpm);
-			Console.Write("Flux transitions of {0} complete revolutions sampled\r\n", stream.getRevNumber());
-			Console.Write("Total number of flux transitions recorded {0}\r\n", stream.getFluxCount());
+			Console.Write("Flux transitions of {0} complete revolutions sampled\r\n", stream.RevolutionCount);
+			Console.Write("Total number of flux transitions recorded {0}\r\n", stream.FluxCount);
 			Console.Write("Average flux transitions per revolution {0}\r\n", imgStat.nbflux);
-			Console.Write("Minimum flux transition value = {0:F5}\r\n", imgStat.minFlux * (1000000.0 / (stream.sampleClk())));
-			Console.Write("Maximum flux transition value = {0:F5}\r\n", imgStat.maxFlux * (1000000.0 / (stream.sampleClk())));
-			Console.Write("Sample clock = {0}\r\n", stream.sampleClk());
-			Console.Write("Index clock  =  {0}\r\n", stream.indexClk());
+			Console.Write("Minimum flux transition value = {0:F5}\r\n", imgStat.minFlux * (1000000.0 / (stream.SampleClock)));
+			Console.Write("Maximum flux transition value = {0:F5}\r\n", imgStat.maxFlux * (1000000.0 / (stream.SampleClock)));
+			Console.Write("Sample clock = {0}\r\n", stream.SampleClock);
+			Console.Write("Index clock  =  {0}\r\n", stream.IndexClock);
 
 		}
 	}

@@ -41,8 +41,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\KFStreamReader\KFStreamReader.cs">
+      <Link>KFStreamReader.cs</Link>
+    </Compile>
     <Compile Include="KFStreamInfo.cs" />
-    <Compile Include="KFStreamReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

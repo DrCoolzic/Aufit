@@ -19,48 +19,55 @@ along with the Atari Universal FD Image Tools project; if not, write to the Free
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</div>
 
 @section kfc_intro Introduction
-The Stream File Info Reader is provided mainly to demonstrate the usage 
-of the KFStreamReader library
+The Stream File Info Reader program is provided mainly to demonstrate the usage 
+of the KFStreamReader library. This is a Windows console program.
 
 @section progdes Program Description
-The information from the KryoFlux Stream file is decoded and can be retrieved from four structures
-- An array of Fluxes that can be accessed with getFluxes() and getFluxCount(). 
-This array contains the actual values of all the flux transitions expressed in sample clock.
-- An array of Indexes that can be accessed by getIndexes() and getIndexCount(). 
+The program is used to read a stream file and decode the information into 4 main structures:
+- An array of Fluxes that can be accessed with Fluxes and FluxCount properties 
+This array contains the actual values of all the flux transitions expressed in sample clocks.
+- An array of Indexes that can be accessed by Indexes and IndexCount properties.
 Each entry of this array provides useful information about the index spacing and position. 
 Please refer to the Index structure for more information.
-- A string that can be accessed by getInfoString().
+- A string that can be accessed by the InfoString property
 Note that this information is only available if you are using KryoFlux firmware 2.0 or above.
-- A StreamStat structure that can be accessed by getStreamStat().
+- A StreamStat structure that can be accessed by StreamStat property
 This structure provides some statistical information about the stream file processed.
+Please refer to the Statistic structure for detail information
 .
 
 The KFStreamInfo.cs file shows how simple it is to decode a stream file:
-- first you need to create a KFStream object
-- then you have to call the readStream() function
-- now you can access the structures defined above
+- first you need to create a new KFStream() object
+- then you have to call the readStream() function with the name of the file you want to decode. You check the status returned.
+- If the file was read correctly (StreamStatus.sdsOk) you can access the 4 structures defined above.
 .
-Thats almost what you need to know/do to decode a Stream file :)
 
-@section proguse Program Usage
+This is as simple as that.
+
+@section _proguse Program Usage
 
 This is a command line program. From a command window you can type:
-- kfcheck [-f] [-i] [-n] [-h] \<StreamFileName\>
+- KFStreamInfo [-f] [-i] [-n] [-h] \<StreamFileName\>
 .
-The option line:
+The line options are:
 - -f is used to display all the flux transitions. Be careful a Stream File usually contains a huge 
-number of transitions.
+number of flux transitions so the output is big. In that case it is recommended to redirect the output to a file.
 - -i is used to display all the information about the indexes
-- -n is used to display the KryoFlux HW information. It is only useful if you use the KryoFlux
+- -n is used to display the KryoFlux HW information. This is only useful if the stream file has been created with
 firmware 2.0 or above.
 - -h is used to display an histogram of the flux transitions
 .
-At the end of the excution the program also provides: 
-- the average transfer rate oveb the USB link in Bytes Per Second, 
-- the number of complete revolutions used for Imaging the track, 
+At the end of the execution the program also provides: 
+- the average transfer rate of the information over the USB link in Bytes Per Second, 
 - the minimum, average, and maximum values for the Rotations Per Minute (RPM), 
-- the number of flux transitions for one track
+- the number of complete revolutions used for Imaging the track, 
+- the number of flux transitions recorded as well as the average per revolution
+- The maximum and minimum flux transition values
+- The value of the sample clock and the index clock. For KF with firmware above 2.0 these values are
+retrieved form the HW information passed by the board.
 .
+
+Enjoy
 
 @author	Jean Louis-Guerin
 
