@@ -23,19 +23,23 @@ with the Atari Universal FD Image Tools project; if not, write to the Free
 Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  
 02110-1301  USA\n</div>
 
+@section sr_pres Presentation
 This file contains the definition of the different structures and functions
 required to decode a KryoFlux Stream file.
 
 The main function provided by this library is the readStream() function 
-that reads and decodes a specific stream file.
-The decoded information can be retrieved from four structures:
-- An array of FluxValues that can be accessed with the getFlux() and getFluxCount() functions
-- An array of Indexes that can be accessed with the Indexes and IndexCount functions
-- A string that can be accessed with InfoString function
-- A Statistic structure that can be accessed with the StreamStat function
+that reads and decodes a specific stream file.\n
+Once decoded the information can be retrieved from four structures:
+- An array of FluxValues that can be accessed with the Flux and FluxCount properties
+- An array of Indexes that can be accessed with the Indexes and IndexCount properties
+- A string that can be accessed with InfoString property
+- A Statistic structure that can be accessed with the StreamStat property
 .
 
+Refer to the different structures for more information.
 
+@section sr_inner_working Short Presentation on the reader inner working
+ 
 A Stream file can be decomposed in blocks. Each block has a header that 
 defines how to proceed with the block.
 - Flux1, Flux2, Flux3 blocks are used to store in a stream file the Sample 
@@ -56,8 +60,9 @@ with a simple check regardless of the current stream alignment.
 .
 
 For more information please read the "KryoFlux Stream File Documentation"
+http://info-coach.fr/atari/software/projects/_kryoflux/kryoflux_stream_protocol.pdf
 
-@author Jean Louis-Guerin based on code provided by Software Preservation 
+@author Jean Louis-Guerin based on code provided by the Software Preservation 
 Society
 </remarks>
 */
@@ -90,7 +95,7 @@ public enum StreamStatus : int {
 	sdsTransfer,
 	/// <summary>Unknown OOB header</summary>
 	sdsInvalidOOB,
-	/// <summary>Stream missing end</summary>
+	/// <summary>Stream missing end of file</summary>
 	sdsMissingEnd,
 	/// <summary>No index was found or stream is shorter than the reference position of last index</summary>
 	sdsIndexReference,
@@ -103,10 +108,10 @@ public enum StreamStatus : int {
 
 /// <summary>The Index structure contains the useful Index information extracted from the Stream file</summary>
 public struct Index {
-	/// <summary>Position in the flux array of the flux that contains the index signal</summary>
+	/// <summary>Position (index) in the flux array of the flux that contains the index signal</summary>
 	public int fluxPosition;
-	/// <summary>Gives the rotation time (i.e. the time between two indexes) in 
-	/// number of Sample clocks</summary>
+	/// <summary>Gives the exact rotation time (i.e. the time between two indexes) in 
+	/// number of Sample clocks. In other word the time between two index pulses.</summary>
 	public int rotationTime;
 	/// <summary>Gives the position of the index pulse inside the flux that contains it. The position 
 	/// is given as a number of sample clocks before the index signal.</summary>
@@ -114,7 +119,7 @@ public struct Index {
 }
 
 
-/// <summary>Statistics data computed after parsing the Stream file</summary>
+/// <summary>Statistical information computed after parsing the Stream file</summary>
 public struct Statistic {
 	/// <summary>Average number of revolutions per minute (RPM)</summary>
 	public double avgrpm;
@@ -132,31 +137,35 @@ public struct Statistic {
 	public int maxFlux;
 }
 
-/// <summary>
-/// The KFStream Reader Class
-/// </summary>
+/// <summary>The KFStream Reader Class</summary>
+/// <remarks>This class contains the declaration of the structures, the properties, and the
+/// functions that you need to know to access the information read from a KryoFlux Stream File.\n
+/// <b>Important Note:</b> The KFStream class is fully reentrant and thread safe. This means
+/// that you can create and call as many KFStream classes as you want from multi-threaded
+/// applications safely. :)
+/// </remarks>
 public class KFStream {
-	#region Attributes^and internal structures
+	#region Attributes and Internal structures
 
 	/// <summary>KryoFlux Information string builder </summary>
 	private StringBuilder _info;
- 	/// <summary>Array of IndexInternal structures</summary>
+ 	/// <summary>Array of IndexInternal structure (internal use)</summary>
 	private IndexInternal[] _indexIntInfo;
-	/// <summary>Array of Index structures</summary>
+	/// <summary>Array of Index structure</summary>
 	private Index[] _indexArray;
 	/// <summary>Number of Index structure in the _indexArray</summary>
 	private int _indexCount;
-	/// <summary>Array of FluxValues transition value in sample clocks</summary>
+	/// <summary>Array of FluxValues (flux transition values) in sample clocks</summary>
 	private int[] _fluxValues;
-	/// <summary>Array of Position in stream buffer for internal use</summary>
+	/// <summary>Array of flux Position in stream buffer (internal use)</summary>
 	private int[] _fluxStreamPosition;
-	/// <summary>Number of flux transitions in the FluxValue array</summary>
+	/// <summary>Number of flux transitions recorded in the FluxValue array</summary>
 	private int _fluxCount;
-	/// <summary>Statistic - cbStreamTrans number of data bytes</summary> 
+	/// <summary>Statistic - cbStreamTrans number of data bytes (internal use)</summary> 
 	private int statDataCount;
-	/// <summary>Statistic - cbStreamTrans data transfer time of  in ms</summary>
+	/// <summary>Statistic - cbStreamTrans data transfer time of  in ms (internal use)</summary>
 	private int statDataTime;
-	/// <summary>Statistic - number of cbStreamTrans</summary>
+	/// <summary>Statistic - number of cbStreamTrans(internal use)</summary>
 	private int statDataTrans;
 	/// <summary>minimum flux value found during parsing</summary>
 	private int minFlux;
@@ -183,7 +192,7 @@ public class KFStream {
 		public int indexCounter;
 	}
 
-	/// KryoFlux Hardware status
+	/// KryoFlux Hardware status (internal use)
 	private enum HWStatus : byte {
 		khsOk = 0,				// no error
 		khsBuffer,				// buffering problem; overflow during read, underflow during write
@@ -215,13 +224,14 @@ public class KFStream {
 	#endregion Attributes and internal structures
 
 	#region Properties
-	/// <summary>Access the number of recorded transitions in the FluxValues array.</summary>
+	/// <summary>Access the number of flux transitions recorded in the FluxValues array.</summary>
 	/// <returns>The number of transitions</returns>
 	///
 	/// <remarks> All flux transitions are stored in an array. 
 	/// The number of transitions stored in the array can be 
-	/// retrieved with this function. To access the flux array
-	/// you must use the getFlux() function.</remarks>
+	/// retrieved with this property. To access the flux array
+	/// you must use the Flux property.</remarks>
+	/// <seealso cref="Flux"/>
 	public int FluxCount {
 		get { return _fluxCount; }
 	}
@@ -231,19 +241,19 @@ public class KFStream {
 	///
 	/// <remarks>All flux transitions are stored in an array of integer. Each flux
 	/// transition is given relative to the previous transition. The value 
-	/// is given in number of sample clocks. The number of transitions
-	/// can be retrieved with getFluxCount().</remarks> 
+	/// is expressed in number of sample clocks. The number of transitions
+	/// can be retrieved with the FluxCount property.</remarks> 
 	public int[] FluxValues {
 		get { return _fluxValues; }
 	}
 
 	/// <summary>Access the Number of Index recorded.</summary>
-	/// <returns>The number of index entries</returns>
+	/// <returns>The number of Index entries</returns>
 	///
 	/// <remarks>The Floppy disk Indexes information are stored in an array of 
 	/// Index structures. The number of entries in the array can be 
 	/// retrieved with this function. To access the Index array
-	/// you must use the Indexes function.</remarks> 
+	/// you must use the Indexes property.</remarks> 
 	public int IndexCount {
 		get { return _indexCount; }
 	}
@@ -252,21 +262,25 @@ public class KFStream {
 	/// <returns>The Index array</returns>
 	///
 	/// <remarks> The Floppy disk Indexes information are stored in an array of 
-	/// Index structures. For an interpretation of the data please refer 
-	/// to the Index structure. The size of the array 
-	/// can be retrieved with IndexCount</remarks>
+	/// Index structures. For an interpretation of the data in this structure
+	/// please refer to the Index structure. The size of the array 
+	/// can be retrieved with the IndexCount property</remarks>
 	public Index[] Indexes {
 		get { return _indexArray; }
 	}
 
-	/// <summary>Access the KryoFlux HW Info String</summary>
-	/// <returns>The _info String if The KF firmware is equal or
-	/// above 2.x or empty string if no HW information transmitted</returns>
+	/// <summary>Access the KryoFlux HW Info String(s)</summary>
+	/// <returns>The KryoFlux HW info String. Only available if The KF firmware 
+	/// used to create the Stream file is equal or above 2.rotTime otherwise an empty 
+	/// string is returned</returns>
 	///
-	/// <remarks> Some HW Information is transmitted from the KryoFlux device.
+	/// <remarks> HW Information is transmitted from the KryoFlux device.
 	/// This information is returned as a string. Each information
 	/// is stored as a "name=value" pair and is separated from the 
-	/// previous one with a coma "," character. </remarks>
+	/// previous one with a coma "," character. for more information
+	/// plase refer to the 
+	/// http://info-coach.fr/atari/software/projects/_kryoflux/kryoflux_stream_protocol.pdf
+	/// document </remarks>
 	public string InfoString {
 		get {
 			if (_info.Length == 0) return "";
@@ -287,10 +301,10 @@ public class KFStream {
 	/// <summary>Access the Clock value</summary>
 	/// <returns>the value of the Sample Clock</returns>
 	///
-	/// <remarks>This function is used to get the Sample Clock value. \n
-	/// By default this value is _sckValue = ((18432000.0 * 73.0) / 14.0) / 4.0;\n
+	/// <remarks>This function is used to get the Sample Clock value.\n
+	/// By default the value of _sckValue = ((18432000.0 * 73.0) / 14.0) / 4.0;\n
 	/// but with firmware 2.0 and above the sample clock values is transmitted
-	/// by the KryoFlux iHW. In that case the value transmitted by the HW is 
+	/// by the KryoFlux HW. In that case the value transmitted by the HW is 
 	/// returned by this call instead of the default value.</remarks> 
 	public double SampleClock {
 		get { return _sckValue; }
@@ -299,10 +313,10 @@ public class KFStream {
 	/// <summary>Access the Index Clock value</summary>
 	/// <returns>the value of the Index Clock</returns>
 	///
-	/// <remarks> This function is used to get the Index Clock value. \n
-	/// By default this value is _ickValue = _sckValue / 8.0;\n
+	/// <remarks> This function is used to get the Index Clock value.\n
+	/// By default the value of _ickValue = _sckValue / 8.0;\n
 	/// but with firmware 2.0 and above the index clock values is transmitted
-	/// by the KryoFlux iHW. In that case the value transmitted by the HW is 
+	/// by the KryoFlux HW. In that case the value transmitted by the HW is 
 	/// returned by this call instead of the default value.</remarks>
 	public double IndexClock {
 		get { return _ickValue; }
@@ -316,7 +330,7 @@ public class KFStream {
 
 	#endregion properties
 
-	/// <summary>KFStream Constructor</summary>
+	/// <summary>KFStream Constructor. Set default values</summary>
 	public KFStream() {
 		_fluxValues = null;
 		_fluxStreamPosition = null;
@@ -326,26 +340,27 @@ public class KFStream {
 		statDataTime = 0;
 		statDataTrans = 0;
 		_sckValue = ((18432000.0 * 73.0) / 14.0) / 4.0;	// default value
-		_ickValue = _sckValue / 8.0;
+		_ickValue = _sckValue / 8.0;	// default value
 	}
 
 
-	/// <summary>Searches for a specific name in KryoFlux HW information string</summary>
-	/// <param name="name">name string to search</param>
-	/// <returns>A string that contains the value corresponding to the name. 
-	/// If string "name" is not found, it returns null</returns>
+	/// <summary>Searches for a specific "name" in KryoFlux HW information string</summary>
+	/// <param name="name">string to search</param>
+	/// <returns>A string that contains the "value" corresponding to the "name". 
+	/// If the string "name" is not found, it returns an empty string</returns>
 	///
 	/// <remarks> Search "name" in the "name=value" pairs of the KryoFlux information array.
 	/// if name is found returns the associated value.
 	/// For example findName("sck") returns the sample clock value in a string</remarks>
 	public string findName(string name) {
 		string str = InfoString;
-		if (str == "")
-			return null;
+		// if no HW string return empty string
+		if (str == "") return "";
 
 		int position = str.IndexOf(name);
-		if (position == 0)
-			return null;
+		// if not found return empty string
+		if (position == 0) return "";
+
 		int start = position + name.Length + 1;	// skip the searched string and the '='
 		int stop = str.IndexOf(',', start); // until ','
 		if (stop == -1)	// last string does not end with ',' (last one)
@@ -355,26 +370,26 @@ public class KFStream {
 	}
 
 
-	/// <summary>
-	/// Reads and parses the KF Stream file specified
-	/// </summary>	
+	/// <summary>Reads and parses the KF Stream file specified</summary>	
 	/// <param name="fileName">Name of the stream file to read and decode</param>
 	/// <returns>A status code of type <paramref name="StreamStatus"/> to indicate if the 
-	/// file was read and parsed correctly.<see cref="StreamStatus"/></returns>
+	/// file was read and parsed correctly.
+	/// <see cref="StreamStatus"/>
+	/// </returns>
 	/// <remarks>
 	/// This is the main function of the library. It parses the stream file passed as an
 	/// argument and fills in 4 structures:
-	/// - An array of flux value that can be retrieved with GetFlux FluxCount
-	/// - An Index array that can be retrieved with Indexes and IndexCount
-	/// - An Info string that can be retrieved with InfoString
-	/// - Statistic structure that can be retrieved with StreamStat
+	/// - An array of flux value that can be retrieved with GetFlux FluxCount properties
+	/// - An Index array that can be retrieved with Indexes and IndexCount properties
+	/// - An Info string that can be retrieved with InfoString property
+	/// - Statistic structure that can be retrieved with StreamStat property
 	/// .
 	///
 	/// Internally this function calls the private functions parseStream(), 
 	/// indexAnalysis(), and fillStreamStat(). The function update the sck 
 	/// and ick default clock values if these values were passed in an Info block from KF 
 	/// device (FW 2.0+). In all cases the sck and ick can be retrieved with 
-	/// SampleClock and IndexClock.
+	/// SampleClock and IndexClock properties.
 	/// </remarks>
 	public StreamStatus readStream(string fileName) {
 		FileStream fs;
@@ -402,29 +417,30 @@ public class KFStream {
 		if (status != StreamStatus.sdsOk)
 			return status;
 
-		// we perform some computation
+		// we now perform some computation to fill the "statistic" structure
 		fillStreamStat();
 
-		// checking for sck & ick and updating accordingly
+		// checks for sck & ick in info string and update accordingly
+		// note that the HW clock values are passed using en-US syntax
 		string value;
 		value = findName("sck");
-		if (value != null) {
+		if (value != "") {
 			_sckValue = Convert.ToDouble(value, new CultureInfo("en-US"));
 		}
 		value = findName("ick");
-		if (value != null) {
+		if (value != "") {
 			_ickValue = Convert.ToDouble(value, new CultureInfo("en-US"));
 		}
 		return status;
 	}
 
 
-	/// <summary>
-	/// The main KryoFlux Stream file parser.
-	/// </summary>
+	/// <summary>The KryoFlux Stream file parser.</summary>
 	/// <param name="sbuf">The buffer that contains the Stream file read</param>
 	/// <returns>A status code of type <paramref name="StreamStatus"/> to indicate if the 
-	/// file was read and parsed correctly.<see cref="StreamStatus"/></returns>
+	/// file was read and parsed correctly.
+	/// <see cref="StreamStatus"/>
+	/// </returns>
 	///
 	/// <remarks> This is an internal function called by readStream(). It parses the stream file
 	/// and fills the main structures.
@@ -481,7 +497,7 @@ public class KFStream {
 		_fluxStreamPosition = new int[sbuf.Length];
 		_fluxCount = 0;
 
-		// we use a size of 128 that should be more than enough
+		// we use a size of 128 for indexes that should be more than enough
 		_indexIntInfo = new IndexInternal[128];
 		_indexArray = new Index[128];
 		_indexCount = 0;
@@ -570,7 +586,7 @@ public class KFStream {
 				switch (oobType) {
 					case OOBType.OOBStreamInfo:
 						// decoded stream position must match the encoder position
-						int position = extract_4_Bytes(sbuf, pos + 4);
+						int position = extractStreamInt(sbuf, pos + 4);
 						if (streamPos != position)
 							return StreamStatus.sdsWrongPosition;
 
@@ -581,16 +597,16 @@ public class KFStream {
 						// update data count and time for non consecutive OOBStreamInfo
 						if (sb != 0) {
 							statDataCount += sb;
-							statDataTime += extract_4_Bytes(sbuf, pos + 8);
+							statDataTime += extractStreamInt(sbuf, pos + 8);
 							statDataTrans++;
 						}
 						break;
 
 					case OOBType.OOBIndex:
 						// initialize index _info
-						_indexIntInfo[_indexCount].streamPos = extract_4_Bytes(sbuf, pos + 4);
-						_indexIntInfo[_indexCount].sampleCounter = extract_4_Bytes(sbuf, pos + 8);
-						_indexIntInfo[_indexCount].indexCounter = extract_4_Bytes(sbuf, pos + 12);
+						_indexIntInfo[_indexCount].streamPos = extractStreamInt(sbuf, pos + 4);
+						_indexIntInfo[_indexCount].sampleCounter = extractStreamInt(sbuf, pos + 8);
+						_indexIntInfo[_indexCount].indexCounter = extractStreamInt(sbuf, pos + 12);
 						_indexArray[_indexCount].fluxPosition = 0;
 						_indexArray[_indexCount].rotationTime = 0;
 						_indexArray[_indexCount].preIndexTime = 0;
@@ -605,11 +621,11 @@ public class KFStream {
 
 					case OOBType.OOBStreamEnd:
 						// check for errors detected by the Kryoflux hardware
-						hwStatus = (HWStatus)(extract_4_Bytes(sbuf, pos + 8));
+						hwStatus = (HWStatus)(extractStreamInt(sbuf, pos + 8));
 
 						// if no error found, decoded stream position must match the encoder position
 						if ((hwStatus == HWStatus.khsOk) && 
-							(streamPos != extract_4_Bytes(sbuf, pos + 4)))
+							(streamPos != extractStreamInt(sbuf, pos + 4)))
 							return StreamStatus.sdsWrongPosition;
 						break;
 
@@ -627,9 +643,9 @@ public class KFStream {
 					case OOBType.OOBEof:
 						eoff = true;
 						break;
-
-					// any other oob type is invalid
+					
 					default:
+						// any other oob type is invalid
 						return StreamStatus.sdsInvalidOOB;
 				}
 			}
@@ -642,19 +658,22 @@ public class KFStream {
 		_fluxValues[_fluxCount] = fluxValue;
 		_fluxStreamPosition[_fluxCount] = streamPos;
 
-		// check Kryoflux hardware error
+		// check KryoFlux hardware error
 		switch (hwStatus) {
 			case HWStatus.khsOk:
 				break;
+
 			case HWStatus.khsBuffer:
 				return StreamStatus.sdsDevBuffer;
+
 			case HWStatus.khsIndex:
 				return StreamStatus.sdsDevIndex;
+
 			default:
 				return StreamStatus.sdsTransfer;
 		}
 
-		// check oob end
+		// check OOB end
 		if (!eoff)
 			return StreamStatus.sdsMissingEnd;
 
@@ -667,23 +686,24 @@ public class KFStream {
 
 
 	/// <summary>
-	/// Extract the next 4 bytes as a 32bits integer
+	/// Extract the next 4 bytes as a 32bits integer from Stream File
 	/// </summary>
-	/// <param name="sbuf">buffer that contains the 4 bytes to extract (little-endian ordering)</param>
+	/// <param name="sbuf">buffer that contains the 4 bytes to extract (little-Indian ordering)</param>
 	/// <param name="pos">Position of the first byte</param>
 	/// <returns>The 32 bits integer</returns>
-	private int extract_4_Bytes(byte[] sbuf, int pos) {
+	private int extractStreamInt(byte[] sbuf, int pos) {
 		return sbuf[pos] + (sbuf[pos + 1] << 8) + (sbuf[pos + 2] << 16) + (sbuf[pos + 3] << 24);
 	}
 
 
 	/// <summary>
-	/// analyze and fill information in the Index structure
+	/// Analyze and fill information in the Index structure
 	/// </summary>
 	/// <returns>A status code of type <paramref name="StreamStatus"/> to indicate if the 
-	/// file was read and parsed correctly.<see cref="StreamStatus"/></returns>
-	/// <remarks>
-	/// This is an internal function called by decode(). It finalize the information 
+	/// file was read and parsed correctly.
+	/// <see cref="StreamStatus"/>
+	/// </returns>
+	/// <remarks>This is an internal function called by decode(). It finalize the information  
 	/// stored in the Index structure.</remarks>
 	private StreamStatus indexAnalysis() {
 		// stop if either no index or flux data is available
@@ -787,18 +807,15 @@ public class KFStream {
 			_fluxCount++;
 
 		return StreamStatus.sdsOk;
-	}
+	}	// end of indexAnalysis()
 
-	/// <summary>
-	/// Fill the Statistic structure based on _info in stream file
-	/// </summary>
-	///
+	/// <summary>Fill the Statistic structure based on _info in stream file</summary>
+	/// 
 	/// <remarks> This function uses the decoded Stream file _info to fill the statistical stream structure
 	/// After calling this function it is possible to access the different information in the
 	/// Statistic structure.</remarks>
 	private void fillStreamStat() {
-		int sum;
-		int vmin, vmax;
+		int sum, vmin, vmax;
 		_stats = new Statistic();
 
 		if (statDataTime != 0)
@@ -810,12 +827,12 @@ public class KFStream {
 		vmax = 0;
 		vmin = int.MaxValue;
 
-		// skip first
+		// skip first index (incomplete revolution)
 		for (int i = 1; i < _indexCount; i++) {
-			int x = _indexArray[i].rotationTime;
-			vmin = Math.Min(vmin, x);
-			vmax = Math.Max(vmax, x);
-			sum += x;
+			int rotTime = _indexArray[i].rotationTime;
+			vmin = Math.Min(vmin, rotTime);
+			vmax = Math.Max(vmax, rotTime);
+			sum += rotTime;
 
 			// checking that the computed rotationTime is roughly equal to difference in index counter
 			int delta = Math.Abs(_indexArray[i].rotationTime - (_indexIntInfo[i].indexCounter - _indexIntInfo[i - 1].indexCounter) * 8);
@@ -839,9 +856,7 @@ public class KFStream {
 			_stats.nbflux = 0;
 		_stats.minFlux = minFlux;
 		_stats.maxFlux = maxFlux;
-	}
-
+	}	// fillStreamStat()
 
 }	// KFStream Class
-
-}	// namespace
+}	// name space
