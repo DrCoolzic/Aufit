@@ -1,8 +1,7 @@
 Aufit
 =====
-
 Atari Universal FD image Library
+A set of tools for manipulating Atari images.
+Developed in C#
 
-C# set of toools for manipulating Atari images.
-
-- Currently limited to KryoFlux Stream File reader library and test
+- Currently limited to KryoFlux Stream File reader library and test C# code
