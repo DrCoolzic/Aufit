@@ -22,37 +22,37 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</di
 The KFStream reader library provides an easy way to read and decode the information from a Stream 
 file created with the KryFlux board.\n
 The library is provided with C# sources and as a DLL for Windows platform.\n
-The library is also available as C++ source and DLL for unmanaged code. 
+FYI The library is also available as C++ source and DLL for unmanaged code. 
 
 @section kfs_progdes Program Description
 
 To better understand the content of a Stream file please read my <b>"Kryoflux Stream File"</b> documentation
 available at http://info-coach.fr/atari/software/projects/_kryoflux/kryoflux_stream_protocol.pdf
 
-The first thing you will have to do is to read and decode the stream file with the readStream()
-function. If the return status is sdsOk (value=0) you are ready to use the information decoded from 
-the KryoFlux Stream file:
+Using this library is very easy. Once you have created a KFStream object you
+will have read and decode the stream file with the readStream() function. 
+If the return status is sdsOk (value=0) you are ready to use the information 
+decoded from the KryoFlux Stream file:
 
 This information  can be retrieved from four main structures:
-- An array of Fluxes that can be accessed with getFluxes() and getFluxCount(). 
+- An array of Fluxes that can be accessed with FluxValues and FluxCount properties.
 This array contains the actual values of all the flux transitions expressed in sample clock.
-- An array of Indexes that can be accessed by getIndexes() and getIndexCount(). 
+- An array of Indexes that can be accessed by Indexes and IndexCount properties.
 Each entry of this array provides useful information about the index spacing and position. 
 Please refer to the Index structure for more information.
-- A string that can be accessed by getInfoString().
-Note that this information is only available if you are using KryoFlux firmware 2.0 or above.
-- A StreamStat structure that can be accessed by getStreamStat().
+- A string that can be accessed with the InfoString property.
+Note that this information is only available if you are using KryoFlux with firmware 2.0 or above.
+- A StreamStat structure that can be accessed by StreamStat property.
 This structure provides some statistical information about the stream file processed.
 .
 
 This is almost all you need to know to start using the KFStream reader library\n\n
-Some example of usage will shortly be published
-to see an actual example of how to use the KFStream library.
+Some example of using the library are also provided.
 
-Please note that the code is thread safe re-entrant. In other word in a multi threaded environment
+Please note that the code is thread safe and re-entrant. In other word in a multi threaded environment
 it is possible to have several treads that reads different Stream files simultaneously.
 
-@author	Jean Louis-Guerin
+@author	Jean Louis-Guerin based of SPS source code.
 
 */
 

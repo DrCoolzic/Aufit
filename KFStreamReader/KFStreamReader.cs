@@ -30,7 +30,7 @@ required to decode a KryoFlux Stream file.
 The main function provided by this library is the readStream() function 
 that reads and decodes a specific stream file.\n
 Once decoded the information can be retrieved from four structures:
-- An array of FluxValues that can be accessed with the Flux and FluxCount properties
+- An array of FluxValues that can be accessed with the FluxValues and FluxCount properties
 - An array of Indexes that can be accessed with the Indexes and IndexCount properties
 - A string that can be accessed with InfoString property
 - A Statistic structure that can be accessed with the StreamStat property
