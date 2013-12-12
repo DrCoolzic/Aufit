@@ -1,0 +1,111 @@
+﻿<Window x:Class="Aufit.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AUFIT Analyzer Prototype" Height="750" Width="1000" Closing="mainWinClosing">
+    <Grid KeyDown="keyDown">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="150"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="3*"/>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="1*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80"/>
+                <ColumnDefinition Width="80"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0" Content="Directory" Click="openDirectoryClick"/>
+            <Button Grid.Column="1" x:Name="btFile" Content="File" Click="openFileClick" />
+            <TextBox Grid.Column="2" Name="FileName" BorderThickness="0" Margin="5,0"/>
+            <CheckBox Grid.Column="7" x:Name="cbLimitFlux" Content="Limit Flux" Margin="10,0,10,0" VerticalAlignment="Center" 
+                      Click="cbLimitClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
+            <CheckBox Grid.Column="8" x:Name="cbDispRead" Content="Disp.Read" Margin="10,0,10,0" VerticalAlignment="Center" 
+                      FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
+            <CheckBox Grid.Column="9" x:Name="cbSlow" Content="Slow" Margin="10,0,10,0" VerticalAlignment="Center" Click="cbSlowClick"
+                      FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
+        </Grid>
+
+        <Grid Grid.Row="1" Name="matrixGrid" Margin="10,10,10,0" Loaded="matrixGridLoaded" SizeChanged="matrixGridSizeChanged">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Canvas Grid.Column="0" Name="BM1" ></Canvas>
+            <Canvas Grid.Column="1" Name="BM2" />
+            <TabControl  Grid.Column="2" x:Name="tabCtrl" >
+                <TabItem Header="Histogram">
+                    <Grid Margin="0,0,0,0" x:Name ="histoGrid"  ClipToBounds="True" Background="Transparent" SizeChanged="histoGridSizeChanged">
+                        <Canvas Margin="2" Name="cvTextHisto" ClipToBounds="True" >
+                            <Canvas Name="cvGraphicHisto" ClipToBounds="True"/>
+                        </Canvas>
+                        <CheckBox x:Name="cbHistoLog" Grid.Column="2" Content="Logarithmic Scale" Margin="0,15,20,0" VerticalAlignment="Top" 
+                      Click="cbHistoLogClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" />
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Information">
+                    <TextBox Name="infoBox" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/>
+                </TabItem>
+                <TabItem Header="Sector">
+                    <Grid Margin="0,0,0,0" x:Name ="sectGrid"  ClipToBounds="True" Background="Transparent" SizeChanged="sectGridSizeChanged">
+                        <Canvas Margin="2" Name="cvTextSect" ClipToBounds="True" >
+                            <Canvas Name="cvGraphicSect" ClipToBounds="True"/>
+                        </Canvas>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Grid>
+
+        <Grid Grid.Row="2" Margin="10,10,10,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox Grid.Column="0" x:Name="tbFluxInfo" FontFamily="Arial" FontSize="13" Foreground="DarkBlue" FontWeight="Bold" Width="auto" Height="18" BorderThickness="0" />
+            <TextBox Grid.Column="1" Text="Rev" Margin="5,0" BorderThickness="0" Height="20" TextAlignment="Center" HorizontalAlignment="Right"/>
+            <Button Grid.Column="2" Margin="0" Height="18" Width="18" Content="-" Click="minusRevClicked" HorizontalAlignment="Right"/>
+            <TextBox Grid.Column="3" Name="revolution" BorderThickness="0" Text="1" Height="18" Width="18" TextAlignment="Center" HorizontalAlignment="Right"/>
+            <Button Grid.Column="4" Margin="0" Height="18" Width="18" Content="+" Click="plusRevClicked" HorizontalAlignment="Right"/>
+            <Border Grid.Column="1" Grid.ColumnSpan="4" BorderThickness="1" BorderBrush="Black"></Border>
+            <Button Grid.Column="5" Margin="10,0,0,0" Content="Buffer" Click="btBufferClick" HorizontalAlignment="Right"/>
+        </Grid>
+
+        <Grid Grid.Row="3" Margin="10,0,10,0"  x:Name ="fluxGrid"  ClipToBounds="False" Background="Transparent" SizeChanged="fluxGridSizeChanged" >
+            <Canvas Margin="2" Name="cvTextFlux" ClipToBounds="True">
+                <Canvas Name="cvGraphicFlux" ClipToBounds="True" Background="Transparent" MouseLeftButtonDown="fluxMouseLBD" MouseWheel="fluxMouseWheel" 
+                            MouseLeftButtonUp="fluxMouseLBU" MouseMove="fluxMouseMove" MouseRightButtonDown="fluxMouseRBDown"/>
+            </Canvas>
+        </Grid>
+
+        <Grid Grid.Row="4" Margin="10,0,10,0"  x:Name ="clockGrid"  ClipToBounds="False" SizeChanged="clockGridSizeChanged" >
+            <Canvas Margin="2" x:Name="cvTextClock" ClipToBounds="True">
+                <Canvas x:Name="cvGraphicClock" ClipToBounds="True" />
+            </Canvas>
+        </Grid>
+
+        <Grid Grid.Row="5" Margin="10,0,10,0"  x:Name ="dataGrid"  ClipToBounds="False" Background="Transparent" SizeChanged="dataGridSizeChanged" >
+            <Canvas Margin="2" Name="cvTextData" ClipToBounds="True">
+                <Canvas Name="cvGraphicData" ClipToBounds="True" Background="Transparent" MouseLeftButtonDown="dataMouseLBD" />
+            </Canvas>
+        </Grid>
+
+
+
+    </Grid>
+</Window>

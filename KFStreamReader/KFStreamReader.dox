@@ -23,6 +23,10 @@ The KFStream reader library provides an easy way to read and decode the informat
 file created with the KryFlux board.\n
 The library is provided with C# sources and as a DLL for Windows platform.\n
 FYI The library is also available as C++ source and DLL for unmanaged code. 
+- For more information about the KryoFlux board please refer to http://kryoflux.com/
+- For more information about the Software Preservation Society please refer to http://www.softpres.org/
+- For more information about KryoFlux format and creation of Stream file for Atari please refer to
+http://info-coach.fr/atari/software/projects/kryoflux.php
 
 @section kfs_progdes Program Description
 
@@ -35,11 +39,11 @@ If the return status is sdsOk (value=0) you are ready to use the information
 decoded from the KryoFlux Stream file:
 
 This information  can be retrieved from four main structures:
-- An array of Fluxes that can be accessed with FluxValues and FluxCount properties.
+- An array of Flux transitions that can be accessed with FluxValues and FluxCount properties.
 This array contains the actual values of all the flux transitions expressed in sample clock.
-- An array of Indexes that can be accessed by Indexes and IndexCount properties.
+- An array of IndexInfo values that can be accessed by Indexes and IndexCount properties.
 Each entry of this array provides useful information about the index spacing and position. 
-Please refer to the Index structure for more information.
+Please refer to the IndexInfo structure for more information.
 - A string that can be accessed with the InfoString property.
 Note that this information is only available if you are using KryoFlux with firmware 2.0 or above.
 - A StreamStat structure that can be accessed by StreamStat property.
@@ -52,7 +56,8 @@ Some example of using the library are also provided.
 Please note that the code is thread safe and re-entrant. In other word in a multi threaded environment
 it is possible to have several treads that reads different Stream files simultaneously.
 
-@author	Jean Louis-Guerin based of SPS source code.
+@author	Jean Louis-Guerin based of Software Preservation Society source code.
+
 
 */
 

@@ -7,8 +7,7 @@ Louis-Guerin\n\n This file is part of the Atari Universal FD Image Tools
 project.\n\n The Atari Universal FD Image Tools project may be used and 
 distributed without restriction provided that this copyright statement is 
 not removed from the file and that any derivative work contains the 
-original copyright notice and the associated disclaimer.\n\n 
-
+original copyright notice and the associated disclaimer. \n
 The Atari Universal FD Image Tools project are free software; you can 
 redistribute it and/or modify  it under the terms of the GNU General Public 
 License as published by the Free Software Foundation; either version 2 of 
@@ -16,8 +15,7 @@ the License, or (at your option) any later version.\n\n
 The Atari Universal FD Image Tools project is distributed in the hope that 
 it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
 warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n See the 
-GNU General Public License for more details.\n\n 
-
+GNU General Public License for more details.\n
 You should have received a copy of the GNU General Public License along 
 with the Atari Universal FD Image Tools project; if not, write to the Free 
 Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  
@@ -52,9 +50,10 @@ namespace KFStreamInfoNS {
 			bool iflag = false; // index flag
 			bool nflag = false; // information flag
 			bool hflag = false; // histogram flag
-			Index[] index;		// pointer to an Index structure
-			int[] fluxes;		// pointer to a FluxValues array
+			IndexInfo[] index;	// pointer to an Index structure
+			int[] flux;			// pointer to a FluxValues array
 			string info;		// pointer to the string that contains the _info
+
 			Stopwatch time = new Stopwatch();
 			int count;
 
@@ -100,7 +99,7 @@ namespace KFStreamInfoNS {
 			} // line option(s)
 
 			filename = args[idx];
-			KFStream stream = new KFStream();
+			KFStreamReader stream = new KFStreamReader();
 
 			// Read and Decode the stream file
 			Console.Write("Reading and Decoding Stream: {0}\r\n", filename);
@@ -118,26 +117,26 @@ namespace KFStreamInfoNS {
 			Console.Write("Decode time = {0}\r\n\r\n", time.Elapsed);
 
 			if (fflag) {
-				fluxes = stream.FluxValues; // get pointer to Index array
+				flux = stream.FluxValues; // get pointer to Index array
 				count = stream.FluxCount; // get number of element in the array
 				Console.Write("***** Flux Array Information *****");
 				Console.Write("\r\n");
 
 				for (int i = 0; i < count; i++) {
-					Console.Write("Flux[{0}]={1:F5}\r\n", i,fluxes[i] * (1000000.0 / (stream.SampleClock)) );
+					Console.Write("Flux[{0}]={1:F5}\r\n", i,flux[i] * (1000000.0 / (stream.SampleClock)) );
 				} // output values in the array
 			} // flux transition requested
 
 			if (iflag) {
 				index = stream.Indexes; // get pointer to Index array
 				count = stream.IndexCount; // get number of element in the array
-				fluxes = stream.FluxValues; // get pointer to Index array
+				flux = stream.FluxValues; // get pointer to Index array
 				Console.Write("***** Index Array Information *****");
 				Console.Write("\r\n");
 
 				for (int i = 0; i < count; i++) {
 					Console.Write("Index[{0}] in Flux[{1,6}]={2:F3} pre={3:F3} Elapsed={4,7:F3}\r\n",
-						i, index[i].fluxPosition, fluxes[index[i].fluxPosition] * (1000000.0 / (stream.SampleClock)),
+						i, index[i].fluxPosition, flux[index[i].fluxPosition] * (1000000.0 / (stream.SampleClock)),
 						index[i].preIndexTime * (1000000.0 / (stream.SampleClock)),
 						index[i].rotationTime * (1000.0 / (stream.SampleClock)) );
 				}
@@ -174,7 +173,7 @@ namespace KFStreamInfoNS {
 				Console.Write("***** Histogram Information (non null entries) *****");
 				Console.Write("\r\n");
 				Statistic s = stream.StreamStat;
-				int max = s.maxFlux + 1;
+				int max = s.fluxMax + 1;
 				uint[] histogram = new uint[max];
 				for (int i = 0; i < max; i++)
 					histogram[i] = 0;
@@ -206,8 +205,8 @@ namespace KFStreamInfoNS {
 			Console.Write("Flux transitions of {0} complete revolutions sampled\r\n", stream.RevolutionCount);
 			Console.Write("Total number of flux transitions recorded {0}\r\n", stream.FluxCount);
 			Console.Write("Average flux transitions per revolution {0}\r\n", imgStat.nbflux);
-			Console.Write("Minimum flux transition value = {0:F5}\r\n", imgStat.minFlux * (1000000.0 / (stream.SampleClock)));
-			Console.Write("Maximum flux transition value = {0:F5}\r\n", imgStat.maxFlux * (1000000.0 / (stream.SampleClock)));
+			Console.Write("Minimum flux transition value = {0:F5}\r\n", imgStat.fluxMin * (1000000.0 / (stream.SampleClock)));
+			Console.Write("Maximum flux transition value = {0:F5}\r\n", imgStat.fluxMax * (1000000.0 / (stream.SampleClock)));
 			Console.Write("Sample clock = {0}\r\n", stream.SampleClock);
 			Console.Write("Index clock  =  {0}\r\n", stream.IndexClock);
 
