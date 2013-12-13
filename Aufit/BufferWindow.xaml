@@ -6,5 +6,6 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto" >
             <TextBlock Name="displayBuffer" />
         </ScrollViewer>
+ 
     </Grid>
 </Window>

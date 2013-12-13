@@ -151,6 +151,7 @@ class DataDrawing {
 				_dataChartLayout.GraphicCanvas.Children.Add(polySect);
 			}	// all sectors
 
+
 	}
 
 

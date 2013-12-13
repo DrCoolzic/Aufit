@@ -38,6 +38,8 @@ namespace Aufit {
 		private FDC _trackInfo = null;
 		private BufferWindow _bufferWindow = null;
 		private bool _bufferWindowIsOpen = false;
+		private DiskWindow _diskWindow = null;
+		private bool _diskWindowIsOpen = false;
 
 		//public double MinClock { get; set; }
 		//public double MaxClock { get; set; }
@@ -68,6 +70,7 @@ namespace Aufit {
 			_trackInfo = new FDC();
 
 			// this.DataContext = this;	// needed for property changed event
+
 		}
 
 
@@ -243,9 +246,6 @@ namespace Aufit {
 
 		}
 
-		void bufferWindow_Closed(object sender, EventArgs e) {
-			_bufferWindowIsOpen = false;
-		}
 
 
 		private void openFileClick(object sender, RoutedEventArgs e) {
@@ -450,6 +450,12 @@ namespace Aufit {
 		private void mainWinClosing(object sender, CancelEventArgs e) {
 			if (_bufferWindowIsOpen)
 				_bufferWindow.Close();
+			if (_diskWindowIsOpen)
+				_diskWindow.Close();
+		}
+
+		void bufferWindowClosed(object sender, EventArgs e) {
+			_bufferWindowIsOpen = false;
 		}
 
 		private void btBufferClick(object sender, RoutedEventArgs e) {
@@ -458,10 +464,27 @@ namespace Aufit {
 				_bufferWindow.Close();
 
 			_bufferWindow = new BufferWindow(_trackInfo.TrackInfo.buffer);
-			_bufferWindow.Closed += new EventHandler(bufferWindow_Closed);
+			_bufferWindow.Closed += new EventHandler(bufferWindowClosed);
 			_bufferWindowIsOpen = true;
 			_bufferWindow.Show();
 		}
+
+		private void btDiskClick(object sender, RoutedEventArgs e) {
+			if (_trackInfo.TrackInfo == null) return;
+			if (BM1.Visibility == Visibility.Hidden) return;
+			if (_diskWindowIsOpen)
+				_diskWindow.Close();
+
+			_diskWindow = new DiskWindow();
+			_diskWindow.Closed += new EventHandler(diskWindowClosed);
+			_diskWindowIsOpen = true;
+			_diskWindow.Show();
+		}
+
+		void diskWindowClosed(object sender, EventArgs e) {
+			_diskWindowIsOpen = false;
+		}
+
 
 	}
 }

@@ -56,6 +56,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="DiskWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -72,6 +76,9 @@
     <Compile Include="ChartLayout.cs" />
     <Compile Include="ClockDrawing.cs" />
     <Compile Include="DataDrawing.cs" />
+    <Compile Include="DiskWindow.xaml.cs">
+      <DependentUpon>DiskWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="DPLL.cs" />
     <Compile Include="DSR.cs" />
     <Compile Include="BufferWindow.xaml.cs">

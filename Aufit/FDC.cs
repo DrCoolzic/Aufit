@@ -328,6 +328,7 @@ namespace WD1772NS {
 								case 0xF9:
 									UpdateBlockInfo(prevBlockEndTime, phase, track, ref blockStartByte, ref blockStartTime);
 									if (track.sectors.Count == 1) {
+										// TODO why add a new sector ? we can just put it in 0 ?
 										track.sectors.Add(new SectorInfo());
 
 										byteLeftInBlock = 512;	// best guess
@@ -436,6 +437,18 @@ namespace WD1772NS {
 
 			if (phase == Phases.p_data) {
 				track.sectors[track.sectors.Count - 1].valid = false;
+				// we put the byteLeft to sector 0 in a data block
+				// TOD check not bigger
+				track.sectors[0].phases[(byte)Phases.p_data].startByte = 0;
+				track.sectors[0].phases[(byte)Phases.p_data].byteCount = byteLeftInBlock;
+				track.sectors[0].phases[(byte)Phases.p_data].startTime = 0;
+				track.sectors[0].phases[(byte)Phases.p_data].timeLength = byteLeftInBlock * 32000;
+				track.sectors[0].phases[(byte)Phases.p_data].startBit = 0;
+
+				track.sectors[0].phases[(byte)Phases.p_outer].startByte = byteLeftInBlock;
+				track.sectors[0].phases[(byte)Phases.p_outer].byteCount -= byteLeftInBlock;
+				track.sectors[0].phases[(byte)Phases.p_outer].startTime = byteLeftInBlock * 32000;
+				track.sectors[0].phases[(byte)Phases.p_outer].timeLength -= byteLeftInBlock * 32000;
 			}
 
 			if (track.sectors.Count == 1) {
