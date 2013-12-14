@@ -31,6 +31,7 @@ using System.Threading.Tasks;
 
 using StreamNS;
 using Aufit;
+using System.Diagnostics;
 
 namespace WD1772NS {
 	/// <summary>
@@ -149,7 +150,14 @@ namespace WD1772NS {
 	public class ReadAddrInfo {
 		public List<IDBlock> ids = new List<IDBlock>(12);
 		public List<BlockInfo> blocs = new List<BlockInfo>(12);
-		public ushort crc;
+	}
+
+	public class ReadSectInfo {
+		public BlockInfo dataBlock;
+		public BlockInfo idBlock;
+		public TrackBuffer buffer;
+		public IDBlock id;
+		public bool sectHasData;
 	}
 
 	/// <summary>
@@ -177,27 +185,16 @@ namespace WD1772NS {
 			ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readTrack = track;
 			track.buffer = new TrackBuffer();
 
-			ProcessStream.TrackData currentTrack = ProcessStream.currentTrack();
-			int nbRev = currentTrack.indexCount - 1;
-			int start, stop;
-			int indexFirstFluxCorrection;
-			byte syncInf;
 
-			if (ProcessStream.Rev > 0) {
-				start = currentTrack.indexes[ProcessStream.Rev - 1].fluxPosition;
-				stop = currentTrack.indexes[ProcessStream.Rev].fluxPosition-1;
-				indexFirstFluxCorrection = ProcessStream.sampleToTiming(currentTrack.indexes[ProcessStream.Rev - 1].preIndexTime);
-			}	// one rev
-			else {
-				start = currentTrack.indexes[0].fluxPosition;
-				stop = currentTrack.indexes[nbRev].fluxPosition;
-				indexFirstFluxCorrection = ProcessStream.sampleToTiming(currentTrack.indexes[0].preIndexTime);
-			}	// all rev
+			ProcessStream.TrackData currentTrack = ProcessStream.currentTrack();
+			int start = ProcessStream.Start;
+			int stop = ProcessStream.Stop;
+			int indexFirstFluxCorrection = ProcessStream.IndexFirstFluxCorrection;
 
 			track.sectors.Add(new SectorInfo());	// add dummy sector[0] for gap
 			Phases phase = Phases.p_outer;
 			DSR dsr = new DSR();
-
+			byte syncInf;
 			int syncCount = 0;
 			byte previousSync = 0;
 			int byteLeftInBlock = 0;
@@ -480,7 +477,10 @@ namespace WD1772NS {
 		}
 
 
-
+		/// <summary>
+		/// Read all the ID fields of a track
+		/// </summary>
+		/// <returns>The structure that contains all the address info for a track</returns>
 		public ReadAddrInfo readAddr() {
 			ReadAddrInfo addr = ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readAddr;
 			if (addr != null)
@@ -490,19 +490,9 @@ namespace WD1772NS {
 
 			ProcessStream.TrackData currentTrack = ProcessStream.currentTrack();
 			int nbRev = currentTrack.indexCount - 1;
-			int start, stop;
-			int indexFirstFluxCorrection;
-
-			if (ProcessStream.Rev > 0) {
-				start = currentTrack.indexes[ProcessStream.Rev - 1].fluxPosition;
-				stop = currentTrack.indexes[ProcessStream.Rev].fluxPosition - 1;
-				indexFirstFluxCorrection = ProcessStream.sampleToTiming(currentTrack.indexes[ProcessStream.Rev - 1].preIndexTime);
-			}	// one rev
-			else {
-				start = currentTrack.indexes[0].fluxPosition;
-				stop = currentTrack.indexes[nbRev].fluxPosition;
-				indexFirstFluxCorrection = ProcessStream.sampleToTiming(currentTrack.indexes[0].preIndexTime);
-			}	// all rev
+			int start = ProcessStream.Start;
+			int stop = ProcessStream.Stop;
+			int indexFirstFluxCorrection = ProcessStream.IndexFirstFluxCorrection;
 
 			int currentTime = 0;
 			int currentBit = 0;
@@ -510,15 +500,20 @@ namespace WD1772NS {
 			int nbWin;
 			DSR dsr = new DSR();
 			Phases phase = Phases.p_outer;
-//			int bitShift = 0;
 			int syncCount = 0;
 			byte previousSync = 0;
 			ushort crc = 0;
 			int byteLeftInBlock = 0;
 			int prevBlockEndTime = 0;
 
-			for (int i = start; i < stop; i++) {
-
+			// We read for the current Revolution. However if we are in the middle of
+			// ID field we continue to get the complete field. I am not aware of ID
+			// field spanning over the index so we should be safe. I have added an
+			// assert so we know what is going on if we pass the end of the revolution
+			for (int i = start; (i < stop) || (phase == Phases.p_id); i++) {
+				Debug.Assert(i < currentTrack.indexes[nbRev].fluxPosition,
+					"ID Field extends beyond Index in the last revolution",
+					"Internal error (please report): Trying to read an ID field bytes that extend beyond the last Index.");
 				int flux = ProcessStream.sampleToTiming(currentTrack.flux[i]);
 				if (i == start)
 					flux -= indexFirstFluxCorrection;
@@ -533,7 +528,7 @@ namespace WD1772NS {
 					nbWin = currentTrack.nbWin[i];
 
 				currentBit += nbWin;
-				dsr.shiftBitsIn(nbWin);	// push data in register
+				dsr.shiftBitsIn(nbWin);	// push data in shift register
 				int clock = currentTrack.clock[i];
 
 				while (dsr.byteReady()) {
@@ -552,7 +547,8 @@ namespace WD1772NS {
 						if ((syncCount > 1) && (dsr.Data != previousSync))
 							syncCount = 1;
 						// reset CRC on first A1
-						if ((syncCount == 1) && (dsr.Data == 0xA1)) crc = 0xFFFF;
+						if ((syncCount == 1) && (dsr.Data == 0xA1)) 
+							crc = 0xFFFF;
 						previousSync = dsr.Data;
 					}	// sync byte
 
@@ -581,8 +577,7 @@ namespace WD1772NS {
 									byteLeftInBlock = 7;
 									phase = Phases.p_id;
 									break;
-								default:
-									// Ignore all other AM
+								default:	// Ignore all other AM									
 									break;
 							}	// switch AM
 						}	// 3+ sync
@@ -616,30 +611,256 @@ namespace WD1772NS {
 				}	// more byte to process
 			}	// for all flux
 
+			Debug.Assert(phase != Phases.p_id, "We are in an ID field at the end of reading all addresses");
+			return addr;
+		}	// end of readAddr()
+
+
+		public ReadSectInfo readSector(byte sectToRead, int bytePosition = 0) {
+			// if no list of sectors exist we need to create one
+			if (ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readSectors == null)
+				ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readSectors = new List<ReadSectInfo>();
+
+			// if sector already there nothing to do
+			if (sectExist(sectToRead, bytePosition)) 
+				return ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readSectors[sectIndex(sectToRead, bytePosition)];
+
+			// not there create it
+			ReadSectInfo sect = new ReadSectInfo();
+			sect.buffer = new TrackBuffer();
+
+			ProcessStream.TrackData currentTrack = ProcessStream.currentTrack();
+			int nbRev = currentTrack.indexCount - 1;
+			int start = ProcessStream.Start;
+			int stop = ProcessStream.Stop;
+			int indexFirstFluxCorrection = ProcessStream.IndexFirstFluxCorrection;
+
+			Phases phase = Phases.p_outer;
+			DSR dsr = new DSR();
+			int syncCount = 0;
+			byte previousSync = 0;
+			int byteLeftInBlock = 0;
+			int currentTime = 0;
+			int prevBlockEndTime = 0;
+			ushort crc = 0;
+			int currentBit = 0;
+			int clock;
+			int nbWin;
+			bool idFound = false;
+			bool dataFound = false;
+			int byteCount = 0;
+			bool breakLoop = false;
+
+			//			for (int i = start; (i < stop) || (phase == Phases.p_id); i++) {
+			// TODO check limits
+			for (int i = start; (i < stop)  || (phase == Phases.p_id) || (phase == Phases.p_data) ; i++) {
+				if (breakLoop || (dataFound && (phase != Phases.p_data)))
+					break;
+				Debug.Assert(i < currentTrack.indexes[nbRev].fluxPosition,
+					"ID/DATA Field extends beyond Index in the last revolution",
+					String.Format("Internal error (please report): Trying to read an {0} field bytes that extend beyond the last Index.", (phase == Phases.p_id) ? "ID" : "DATA"));
+
+				int flux = ProcessStream.sampleToTiming(currentTrack.flux[i]);
+				if (i == start)
+					flux -= indexFirstFluxCorrection;
+				if (i == (stop - 1))
+					flux += indexFirstFluxCorrection;
+				currentTime += flux;
+
+				if (flux > 32000)
+					nbWin = flux / 2000;
+				else
+					nbWin = currentTrack.nbWin[i];
+
+				currentBit += nbWin;
+				dsr.shiftBitsIn(nbWin);	// push data in register
+				clock = currentTrack.clock[i];
+
+				while (dsr.byteReady()) {
+					byteCount++;
+
+					// TODO DOI => count < 0
+
+					// We search sync in ID or DATA
+					if ((phase != Phases.p_id) && (phase != Phases.p_data))
+						currentBit -= dsr.searchSynch();
+					else
+						dsr.resetSync();
+					dsr.extract();
+
+					if (dsr.SyncFound) {
+						syncCount++;
+						// check bad sequence
+						if ((syncCount > 1) && (dsr.Data != previousSync))
+							syncCount = 1;
+						// reset CRC on first A1
+						if ((syncCount == 1) && (dsr.Data == 0xA1)) crc = 0xFFFF;
+						previousSync = dsr.Data;
+					}	// sync byte
+
+					// check short sync sequence
+					if ((syncCount > 0) && (syncCount < 3) && !dsr.SyncFound)
+						syncCount = 0;
+
+					if ((phase != Phases.p_id) && (phase != Phases.p_data)) { // We are in a GAP
+							if ((syncCount > 2) && !dsr.SyncFound) {
+							// 3+ sync & not sync => should be an AM
+							syncCount = 0;	// reset sync count
+							switch (dsr.Data) {
+								case 0xFE:	// IDAM - start of an ID block
+								case 0xFF:
+									// if we have already found the requested ID this means that
+ 									// no DATA block were found before this ID and therefore we should break
+									if (idFound) {
+										sect.idBlock.crc = crc;
+										sect.idBlock.byteCount = byteCount - sect.idBlock.startByte;
+										sect.idBlock.timeLength = prevBlockEndTime - sect.idBlock.startTime;
+										dataFound = false;
+										phase = Phases.p_id;
+										breakLoop = true;
+									}
+
+									// if we have not yet reach the requested position we ignore
+									if ((byteCount + 1) < bytePosition)	// allow one extra char
+										break;
+
+									sect.id.iam = dsr.Data;
+									sect.idBlock.startBit = currentBit;
+									sect.idBlock.startByte = byteCount;
+									sect.idBlock.startTime = prevBlockEndTime;
+									byteLeftInBlock = 7;
+									phase = Phases.p_id;
+									break;
+
+								case 0xFB:	// DAM - Start of a DATA block
+								case 0xF8:	// DDAM
+								case 0xFA:
+								case 0xF9:
+									// we check that the ID block is already found and that the DATA block is less than 43 bytes apart
+									if (idFound && ((byteCount - sect.idBlock.startByte - 7) <= 43)) {
+										dataFound = true;
+										byteLeftInBlock = DSR.actualSize(sect.id.size) + 3; // AM + 2 CRC + Size
+										sect.dataBlock.startBit = currentBit;
+										sect.dataBlock.startByte = byteCount;
+										sect.dataBlock.startTime = prevBlockEndTime;
+										phase = Phases.p_data;
+									}
+									break;
+								default:
+									break;
+							}	// switch AM
+						}	// 3+ sync
+					}	// GAP
+					else {
+						// We are in an ID or DATA segment
+						byteLeftInBlock--;
+						if (phase == Phases.p_id)
+							// ID segment
+							switch (byteLeftInBlock) {
+								case 6: sect.id.track = dsr.Data; break;
+								case 5: sect.id.head = dsr.Data; break;
+								case 4: 
+									sect.id.sector = dsr.Data;
+									if (sectToRead != dsr.Data) {
+										phase = Phases.p_outer;
+										// TODO check if need to reset
+									}
+									else
+										idFound = true;
+									break;
+								case 3: sect.id.size = dsr.Data; break;
+								case 2: sect.id.crc = dsr.Data; break;
+								case 1:
+									sect.id.crc = (ushort)(sect.id.crc << 8);
+									sect.id.crc += dsr.Data;
+									break;
+								case 0:	// end of ID block
+									sect.idBlock.crc = crc;
+									sect.idBlock.byteCount = byteCount - sect.idBlock.startByte;
+									sect.idBlock.timeLength = prevBlockEndTime - sect.idBlock.startTime;
+									phase = Phases.p_inner;
+									break;
+								default:
+									break;
+							}	// ID Segment
+						else
+							switch (byteLeftInBlock) {
+								case 2: 
+									//sect.dataCRC = dsr.Data; 
+									break;
+								case 1:
+									//sect.dataCrc = (ushort)(sect.dataCrc << 8);
+									//sect.dataCrc += dsr.Data;
+									break;
+								case 0:	// end of DATA block
+									sect.dataBlock.crc = crc;
+									sect.dataBlock.byteCount = byteCount - sect.dataBlock.startByte;
+									sect.dataBlock.timeLength = prevBlockEndTime - sect.dataBlock.startTime;
+									phase = Phases.p_outer;
+									break;
+
+							}	// DATA Segment
+					} // ID or DATA
+
+					if (phase == Phases.p_data)
+						sect.buffer.addByte(dsr.Data, dsr.Clock, dsr.Mfm, phase, (ushort)clock, 0, prevBlockEndTime);
+					crc = DSR.update_crc(dsr.Data, crc);
+					prevBlockEndTime = currentTime;
+				}	// while bytes in the DSR
+			}	// For all transitions
+
 			if (phase == Phases.p_id) {
+				//TODO
+			}
+
+			if (phase == Phases.p_data) {
 				// TODO
 			}
 
-			return addr;
+			sect.sectHasData = idFound && dataFound;
+			if (idFound) {
+				ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readSectors.Add(sect);
+				return sect;
+			}
+
+			// should not happen
+			return null;
+
+		}	// readSector
+
+
+		public void readAll() {
+			FDC fdc = new FDC();
+			ReadTrackInfo track = fdc.readTrack();
+			ReadAddrInfo addr = fdc.readAddr();
+			for (int i = 0; i < addr.ids.Count; i++) {
+				ReadSectInfo sect = fdc.readSector(addr.ids[i].sector, addr.blocs[i].startByte);
+			}
+		}
+
+		public void clearAll() {
+			ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readTrack = null;
+			ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readAddr = null;
+			ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readSectors = null;
 		}
 
 
-		//private static void UpdateAddrInfo(int endTime, Phases phase, ReadAddrInfo track, ref int blockStartByte, ref int blockStartTime) {
-		//	track.sectors[track.sectors.Count - 1].phases[(byte)phase].startByte = blockStartByte;
-		//	track.sectors[track.sectors.Count - 1].phases[(byte)phase].byteCount = track.byteCount - blockStartByte;
-		//	if ((phase == Phases.p_inner) || (phase == Phases.p_outer))
-		//		track.sectors[track.sectors.Count - 1].phases[(byte)phase].byteCount -= 3;	// remove sync
-		//	track.sectors[track.sectors.Count - 1].phases[(byte)phase].startTime = blockStartTime;
-		//	track.sectors[track.sectors.Count - 1].phases[(byte)phase].timeLength = endTime - blockStartTime;
-		//	blockStartByte = track.byteCount;
-		//	blockStartTime = endTime;
-		//}
+		private bool sectExist(byte num, int position) {
+			List<ReadSectInfo> sectors = ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readSectors;
+			foreach(ReadSectInfo sector in sectors)
+				if ((sector.id.sector == num) && (sector.idBlock.startByte >= position))
+					return true;
+			return false;
+		}
 
-
-
-
-
-
+		private int sectIndex(byte num, int position) {
+			int sectCount = ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readSectors.Count;
+			for (int i = 0; i < sectCount; i++)
+				if ((ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readSectors[i].id.sector == num) &&
+					(ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readSectors[i].idBlock.startByte >= position))
+					return i;
+			return -1;
+		}
 
 
 	}

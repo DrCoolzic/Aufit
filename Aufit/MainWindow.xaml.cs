@@ -193,23 +193,26 @@ namespace Aufit {
 		}
 
 		private void minusRevClicked(object sender, RoutedEventArgs e) {
+			// now we limit the Rev number so we never use the last one
 			if (ProcessStream.currentTrack().indexes == null) return;
 			if (ProcessStream.Rev == 0)
-				ProcessStream.Rev = ProcessStream.currentTrack().indexCount - 1;
+				ProcessStream.Rev = ProcessStream.currentTrack().indexCount - 2;
 			else ProcessStream.Rev--;
 
 			revolution.Text = ProcessStream.Rev.ToString();
 			ProcessStream.computeHisto(infoBox);
 			_histoDrawing.drawHisto(cbHistoLog.IsChecked.Value, cbLimitFlux.IsChecked.Value);
-			if ((ProcessStream.Rev == 0) || (ProcessStream.Rev == ProcessStream.currentTrack().indexes.Length - 1))
+			if ((ProcessStream.Rev == 0) || (ProcessStream.Rev == ProcessStream.currentTrack().indexes.Length - 2))
 				_fluxDrawing.setFluxDefault();
 			//_fluxDrawing.drawFlux();
+			new FDC().clearAll();
 			drawCharts();
 		}
 
 		private void plusRevClicked(object sender, RoutedEventArgs e) {
+			// now we limit the Rev number so we never use the last one
 			if (ProcessStream.currentTrack().indexes == null) return;
-			if (ProcessStream.Rev == (ProcessStream.currentTrack().indexCount - 1))
+			if (ProcessStream.Rev == (ProcessStream.currentTrack().indexCount - 2))
 				ProcessStream.Rev = 0;
 			else ProcessStream.Rev++;
 
@@ -219,6 +222,7 @@ namespace Aufit {
 			if ((ProcessStream.Rev == 0) || (ProcessStream.Rev == 1))
 				_fluxDrawing.setFluxDefault();
 			//_fluxDrawing.drawFlux();
+			new FDC().clearAll();
 			drawCharts();
 		}
 		#endregion

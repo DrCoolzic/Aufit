@@ -90,20 +90,9 @@ class ClockDrawing {
 
 		ProcessStream.TrackData track = ProcessStream.currentTrack();
 		int nbRev = track.indexCount - 1;
-		int indexFirstFluxCorrection;
-
-		int start, stop;
-		if (ProcessStream.Rev > 0) {
-			start = track.indexes[ProcessStream.Rev - 1].fluxPosition;
-			stop = track.indexes[ProcessStream.Rev].fluxPosition;
-			indexFirstFluxCorrection = ProcessStream.sampleToTiming(track.indexes[ProcessStream.Rev - 1].preIndexTime);
-		}
-		else {
-			start = track.indexes[0].fluxPosition;
-			stop = track.indexes[nbRev].fluxPosition;
-			indexFirstFluxCorrection = ProcessStream.sampleToTiming(track.indexes[0].preIndexTime);
-		}
-
+		int start = ProcessStream.Start;
+		int stop = ProcessStream.Stop;
+		int indexFirstFluxCorrection = ProcessStream.IndexFirstFluxCorrection;
 		int currentTime = 0;
 
 		Polyline clockLine = new Polyline();

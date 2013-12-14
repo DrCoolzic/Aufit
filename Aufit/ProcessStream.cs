@@ -98,11 +98,14 @@ public class ProcessStream {
 		public ReadTrackInfo readTrack;
 
 		public ReadAddrInfo readAddr;
+		public List<ReadSectInfo> readSectors;
 	}
 
 	private static TrackData[,] _diskInfo = new TrackData[85, 2];
 	private static double _sampleClock = 0;
-
+	private static int _track = 0;
+	private static int _side = 0;
+	private static int _rev = 1;
 
 	public static void reset() {
 		_diskInfo = null;
@@ -134,16 +137,56 @@ public class ProcessStream {
 	/// <summary>
 	/// Return the current revolution value
 	/// </summary>
-	public static int Rev { get; set; }
+	public static int Rev {
+		get { return _rev; }
+		set {
+			_rev = value;
+			changeLoopValues();
+		}
+	}
+
 	/// <summary>
 	/// Return the current Track value
 	/// </summary>
-	public static int Track { get; set; }
+	public static int Track {
+		get { return _track; }
+		set {
+			_track = value;
+			changeLoopValues();
+		}
+	}
+
 	/// <summary>
 	/// Return the current Side value
 	/// </summary>
-	public static int Side { get; set; }
+	public static int Side {
+		get { return _side; }
+		set {
+			_side = value;
+			changeLoopValues();
+		}
+	}
 
+	public static int Start { get; set; }
+	public static int Stop { get; set; }
+	public static int IndexFirstFluxCorrection { get; set; }
+
+	private static void changeLoopValues() {
+		if ((_track >= 84) || (_side >= 2)) return;
+		TrackData ct = currentTrack();
+		if (ct.indexes == null) return;
+		int nbRev = ct.indexCount - 2;
+		if (Rev > 0) {
+			Start = ct.indexes[Rev - 1].fluxPosition;
+			Stop = ct.indexes[Rev].fluxPosition - 1;
+			IndexFirstFluxCorrection = sampleToTiming(ct.indexes[Rev - 1].preIndexTime);
+		}	// one rev
+		else {
+			Start = ct.indexes[0].fluxPosition;
+			Stop = ct.indexes[nbRev].fluxPosition;
+			IndexFirstFluxCorrection = sampleToTiming(ct.indexes[0].preIndexTime);
+		}	// all rev
+	}
 
 	/// <summary>
 	/// This functions takes a KF sample value and returns the corresponding timing in nanoseconds based on the sample clock.

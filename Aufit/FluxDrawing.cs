@@ -131,23 +131,10 @@ class FluxDrawing {
 
 		ProcessStream.TrackData t = ProcessStream.currentTrack();
 		int nbRev = t.indexCount - 1;
+		int start = ProcessStream.Start;
+		int stop = ProcessStream.Stop;
+		int indexFirstFluxCorrection = ProcessStream.IndexFirstFluxCorrection;
 
-		int indexFirstFluxCorrection;
-		// int indexLastFluxCorrection;
-
-		int start, stop;
-		if (ProcessStream.Rev > 0) {
-			start = t.indexes[ProcessStream.Rev - 1].fluxPosition;
-			stop = t.indexes[ProcessStream.Rev].fluxPosition;
-			indexFirstFluxCorrection = ProcessStream.sampleToTiming(t.indexes[ProcessStream.Rev - 1].preIndexTime);
-			//indexLastFluxCorrection = ProcessStream.sampleToTiming(t.indexes[ProcessStream.Rev].preIndexTime);
-		}
-		else {
-			start = t.indexes[0].fluxPosition;
-			stop = t.indexes[nbRev].fluxPosition;
-			indexFirstFluxCorrection = ProcessStream.sampleToTiming(t.indexes[0].preIndexTime);
-			//indexLastFluxCorrection = ProcessStream.sampleToTiming(t.indexes[nbRev].preIndexTime);
-		}
 
 		int maxFlux = 0;
 		int minFlux = Int32.MaxValue;
@@ -288,7 +275,7 @@ class FluxDrawing {
 		if (rev > 0)
 			_viewportXmax = 200;
 		else
-			_viewportXmax = 1000;
+			_viewportXmax = 800;
 
 		int max = ProcessStream.sampleToTiming(track.fluxMax) + 500;
 		if (max < 10000) max = 10000;
