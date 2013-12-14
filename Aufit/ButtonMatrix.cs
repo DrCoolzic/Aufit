@@ -159,7 +159,7 @@ namespace Aufit {
 				Int32 y = tuple.Item3 - 1;
 				Int32 z = tuple.Item4 - 1;
 				int track = 10 * x + y;
-				if (ProcessStream.DiskTracks[track, z].flux == null) return false;
+				if (ProcessStream.Disk[track, z].flux == null) return false;
 				deselectButton();
 				ProcessStream.Track = track;
 				ProcessStream.Side = z;

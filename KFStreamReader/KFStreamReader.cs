@@ -3,21 +3,21 @@
 <summary>KryoFlux Stream file reader: Functions and Structures</summary>
 <remarks>
 <div class="jlg">Copyright (C) 2011 Software Preservation Society & Jean 
-Louis-Guerin\n\n This file is part of the Atari Universal FD Image Tools 
-project.\n\n The Atari Universal FD Image Tools project may be used and 
+Louis-Guerin\n\n This file is part of the Atari Universal FD Image Tool 
+project.\n\n The Atari Universal FD Image Tool project may be used and 
 distributed without restriction provided that this copyright statement is 
 not removed from the file and that any derivative work contains the 
 original copyright notice and the associated disclaimer. \n
-The Atari Universal FD Image Tools project are free software; you can 
+The Atari Universal FD Image Tool project are free software; you can 
 redistribute it and/or modify  it under the terms of the GNU General Public 
 License as published by the Free Software Foundation; either version 2 of 
 the License, or (at your option) any later version.\n\n 
-The Atari Universal FD Image Tools project is distributed in the hope that 
+The Atari Universal FD Image Tool project is distributed in the hope that 
 it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
 warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n See the 
 GNU General Public License for more details.\n
 You should have received a copy of the GNU General Public License along 
-with the Atari Universal FD Image Tools project; if not, write to the Free 
+with the Atari Universal FD Image Tool project; if not, write to the Free 
 Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  
 02110-1301  USA\n</div>
 
@@ -170,9 +170,9 @@ public class KFStreamReader {
 	/// <summary>Statistic - number of cbStreamTrans(internal use)</summary>
 	private int _statDataTrans;
 	/// <summary>minimum flux value found during parsing</summary>
-	private int _minFlux;
+	private int _fluxMin;
 	/// <summary>maximum flux value found during parsing</summary>
-	private int _maxFlux;
+	private int _fluxMax;
 	/// <summary>Statistic about the Stream</summary>
 	private Statistic _stats;
 	/// <summary> Value of the Sample Clock</summary>
@@ -486,8 +486,8 @@ public class KFStreamReader {
 		if (sbuf.Length == 0)	// nothing to do
 			return StreamStatus.sdsOk;
 
-		_minFlux = int.MaxValue;
-		_maxFlux = 0;
+		_fluxMin = int.MaxValue;
+		_fluxMax = 0;
 
 		// at worst the number of flux equals number of stream bytes+1 
 		// In fact it is always less due to CB and encoding
@@ -567,8 +567,8 @@ public class KFStreamReader {
 				// we have detected a new flux block
 				if (isFlux) {
 					_fluxValues[_fluxCount] = fluxValue; // store value
-					if (fluxValue < _minFlux) _minFlux = fluxValue;
-					if (fluxValue > _maxFlux) _maxFlux = fluxValue;
+					if (fluxValue < _fluxMin) _fluxMin = fluxValue;
+					if (fluxValue > _fluxMax) _fluxMax = fluxValue;
 					//_minFlux = Math.Min(_minFlux, fluxValue);
 					//_maxFlux = Math.Max(_maxFlux, fluxValue);
 
@@ -854,8 +854,8 @@ public class KFStreamReader {
 		}
 		else
 			_stats.nbflux = 0;
-		_stats.fluxMin = _minFlux;
-		_stats.fluxMax = _maxFlux;
+		_stats.fluxMin = _fluxMin;
+		_stats.fluxMax = _fluxMax;
 	}	// fillStreamStat()
 	#endregion member function
 

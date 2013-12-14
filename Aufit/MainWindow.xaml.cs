@@ -35,7 +35,7 @@ namespace Aufit {
 		private ClockDrawing _clockDrawing = null;
 		private DataDrawing _dataDrawing = null;
 
-		private FDC _trackInfo = null;
+		//private FDC _trackInfo = null;
 		private BufferWindow _bufferWindow = null;
 		private bool _bufferWindowIsOpen = false;
 		private DiskWindow _diskWindow = null;
@@ -67,7 +67,7 @@ namespace Aufit {
 			_dataDrawing.Chart.HasYGrid = false;
 			_dataDrawing.Chart.FixOffset = true;
 
-			_trackInfo = new FDC();
+			//_trackInfo = new FDC();
 
 			// this.DataContext = this;	// needed for property changed event
 
@@ -134,7 +134,7 @@ namespace Aufit {
 			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.ClockMin, _clockDrawing.ClockMax);
 			_clockDrawing.drawClock(_fluxDrawing.SpeedUp);
 			_dataDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
-			_dataDrawing.drawTrackData(_trackInfo);
+			_dataDrawing.drawTrackData();
 
 		}
 
@@ -147,7 +147,7 @@ namespace Aufit {
 			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.ClockMin, _clockDrawing.ClockMax);
 			_clockDrawing.drawClock(_fluxDrawing.SpeedUp);
 			_dataDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
-			_dataDrawing.drawTrackData(_trackInfo);
+			_dataDrawing.drawTrackData();
 		}
 
 		private void fluxMouseMove(object sender, MouseEventArgs e) {
@@ -159,7 +159,7 @@ namespace Aufit {
 			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.ClockMin, _clockDrawing.ClockMax);
 			_clockDrawing.drawClock(_fluxDrawing.SpeedUp);
 			_dataDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
-			_dataDrawing.drawTrackData(_trackInfo);
+			_dataDrawing.drawTrackData();
 
 		}
 		#endregion
@@ -229,7 +229,8 @@ namespace Aufit {
 		/// </summary>
 		public void drawCharts() {
 			revolution.Text = ProcessStream.Rev.ToString();
-			ProcessStream.mfmDecode();
+			if (ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readTrack == null)
+				ProcessStream.mfmDecode();
 
 			cbLimitFlux.IsChecked = (ProcessStream.computeHisto(infoBox) > 0);
 			_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
@@ -242,7 +243,7 @@ namespace Aufit {
 			_clockDrawing.drawClock(_fluxDrawing.SpeedUp);
 
 			_dataDrawing.Chart.setDefaultViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
-			_dataDrawing.drawTrackData(_trackInfo);
+			_dataDrawing.drawTrackData();
 
 		}
 
@@ -262,6 +263,7 @@ namespace Aufit {
 				tabCtrl.Width = matrixGrid.ActualWidth;
 				Grid.SetColumn(tabCtrl, 0);
 				Grid.SetColumnSpan(tabCtrl, 3);
+				ProcessStream.reset();
 
 				bool status = ProcessStream.readStreamTrack(ofd.FileName, ProcessStream.Track, ProcessStream.Side);
 				if (status) {
@@ -278,22 +280,23 @@ namespace Aufit {
 			dialog.UseDescriptionForTitle = true;
 			if ((bool)dialog.ShowDialog(this)) {
 				string selectedDir = dialog.SelectedPath;
-				ProcessStream.Rev = 1;
-
-				BM1.Visibility = Visibility.Visible;
-				BM2.Visibility = Visibility.Visible;
-				tabCtrl.Width = matrixGrid.ActualWidth - 320;
-				Grid.SetColumn(tabCtrl, 2);
-				Grid.SetColumnSpan(tabCtrl, 1);
-
 				DirectoryInfo di = new DirectoryInfo(selectedDir);
 				FileInfo[] fi = di.GetFiles("*.raw");
 				if (fi.Length != 0) {
+					ProcessStream.Rev = 1;
+
+					BM1.Visibility = Visibility.Visible;
+					BM2.Visibility = Visibility.Visible;
+					tabCtrl.Width = matrixGrid.ActualWidth - 320;
+					Grid.SetColumn(tabCtrl, 2);
+					Grid.SetColumnSpan(tabCtrl, 1);
+
 					infoBox.Clear();
 					string file = fi[0].Name;
 					string path = fi[0].DirectoryName;
 					string root = file.Remove(file.Length - 8, 8);
 					FileName.Text = selectedDir;
+					ProcessStream.reset();
 
 					if (cbDispRead.IsChecked == true)
 						readAllTracksAsync(path, root);
@@ -323,9 +326,7 @@ namespace Aufit {
 			ButtonMatrix.clearButtons();
 			for (ProcessStream.Side = 0; ProcessStream.Side < 2; ProcessStream.Side++) {
 				for (ProcessStream.Track = 0; ProcessStream.Track < 84; ProcessStream.Track++) {
-					//ProcessStream.mfmDecode();
 					double entropy = ProcessStream.computeHisto(infoBox);
-					//double entropy = ProcessStream.currentTrack().entropy;
 					if (ProcessStream.currentTrack().flux != null)
 						ButtonMatrix.setButtonBG(entropy);
 				}
@@ -354,20 +355,20 @@ namespace Aufit {
 					fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, ProcessStream.Track, ProcessStream.Side);
 					bool streamOK = await ProcessStream.readStreamTrackAsync(fname, ProcessStream.Track, ProcessStream.Side);
 					if (streamOK) {
-						drawCharts();
-						//StreamProcess.computeHisto(infoBox);
+						//drawCharts();
+						ProcessStream.computeHisto(infoBox);
 						ButtonMatrix.setButtonBG(ProcessStream.currentTrack().entropy);
 					}
 				}
 			}
 
 			_fluxDrawing.FastDraw = false;
-			ProcessStream.Track = 83;
-			ProcessStream.Side = 1;
+			ProcessStream.Track = 0;
+			ProcessStream.Side = 0;
 			if (ProcessStream.currentTrack().flux != null) {
-				ButtonMatrix.selectButton(83, 1);
+				ButtonMatrix.selectButton(ProcessStream.Track, ProcessStream.Side);
 			}
-			//displayStream();
+			drawCharts();
 		}
 
 
@@ -418,7 +419,7 @@ namespace Aufit {
 			else
 				return;	// other keys
 
-			if (ProcessStream.DiskTracks[track, side].flux == null) return;
+			if (ProcessStream.Disk[track, side].flux == null) return;
 			ProcessStream.Track = track;
 			ProcessStream.Side = side;
 			ButtonMatrix.deselectButton();
@@ -432,7 +433,7 @@ namespace Aufit {
 		}
 
 		private void dataGridSizeChanged(object sender, SizeChangedEventArgs e) {
-			_dataDrawing.drawTrackData(_trackInfo);
+			_dataDrawing.drawTrackData();
 		}
 
 		private void sectGridSizeChanged(object sender, SizeChangedEventArgs e) {
@@ -459,18 +460,18 @@ namespace Aufit {
 		}
 
 		private void btBufferClick(object sender, RoutedEventArgs e) {
-			if (_trackInfo.TrackInfo == null) return;			
+			// TODO if (_trackInfo.TrackInfo == null) return;			
 			if (_bufferWindowIsOpen)
 				_bufferWindow.Close();
 
-			_bufferWindow = new BufferWindow(_trackInfo.TrackInfo.buffer);
+			_bufferWindow = new BufferWindow(ProcessStream.currentTrack().readTrack.buffer);
 			_bufferWindow.Closed += new EventHandler(bufferWindowClosed);
 			_bufferWindowIsOpen = true;
 			_bufferWindow.Show();
 		}
 
 		private void btDiskClick(object sender, RoutedEventArgs e) {
-			if (_trackInfo.TrackInfo == null) return;
+			// TODO if (_trackInfo.TrackInfo == null) return;
 			if (BM1.Visibility == Visibility.Hidden) return;
 			if (_diskWindowIsOpen)
 				_diskWindow.Close();

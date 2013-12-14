@@ -4,21 +4,21 @@
 <summary>WD1772 FDC "main" commands: read track, read address, read sector</summary>
 
 <div class="jlg">Copyright (C) 2011 Jean Louis-Guerin\n\n
-This file is part of the Atari Universal FD Image Tools project.\n\n
-The Atari Universal FD Image Tools project may be used and distributed without restriction provided
+This file is part of the Atari Universal FD Image Tool project.\n\n
+The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
 derivative work contains the original copyright notice and the associated
 disclaimer.\n\n
-The Atari Universal FD Image Tools project is free software; you can redistribute it
+The Atari Universal FD Image Tool project is free software; you can redistribute it
 and/or modify  it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
 of the License, or (at your option) any later version.\n\n
-The Atari Universal FD Image Tools project is distributed in the hope that it will be useful,
+The Atari Universal FD Image Tool project is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n
 See the GNU General Public License for more details.\n\n
 You should have received a copy of the GNU General Public License
-along with the Atari Universal FD Image Tools project; if not, write to the Free Software
+along with the Atari Universal FD Image Tool project; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</div>
 
 @author Jean Louis-Guerin
@@ -46,7 +46,7 @@ namespace WD1772NS {
 	/// <summary>
 	/// Store the content read from a sector ID (Address) Segment
 	/// </summary>
-	public struct IdSegment {
+	public struct IDBlock {
 		/// <summary>Store the Index Address Mark</summary> 
 		public byte iam;
 		/// <summary>Store the track number</summary> 
@@ -96,7 +96,7 @@ namespace WD1772NS {
 		/// </summary>
 		public BlockInfo[] phases = new BlockInfo[4];	// one block per phase
 		/// <summary>Pointer to the IdSegment</summary>
-		public IdSegment addr = new IdSegment();		// store ID info
+		public IDBlock addr = new IDBlock();		// store ID info
 		/// <summary>
 		/// If SWS stores the number of the sector that contains this one, or -1 otherwise
 		/// </summary>
@@ -135,7 +135,7 @@ namespace WD1772NS {
 	/// Note that sectors[0] is a pseudo sector to store GAP1 information</remarks>
 	public class ReadTrackInfo {
 		/// <summary>List of all sectors in the track</summary>
-		public List<SectorInfo> sectors = new List<SectorInfo>(11);
+		public List<SectorInfo> sectors = new List<SectorInfo>(12);
 		/// <summary>Time length of the track in nanoseconds</summary>
 		public int timeLength = 0;
 		/// <summary> Number of bytes in the track</summary>
@@ -144,6 +144,12 @@ namespace WD1772NS {
 		public List<SyncInfo> syncs = new List<SyncInfo>();
 		/// <summary>TrackBuffer for the read track</summary>
 		public TrackBuffer buffer;
+	}
+
+	public class ReadAddrInfo {
+		public List<IDBlock> ids = new List<IDBlock>(12);
+		public List<BlockInfo> blocs = new List<BlockInfo>(12);
+		public ushort crc;
 	}
 
 	/// <summary>
@@ -157,18 +163,6 @@ namespace WD1772NS {
 		private readonly int TIME_VIOLATION = 0x0002;
 		private readonly int NFA = 0x0004;
 
-		private ReadTrackInfo _trackInfo;
-		// private ReadAddressInfo
-		// private List<ReadSectorInfo>
-
-
-		/// <summary>
-		/// Access to the current track information structure
-		/// </summary>
-		public ReadTrackInfo TrackInfo {
-			get { return _trackInfo; }
-		}
-
 
 		/// <summary>Read a track by decoding all the track mfm bits</summary>
 		///
@@ -176,6 +170,13 @@ namespace WD1772NS {
 		/// It fills a ReadTrackInfo structure that gives detail information about the track 
 		/// as well as a Buffer array that contains all the decoded bytes.
 		public ReadTrackInfo readTrack() {
+			ReadTrackInfo track = ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readTrack;
+			if (track != null) 
+				return track;
+			track = new ReadTrackInfo();
+			ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readTrack = track;
+			track.buffer = new TrackBuffer();
+
 			ProcessStream.TrackData currentTrack = ProcessStream.currentTrack();
 			int nbRev = currentTrack.indexCount - 1;
 			int start, stop;
@@ -192,10 +193,6 @@ namespace WD1772NS {
 				stop = currentTrack.indexes[nbRev].fluxPosition;
 				indexFirstFluxCorrection = ProcessStream.sampleToTiming(currentTrack.indexes[0].preIndexTime);
 			}	// all rev
-
-			ReadTrackInfo track = new ReadTrackInfo();
-			_trackInfo = track;
-			track.buffer = new TrackBuffer();
 
 			track.sectors.Add(new SectorInfo());	// add dummy sector[0] for gap
 			Phases phase = Phases.p_outer;
@@ -248,10 +245,10 @@ namespace WD1772NS {
 
 					// check above or below normal
 					if (clock > upperClock) {
-						// TODO
+						// TODO above normal
 					}	// above normal
 					if (clock < lowerClock) {
-						// TODO
+						// TODO below normal
 					}	// below normal
 
 					int bitShift = dsr.searchSynch();
@@ -282,7 +279,7 @@ namespace WD1772NS {
 
 						// check long sequence
 						if (syncCount > 3) {
-							// TODO
+							// TODO long sync seq
 						}
 
 						previousSync = dsr.Data;
@@ -298,7 +295,7 @@ namespace WD1772NS {
 						// We are in a GAP
 						// check for invalid data into gap
 						if ((dsr.Data > 244) && (dsr.Data > 248)) {
-							// TODO
+							// TODO invalid data in gap
 						} // IDG invalid data in GAP
 
 						if ((syncCount > 2) && !dsr.SyncFound) {
@@ -311,7 +308,7 @@ namespace WD1772NS {
 
 								case 0xFE:	// IDAM - start of an ID block
 								case 0xFF:
-									UpdateBlockInfo(prevBlockEndTime, phase, track, ref blockStartByte, ref blockStartTime);
+									UpdateTrackInfo(prevBlockEndTime, phase, track, ref blockStartByte, ref blockStartTime);
 									track.sectors[track.sectors.Count - 1].endTime = prevBlockEndTime;
 									track.sectors.Add(new SectorInfo());
 
@@ -326,7 +323,7 @@ namespace WD1772NS {
 								case 0xF8:	// DDAM
 								case 0xFA:
 								case 0xF9:
-									UpdateBlockInfo(prevBlockEndTime, phase, track, ref blockStartByte, ref blockStartTime);
+									UpdateTrackInfo(prevBlockEndTime, phase, track, ref blockStartByte, ref blockStartTime);
 									if (track.sectors.Count == 1) {
 										// TODO why add a new sector ? we can just put it in 0 ?
 										track.sectors.Add(new SectorInfo());
@@ -334,14 +331,14 @@ namespace WD1772NS {
 										byteLeftInBlock = 512;	// best guess
 									}	// no ID before
 									else
-										byteLeftInBlock = DSR.actualSize(track.sectors[track.sectors.Count()-1].addr.size) + 3; // AM + 2 CRC + Size
+										byteLeftInBlock = DSR.actualSize(track.sectors[track.sectors.Count-1].addr.size) + 3; // AM + 2 CRC + Size
 									phase = Phases.p_data;
 									track.sectors[track.sectors.Count - 1].phases[(byte)phase].startBit = currentBit;
 									break;
 
 								default:
 									// not an AM after 3+ sync : invalid
-									// TODO
+									// TODO invalid AM
 									break;
 							}	// switch AM
 						}	// 3+ sync
@@ -362,7 +359,7 @@ namespace WD1772NS {
 									track.sectors[track.sectors.Count - 1].addr.crc += dsr.Data;
 									break;
 								case 0:	// end of ID block
-									UpdateBlockInfo(prevBlockEndTime, phase, track, ref blockStartByte, ref blockStartTime);
+									UpdateTrackInfo(prevBlockEndTime, phase, track, ref blockStartByte, ref blockStartTime);
 									if (sws) {
 										sws = false;
 										track.sectors[track.sectors.Count - 1].sws = track.sectors[track.sectors.Count - 2].addr.sector;
@@ -380,7 +377,7 @@ namespace WD1772NS {
 								// note: we also check that sync is A1 as we may detect C2 in data block
 								sws = true;
 								syncCount = 0;
-								UpdateBlockInfo(prevBlockEndTime, phase, track, ref blockStartByte, ref blockStartTime);
+								UpdateTrackInfo(prevBlockEndTime, phase, track, ref blockStartByte, ref blockStartTime);
 								track.sectors[track.sectors.Count - 1].phases[(byte)phase].crc = 0xFFFF; // set to bad value
 								track.sectors[track.sectors.Count - 1].endTime = prevBlockEndTime;
 								track.sectors.Add(new SectorInfo());
@@ -399,7 +396,7 @@ namespace WD1772NS {
 										track.sectors[track.sectors.Count - 1].dataSegmentCrc += dsr.Data;
 										break;
 									case 0:
-										UpdateBlockInfo(prevBlockEndTime, phase, track, ref blockStartByte, ref blockStartTime);
+										UpdateTrackInfo(prevBlockEndTime, phase, track, ref blockStartByte, ref blockStartTime);
 										// Data block we store CRC for checking
 										track.sectors[track.sectors.Count - 1].phases[(byte)phase].crc = crc;
 										track.sectors[track.sectors.Count - 1].valid = true;	// valid sector
@@ -415,7 +412,7 @@ namespace WD1772NS {
 						if (dsr.SyncFound) {
 							syncInf = (byte)bitShift;
 							syncInf |= 0x80;
-							// ERROR
+							// TODO ERROR
 						}
 
 					} // ID or DATA
@@ -428,7 +425,7 @@ namespace WD1772NS {
 			}	// For all transitions
 
 			track.byteCount++;
-			UpdateBlockInfo(currentTime, phase, track, ref blockStartByte, ref blockStartTime);
+			UpdateTrackInfo(currentTime, phase, track, ref blockStartByte, ref blockStartTime);
 			track.sectors[track.sectors.Count - 1].endTime = currentTime;
 
 			if (phase == Phases.p_id) {
@@ -437,8 +434,12 @@ namespace WD1772NS {
 
 			if (phase == Phases.p_data) {
 				track.sectors[track.sectors.Count - 1].valid = false;
-				// we put the byteLeft to sector 0 in a data block
-				// TOD check not bigger
+				// we put the byteLeftInBlock to sector 0 data block
+				// We limit the size to keep 15 (12 0x00 + 3 sync)
+				if (byteLeftInBlock > (track.sectors[0].phases[(byte)Phases.p_outer].byteCount - 15)) {
+					byteLeftInBlock = track.sectors[0].phases[(byte)Phases.p_outer].byteCount - 15;
+					if (byteLeftInBlock < 0) byteLeftInBlock = 0;
+				}
 				track.sectors[0].phases[(byte)Phases.p_data].startByte = 0;
 				track.sectors[0].phases[(byte)Phases.p_data].byteCount = byteLeftInBlock;
 				track.sectors[0].phases[(byte)Phases.p_data].startTime = 0;
@@ -467,7 +468,7 @@ namespace WD1772NS {
 		/// <param name="track"></param>
 		/// <param name="blockStartByte"></param>
 		/// <param name="blockStartTime"></param>
-		private static void UpdateBlockInfo(int endTime, Phases phase, ReadTrackInfo track, ref int blockStartByte, ref int blockStartTime) {
+		private static void UpdateTrackInfo(int endTime, Phases phase, ReadTrackInfo track, ref int blockStartByte, ref int blockStartTime) {
 			track.sectors[track.sectors.Count - 1].phases[(byte)phase].startByte = blockStartByte;
 			track.sectors[track.sectors.Count - 1].phases[(byte)phase].byteCount = track.byteCount - blockStartByte;
 			if ((phase == Phases.p_inner) || (phase == Phases.p_outer))
@@ -477,6 +478,169 @@ namespace WD1772NS {
 			blockStartByte = track.byteCount;
 			blockStartTime = endTime;
 		}
+
+
+
+		public ReadAddrInfo readAddr() {
+			ReadAddrInfo addr = ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readAddr;
+			if (addr != null)
+				return addr;
+			addr = new ReadAddrInfo();
+			ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readAddr = addr;
+
+			ProcessStream.TrackData currentTrack = ProcessStream.currentTrack();
+			int nbRev = currentTrack.indexCount - 1;
+			int start, stop;
+			int indexFirstFluxCorrection;
+
+			if (ProcessStream.Rev > 0) {
+				start = currentTrack.indexes[ProcessStream.Rev - 1].fluxPosition;
+				stop = currentTrack.indexes[ProcessStream.Rev].fluxPosition - 1;
+				indexFirstFluxCorrection = ProcessStream.sampleToTiming(currentTrack.indexes[ProcessStream.Rev - 1].preIndexTime);
+			}	// one rev
+			else {
+				start = currentTrack.indexes[0].fluxPosition;
+				stop = currentTrack.indexes[nbRev].fluxPosition;
+				indexFirstFluxCorrection = ProcessStream.sampleToTiming(currentTrack.indexes[0].preIndexTime);
+			}	// all rev
+
+			int currentTime = 0;
+			int currentBit = 0;
+			int byteCount = 0;
+			int nbWin;
+			DSR dsr = new DSR();
+			Phases phase = Phases.p_outer;
+//			int bitShift = 0;
+			int syncCount = 0;
+			byte previousSync = 0;
+			ushort crc = 0;
+			int byteLeftInBlock = 0;
+			int prevBlockEndTime = 0;
+
+			for (int i = start; i < stop; i++) {
+
+				int flux = ProcessStream.sampleToTiming(currentTrack.flux[i]);
+				if (i == start)
+					flux -= indexFirstFluxCorrection;
+				if (i == (stop - 1))
+					flux += indexFirstFluxCorrection;
+				currentTime += flux;
+
+				if (flux > 32000) {
+					nbWin = flux / 2000;
+				}	// NFA
+				else
+					nbWin = currentTrack.nbWin[i];
+
+				currentBit += nbWin;
+				dsr.shiftBitsIn(nbWin);	// push data in register
+				int clock = currentTrack.clock[i];
+
+				while (dsr.byteReady()) {
+					byteCount++;
+
+					// we only search for sync if not in p_id
+					if (phase != Phases.p_id) 
+						currentBit -= dsr.searchSynch();
+					else
+						dsr.resetSync();
+
+					dsr.extract();
+					if (dsr.SyncFound) {
+						syncCount++;
+						// check bad sync sequence
+						if ((syncCount > 1) && (dsr.Data != previousSync))
+							syncCount = 1;
+						// reset CRC on first A1
+						if ((syncCount == 1) && (dsr.Data == 0xA1)) crc = 0xFFFF;
+						previousSync = dsr.Data;
+					}	// sync byte
+
+					// check short sync sequence
+					if ((syncCount > 0) && (syncCount < 3) && !dsr.SyncFound)
+						syncCount = 0;
+
+					if (phase != Phases.p_id) {
+						if ((syncCount > 2) && !dsr.SyncFound) {
+							// 3+ sync & not sync => should be an AM
+							syncCount = 0;	// reset sync count
+							switch (dsr.Data) {
+								case 0xFE:	// IDAM - start of an ID block
+								case 0xFF:
+									addr.ids.Add(new IDBlock());
+									IDBlock id = addr.ids[addr.ids.Count - 1];
+									id.iam = dsr.Data;
+									addr.ids[addr.ids.Count - 1] = id;
+
+									addr.blocs.Add(new BlockInfo());
+									BlockInfo block = addr.blocs[addr.blocs.Count-1];
+									block.startBit = currentBit;
+									block.startByte = byteCount;
+									block.startTime = prevBlockEndTime;
+									addr.blocs[addr.blocs.Count - 1] = block;
+									byteLeftInBlock = 7;
+									phase = Phases.p_id;
+									break;
+								default:
+									// Ignore all other AM
+									break;
+							}	// switch AM
+						}	// 3+ sync
+					}	// not in ID
+					else {	// We are in an ID
+						byteLeftInBlock--;
+						IDBlock id = addr.ids[addr.ids.Count - 1];
+						switch (byteLeftInBlock) {
+							case 6: id.track = dsr.Data; break;
+							case 5: id.head = dsr.Data; break;
+							case 4: id.sector = dsr.Data; break;
+							case 3: id.size = dsr.Data; break;
+							case 2: id.crc = dsr.Data; break;
+							case 1:
+								id.crc = (ushort)(id.crc << 8);
+								id.crc += dsr.Data;
+								break;
+							case 0:	// end of ID block
+								BlockInfo block = addr.blocs[addr.blocs.Count-1];
+								block.byteCount = byteCount - block.startByte;
+								block.crc = crc;
+								block.timeLength = prevBlockEndTime - block.startTime;
+								addr.blocs[addr.blocs.Count - 1] = block;
+								phase = Phases.p_outer;
+								break;
+						}
+						addr.ids[addr.ids.Count - 1] = id;
+					} // we are in ID
+					crc = DSR.update_crc(dsr.Data, crc);
+					prevBlockEndTime = currentTime;
+				}	// more byte to process
+			}	// for all flux
+
+			if (phase == Phases.p_id) {
+				// TODO
+			}
+
+			return addr;
+		}
+
+
+		//private static void UpdateAddrInfo(int endTime, Phases phase, ReadAddrInfo track, ref int blockStartByte, ref int blockStartTime) {
+		//	track.sectors[track.sectors.Count - 1].phases[(byte)phase].startByte = blockStartByte;
+		//	track.sectors[track.sectors.Count - 1].phases[(byte)phase].byteCount = track.byteCount - blockStartByte;
+		//	if ((phase == Phases.p_inner) || (phase == Phases.p_outer))
+		//		track.sectors[track.sectors.Count - 1].phases[(byte)phase].byteCount -= 3;	// remove sync
+		//	track.sectors[track.sectors.Count - 1].phases[(byte)phase].startTime = blockStartTime;
+		//	track.sectors[track.sectors.Count - 1].phases[(byte)phase].timeLength = endTime - blockStartTime;
+		//	blockStartByte = track.byteCount;
+		//	blockStartTime = endTime;
+		//}
+
+
+
+
+
+
+
 
 	}
 }

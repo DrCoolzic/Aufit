@@ -3,21 +3,21 @@
 <summary> Process information from the Stream File</summary>
 
 <div class="jlg">Copyright (C) 2011 Jean Louis-Guerin\n\n
-This file is part of the Atari Universal FD Image Tools project.\n\n
-The Atari Universal FD Image Tools project may be used and distributed without restriction provided
+This file is part of the Atari Universal FD Image Tool project.\n\n
+The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
 derivative work contains the original copyright notice and the associated
 disclaimer.\n\n
-The Atari Universal FD Image Tools project is free software; you can redistribute it
+The Atari Universal FD Image Tool project is free software; you can redistribute it
 and/or modify  it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
 of the License, or (at your option) any later version.\n\n
-The Atari Universal FD Image Tools project is distributed in the hope that it will be useful,
+The Atari Universal FD Image Tool project is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n
 See the GNU General Public License for more details.\n\n
 You should have received a copy of the GNU General Public License
-along with the Atari Universal FD Image Tools project; if not, write to the Free Software
+along with the Atari Universal FD Image Tool project; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</div>
 
 @author Jean Louis-Guerin
@@ -42,7 +42,7 @@ namespace StreamNS {
 /// </summary>
 public class ProcessStream {
 	/// <summary>
-	/// Contains various information about one track
+	/// Contains information about one track
 	/// </summary>
 	public struct TrackData {
 		/// <summary> Array of Index structure for this track</summary>
@@ -57,6 +57,12 @@ public class ProcessStream {
 		/// <summary>Effective number of  flux transitions recorded for this track</summary>
 		/// <remarks>This array is filled by readStreamTrack() method</remarks>
 		public int fluxCount;
+		/// <summary>Value of the shortest flux transition recorded for this track in sample clock</summary>
+		/// <remarks>This value is filled by readStreamTrack() method</remarks>
+		public int fluxMin;
+		/// <summary>Value of the largest flux transition recorded for this track in sample clock</summary>
+		/// <remarks>This value is filled by readStreamTrack() method</remarks>
+		public int fluxMax;
 
 		/// <summary>Array of clock values as decoded by the DPLL.</summary>
 		/// This array is filled by mfmDecode() method. The array has the same size as the flux array</remarks>
@@ -66,10 +72,6 @@ public class ProcessStream {
 		/// nbWin is the number of inspection windows to the next flux transition (i.e. bit to shift
 		/// in the DSR</remarks>
 		public int[] nbWin;
-		/// <summary>Value of the shortest flux transition recorded for this track in sample clock</summary>
-		public int fluxMin;
-		/// <summary>Value of the largest flux transition recorded for this track in sample clock</summary>
-		public int fluxMax;
 		/// <summary>Smallest value of the clock computed by the DPLL for this track</summary>
 		/// This value is filled in the mfmDecode() method.</remarks>
 		public int clockMin;
@@ -82,16 +84,31 @@ public class ProcessStream {
 		//public int[] bitPosition;
 
 		/// <summary>Computed entropy for this track</summary>
+		/// <remarks>This value is set by computeHisto()</remarks>
 		public double entropy;
 		/// <summary>Histogram Array: Flux transition repartition</summary>
+		/// <remarks>This value is set by computeHisto()</remarks>
 		public int[] histogram;
 		/// <summary>List of maximums in the histogram</summary>
+		/// <remarks>This value is set by computeHisto()</remarks>
 		public List<int> bands;
+
+		/// <summary>Information from a read track</summary>
+		/// <remarks>This value is set by readTrack()()</remarks>
+		public ReadTrackInfo readTrack;
+
+		public ReadAddrInfo readAddr;
 	}
 
-	private static TrackData[,] _diskInfo = new TrackData[85, 2];	
-	//private static int[] _histo = null;
+	private static TrackData[,] _diskInfo = new TrackData[85, 2];
 	private static double _sampleClock = 0;
+
+
+	public static void reset() {
+		_diskInfo = null;
+		_diskInfo = new TrackData[85, 2];
+		_sampleClock = 0;
+	}
 
 
 
@@ -99,7 +116,7 @@ public class ProcessStream {
 	/// A two dimensions array that store TrackData structures for a complete disk.
 	/// There are 85 Tracks * 2 Sides TRackInfo structures.
 	/// </summary>
-	public static TrackData[,] DiskTracks {
+	public static TrackData[,] Disk {
 		get { return _diskInfo; }
 		set { _diskInfo = value; }
 	}

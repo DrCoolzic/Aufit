@@ -3,21 +3,21 @@
 <summary>Everything related to drawing the Track Data chart</summary>
 
 <div class="jlg">Copyright (C) 2011 Jean Louis-Guerin\n\n
-This file is part of the Atari Universal FD Image Tools project.\n\n
-The Atari Universal FD Image Tools project may be used and distributed without restriction provided
+This file is part of the Atari Universal FD Image Tool project.\n\n
+The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
 derivative work contains the original copyright notice and the associated
 disclaimer.\n\n
-The Atari Universal FD Image Tools project is free software; you can redistribute it
+The Atari Universal FD Image Tool project is free software; you can redistribute it
 and/or modify  it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
 of the License, or (at your option) any later version.\n\n
-The Atari Universal FD Image Tools project is distributed in the hope that it will be useful,
+The Atari Universal FD Image Tool project is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n
 See the GNU General Public License for more details.\n\n
 You should have received a copy of the GNU General Public License
-along with the Atari Universal FD Image Tools project; if not, write to the Free Software
+along with the Atari Universal FD Image Tool project; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</div>
 
 @author Jean Louis-Guerin
@@ -64,14 +64,20 @@ class DataDrawing {
 	/// <summary>
 	/// draw the data chart
 	/// </summary>
-	public void drawTrackData(FDC trackInfo) {
+	public void drawTrackData() {
 		if (ProcessStream.currentTrack().flux == null) return;
 		_dataChartLayout.chartResetCanvas();
 		_dataChartLayout.drawChartGrids();
 
-		ReadTrackInfo track = trackInfo.readTrack();
+		ReadTrackInfo track = ProcessStream.currentTrack().readTrack;
+		if (track == null) {
+			FDC fdc = new FDC();
+			track = fdc.readTrack();
+			ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readTrack = track;
+			fdc.readAddr();
+		}
 
-		if (track.sectors.Count > 1)
+		//if (track.sectors.Count > 1)
 			foreach (SectorInfo sector in track.sectors) {
 				Polygon polySect = new Polygon();
 				polySect.Stroke = Brushes.DarkBlue;
@@ -93,7 +99,7 @@ class DataDrawing {
 						bstart = (double)sector.phases[p].startTime / 1000000.0;
 						bstop = (double)(sector.phases[p].startTime + sector.phases[p].timeLength) / 1000000.0;
 						blength = (double)sector.phases[p].timeLength / 1000.0;
-								TextBox tb = new TextBox();
+						TextBox tb = new TextBox();
 						switch (p) {
 							case (byte)Phases.p_id:
 								polySect.Points.Add(_dataChartLayout.NormPoint(bstart, 0.2));
@@ -135,7 +141,6 @@ class DataDrawing {
 						plg.Points.Add(_dataChartLayout.NormPoint(bstart, 0.8));
 						plg.Points.Add(_dataChartLayout.NormPoint(bstop, 0.8));
 						plg.Points.Add(_dataChartLayout.NormPoint(bstop, 0.2));
-							
 						_dataChartLayout.GraphicCanvas.Children.Add(plg);
 					}	// non null phase
 				}	// all phases
@@ -147,14 +152,9 @@ class DataDrawing {
 
 				ToolTipService.SetToolTip(polySect, panel);
 				ToolTipService.SetShowDuration(polySect, 100000);
-
 				_dataChartLayout.GraphicCanvas.Children.Add(polySect);
 			}	// all sectors
-
-
 	}
-
-
 		
 
 }

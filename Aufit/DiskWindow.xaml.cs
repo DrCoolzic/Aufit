@@ -26,28 +26,35 @@ namespace Aufit {
 		}
 
 		public async void drawDisk() {
-			FDC disk = new FDC();
+			int saveRev = ProcessStream.Rev;
+			int saveTrack = ProcessStream.Track;
+
 			ProcessStream.Rev = 1;
-			// ProcessStream.Side = 0; pick current one
 			for (int track = 0; track < 84; track++) {
 				ProcessStream.Track = track;
-				ProcessStream.TrackData currentTrack = ProcessStream.currentTrack();
-				ReadTrackInfo trackInfo = await decodeAndReadAsync(disk);
+				ReadTrackInfo trackInfo = ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readTrack;
+				//if (trackInfo == null)
+					trackInfo = await decodeAndReadAsync();
 				drawDiskTrack(trackInfo, track);
 			}
+			ProcessStream.Track = saveTrack;
+			ProcessStream.Rev = saveRev;
 		}
 
 
-		public Task<ReadTrackInfo> decodeAndReadAsync(FDC disk) {
-			return Task<ReadTrackInfo>.Run(() => decodeAndRead(disk));
+		public Task<ReadTrackInfo> decodeAndReadAsync() {
+			return Task<ReadTrackInfo>.Run(() => decodeAndRead());
 		}
 
 
-		public ReadTrackInfo decodeAndRead(FDC disk) {
+		public ReadTrackInfo decodeAndRead() {
+			ReadTrackInfo trackInfo = ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readTrack;
+			if (trackInfo != null) return trackInfo;
 			ProcessStream.mfmDecode();
-			ReadTrackInfo trackInfo = disk.readTrack();
+			trackInfo = new FDC().readTrack();
 			return trackInfo;
 		}
+
 
 		public void drawDiskTrack(ReadTrackInfo trackInfo, int track) {
 			Point center = new Point(450, 450);
@@ -55,7 +62,8 @@ namespace Aufit {
 			double rad_start = 80;
 			double rad_inc = (rad_max - rad_start) / 85;
 			double radius = rad_max - track * rad_inc;
-;
+			tbDisk.Text = String.Format("Track {0}", track);
+
 		if (trackInfo.sectors.Count > 1) foreach (SectorInfo sector in trackInfo.sectors) {				
 				double startAngle = 0;
 				double stopAngle = 0;
