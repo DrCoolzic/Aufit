@@ -34,6 +34,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 
 using StreamNS;
+using Aufit;
 
 namespace ChartNS {
 /// <summary>
@@ -58,7 +59,7 @@ class HistoDrawing {
 	public void drawHisto(bool logScale, bool limitFlux) {
 		bool fixedValue = true;
 		_histoChartLayout.chartResetCanvas();
-		if ((_histoChartLayout == null) || (ProcessStream.currentTrack().flux == null)) return;
+		if ((_histoChartLayout == null) || (Global.currentTrack().flux == null)) return;
 
 		if (logScale) _histoChartLayout.HasYGrid = false;
 		else _histoChartLayout.HasYGrid = true;
@@ -66,25 +67,25 @@ class HistoDrawing {
 		int value;
 		// compute Xmax and Ymax
 		int xmin = Int32.MaxValue;
-		//int xmax = ProcessStream.Histo.Length;
-		int xmax = ProcessStream.currentTrack().histogram.Length;
+		//int xmax = Global.Histo.Length;
+		int xmax = Global.currentTrack().histogram.Length;
 		int ymin = 0;
 		int ymax = 0;
 
-		//for (int i = 0; i < ProcessStream.Histo.Length; i++) {
-		for (int i = 0; i < ProcessStream.currentTrack().histogram.Length; i++) {
+		//for (int i = 0; i < Global.Histo.Length; i++) {
+		for (int i = 0; i < Global.currentTrack().histogram.Length; i++) {
 			if (logScale)
-				value = (int)Math.Log(ProcessStream.currentTrack().histogram[i] + 1, 1.2);
+				value = (int)Math.Log(Global.currentTrack().histogram[i] + 1, 1.2);
 			else
-				value = ProcessStream.currentTrack().histogram[i];
+				value = Global.currentTrack().histogram[i];
 			if ((xmin == Int32.MaxValue) && (value != 0))
 				xmin = i - 1;
 			if (value > ymax) ymax = value;
 		}
 
 
-		xmin = ProcessStream.sampleToTiming(xmin);
-		xmax = ProcessStream.sampleToTiming(xmax);
+		xmin = Global.sampleToTiming(xmin);
+		xmax = Global.sampleToTiming(xmax);
 		if (fixedValue) {
 			//_viewportXmin = _min_flux_def_value;	// fixed value
 			//if (_viewportXmax < _max_flux_def_value) _viewportXmax = _max_flux_def_value; // fixed value
@@ -105,27 +106,27 @@ class HistoDrawing {
 		// first dummy point
 		pg.Points.Add(_histoChartLayout.NormPoint(0, 0));
 
-		Point[] points = new Point[ProcessStream.currentTrack().histogram.Length];
+		Point[] points = new Point[Global.currentTrack().histogram.Length];
 		// all pointsInViewport
-		for (int i = 0; i < ProcessStream.currentTrack().histogram.Length - 1; i++) {
+		for (int i = 0; i < Global.currentTrack().histogram.Length - 1; i++) {
 			if (logScale) {
-				value = (int)Math.Log(ProcessStream.currentTrack().histogram[i] + 1, 1.2);
+				value = (int)Math.Log(Global.currentTrack().histogram[i] + 1, 1.2);
 			}
 			else {
-				value = ProcessStream.currentTrack().histogram[i];
+				value = Global.currentTrack().histogram[i];
 			}
 
-			pg.Points.Add(_histoChartLayout.NormPoint((double)ProcessStream.sampleToTiming(i) / 1000.0, value));
-			points[i] = _histoChartLayout.NormPoint((double)ProcessStream.sampleToTiming(i) / 1000.0, value);
+			pg.Points.Add(_histoChartLayout.NormPoint((double)Global.sampleToTiming(i) / 1000.0, value));
+			points[i] = _histoChartLayout.NormPoint((double)Global.sampleToTiming(i) / 1000.0, value);
 		}
 		// force last point to zero
-		pg.Points.Add(_histoChartLayout.NormPoint((double)ProcessStream.sampleToTiming(ProcessStream.currentTrack().histogram.Length - 1) / 1000.0, 0));
-		points[ProcessStream.currentTrack().histogram.Length - 1] = _histoChartLayout.NormPoint((double)ProcessStream.sampleToTiming(ProcessStream.currentTrack().histogram.Length - 1) / 1000.0, 0);
+		pg.Points.Add(_histoChartLayout.NormPoint((double)Global.sampleToTiming(Global.currentTrack().histogram.Length - 1) / 1000.0, 0));
+		points[Global.currentTrack().histogram.Length - 1] = _histoChartLayout.NormPoint((double)Global.sampleToTiming(Global.currentTrack().histogram.Length - 1) / 1000.0, 0);
 
 		// add polygon to canvas
 		_histoChartLayout.GraphicCanvas.Children.Add(pg);
 
-		if (ProcessStream.currentTrack().entropy > 0) {
+		if (Global.currentTrack().entropy > 0) {
 			// compute control pointsInViewport for Bezier curve
 			Point[] cp1, cp2;
 			ovp.BezierSpline.GetCurveControlPoints(points, out cp1, out cp2);

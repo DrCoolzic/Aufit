@@ -73,7 +73,7 @@ public class DSR {
 	/// <summary>
 	/// Return the MFM data. Call extract() before.
 	/// </summary>
-	public ushort Mfm {
+	public ushort MFM {
 		get { return _mfmData; }
 	}
 

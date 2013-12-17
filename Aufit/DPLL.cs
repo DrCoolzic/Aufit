@@ -53,7 +53,7 @@ public class DPLL {
 	/// <summary>select HIGH_FIX value</summary>
 	private bool high;	
 	/// <summary>period_count initialized to 128 (128*16=2048=2^11)</summary>
-	private int periodCount;
+	private int count;
 	/// <summary>11 bits adder</summary>
 	private int adder;
 	/// <summary>lead/lag (msb) history (previous 2 msb)</summary>
@@ -70,7 +70,7 @@ public class DPLL {
 	public int Clock {
 		get {
 			// clock = (2048 * 125ns) / period_count
-			int clock = 256000 / periodCount;
+			int clock = 256000 / count;
 			if (density)
 				return clock / 2;
 			return clock;
@@ -89,7 +89,7 @@ public class DPLL {
 	private void reset() {
 		up = false;					// increment counter false
 		down = false;				// decrement counter false
-		periodCount = 128;			// period_count initialized to 128 (128*16=2048=2^11)
+		count = 128;				// period count initialized to 128 (128*16=2048=2^11)
 		adder = 0;					// reset the 11 bits adder
 		low = false;				// select LOW_FIX false
 		high = false;				// select HIGH_FIX false
@@ -141,43 +141,39 @@ public class DPLL {
 
 				// check data in inspection window
 				if (currentTime >= dataTime) {
-					if (!dataFound) // one time
+					if (!dataFound)			// one time
 						readPulse = true;
-					dataFound = true; // data found
+					dataFound = true;		// data found
 				}
 
 				// adjust period_count based on frequency correction
-				if (up && (periodCount < TOP))
-					periodCount++;
-				if (down && (periodCount > BOTTOM))
-					periodCount--;
+				if (up && (count < TOP))		count++;
+				if (down && (count > BOTTOM))	count--;
 
 				// update adder based on phase correction
-				if (low)
-					adder += LOW_FIX;
-				else if (high)
-					adder += HIGH_FIX;
-				else
-					adder += periodCount;
+				if (low)		adder += LOW_FIX;
+				else if (high)	adder += HIGH_FIX;
+				else			adder += count;
+					
 
 				if (readPulse) {
-					// during readPulse we compute frequency and phase correction
-					// 3 MSB of adder
-					int msb = (adder >> 8) & 0x7;
 					// -------------------- //
 					// frequency correction //
 					// -------------------- //
-					// compute error based on current upper MSB bit and history
-					switch ((msb & 0x4) + history) {
-						case 0: error = 2; break;	// 000 very fast
-						case 1: error = 1; break;	// 001 fast
-						case 2: error = 0; break;	// 010 OK
-						case 3: error = 0; break;	// 011 now adjusted
-						case 4: error = 0; break;	// 100 now adjusted
-						case 5: error = 0; break;	// 101 OK
-						case 6: error = 1; break;	// 110 slow
-						case 7: error = 2; break;	// 111 very slow
-					}
+
+					if ((adder & 0x400) == 0) switch(history) {		// adder msb == 0
+							case 0: error = 2; break;	// 000 very fast
+							case 1: error = 1; break;	// 001 fast
+							case 2: error = 0; break;	// 010 ok
+							case 3: error = 0; break;	// 011 now adjusted
+						}	// adder msb == 0
+					else switch (history) {							// adder msb == 1
+							case 0: error = 0; break;	// 100 now adjusted
+							case 1: error = 0; break;	// 101 ok
+							case 2: error = 1; break;	// 110 slow
+							case 3: error = 2; break;	// 111 very slow
+						}	// adder msb == 1
+
 
 					// compute and save new history based on adder msb and previous history
 					history = ((adder & 0x400) >> 9) | (history >> 1) & 0x7F;
@@ -196,12 +192,21 @@ public class DPLL {
 					// The most significant bit of the freq_amount controls increment (value 0)
 					// or decrement (value 1) of the adder
 					switch (error) {
-						case 0:
-							freqAmount = 0;
+						case 2:
+							switch ((adder >> 8) & 0x7) {
+								case 0: freqAmount = 0x4; break;	// 0100
+								case 1: freqAmount = 0x3; break;	// 0011
+								case 2: freqAmount = 0x2; break;	// 0010
+								case 3: freqAmount = 0x1; break;	// 0001
+								case 4: freqAmount = 0x9; break;	// 1001
+								case 5: freqAmount = 0xA; break;	// 1010
+								case 6: freqAmount = 0xB; break;	// 1011
+								case 7: freqAmount = 0xC; break;	// 1100
+							}
 							break;
 
 						case 1:
-							switch (msb) {
+							switch ((adder >> 8) & 0x7) {
 								case 0: freqAmount = 0x3; break;	// 0011
 								case 1: freqAmount = 0x2; break;	// 0010
 								case 2: freqAmount = 0x1; break;	// 0001
@@ -213,17 +218,8 @@ public class DPLL {
 							}
 							break;
 
-						case 2:
-							switch (msb) {
-								case 0: freqAmount = 0x4; break;	// 0100
-								case 1: freqAmount = 0x3; break;	// 0011
-								case 2: freqAmount = 0x2; break;	// 0010
-								case 3: freqAmount = 0x1; break;	// 0001
-								case 4: freqAmount = 0x9; break;	// 1001
-								case 5: freqAmount = 0xA; break;	// 1010
-								case 6: freqAmount = 0xB; break;	// 1011
-								case 7: freqAmount = 0xC; break;	// 1100
-							}
+						case 0: 
+							freqAmount = 0;
 							break;
 					} // set freq amount based on history
 
@@ -231,30 +227,26 @@ public class DPLL {
 					// Phase correction //
 					// ---------------- //
 					// set phase amount based on adder msbs
-
 					// The phase decoder depends on the value of ADDER_MSBs. If the phase leads, 
 					// the most significant bit of phase_amount indicates with a '0', that the next 
 					// rollover should appear earlier. In case of a phase lag, the next rollover 
 					// should come later (indicated by a '1' of the most significant bit of phase_amount
 					// bit 3 used to control high(0) or low(1) select
-					switch (msb) {
-						case 0: phaseAmount = 0x4; break;	// 0100 huge lead
-						case 1: phaseAmount = 0x3; break;	// 0011 large lead
-						case 2: phaseAmount = 0x2; break;	// 0010 medium lead
-						case 3: phaseAmount = 0x1; break;	// 0001 small lead
-						case 4: phaseAmount = 0x9; break;	// 1001 small lag
-						case 5: phaseAmount = 0xA; break;	// 1010 medium lag
-						case 6: phaseAmount = 0xB; break;	// 1011 large lag
-						case 7: phaseAmount = 0xC; break;	// 1100 huge lag
+					switch ((adder >> 8) & 0x7) {	// adder 3 msb
+						case 0: phaseAmount = 0x4; break;		// 000 huge lead
+						case 1: phaseAmount = 0x3; break;		// 001 large lead
+						case 2: phaseAmount = 0x2; break;		// 010 medium lead
+						case 3: phaseAmount = 0x1; break;		// 011 small lead
+						case 4: phaseAmount = 0x9; break;		// 100 small lag
+						case 5: phaseAmount = 0xA; break;		// 101 medium lag
+						case 6: phaseAmount = 0xB; break;		// 110 large lag
+						case 7: phaseAmount = 0xC; break;		// 111 huge lag
 					}
-
 				} // readPulse == true
 
 				else {
-					if ((freqAmount & 0x7) != 0)
-						freqAmount--;
-					if ((phaseAmount & 0x7) != 0)
-						phaseAmount--;
+					if ((freqAmount & 0x7) != 0)	freqAmount--;
+					if ((phaseAmount & 0x7) != 0)	phaseAmount--;
 				} // readPulse == false
 
 				// set freq correction flags

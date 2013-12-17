@@ -41,6 +41,8 @@ namespace Aufit {
 		private DiskWindow _diskWindow = null;
 		private bool _diskWindowIsOpen = false;
 
+		private string _rootName;
+
 		//public double MinClock { get; set; }
 		//public double MaxClock { get; set; }
 		//public double minFlux { get; set; }
@@ -52,7 +54,7 @@ namespace Aufit {
 		public MainWindow() {
 			InitializeComponent();
 
-			_fluxDrawing = new FluxDrawing(fluxGrid, cvTextFlux, cvGraphicFlux, tbFluxInfo);
+			_fluxDrawing = new FluxDrawing(fluxGrid, cvTextFlux, cvGraphicFlux, this);
 			_fluxDrawing.SlowDraw = cbSlow.IsChecked.Value;
 			_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
 			_fluxDrawing.Chart.FixOffset = true;
@@ -174,12 +176,12 @@ namespace Aufit {
 
 		#region options
 		private void cbHistoLogClick(object sender, RoutedEventArgs e) {
-			ProcessStream.computeHisto(infoBox);
+			ProcessStream.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox);
 			_histoDrawing.drawHisto(cbHistoLog.IsChecked.Value, cbLimitFlux.IsChecked.Value);
 		}
 
 		private void cbLimitClick(object sender, RoutedEventArgs e) {
-			ProcessStream.computeHisto(infoBox);
+			ProcessStream.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox);
 			_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
 			_histoDrawing.drawHisto(cbHistoLog.IsChecked.Value, cbLimitFlux.IsChecked.Value);
 			_fluxDrawing.setFluxDefault();
@@ -194,35 +196,35 @@ namespace Aufit {
 
 		private void minusRevClicked(object sender, RoutedEventArgs e) {
 			// now we limit the Rev number so we never use the last one
-			if (ProcessStream.currentTrack().indexes == null) return;
-			if (ProcessStream.Rev == 0)
-				ProcessStream.Rev = ProcessStream.currentTrack().indexCount - 2;
-			else ProcessStream.Rev--;
+			if (Global.currentTrack().indexes == null) return;
+			if (Global.Rev == 0)
+				Global.Rev = Global.currentTrack().indexCount - 2;
+			else Global.Rev--;
 
-			revolution.Text = ProcessStream.Rev.ToString();
-			ProcessStream.computeHisto(infoBox);
+			revolution.Text = Global.Rev.ToString();
+			ProcessStream.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox);
 			_histoDrawing.drawHisto(cbHistoLog.IsChecked.Value, cbLimitFlux.IsChecked.Value);
-			if ((ProcessStream.Rev == 0) || (ProcessStream.Rev == ProcessStream.currentTrack().indexes.Length - 2))
-				_fluxDrawing.setFluxDefault();
-			//_fluxDrawing.drawFlux();
-			new FDC().clearAll();
+			//if ((Global.Rev == 0) || (Global.Rev == Global.currentTrack().indexes.Length - 2))
+			//	_fluxDrawing.setFluxDefault();
+
+			FDC.clearTrackContent();
 			drawCharts();
 		}
 
 		private void plusRevClicked(object sender, RoutedEventArgs e) {
 			// now we limit the Rev number so we never use the last one
-			if (ProcessStream.currentTrack().indexes == null) return;
-			if (ProcessStream.Rev == (ProcessStream.currentTrack().indexCount - 2))
-				ProcessStream.Rev = 0;
-			else ProcessStream.Rev++;
+			if (Global.currentTrack().indexes == null) return;
+			if (Global.Rev == (Global.currentTrack().indexCount - 2))
+				Global.Rev = 0;
+			else Global.Rev++;
 
-			revolution.Text = ProcessStream.Rev.ToString();
-			ProcessStream.computeHisto(infoBox);
+			revolution.Text = Global.Rev.ToString();
+			ProcessStream.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox);
 			_histoDrawing.drawHisto(cbHistoLog.IsChecked.Value, cbLimitFlux.IsChecked.Value);
-			if ((ProcessStream.Rev == 0) || (ProcessStream.Rev == 1))
-				_fluxDrawing.setFluxDefault();
+			//if ((Global.Rev == 0) || (Global.Rev == 1))
+			//	_fluxDrawing.setFluxDefault();
 			//_fluxDrawing.drawFlux();
-			new FDC().clearAll();
+			FDC.clearTrackContent();
 			drawCharts();
 		}
 		#endregion
@@ -232,11 +234,11 @@ namespace Aufit {
 		/// Display all the charts for the current Track/Side/Rev
 		/// </summary>
 		public void drawCharts() {
-			revolution.Text = ProcessStream.Rev.ToString();
-			if (ProcessStream.Disk[ProcessStream.Track, ProcessStream.Side].readTrack == null)
+			revolution.Text = Global.Rev.ToString();
+			if (Global.Disk[Global.Track, Global.Side].trackContent == null)
 				ProcessStream.mfmDecode();
 
-			cbLimitFlux.IsChecked = (ProcessStream.computeHisto(infoBox) > 0);
+			cbLimitFlux.IsChecked = (ProcessStream.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox) > 0);
 			_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
 			_histoDrawing.drawHisto(cbHistoLog.IsChecked.Value, cbLimitFlux.IsChecked.Value);
 
@@ -259,17 +261,17 @@ namespace Aufit {
 			bool? ok = ofd.ShowDialog();
 			if (ok == true) {
 				FileName.Text = ofd.FileName;
-				ProcessStream.Track = ProcessStream.Side = 0;
-				ProcessStream.Rev = 1;
+				Global.Track = Global.Side = 0;
+				Global.Rev = 1;
 
 				BM1.Visibility = Visibility.Hidden;
 				BM2.Visibility = Visibility.Hidden;
 				tabCtrl.Width = matrixGrid.ActualWidth;
 				Grid.SetColumn(tabCtrl, 0);
 				Grid.SetColumnSpan(tabCtrl, 3);
-				ProcessStream.reset();
+				Global.resetDisk();
 
-				bool status = ProcessStream.readStreamTrack(ofd.FileName, ProcessStream.Track, ProcessStream.Side);
+				bool status = ProcessStream.readStreamTrack(ofd.FileName, Global.Track, Global.Side);
 				if (status) {
 					infoBox.Clear();
 					drawCharts();
@@ -287,7 +289,7 @@ namespace Aufit {
 				DirectoryInfo di = new DirectoryInfo(selectedDir);
 				FileInfo[] fi = di.GetFiles("*.raw");
 				if (fi.Length != 0) {
-					ProcessStream.Rev = 1;
+					Global.Rev = 1;
 
 					BM1.Visibility = Visibility.Visible;
 					BM2.Visibility = Visibility.Visible;
@@ -300,12 +302,13 @@ namespace Aufit {
 					string path = fi[0].DirectoryName;
 					string root = file.Remove(file.Length - 8, 8);
 					FileName.Text = selectedDir;
-					ProcessStream.reset();
+					Global.resetDisk();
 
 					if (cbDispRead.IsChecked == true)
 						readAllTracksAsync(path, root);
 					else
 						readAllTracksTasks(path, root);
+					_rootName = root;
 				}
 				else
 					FileName.Text = "Sorry no Stream files found in this directory";
@@ -328,16 +331,16 @@ namespace Aufit {
 			Task.WaitAll(tasks);
 
 			ButtonMatrix.clearButtons();
-			for (ProcessStream.Side = 0; ProcessStream.Side < 2; ProcessStream.Side++) {
-				for (ProcessStream.Track = 0; ProcessStream.Track < 84; ProcessStream.Track++) {
-					double entropy = ProcessStream.computeHisto(infoBox);
-					if (ProcessStream.currentTrack().flux != null)
-						ButtonMatrix.setButtonBG(entropy);
+			for (int side = 0; side < 2; side++) {
+				for (int track = 0; track < 84; track++) {
+					double entropy = ProcessStream.computeHisto(track, side, 1, infoBox);
+					if (Global.Disk[track, side].flux != null)
+						ButtonMatrix.setButtonBG(track, side, entropy);
 				}
 			}
 			ButtonMatrix.selectButton(0, 0);
-
-			ProcessStream.Track = ProcessStream.Side = 0;
+			Global.Track = Global.Side = 0;
+			Global.Rev = 1;
 			infoBox.Clear();
 			drawCharts();
 		}
@@ -354,23 +357,23 @@ namespace Aufit {
 			infoBox.Clear();
 			ButtonMatrix.clearButtons();
 
-			for (ProcessStream.Side = 0; ProcessStream.Side < 2; ProcessStream.Side++) {
-				for (ProcessStream.Track = 0; ProcessStream.Track < 84; ProcessStream.Track += 1) {
-					fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, ProcessStream.Track, ProcessStream.Side);
-					bool streamOK = await ProcessStream.readStreamTrackAsync(fname, ProcessStream.Track, ProcessStream.Side);
+			for (int side = 0; side < 2; side++) {
+				for (int track = 0; track < 84; track++) {
+					fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, track, side);
+					bool streamOK = await ProcessStream.readStreamTrackAsync(fname, track, side);
 					if (streamOK) {
 						//drawCharts();
-						ProcessStream.computeHisto(infoBox);
-						ButtonMatrix.setButtonBG(ProcessStream.currentTrack().entropy);
+						ProcessStream.computeHisto(track, side, 1, infoBox);
+						ButtonMatrix.setButtonBG(track, side, Global.Disk[track, side].entropy);
 					}
 				}
 			}
 
 			_fluxDrawing.FastDraw = false;
-			ProcessStream.Track = 0;
-			ProcessStream.Side = 0;
-			if (ProcessStream.currentTrack().flux != null) {
-				ButtonMatrix.selectButton(ProcessStream.Track, ProcessStream.Side);
+			Global.Track = Global.Side = 0;
+			Global.Rev = 1;
+			if (Global.currentTrack().flux != null) {
+				ButtonMatrix.selectButton(Global.Track, Global.Side);
 			}
 			drawCharts();
 		}
@@ -381,8 +384,8 @@ namespace Aufit {
 
 			if (BM1.Visibility != Visibility.Visible) return;
 
-			int track = ProcessStream.Track;
-			int side = ProcessStream.Side;
+			int track = Global.Track;
+			int side = Global.Side;
 			if (e.Key == Key.Left) {
 				if (track > 0) track--;
 				else {
@@ -423,9 +426,9 @@ namespace Aufit {
 			else
 				return;	// other keys
 
-			if (ProcessStream.Disk[track, side].flux == null) return;
-			ProcessStream.Track = track;
-			ProcessStream.Side = side;
+			if (Global.Disk[track, side].flux == null) return;
+			Global.Track = track;
+			Global.Side = side;
 			ButtonMatrix.deselectButton();
 			ButtonMatrix.selectButton(track, side);
 			drawCharts();
@@ -448,7 +451,28 @@ namespace Aufit {
 
 			if (e.ClickCount > 1) {
 				Point p = e.GetPosition(_dataDrawing.Chart.GraphicCanvas);
-				infoBox.AppendText(String.Format("Mouse {0} - {1} \n", _dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y));
+				int pos = (int) _dataDrawing.Chart.WorldPoint(p).X * 1000000;
+
+				byte index;
+				for (index = 0; index < Global.currentTrack().trackContent.sectors.Count; index++) {
+					if ((Global.currentTrack().trackContent.sectors[index].startTime < pos) && (Global.currentTrack().trackContent.sectors[index].endTime > pos)) {
+						// infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", _dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, index));
+						SectorContent sect = FDC.findSectorContent(Global.Track, Global.Side, index, Global.currentTrack().trackContent.sectors[index].startTime);
+						TrackBuffer buffer = sect.buffer;
+						string message = String.Format(" - {0} {1}", (sect.dataBlock.crc == 0) ? "crc OK" : "Bad crc", (sect.mask != null) ? "Has fuzzy bits" : "");
+						if (_bufferWindowIsOpen)
+							_bufferWindow.Close();
+
+
+						_bufferWindow = new BufferWindow(buffer, message);
+						_bufferWindow.Closed += new EventHandler(bufferWindowClosed);
+						_bufferWindowIsOpen = true;
+						_bufferWindow.Show();
+
+					}
+				}
+
+
 			}
 		}
 
@@ -464,11 +488,11 @@ namespace Aufit {
 		}
 
 		private void btBufferClick(object sender, RoutedEventArgs e) {
-			// TODO if (_trackInfo.TrackInfo == null) return;			
+			if (Global.currentTrack().trackContent == null) return;			
 			if (_bufferWindowIsOpen)
 				_bufferWindow.Close();
 
-			_bufferWindow = new BufferWindow(ProcessStream.currentTrack().readTrack.buffer);
+			_bufferWindow = new BufferWindow(Global.currentTrack().trackContent.buffer, String.Format(" - Track length {0} ms", Global.currentTrack().trackContent.timeLength / 1000));
 			_bufferWindow.Closed += new EventHandler(bufferWindowClosed);
 			_bufferWindowIsOpen = true;
 			_bufferWindow.Show();
@@ -480,7 +504,8 @@ namespace Aufit {
 			if (_diskWindowIsOpen)
 				_diskWindow.Close();
 
-			_diskWindow = new DiskWindow();
+			string message = String.Format("Disk {0} (Side {1})", _rootName, Global.Side);
+			_diskWindow = new DiskWindow(message);
 			_diskWindow.Closed += new EventHandler(diskWindowClosed);
 			_diskWindowIsOpen = true;
 			_diskWindow.Show();

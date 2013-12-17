@@ -139,8 +139,8 @@ namespace Aufit {
 		/// Set background color of button based on entropy
 		/// </summary>
 		/// <param name="entropy">Entropy of the track</param>
-		public static void setButtonBG(double entropy) {
-			_buttons[ProcessStream.Track / 10, ProcessStream.Track % 10, ProcessStream.Side].Background =
+		public static void setButtonBG(int track, int side, double entropy) {
+			_buttons[track / 10, track % 10, side].Background =
 				(entropy < 2000) ? (entropy < 0) ? Brushes.LightSlateGray : Brushes.Orange : Brushes.LimeGreen;
 		}
 
@@ -159,10 +159,10 @@ namespace Aufit {
 				Int32 y = tuple.Item3 - 1;
 				Int32 z = tuple.Item4 - 1;
 				int track = 10 * x + y;
-				if (ProcessStream.Disk[track, z].flux == null) return false;
+				if (Global.Disk[track, z].flux == null) return false;
 				deselectButton();
-				ProcessStream.Track = track;
-				ProcessStream.Side = z;
+				Global.Track = track;
+				Global.Side = z;
 				selectButton(track, z);
 			}
 			return (tuple != null);

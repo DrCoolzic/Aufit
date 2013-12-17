@@ -49,20 +49,20 @@ namespace Aufit {
 		/// Create a new BufferWindow object.
 		/// </summary>
 		/// <param name="buffer">The buffer to display</param>
-		public BufferWindow(TrackBuffer buffer) {
+		public BufferWindow(TrackBuffer buffer, string message) {
 			InitializeComponent();
-			drawBuffer(buffer);
+			drawBuffer(buffer, message);
 		}
 
 		/// <summary>
 		/// Draw the content of the buffer
 		/// </summary>
-		public void drawBuffer(TrackBuffer buffer) {
+		public void drawBuffer(TrackBuffer buffer, string message) {
 			displayBuffer.FontFamily = new FontFamily("Courier New");
 			displayBuffer.FontSize = 15;
 			displayBuffer.FontStyle = FontStyles.Normal;
 			displayBuffer.FontWeight = FontWeights.Normal;
-			displayBuffer.Inlines.Add(String.Format("Bytes in buffer: {0}\n", buffer.Bytes.Count));
+			displayBuffer.Inlines.Add(String.Format("Bytes in buffer: {0} {1}\n", buffer.Bytes.Count, message));
 			for (int i = 0; i < buffer.Bytes.Count; i += 16) {				
 				displayBuffer.Inlines.Add(String.Format("{0:D5}  ", i));
 				displayBuffer.Inlines.Add(new Run(

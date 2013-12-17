@@ -36,6 +36,7 @@ using System.Windows.Shapes;
 
 using WD1772NS;
 using StreamNS;
+using Aufit;
 
 namespace ChartNS {
 /// <summary>
@@ -45,9 +46,9 @@ class FluxDrawing {
 	private FluxEnsemble _fluxEnsemble;
 	private ChartLayout _fluxChartLayout;
 
-	private TextBox _tbInfo;
 	private double _viewportXmin;
 	private double _viewportXmax;
+	private MainWindow _win;
 
 	private Point _startPoint = new Point();
 	private Point _endPoint = new Point();
@@ -110,9 +111,9 @@ class FluxDrawing {
 	/// <param name="text">Test canvas in the ChartLayout</param>
 	/// <param name="graphic">Graphic canvas in the ChartLayout</param>
 	/// <param name="tbInfo">Text box used to display information</param>
-	public FluxDrawing(Grid grid, Canvas text, Canvas graphic, TextBox tbInfo) {
+	public FluxDrawing(Grid grid, Canvas text, Canvas graphic, MainWindow win) {
 		_fluxChartLayout = new ChartLayout(grid, text, graphic);
-		_tbInfo = tbInfo;
+		_win = win;
 		FastDraw = false;
 		SlowDraw = false;
 		LimitFlux = true;
@@ -124,17 +125,24 @@ class FluxDrawing {
 	/// </summary>
 	public void drawFlux() {
 		_fluxChartLayout.chartResetCanvas();
-		if (ProcessStream.currentTrack().flux == null) return;
+		if (Global.currentTrack().flux == null) return;
 		_fluxChartLayout.drawChartGrids();
 
 		DSR dsr = new DSR();
 
-		ProcessStream.TrackData t = ProcessStream.currentTrack();
-		int nbRev = t.indexCount - 1;
-		int start = ProcessStream.Start;
-		int stop = ProcessStream.Stop;
-		int indexFirstFluxCorrection = ProcessStream.IndexFirstFluxCorrection;
-
+		Global.TrackData currentTrack = Global.currentTrack();
+		int nbRev = currentTrack.indexCount - 1;
+		int start, stop, indexFirstFluxCorrection;
+		if (Global.Rev > 0) {
+			start = currentTrack.indexes[Global.Rev - 1].fluxPosition;
+			stop = currentTrack.indexes[Global.Rev].fluxPosition - 1;
+			indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[Global.Rev - 1].preIndexTime);
+		}	// one rev
+		else {
+			start = currentTrack.indexes[0].fluxPosition;
+			stop = currentTrack.indexes[nbRev].fluxPosition;
+			indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[0].preIndexTime);
+		}	// all rev
 
 		int maxFlux = 0;
 		int minFlux = Int32.MaxValue;
@@ -147,7 +155,7 @@ class FluxDrawing {
 		if (_fluxChartLayout.zoomed()) {
 			//first = 0;
 			for (int i = start; i < stop; i++) {
-				int flux = ProcessStream.sampleToTiming(t.flux[i]);
+				int flux = Global.sampleToTiming(currentTrack.flux[i]);
 				if (i == start)
 					flux -= indexFirstFluxCorrection;
 				currentTime += flux;
@@ -179,7 +187,7 @@ class FluxDrawing {
 
 		for (int i = start; i < stop; i++) {
 
-			int flux = ProcessStream.sampleToTiming(t.flux[i]);
+			int flux = Global.sampleToTiming(currentTrack.flux[i]);
 			if (i == start)
 				flux -= indexFirstFluxCorrection;
 			if (flux > maxFlux) maxFlux = flux;
@@ -187,9 +195,9 @@ class FluxDrawing {
 			currentTime += flux;
 
 			// black line for revolution
-			if (ProcessStream.Rev == 0) {
-				for (int j = 1; j < ProcessStream.currentTrack().indexCount - 1; j++) {
-					if (ProcessStream.currentTrack().indexes[j].fluxPosition -1 == i) {
+			if (Global.Rev == 0) {
+				for (int j = 1; j < Global.currentTrack().indexCount - 1; j++) {
+					if (Global.currentTrack().indexes[j].fluxPosition -1 == i) {
 						Line revLine = new Line();
 						revLine.Stroke = Brushes.Black;
 						revLine.StrokeThickness = 1.5;
@@ -203,30 +211,33 @@ class FluxDrawing {
 			}
 
 			// red line for sync
-			int nbWin = t.nbWin[i];
-			int clk = t.clock[i];
+			int nbWin = currentTrack.nbWin[i];
+			int clk = currentTrack.clock[i];
 			dsr.shiftBitsIn(nbWin);	// push data in register
 			while (dsr.byteReady()) {
 				int bitShift = dsr.searchSynch();	// search sync
 				dsr.extract();						// get one mfm
 				if (dsr.SyncFound) {
 					syncCount++;
-					//if (syncCount > 2) {
 					Line syncLine = new Line();
-					if (dsr.Data == 0xA1) {
+					if ((dsr.Data == 0xA1) && (_win.cbA1.IsChecked.Value)) {
 						syncLine.Stroke = Brushes.Red;
-						syncLine.StrokeThickness = 2;
+						syncLine.StrokeThickness = 1;
+						syncLine.X1 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
+						syncLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
+						syncLine.X2 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
+						syncLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
+						_fluxChartLayout.GraphicCanvas.Children.Add(syncLine);
 					}
-					else {
+					else if ((dsr.Data == 0xC2) && (_win.cbC2.IsChecked.Value)) {
 						syncLine.Stroke = Brushes.Blue;
 						syncLine.StrokeThickness = 0.4;
+						syncLine.X1 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
+						syncLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
+						syncLine.X2 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
+						syncLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
+						_fluxChartLayout.GraphicCanvas.Children.Add(syncLine);
 					}
-					syncLine.X1 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
-					syncLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
-					syncLine.X2 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
-					syncLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
-					_fluxChartLayout.GraphicCanvas.Children.Add(syncLine);
-					// }
 				}	// sync byte
 				else syncCount = 0;
 			}
@@ -241,7 +252,7 @@ class FluxDrawing {
 			//if (i % 2 == 0) fluxPoints[pointsInViewport].colorIndex += 2; ;
 
 			double r = (zoom > 1) ? (zoom > 25) ? (zoom > 50) ? 2.5 : 1.8 : 1.2 : 0.7;
-			if ((flux > 10000) && (ProcessStream.currentTrack().entropy > 0)) {
+			if ((flux > 10000) && (Global.currentTrack().entropy > 0)) {
 				r = 4;
 				fluxPoints[pointsInViewport].colorIndex = 4;
 			}
@@ -255,21 +266,22 @@ class FluxDrawing {
 		_fluxEnsemble = new FluxEnsemble(fluxPoints);
 		_fluxChartLayout.GraphicCanvas.Children.Add(_fluxEnsemble);
 
-		_tbInfo.Clear();
-		_tbInfo.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", ProcessStream.Track, ProcessStream.Side, ProcessStream.Rev));
-		_tbInfo.AppendText(String.Format(" - Flux range: {0:F2} {1:F2} µs", (double)minFlux / 1000.0, (double)maxFlux / 1000.0));
-		_tbInfo.AppendText(String.Format(" - Track length: {0:F3} ms" , (double)(currentTime + indexFirstFluxCorrection) / 1000000.0));
-		_tbInfo.AppendText(String.Format(" => z={0:F1} s={1} p={2}", _fluxChartLayout.zoom(), SpeedUp, pointsInViewport));
+
+		_win.tbFluxInfo.Clear();
+		_win.tbFluxInfo.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", Global.Track, Global.Side, Global.Rev));
+		_win.tbFluxInfo.AppendText(String.Format(" - Flux range: {0:F2} {1:F2} µs", (double)minFlux / 1000.0, (double)maxFlux / 1000.0));
+		_win.tbFluxInfo.AppendText(String.Format(" - Track length: {0:F3} ms", (double)(currentTime + indexFirstFluxCorrection) / 1000000.0));
+		_win.tbFluxInfo.AppendText(String.Format(" => z={0:F1} s={1} p={2}", _fluxChartLayout.zoom(), SpeedUp, pointsInViewport));
 	}
 
 	/// <summary>
 	/// Set the default viewport values for the flux graphic canvas
 	/// </summary>
 	public void setFluxDefault() {
-		if ((_fluxChartLayout == null) || (ProcessStream.currentTrack().flux == null)) return;
+		if ((_fluxChartLayout == null) || (Global.currentTrack().flux == null)) return;
 
-		ProcessStream.TrackData track = ProcessStream.currentTrack();
-		int rev = ProcessStream.Rev;
+		Global.TrackData track = Global.currentTrack();
+		int rev = Global.Rev;
 
 		_viewportXmin = 0;
 		if (rev > 0)
@@ -277,10 +289,10 @@ class FluxDrawing {
 		else
 			_viewportXmax = 800;
 
-		int max = ProcessStream.sampleToTiming(track.fluxMax) + 500;
+		int max = Global.sampleToTiming(track.fluxMax) + 500;
 		if (max < 10000) max = 10000;
 		if (LimitFlux && (max > 10000)) max = 10000;
-		int min = ProcessStream.sampleToTiming(track.fluxMin) - 500;
+		int min = Global.sampleToTiming(track.fluxMin) - 500;
 		if (min < 2000) min = 2000;
 
 		_fluxChartLayout.setDefaultViewport(_viewportXmin, _viewportXmax, min / 1000, max / 1000);

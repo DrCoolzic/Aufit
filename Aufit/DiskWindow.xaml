@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="DiskWindow" Height="920" Width="920">
     <Grid Margin="0" Width="900" Height="900" Background="#FF636E78">
-        <TextBox Name="tbDisk" Width="200" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+        <TextBox Name="tbDisk" Width="250" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left"/>
         <Canvas Name="cvDisk" Margin="0" >
+            <Line Stroke="White" X1="450" Y1="450" X2="450" Y2="900" />
         </Canvas>
     </Grid>
 </Window>

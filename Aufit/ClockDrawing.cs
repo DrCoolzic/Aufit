@@ -34,6 +34,7 @@ using System.Windows.Shapes;
 using System.Windows;
 
 using StreamNS;
+using Aufit;
 
 namespace ChartNS {
 /// <summary>
@@ -83,35 +84,53 @@ class ClockDrawing {
 	/// </summary>
 	/// <param name="speedUp"></param>
 	public void drawClock(int speedUp) {
-		if ((_clockChartLayout == null) || (ProcessStream.currentTrack().flux == null)) return;
+		if ((_clockChartLayout == null) || (Global.currentTrack().flux == null)) return;
 
 		_clockChartLayout.chartResetCanvas();
 		_clockChartLayout.drawChartGrids();
 
-		ProcessStream.TrackData track = ProcessStream.currentTrack();
-		int nbRev = track.indexCount - 1;
-		int start = ProcessStream.Start;
-		int stop = ProcessStream.Stop;
-		int indexFirstFluxCorrection = ProcessStream.IndexFirstFluxCorrection;
+		Global.TrackData currentTrack = Global.currentTrack();
+		int nbRev = currentTrack.indexCount - 1;
+		int start, stop, indexFirstFluxCorrection;
+		if (Global.Rev > 0) {
+			start = currentTrack.indexes[Global.Rev - 1].fluxPosition;
+			stop = currentTrack.indexes[Global.Rev].fluxPosition - 1;
+			indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[Global.Rev - 1].preIndexTime);
+		}	// one rev
+		else {
+			start = currentTrack.indexes[0].fluxPosition;
+			stop = currentTrack.indexes[nbRev].fluxPosition;
+			indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[0].preIndexTime);
+		}	// all rev
+
 		int currentTime = 0;
 
 		Polyline clockLine = new Polyline();
 		clockLine.Stroke = Brushes.Black;
 		clockLine.StrokeThickness = 1;
 
-		//int n_1, n_2, n_3, n_4;
-		//n_1 = n_2 = n_3 = n_4 = 0;
+		int lastFlux = currentTrack.indexes[nbRev].fluxPosition;
+		int bnForAvg = 50;
 
 		// populate
 		for (int i = start; i < stop; i++) {
-			int flux = ProcessStream.sampleToTiming(track.flux[i]);
+			int flux = Global.sampleToTiming(currentTrack.flux[i]);
 			if (i == start) flux -= indexFirstFluxCorrection;
 			currentTime += flux;
 
-			int clk = track.clock[i];
+			int clk = currentTrack.clock[i];
 
-			//int mean = (clk + n_1 + n_2 + n_3 + n_4) / 5;
-			//n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = clk;
+			int avgClock = 0;
+			int avgCount = 0;
+			for (int j = 0; j < bnForAvg; j++) {
+				int index = i - bnForAvg/2 + j;
+				if ((index >= 0) && (index <= lastFlux)) {
+					avgClock += currentTrack.clock[index];
+					avgCount++;
+				}
+			}
+			if (avgCount > 0) clk = avgClock / avgCount;
+
 			if (i % speedUp != 0) continue;
 			if (!_clockChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)clk)) continue;
 			clockLine.Points.Add(_clockChartLayout.NormPoint((double)currentTime / 1000000.0, clk));
@@ -159,17 +178,19 @@ class ClockDrawing {
 
 	}
 
+
 	/// <summary>
 	/// Set the clock chart viewport default value
 	/// </summary>
 	public void setClockDefault() {
-		if ((_clockChartLayout == null) || (ProcessStream.currentTrack().flux == null)) return;
+		if ((_clockChartLayout == null) || (Global.currentTrack().flux == null)) return;
 
-		ProcessStream.TrackData track = ProcessStream.currentTrack();
+		Global.TrackData track = Global.currentTrack();
 		int fluxXmin = 0;
 		int fluxXmax = 200;
-		_clockMin = ProcessStream.currentTrack().clockMin;
-		_clockMax = ProcessStream.currentTrack().clockMax;
+		if (Global.Rev == 0) fluxXmax = 800;
+		_clockMin = Global.currentTrack().clockMin;
+		_clockMax = Global.currentTrack().clockMax;
 
 		_clockChartLayout.setViewport(fluxXmin, fluxXmax, _clockMin, _clockMax);
 	}

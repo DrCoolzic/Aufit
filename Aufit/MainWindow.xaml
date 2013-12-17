@@ -90,10 +90,17 @@
         </Grid>
 
         <Grid Grid.Row="3" Margin="10,0,10,0"  x:Name ="fluxGrid"  ClipToBounds="False" Background="Transparent" SizeChanged="fluxGridSizeChanged" >
-            <Canvas Margin="2" Name="cvTextFlux" ClipToBounds="True">
+            <Canvas Margin="2" Name="cvTextFlux" ClipToBounds="True" Grid.ColumnSpan="2">
                 <Canvas Name="cvGraphicFlux" ClipToBounds="True" Background="Transparent" MouseLeftButtonDown="fluxMouseLBD" MouseWheel="fluxMouseWheel" 
                             MouseLeftButtonUp="fluxMouseLBU" MouseMove="fluxMouseMove" MouseRightButtonDown="fluxMouseRBDown"/>
             </Canvas>
+            <StackPanel Grid.Column="5" Margin="10,20,15,0" Orientation="Horizontal" HorizontalAlignment="Right">
+                <CheckBox Grid.Column="8" x:Name="cbA1" Content="A1" Margin="5,0,5,0" VerticalAlignment="Top" 
+                      FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
+                <CheckBox Grid.Column="9" x:Name="cbC2" Content="C2" Margin="5,0,5,0" VerticalAlignment="Top" Click="cbSlowClick"
+                      FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
+            </StackPanel>
+
         </Grid>
 
         <Grid Grid.Row="4" Margin="10,0,10,0"  x:Name ="clockGrid"  ClipToBounds="False" SizeChanged="clockGridSizeChanged" >
