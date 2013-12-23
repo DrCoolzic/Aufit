@@ -53,8 +53,6 @@ namespace Aufit {
 			public int startTime;
 			/// <summary>Current Phase (id / inner gap / data / outer gap</summary>
 			public Phases phase;
-			/// <summary>Sync information</summary>
-			public byte syncInfo;
 		}
 
 		private List<TrackByte> _bytes;
@@ -84,7 +82,7 @@ namespace Aufit {
 		/// <param name="density">Current Clock value</param>
 		/// <param name="syncInfo">Flag if byte is sync & number of shift</param>
 		/// <param name="startTime">Byte start time</param>
-		public void addByte(byte data, byte clock, ushort mfm, Phases phase, ushort density, byte syncInfo, int startTime) {
+		public void addByte(byte data, byte clock, ushort mfm, Phases phase, ushort density, int startTime) {
 			TrackByte b = new TrackByte();
 			b.dataByte = data;
 			b.clockByte = clock;
@@ -92,7 +90,6 @@ namespace Aufit {
 			b.density = density;
 			b.startTime = startTime;
 			b.phase = phase;
-			b.syncInfo = syncInfo;
 			_bytes.Add(b);
 		}
 

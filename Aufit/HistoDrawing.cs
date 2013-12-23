@@ -59,7 +59,7 @@ class HistoDrawing {
 	public void drawHisto(bool logScale, bool limitFlux) {
 		bool fixedValue = true;
 		_histoChartLayout.chartResetCanvas();
-		if ((_histoChartLayout == null) || (Global.currentTrack().flux == null)) return;
+		if ((_histoChartLayout == null) || (Global.currentTrack().fluxData == null)) return;
 
 		if (logScale) _histoChartLayout.HasYGrid = false;
 		else _histoChartLayout.HasYGrid = true;

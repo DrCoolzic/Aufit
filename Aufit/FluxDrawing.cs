@@ -123,26 +123,33 @@ class FluxDrawing {
 	/// <summary>
 	/// draw the flux chart
 	/// </summary>
-	public void drawFlux() {
+	public void drawFlux(int track, int side, int rev) {
 		_fluxChartLayout.chartResetCanvas();
-		if (Global.currentTrack().flux == null) return;
+		if (Global.currentTrack().fluxData == null) return;
 		_fluxChartLayout.drawChartGrids();
 
 		DSR dsr = new DSR();
 
 		Global.TrackData currentTrack = Global.currentTrack();
-		int nbRev = currentTrack.indexCount - 1;
+		//int nbRev = currentTrack.indexCount - 1;
 		int start, stop, indexFirstFluxCorrection;
-		if (Global.Rev > 0) {
-			start = currentTrack.indexes[Global.Rev - 1].fluxPosition;
-			stop = currentTrack.indexes[Global.Rev].fluxPosition - 1;
-			indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[Global.Rev - 1].preIndexTime);
-		}	// one rev
-		else {
-			start = currentTrack.indexes[0].fluxPosition;
-			stop = currentTrack.indexes[nbRev].fluxPosition;
-			indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[0].preIndexTime);
-		}	// all rev
+		//if (Global.Rev > 0) {
+		//	start = currentTrack.indexes[Global.Rev - 1].fluxPosition;
+		//	stop = currentTrack.indexes[Global.Rev].fluxPosition - 1;
+		//	indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[Global.Rev - 1].preIndexTime);
+		//}	// one rev
+		//else {
+		//	start = currentTrack.indexes[0].fluxPosition;
+		//	stop = currentTrack.indexes[nbRev].fluxPosition;
+		//	indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[0].preIndexTime);
+		//}	// all rev
+		//int rev = Global.Rev;
+		//int track = Global.Track;
+		//int side = Global.Side;
+		start = Global.firstOffset(track, side, rev);
+		stop = Global.lastOffset(track, side, rev);
+		indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
+
 
 		int maxFlux = 0;
 		int minFlux = Int32.MaxValue;
@@ -155,7 +162,7 @@ class FluxDrawing {
 		if (_fluxChartLayout.zoomed()) {
 			//first = 0;
 			for (int i = start; i < stop; i++) {
-				int flux = Global.sampleToTiming(currentTrack.flux[i]);
+				int flux = Global.sampleToTiming(currentTrack.fluxData.fluxValue[i]);
 				if (i == start)
 					flux -= indexFirstFluxCorrection;
 				currentTime += flux;
@@ -187,32 +194,32 @@ class FluxDrawing {
 
 		for (int i = start; i < stop; i++) {
 
-			int flux = Global.sampleToTiming(currentTrack.flux[i]);
+			int flux = Global.sampleToTiming(currentTrack.fluxData.fluxValue[i]);
 			if (i == start)
 				flux -= indexFirstFluxCorrection;
 			if (flux > maxFlux) maxFlux = flux;
 			if (flux < minFlux) minFlux = flux;
 			currentTime += flux;
 
-			// black line for revolution
-			if (Global.Rev == 0) {
-				for (int j = 1; j < Global.currentTrack().indexCount - 1; j++) {
-					if (Global.currentTrack().indexes[j].fluxPosition -1 == i) {
-						Line revLine = new Line();
-						revLine.Stroke = Brushes.Black;
-						revLine.StrokeThickness = 1.5;
-						revLine.X1 = _fluxChartLayout.NormPoint(new Point((double)(currentTime + indexFirstFluxCorrection) / 1000000.0, 2)).X;
-						revLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
-						revLine.X2 = _fluxChartLayout.NormPoint(new Point((double)(currentTime + indexFirstFluxCorrection) / 1000000.0, 10)).X;
-						revLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
-						_fluxChartLayout.GraphicCanvas.Children.Add(revLine);
-					}
-				}
-			}
+			// TODO black line for revolution
+			//if (Global.Rev == 0) {
+			//	for (int j = 1; j < Global.currentTrack().indexCount - 1; j++) {
+			//		if (Global.currentTrack().indexes[j].fluxPosition -1 == i) {
+			//			Line revLine = new Line();
+			//			revLine.Stroke = Brushes.Black;
+			//			revLine.StrokeThickness = 1.5;
+			//			revLine.X1 = _fluxChartLayout.NormPoint(new Point((double)(currentTime + indexFirstFluxCorrection) / 1000000.0, 2)).X;
+			//			revLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
+			//			revLine.X2 = _fluxChartLayout.NormPoint(new Point((double)(currentTime + indexFirstFluxCorrection) / 1000000.0, 10)).X;
+			//			revLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
+			//			_fluxChartLayout.GraphicCanvas.Children.Add(revLine);
+			//		}
+			//	}
+			//}
 
 			// red line for sync
-			int nbWin = currentTrack.nbWin[i];
-			int clk = currentTrack.clock[i];
+			int nbWin = currentTrack.decodeData.nbWin[i];
+			int clk = currentTrack.decodeData.clock[i];
 			dsr.shiftBitsIn(nbWin);	// push data in register
 			while (dsr.byteReady()) {
 				int bitShift = dsr.searchSynch();	// search sync
@@ -278,7 +285,7 @@ class FluxDrawing {
 	/// Set the default viewport values for the flux graphic canvas
 	/// </summary>
 	public void setFluxDefault() {
-		if ((_fluxChartLayout == null) || (Global.currentTrack().flux == null)) return;
+		if ((_fluxChartLayout == null) || (Global.currentTrack().fluxData == null)) return;
 
 		Global.TrackData track = Global.currentTrack();
 		int rev = Global.Rev;
@@ -289,10 +296,10 @@ class FluxDrawing {
 		else
 			_viewportXmax = 800;
 
-		int max = Global.sampleToTiming(track.fluxMax) + 500;
+		int max = Global.sampleToTiming(track.fluxData.fluxMax) + 500;
 		if (max < 10000) max = 10000;
 		if (LimitFlux && (max > 10000)) max = 10000;
-		int min = Global.sampleToTiming(track.fluxMin) - 500;
+		int min = Global.sampleToTiming(track.fluxData.fluxMin) - 500;
 		if (min < 2000) min = 2000;
 
 		_fluxChartLayout.setDefaultViewport(_viewportXmin, _viewportXmax, min / 1000, max / 1000);
@@ -359,7 +366,7 @@ class FluxDrawing {
 		//_fluxChartLayout.TextCanvas.Children.RemoveRange(1, _fluxChartLayout.TextCanvas.Children.Count - 1);
 		_fluxChartLayout.setViewport(x0, x1, y0, y1);
 
-		drawFlux();
+		drawFlux(Global.Track, Global.Side, Global.Rev);
 	}
 
 	/// <summary>
@@ -415,7 +422,7 @@ class FluxDrawing {
 		_fluxChartLayout.GraphicCanvas.Children.Clear();
 		_fluxChartLayout.TextCanvas.Children.RemoveRange(1, _fluxChartLayout.TextCanvas.Children.Count - 1);
 		setFluxDefault();
-		drawFlux();
+		drawFlux(Global.Track, Global.Side, Global.Rev);
 	}
 
 	/// <summary>
@@ -438,7 +445,7 @@ class FluxDrawing {
 		_fluxChartLayout.GraphicCanvas.Children.Clear();
 		_fluxChartLayout.TextCanvas.Children.RemoveRange(1, _fluxChartLayout.TextCanvas.Children.Count - 1);
 		_fluxChartLayout.setViewport(x0, x1, y0, y1);
-		drawFlux();
+		drawFlux(Global.Track, Global.Side, Global.Rev);
 	}
 
 }

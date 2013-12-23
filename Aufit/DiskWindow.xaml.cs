@@ -32,10 +32,12 @@ namespace Aufit {
 			Global.Rev = 1;
 			for (int track = 0; track < 84; track++) {
 				Global.Track = track;
-				TrackContent trackInfo = Global.Disk[Global.Track, Global.Side].trackContent;
+				TrackContent tc = Global.Disk[Global.Track, Global.Side].trackContent;
 				//if (trackInfo == null)
-				trackInfo = await decodeAndReadAsync();
-				drawDiskTrack(trackInfo, track, message);
+				tc = await decodeAndReadAsync();
+				drawDiskTrack(tc, track, message);
+				ButtonMatrix.setButtonBG(Global.Track, Global.Side);
+
 			}
 			Global.Track = saveTrack;
 			Global.Rev = saveRev;
@@ -124,10 +126,10 @@ namespace Aufit {
 
 											if (s.mask != null) {
 												int nbFuzzy = 0;
-												for (int j = 0; j < s.mask.Count(); j++) {
-													if (s.mask[j] != 0) nbFuzzy++;
+												for (int j = 0; j < s.mask.Bytes.Count; j++) {
+													if (s.mask.Bytes[j].dataByte != 0) nbFuzzy++;
 												}
-												if (nbFuzzy > (int)((double)s.mask.Count() * 0.6)) path.Stroke = Brushes.DarkSlateGray;
+												if (nbFuzzy > (int)((double)s.mask.Bytes.Count * 0.6)) path.Stroke = Brushes.DarkSlateGray;
 											}
 
 										}

@@ -84,24 +84,31 @@ class ClockDrawing {
 	/// </summary>
 	/// <param name="speedUp"></param>
 	public void drawClock(int speedUp) {
-		if ((_clockChartLayout == null) || (Global.currentTrack().flux == null)) return;
+		if ((_clockChartLayout == null) || (Global.currentTrack().fluxData == null)) return;
 
 		_clockChartLayout.chartResetCanvas();
 		_clockChartLayout.drawChartGrids();
 
 		Global.TrackData currentTrack = Global.currentTrack();
-		int nbRev = currentTrack.indexCount - 1;
+		//int nbRev = currentTrack.indexCount - 1;
 		int start, stop, indexFirstFluxCorrection;
-		if (Global.Rev > 0) {
-			start = currentTrack.indexes[Global.Rev - 1].fluxPosition;
-			stop = currentTrack.indexes[Global.Rev].fluxPosition - 1;
-			indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[Global.Rev - 1].preIndexTime);
-		}	// one rev
-		else {
-			start = currentTrack.indexes[0].fluxPosition;
-			stop = currentTrack.indexes[nbRev].fluxPosition;
-			indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[0].preIndexTime);
-		}	// all rev
+		//if (Global.Rev > 0) {
+		//	start = currentTrack.indexes[Global.Rev - 1].fluxPosition;
+		//	stop = currentTrack.indexes[Global.Rev].fluxPosition - 1;
+		//	indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[Global.Rev - 1].preIndexTime);
+		//}	// one rev
+		//else {
+		//	start = currentTrack.indexes[0].fluxPosition;
+		//	stop = currentTrack.indexes[nbRev].fluxPosition;
+		//	indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[0].preIndexTime);
+		//}	// all rev
+		int rev = Global.Rev;
+		int track = Global.Track;
+		int side = Global.Side;
+		start = Global.firstOffset(track, side, rev);
+		stop = Global.lastOffset(track, side, rev);
+		indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
+
 
 		int currentTime = 0;
 
@@ -109,23 +116,25 @@ class ClockDrawing {
 		clockLine.Stroke = Brushes.Black;
 		clockLine.StrokeThickness = 1;
 
-		int lastFlux = currentTrack.indexes[nbRev].fluxPosition;
+		int lastRev = Global.Disk[track, side].revData.Count() - 1;
+		//int lastFlux = currentTrack.indexes[nbRev].fluxPosition;
+		int lastFlux = Global.Disk[track, side].revData[lastRev].fluxOffset + Global.Disk[track, side].revData[lastRev].fluxCount - 1;
 		int bnForAvg = 50;
 
 		// populate
 		for (int i = start; i < stop; i++) {
-			int flux = Global.sampleToTiming(currentTrack.flux[i]);
+			int flux = Global.sampleToTiming(currentTrack.fluxData.fluxValue[i]);
 			if (i == start) flux -= indexFirstFluxCorrection;
 			currentTime += flux;
 
-			int clk = currentTrack.clock[i];
+			int clk = currentTrack.decodeData.clock[i];
 
 			int avgClock = 0;
 			int avgCount = 0;
 			for (int j = 0; j < bnForAvg; j++) {
 				int index = i - bnForAvg/2 + j;
 				if ((index >= 0) && (index <= lastFlux)) {
-					avgClock += currentTrack.clock[index];
+					avgClock += currentTrack.decodeData.clock[index];
 					avgCount++;
 				}
 			}
@@ -183,14 +192,14 @@ class ClockDrawing {
 	/// Set the clock chart viewport default value
 	/// </summary>
 	public void setClockDefault() {
-		if ((_clockChartLayout == null) || (Global.currentTrack().flux == null)) return;
+		if ((_clockChartLayout == null) || (Global.currentTrack().fluxData == null)) return;
 
 		Global.TrackData track = Global.currentTrack();
 		int fluxXmin = 0;
 		int fluxXmax = 200;
 		if (Global.Rev == 0) fluxXmax = 800;
-		_clockMin = Global.currentTrack().clockMin;
-		_clockMax = Global.currentTrack().clockMax;
+		_clockMin = Global.currentTrack().decodeData.clockMin;
+		_clockMax = Global.currentTrack().decodeData.clockMax;
 
 		_clockChartLayout.setViewport(fluxXmin, fluxXmax, _clockMin, _clockMax);
 	}

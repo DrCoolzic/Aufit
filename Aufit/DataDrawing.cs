@@ -66,7 +66,7 @@ class DataDrawing {
 	/// draw the data chart
 	/// </summary>
 	public void drawTrackData() {
-		if (Global.currentTrack().flux == null) return;
+		if (Global.currentTrack().fluxData == null) return;
 		_dataChartLayout.chartResetCanvas();
 		_dataChartLayout.drawChartGrids();
 
@@ -160,10 +160,10 @@ class DataDrawing {
 									_dataChartLayout.GraphicCanvas.Children.Add(perr);
 
 									int nbFuzzy = 0;
-									for (int j = 0; j < s.mask.Count(); j++) {
-										if (s.mask[j] != 0) nbFuzzy++;
+									for (int j = 0; j < s.mask.Bytes.Count; j++) {
+										if (s.mask.Bytes[j].dataByte != 0) nbFuzzy++;
 									}
-									if (nbFuzzy > (int)((double)s.mask.Count() * 0.6)) plg.Fill = Brushes.DarkSlateGray;
+									if (nbFuzzy > (int)((double)s.mask.Bytes.Count * 0.6)) plg.Fill = Brushes.DarkSlateGray;
 								}
 
 

@@ -44,27 +44,31 @@ public class ProcessStream {
 	/// <param name="text">The TextBox where the debug information are written</param>
 	/// <returns>the computed entropy</returns>
 	public static double computeHisto(int track, int side, int rev, TextBox text) {
-		if (Global.Disk[track, side].flux == null) return 0;
+		//if (Global.Disk[track, side].flux == null) return 0;
+		if (Global.Disk[track, side].fluxData == null) return 0;
 
 		int start, stop;
 		int threshold;
 		int[] tmpHisto;
 
 		if (rev > 0) {
-			start = Global.Disk[track, side].indexes[rev-1].fluxPosition;
-			stop = Global.Disk[track, side].indexes[rev].fluxPosition;
+			//start = Global.Disk[track, side].indexes[rev-1].fluxPosition;
+			//stop = Global.Disk[track, side].indexes[rev].fluxPosition;
 			threshold = 2;
 		}
 		else {
-			start = Global.Disk[track, side].indexes[0].fluxPosition;
-			stop = Global.Disk[track, side].indexes[Global.Disk[track, side].indexCount - 1].fluxPosition;
+			//start = Global.Disk[track, side].indexes[0].fluxPosition;
+			//stop = Global.Disk[track, side].indexes[Global.Disk[track, side].indexCount - 1].fluxPosition;
 			threshold = 10;
 		}
+		start = Global.firstOffset(track, side, rev);
+		stop = Global.lastOffset(track, side, rev);
 
-		int sizeBeforeTrim = Global.Disk[track, side].flux.Max() + 1;
+
+		int sizeBeforeTrim = Global.Disk[track, side].fluxData.fluxValue.Max() + 1;
 		tmpHisto = new int[sizeBeforeTrim];
 		for (int i = start; i < stop; i++)
-			tmpHisto[Global.Disk[track, side].flux[i]]++;
+			tmpHisto[Global.Disk[track, side].fluxData.fluxValue[i]]++;
 
 		// we trim the array size to keep only significant entries. This is useful as
 		// we may end up with a huge array if track has Non Flux areas. Computations for
@@ -138,19 +142,30 @@ public class ProcessStream {
 		KFStreamReader stream = new KFStreamReader();
 		StreamStatus status = stream.readStream(name);
 		if (status == StreamStatus.sdsOk) {
-			Global.Disk[track, side].flux = stream.FluxValues;
-			Global.Disk[track, side].fluxCount = stream.FluxCount;
-			Global.Disk[track, side].indexes = stream.Indexes;
-			Global.Disk[track, side].indexCount = stream.IndexCount;
+			//Global.Disk[track, side].fluxData = stream.FluxValues;
+			Global.Disk[track, side].fluxData = new FluxData();
+			Global.Disk[track, side].fluxData.fluxValue = stream.FluxValues;
+			Global.Disk[track, side].fluxData.fluxCount = stream.FluxCount;
+			//Global.Disk[track, side].indexes = stream.Indexes;
+			//Global.Disk[track, side].indexCount = stream.IndexCount;
 			Global.SampleClock = stream.SampleClock;
-			Global.Disk[track, side].fluxMax = stream.StreamStat.fluxMax;
-			Global.Disk[track, side].fluxMin = stream.StreamStat.fluxMin;
+			Global.Disk[track, side].fluxData.fluxMax = stream.StreamStat.fluxMax;
+			Global.Disk[track, side].fluxData.fluxMin = stream.StreamStat.fluxMin;
+
+			Global.Disk[track, side].revData = new RevData[stream.IndexCount - 1];
+			for (int i = 0; i < stream.IndexCount - 1; i++) {
+				Global.Disk[track, side].revData[i].revolutionTime = stream.Indexes[i + 1].indexTime;
+				Global.Disk[track, side].revData[i].fluxCount = stream.Indexes[i + 1].fluxPosition - stream.Indexes[i].fluxPosition;
+				Global.Disk[track, side].revData[i].indexTimePosition = stream.Indexes[i].preIndexTime;
+				Global.Disk[track, side].revData[i].fluxOffset = stream.Indexes[i].fluxPosition;
+			}
 			return true;
 		}
-		Global.Disk[track, side].flux = null;
-		Global.Disk[track, side].fluxCount = 0;
-		Global.Disk[track, side].indexes = null;
-		Global.Disk[track, side].indexCount = 0;
+
+		Global.Disk[track, side].fluxData = null;
+		//Global.Disk[track, side].fluxCount = 0;
+		//Global.Disk[track, side].indexes = null;
+		//Global.Disk[track, side].indexCount = 0;
 		return false;
 	}
 
@@ -171,6 +186,8 @@ public class ProcessStream {
 	/// Converts Flux transition into bits and clocks using the DPLL. Also sets min max values
 	/// </summary>
 	public static void mfmDecode() {
+		if (Global.Disk[Global.Track, Global.Side].decodeData != null) return;
+
 		int minClock = Int32.MaxValue;
 		int maxClock = 0;
 		int clockAvg = 0;
@@ -179,33 +196,37 @@ public class ProcessStream {
 		int currentBit = 0;
 
 		Global.TrackData track = Global.currentTrack();
-		Global.Disk[Global.Track, Global.Side].clock = new int[track.fluxCount];
-		Global.Disk[Global.Track, Global.Side].nbWin = new int[track.fluxCount];
+		Global.Disk[Global.Track, Global.Side].decodeData = new decodeData();
+		Global.Disk[Global.Track, Global.Side].decodeData.clock = new int[track.fluxData.fluxCount];
+		Global.Disk[Global.Track, Global.Side].decodeData.nbWin = new int[track.fluxData.fluxCount];
 		
 		DPLL dpll = new DPLL();
-		int sizeBeforeTrim = Global.currentTrack().fluxMax + 1;		
+		int sizeBeforeTrim = Global.currentTrack().fluxData.fluxMax + 1;		
 		int[] tmpHisto = new int[sizeBeforeTrim];
 
 		// compute min max and store nbWin & clock	
-		for (int i = 0; i < track.indexes[track.indexCount - 1].fluxPosition; i++) {
-			int flux = Global.sampleToTiming(track.flux[i]);
-			tmpHisto[track.flux[i]]++;
+		//for (int i = 0; i < track.indexes[track.indexCount - 1].fluxPosition; i++) {
+		int lastRev = Global.Disk[Global.Track, Global.Side].revData.Count() - 1;
+		for (int i = Global.Disk[Global.Track, Global.Side].revData[0].fluxOffset; 
+			i < (Global.Disk[Global.Track, Global.Side].revData[lastRev].fluxOffset + Global.Disk[Global.Track, Global.Side].revData[lastRev].fluxCount); i++) {
+			int flux = Global.sampleToTiming(track.fluxData.fluxValue[i]);
+			tmpHisto[track.fluxData.fluxValue[i]]++;
 			curentTime += flux;
 			int nbWin = dpll.dataInWindow(curentTime);
 			currentBit += nbWin;
-			Global.currentTrack().nbWin[i] = nbWin;
+			Global.currentTrack().decodeData.nbWin[i] = nbWin;
 
 			int clk = dpll.Clock;
 			if (clk > maxClock) maxClock = clk;
 			if (clk < minClock) minClock = clk;
-			Global.currentTrack().clock[i] = clk;
+			Global.currentTrack().decodeData.clock[i] = clk;
 			clockAvg += clk;
 
 		}
 
-		Global.Disk[Global.Track, Global.Side].clockMin = minClock;
-		Global.Disk[Global.Track, Global.Side].clockMax = maxClock;
-		Global.Disk[Global.Track, Global.Side].clockAvg = clockAvg / track.indexes[track.indexCount - 1].fluxPosition;
+		Global.Disk[Global.Track, Global.Side].decodeData.clockMin = minClock;
+		Global.Disk[Global.Track, Global.Side].decodeData.clockMax = maxClock;
+		//Global.Disk[Global.Track, Global.Side].clockAvg = clockAvg / track.indexes[track.indexCount - 1].fluxPosition;
 	}
 
 

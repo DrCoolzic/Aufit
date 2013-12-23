@@ -138,7 +138,7 @@ namespace KFStreamInfoNS {
 					Console.Write("Index[{0}] in Flux[{1,6}]={2:F3} pre={3:F3} Elapsed={4,7:F3}\r\n",
 						i, index[i].fluxPosition, flux[index[i].fluxPosition] * (1000000.0 / (stream.SampleClock)),
 						index[i].preIndexTime * (1000000.0 / (stream.SampleClock)),
-						index[i].rotationTime * (1000.0 / (stream.SampleClock)) );
+						index[i].indexTime * (1000.0 / (stream.SampleClock)));
 				}
 				Console.Write("\r\n");
 			} // index requested

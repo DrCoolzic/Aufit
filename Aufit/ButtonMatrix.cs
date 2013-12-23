@@ -139,15 +139,25 @@ namespace Aufit {
 		/// Set background color of button based on entropy
 		/// </summary>
 		/// <param name="entropy">Entropy of the track</param>
-		public static void setButtonBG(int track, int side, double entropy) {
-			_buttons[track / 10, track % 10, side].Background =
-				(entropy < 2000) ? (entropy < 0) ? Brushes.LightSlateGray : Brushes.Orange : Brushes.LimeGreen;
+		public static void setButtonBG(int track, int side) {
+			Brush color = Brushes.LimeGreen;
+			Global.TrackData td = Global.Disk[track, side];
+			TrackContent tc = td.trackContent;
+			if (tc != null) {
+				if (tc.sectors.Count == 1) color = Brushes.SlateGray;
+				else if (tc.hasProtection) color = Brushes.Orange;
+			}
+			else {
+				double entropy = td.entropy;
+				color = (entropy < 2000) ? (entropy < 0) ? Brushes.LightGray : Brushes.Yellow : Brushes.Lime;
+			}
+			_buttons[track / 10, track % 10, side].Background = color;		
 		}
 
 
 		/// <summary>
 		/// Called by button click handler. !set the current Track/Side based 
-		/// on button clicked and select/deselect buttons accordingly
+		/// on button clicked and select/de-select buttons accordingly
 		/// </summary>
 		/// <param name="button"></param>
 		/// <returns></returns>
@@ -159,7 +169,7 @@ namespace Aufit {
 				Int32 y = tuple.Item3 - 1;
 				Int32 z = tuple.Item4 - 1;
 				int track = 10 * x + y;
-				if (Global.Disk[track, z].flux == null) return false;
+				if (Global.Disk[track, z].fluxData == null) return false;
 				deselectButton();
 				Global.Track = track;
 				Global.Side = z;

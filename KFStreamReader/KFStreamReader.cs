@@ -111,7 +111,7 @@ public struct IndexInfo {
 	public int fluxPosition;
 	/// <summary>Gives the exact rotation time in number of Sample clocks. 
 	/// In other word the exact time between two index pulses.</summary>
-	public int rotationTime;
+	public int indexTime;
 	/// <summary>Gives the position of the index pulse inside the flux that contains it. The position 
 	/// is given as a number of sample clocks before the index signal. Note that in the case of no
 	/// flux area at the beginning of the track this value can be huge</summary>
@@ -608,7 +608,7 @@ public class KFStreamReader {
 						_indexIntInfo[_indexCount].sampleCounter = extractStreamInt(sbuf, pos + 8);
 						_indexIntInfo[_indexCount].indexCounter = extractStreamInt(sbuf, pos + 12);
 						_indexArray[_indexCount].fluxPosition = 0;
-						_indexArray[_indexCount].rotationTime = 0;
+						_indexArray[_indexCount].indexTime = 0;
 						_indexArray[_indexCount].preIndexTime = 0;
 						//_indexArray[_indexCount].postIndexTime = 0;
 
@@ -783,7 +783,7 @@ public class KFStreamReader {
 
 				// the revolution time consists of the sum of cell times plus the sub-cell time before the index signal
 				// if the first cell has the index signal, the revolution time is the sub-cell time before the index signal
-				_indexArray[iidx].rotationTime = (nfidx != 0 ? itime : 0) + preIndexTime;
+				_indexArray[iidx].indexTime = (nfidx != 0 ? itime : 0) + preIndexTime;
 
 				// try next index
 				iidx++;
@@ -829,13 +829,13 @@ public class KFStreamReader {
 
 		// skip first index (incomplete revolution)
 		for (int i = 1; i < _indexCount; i++) {
-			int rotTime = _indexArray[i].rotationTime;
+			int rotTime = _indexArray[i].indexTime;
 			vmin = Math.Min(vmin, rotTime);
 			vmax = Math.Max(vmax, rotTime);
 			sum += rotTime;
 
 			// checking that the computed rotationTime is roughly equal to difference in index counter
-			int delta = Math.Abs(_indexArray[i].rotationTime - (_indexIntInfo[i].indexCounter - _indexIntInfo[i - 1].indexCounter) * 8);
+			int delta = Math.Abs(_indexArray[i].indexTime - (_indexIntInfo[i].indexCounter - _indexIntInfo[i - 1].indexCounter) * 8);
 			//Debug.Assert(delta < 8);	// TODO sometimes up to 38 ???
 		}
 		if ((_indexCount - 1) > 0) {

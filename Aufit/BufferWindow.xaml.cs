@@ -49,53 +49,202 @@ namespace Aufit {
 		/// Create a new BufferWindow object.
 		/// </summary>
 		/// <param name="buffer">The buffer to display</param>
-		public BufferWindow(TrackBuffer buffer, string message) {
+		public BufferWindow() {
 			InitializeComponent();
-			drawBuffer(buffer, message);
 		}
 
 		/// <summary>
 		/// Draw the content of the buffer
 		/// </summary>
-		public void drawBuffer(TrackBuffer buffer, string message) {
-			displayBuffer.FontFamily = new FontFamily("Courier New");
-			displayBuffer.FontSize = 15;
+		public void drawSectorBuffer() {
+			AddrContent ac = Global.currentTrack().addrContent;
+
+			displayBuffer.FontFamily = new FontFamily("Consolas");
+			displayBuffer.FontSize = 16;
 			displayBuffer.FontStyle = FontStyles.Normal;
 			displayBuffer.FontWeight = FontWeights.Normal;
-			displayBuffer.Inlines.Add(String.Format("Bytes in buffer: {0} {1}\n", buffer.Bytes.Count, message));
-			for (int i = 0; i < buffer.Bytes.Count; i += 16) {				
+
+			displayBuffer.Inlines.Add(new Run(
+				String.Format("Track {0:D2}.{1} has {2} sectors\n", 
+					Global.Track, Global.Side, ac.ids.Count)
+				) { FontWeight = FontWeights.Bold });
+
+			displayBuffer.Inlines.Add(String.Format("-------------------+---------------------------\n"));
+			displayBuffer.Inlines.Add(String.Format("SCT    POS LEN CRC | BYTE    POS   LEN CRC FUZ \n"));
+			displayBuffer.Inlines.Add(String.Format("-------------------+---------------------------\n"));
+
+			for (int i = 0; i < ac.ids.Count; i++) {
+				// ID
+				if (ac.blocs[i].byteCount > 0) {
+					displayBuffer.Inlines.Add(String.Format("{0,3:D} {1,6:D} {2,3:D} {3} |", ac.ids[i].number, ac.blocs[i].startTime / 1000,
+						ac.blocs[i].timeLength / 1000, (ac.blocs[i].crc == 0) ? " OK" : "Bad"));
+				}
+				//else
+				//	displayBuffer.Inlines.Add(String.Format("                   |"));
+				
+				// DATA
+				SectorContent sc = FDC.findSectorContent(Global.Track, Global.Side, ac.ids[i].number, ac.blocs[i].startTime);
+				if ((sc != null) && (sc.dataBlock.byteCount > 0))
+					displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4}",
+						sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000, (sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.mask != null) ? "Yes" : " No"));
+				//else
+				//	displayBuffer.Inlines.Add(String.Format("                    |"));
+				displayBuffer.Inlines.Add("\n");
+				
+			}			
+			displayBuffer.Inlines.Add(String.Format("-------------------+---------------------------\n\n"));
+
+			for (int i = 0; i < ac.ids.Count; i++) {
+				displayBuffer.Inlines.Add(String.Format("Sector {0}", ac.ids[i].number));
+				SectorContent sc = FDC.findSectorContent(Global.Track, Global.Side, ac.ids[i].number, ac.blocs[i].startTime);
+				if ((sc != null) && (sc.dataBlock.byteCount > 0)) {
+					displayBuffer.Inlines.Add(String.Format(" {0} bytes start at {1} length {2} {3} {4}\n",
+						sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000,
+						(sc.dataBlock.crc == 0) ? "Good CRC" : "Bad CRC", (sc.mask != null) ? "Has Fuzzy bytes" : "" ));
+					drawBuffer(sc.buffer);
+					if (sc.mask != null) {
+						displayBuffer.Inlines.Add(String.Format("\nFuzzy bytes for sector {0}\n", ac.ids[i].number));
+						drawBuffer(sc.mask);
+					}
+				}
+				else
+					displayBuffer.Inlines.Add(" *** Sector has no data ***\n");
+				displayBuffer.Inlines.Add("\n");
+			}
+
+		}
+
+		public void drawTrackBuffer() {
+			TrackContent tc = Global.currentTrack().trackContent;
+			AddrContent ac = Global.currentTrack().addrContent;
+
+			//displayBuffer.FontFamily = new FontFamily("Lucida Console");
+			displayBuffer.FontFamily = new FontFamily("Consolas");
+			displayBuffer.FontSize = 16;
+			displayBuffer.FontStyle = FontStyles.Normal;
+			displayBuffer.FontWeight = FontWeights.Normal;
+
+			displayBuffer.Inlines.Add(new Run(
+				String.Format("Track {0:D2}.{1} {2} bytes Length {3} µs with {4} sectors\n",
+					Global.Track, Global.Side, tc.byteCount, tc.timeLength / 1000, tc.sectors.Count - 1)
+				) { FontWeight = FontWeights.Bold });
+
+			displayBuffer.Inlines.Add(String.Format("-------------------+----------+---------------------------+-----------\n"));
+			displayBuffer.Inlines.Add(String.Format("SCT    POS LEN CRC | BYT  LEN | BYTE    POS   LEN CRC FUZ | BYTE  LEN\n"));
+			displayBuffer.Inlines.Add(String.Format("-------------------+----------+---------------------------+-----------\n"));
+
+			for (int i = 0; i < tc.sectors.Count; i++) {
+				if (i == 0) {
+					displayBuffer.Inlines.Add(String.Format("                   |"));
+					displayBuffer.Inlines.Add(String.Format("          |"));
+					// DATA
+					if (tc.sectors[i].phases[(byte)Phases.p_data].byteCount > 0) {
+						// this should be the data from last id ?
+						SectorContent sc = FDC.findSectorContent(Global.Track, Global.Side, ac.ids[tc.sectors.Count - 2].number, ac.blocs[tc.sectors.Count - 2].startTime);
+						if (sc != null)
+							displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4} |",
+								sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000, (sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.mask != null) ? "Yes" : " No"));
+						else
+							displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4} |",
+								tc.sectors[i].phases[(byte)Phases.p_data].byteCount, tc.sectors[i].phases[(byte)Phases.p_data].startTime / 1000,
+								tc.sectors[i].phases[(byte)Phases.p_data].timeLength / 1000,
+								(tc.sectors[i].phases[(byte)Phases.p_data].crc == 0) ? " OK" : "Bad", "???"));
+					}
+					else
+						displayBuffer.Inlines.Add(String.Format("                           |"));
+					// INTER
+					if (tc.sectors[i].phases[(byte)Phases.p_outer].byteCount > 0)
+						displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,5:D}\n", tc.sectors[i].phases[(byte)Phases.p_outer].byteCount,
+							tc.sectors[i].phases[(byte)Phases.p_inner].timeLength / 1000));
+					else
+						displayBuffer.Inlines.Add(String.Format("\n"));
+
+				}	// pseudo sector
+				else {
+
+					// ID
+					if (tc.sectors[i].phases[(byte)Phases.p_id].byteCount > 0) {
+						displayBuffer.Inlines.Add(String.Format("{0,3:D} {1,6:D} {2,3:D} {3} |", ac.ids[i - 1].number, ac.blocs[i - 1].startTime / 1000,
+							ac.blocs[i - 1].timeLength / 1000, (ac.blocs[i - 1].crc == 0) ? " OK" : "Bad"));
+					}
+					else
+						displayBuffer.Inlines.Add(String.Format("                   |"));
+					// INTRA
+					if (tc.sectors[i].phases[(byte)Phases.p_inner].byteCount > 0)
+						displayBuffer.Inlines.Add(String.Format(" {0,3:D} {1,4:D} |", tc.sectors[i].phases[(byte)Phases.p_inner].byteCount,
+							tc.sectors[i].phases[(byte)Phases.p_inner].timeLength / 1000));
+					else
+						displayBuffer.Inlines.Add(String.Format("          |"));
+					// DATA
+					SectorContent sc = FDC.findSectorContent(Global.Track, Global.Side, ac.ids[i - 1].number, ac.blocs[i - 1].startTime);
+					if ((sc != null) && (sc.dataBlock.byteCount > 0))
+						displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4} |",
+							sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000, (sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.mask != null) ? "Yes" : " No"));
+					else
+						displayBuffer.Inlines.Add(String.Format("                           |"));
+					// INTER
+					if (tc.sectors[i].phases[(byte)Phases.p_outer].byteCount > 0)
+						displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,5:D}\n", tc.sectors[i].phases[(byte)Phases.p_outer].byteCount,
+							tc.sectors[i].phases[(byte)Phases.p_inner].timeLength / 1000));
+					else
+						displayBuffer.Inlines.Add(String.Format("\n"));
+
+				}	// real sector
+			}
+			displayBuffer.Inlines.Add(String.Format("-------------------+----------+---------------------------+-----------\n"));
+
+			TrackBuffer buffer = tc.buffer;
+			drawBuffer(buffer);
+
+		}
+
+		public void drawBuffer(TrackBuffer buffer, string message = null) {
+			displayBuffer.FontFamily = new FontFamily("Consolas");
+			displayBuffer.FontSize = 16;
+			displayBuffer.FontStyle = FontStyles.Normal;
+			displayBuffer.FontWeight = FontWeights.Normal;
+			if (message != null)
+				displayBuffer.Inlines.Add(message);
+
+			for (int i = 0; i < buffer.Bytes.Count; i += 16) {
 				displayBuffer.Inlines.Add(String.Format("{0:D5}  ", i));
 				displayBuffer.Inlines.Add(new Run(
 					String.Format("{0:D4} ", buffer.Bytes[i].density)) {
- 					Foreground = (buffer.Bytes[i].density > 2050) ? Brushes.Blue : 
-					(buffer.Bytes[i].density < 1950) ? Brushes.Red : Brushes.Black,
-					FontWeight = ((buffer.Bytes[i].density > 2050) || (buffer.Bytes[i].density < 1950)) ?
-									FontWeights.Bold : FontWeights.Normal
-				});
-				displayBuffer.Inlines.Add(String.Format("{0:D6}  ", buffer.Bytes[i].startTime/1000));
-					
+						Foreground = (buffer.Bytes[i].density > 2050) ? Brushes.Blue :
+						(buffer.Bytes[i].density < 1950) ? Brushes.Red : Brushes.Black,
+						FontWeight = ((buffer.Bytes[i].density > 2050) || (buffer.Bytes[i].density < 1950)) ?
+										FontWeights.Bold : FontWeights.Normal
+					});
+				displayBuffer.Inlines.Add(String.Format("{0:D6}  ", buffer.Bytes[i].startTime / 1000));
+
+				// TODO if phase==p_inner or p_outer and data in range 245-247 display red/yellow
+
 				string ascii = "  ";
 				for (int j = 0; j < 16; j++) {
 					if ((i + j) < buffer.Bytes.Count) {
 						displayBuffer.Inlines.Add(new Run(
-							String.Format("{0:X2} ", buffer.Bytes[i + j].dataByte))   {
+							String.Format("{0:X2} ", buffer.Bytes[i + j].dataByte)) {
 								Background =
 									(buffer.Bytes[i + j].mfmWord == 0x00) ? Brushes.Coral :
-									((buffer.Bytes[i + j].dataByte == 0xA1) || (buffer.Bytes[i + j].dataByte == 0xC2)) && 
-									((buffer.Bytes[i + j].syncInfo & 0x80) == 0x80 ) ? Brushes.Yellow :
-									((buffer.Bytes[i + j].phase == Phases.p_data) ||
-									(buffer.Bytes[i + j].phase == Phases.p_id))  ? Brushes.LemonChiffon :
+									//((buffer.Bytes[i + j].dataByte == 0xA1) || (buffer.Bytes[i + j].dataByte == 0xC2)) && ((buffer.Bytes[i + j].syncInfo & 0x80) == 0x80 ) ? Brushes.Yellow :
+									(((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ||
+									 ((buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224))) ? Brushes.Yellow :
+									((buffer.Bytes[i + j].phase == Phases.p_data) || (buffer.Bytes[i + j].phase == Phases.p_id)) ? Brushes.LightGray :
 									Brushes.White,
-								Foreground = (buffer.Bytes[i + j].dataByte == 0xA1) && ((buffer.Bytes[i + j].syncInfo & 0x80) == 0x80) ? Brushes.Red :
-									(buffer.Bytes[i + j].dataByte == 0xC2) && ((buffer.Bytes[i + j].syncInfo & 0x80) == 0x80) ? Brushes.Green :	
-									(buffer.Bytes[i+j].phase == Phases.p_id) ? Brushes.Blue :						
-									(buffer.Bytes[i + j].phase == Phases.p_data) ? Brushes.Black : 
+								Foreground =
+									(buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489) ? Brushes.Red :
+									(buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224) ? Brushes.Green :
+									(buffer.Bytes[i + j].phase == Phases.p_id) ? Brushes.Blue :
+									(buffer.Bytes[i + j].phase == Phases.p_data) ? Brushes.Black :
+									(buffer.Bytes[i + j].phase == Phases.p_inner) ? Brushes.Black :
 									Brushes.Green,
-								FontWeight = (((buffer.Bytes[i + j].dataByte == 0xA1) || (buffer.Bytes[i + j].dataByte == 0xC2)) && 
-									((buffer.Bytes[i + j].syncInfo & 0x80) == 0x80)) || (buffer.Bytes[i + j].phase == Phases.p_id) ?
+								FontWeight =
+									((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ||
+									((buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224)) ||
+									(buffer.Bytes[i + j].phase == Phases.p_id) ?
 									FontWeights.Bold : FontWeights.Normal,
-								FontStyle = (((buffer.Bytes[i + j].syncInfo & 0x80) == 0x80) && ((buffer.Bytes[i + j].syncInfo & 0x7F) != 0x00)) ?
-								FontStyle = FontStyles.Italic : FontStyles.Normal
+								//FontStyle = (((buffer.Bytes[i + j].syncInfo & 0x80) == 0x80) && ((buffer.Bytes[i + j].syncInfo & 0x7F) != 0x00)) ?
+								//	FontStyle = FontStyles.Italic : FontStyles.Normal
 							});
 						char ch = Convert.ToChar(buffer.Bytes[i + j].dataByte);
 						ascii += Char.IsControl(ch) ? "." : ch.ToString();
@@ -117,25 +266,24 @@ namespace Aufit {
 			//displayBuffer.Inlines.Add(".");
 			////this.Content = tb;
 
-							//			String.Format("{0:X2}{1}", _buffer.Bytes[i + j].dataByte, (((_buffer.Bytes[i + j].syncInf & 0x80) == 0x80) && ((_buffer.Bytes[i + j].syncInf & 0x7F) != 0x00)) ? 
-							///* (_buffer.Bytes[i + j].syncInf & 0x7F).ToString("X") */ "+" : " "  ))   {
-							//	Background =
-							//		(_buffer.Bytes[i + j].mfmWord == 0x00) ? Brushes.Coral :
-							//		((_buffer.Bytes[i + j].dataByte == 0xA1) || (_buffer.Bytes[i + j].dataByte == 0xC2)) && 
-							//		((_buffer.Bytes[i + j].syncInf & 0x80) == 0x80 ) ? Brushes.Yellow :
-							//		((_buffer.Bytes[i + j].phase == WD1772NS.FDC.Phases.p_data) ||
-							//		(_buffer.Bytes[i + j].phase == WD1772NS.FDC.Phases.p_id))  ? Brushes.LemonChiffon :
-							//		Brushes.White,
-							//	Foreground = (_buffer.Bytes[i + j].dataByte == 0xA1) && ((_buffer.Bytes[i + j].syncInf & 0x80) == 0x80) ? Brushes.Red :
-							//		(_buffer.Bytes[i + j].dataByte == 0xC2) && ((_buffer.Bytes[i + j].syncInf & 0x80) == 0x80) ? Brushes.Green :	
-							//		(_buffer.Bytes[i+j].phase == WD1772NS.FDC.Phases.p_id) ? Brushes.Blue :						
-							//		(_buffer.Bytes[i + j].phase == WD1772NS.FDC.Phases.p_data) ? Brushes.Black : 
-							//		Brushes.Green,
-							//	FontWeight = (((_buffer.Bytes[i + j].dataByte == 0xA1) || (_buffer.Bytes[i + j].dataByte == 0xC2)) && 
-							//		((_buffer.Bytes[i + j].syncInf & 0x80) == 0x80)) || (_buffer.Bytes[i + j].phase == WD1772NS.FDC.Phases.p_id) ?
-							//		FontWeights.Bold : FontWeights.Normal
-							//});
-
+			//			String.Format("{0:X2}{1}", _buffer.Bytes[i + j].dataByte, (((_buffer.Bytes[i + j].syncInf & 0x80) == 0x80) && ((_buffer.Bytes[i + j].syncInf & 0x7F) != 0x00)) ? 
+			///* (_buffer.Bytes[i + j].syncInf & 0x7F).ToString("X") */ "+" : " "  ))   {
+			//	Background =
+			//		(_buffer.Bytes[i + j].mfmWord == 0x00) ? Brushes.Coral :
+			//		((_buffer.Bytes[i + j].dataByte == 0xA1) || (_buffer.Bytes[i + j].dataByte == 0xC2)) && 
+			//		((_buffer.Bytes[i + j].syncInf & 0x80) == 0x80 ) ? Brushes.Yellow :
+			//		((_buffer.Bytes[i + j].phase == WD1772NS.FDC.Phases.p_data) ||
+			//		(_buffer.Bytes[i + j].phase == WD1772NS.FDC.Phases.p_id))  ? Brushes.LemonChiffon :
+			//		Brushes.White,
+			//	Foreground = (_buffer.Bytes[i + j].dataByte == 0xA1) && ((_buffer.Bytes[i + j].syncInf & 0x80) == 0x80) ? Brushes.Red :
+			//		(_buffer.Bytes[i + j].dataByte == 0xC2) && ((_buffer.Bytes[i + j].syncInf & 0x80) == 0x80) ? Brushes.Green :	
+			//		(_buffer.Bytes[i+j].phase == WD1772NS.FDC.Phases.p_id) ? Brushes.Blue :						
+			//		(_buffer.Bytes[i + j].phase == WD1772NS.FDC.Phases.p_data) ? Brushes.Black : 
+			//		Brushes.Green,
+			//	FontWeight = (((_buffer.Bytes[i + j].dataByte == 0xA1) || (_buffer.Bytes[i + j].dataByte == 0xC2)) && 
+			//		((_buffer.Bytes[i + j].syncInf & 0x80) == 0x80)) || (_buffer.Bytes[i + j].phase == WD1772NS.FDC.Phases.p_id) ?
+			//		FontWeights.Bold : FontWeights.Normal
+			//});
 
 		}
 

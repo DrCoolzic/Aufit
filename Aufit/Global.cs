@@ -37,6 +37,58 @@ using WD1772NS;
 
 namespace Aufit {
 
+public struct RevData {
+	public int revolutionTime;
+	public int indexTimePosition;
+	public int fluxOffset;
+	public int fluxCount;
+}
+
+public class FluxData {
+	//public int[] flux;
+	/// <summary>Effective number of  flux transitions recorded for this track</summary>
+	/// <remarks>This array is filled by readStreamTrack() method</remarks>
+	//public int fluxCount;
+	/// <summary>Value of the shortest flux transition recorded for this track in sample clock</summary>
+	/// <remarks>This value is filled by readStreamTrack() method</remarks>
+	//public int fluxMin;
+	/// <summary>Value of the largest flux transition recorded for this track in sample clock</summary>
+	/// <remarks>This value is filled by readStreamTrack() method</remarks>
+	//public int fluxMax;
+
+	public int[] fluxValue;
+	public int fluxCount;
+	public int[] density;
+	public int[] nbWin;
+	public int fluxMin;
+	public int fluxMax;
+}
+
+public class decodeData {
+	/// <summary>Array of clock values as decoded by the DPLL.</summary>
+	/// This array is filled by mfmDecode() method. The array has the same size as the flux array</remarks>
+	//public int[] clock;
+	/// <summary>Array of nbWin values as decoded by the DPLL.</summary>
+	/// This array is filled by mfmDecode() method. The array has the same size as the flux array.
+	/// nbWin is the number of inspection windows to the next flux transition (i.e. bit to shift
+	/// in the DSR</remarks>
+	//public int[] nbWin;
+	/// <summary>Smallest value of the clock computed by the DPLL for this track</summary>
+	/// This value is filled in the mfmDecode() method.</remarks>
+	//public int clockMin;
+	/// <summary>Smallest value of the clock computed by the DPLL for this track</summary>
+	/// This value is filled in the mfmDecode() method.</remarks>
+	//public int clockMax;
+
+	public int[] clock;
+	public int[] nbWin;
+	public int clockMin;
+	public int clockMax;
+	//public int clockAvg;
+
+
+}
+
 /// <summary>
 /// Contains all global parameters and functions ...
 /// </summary>
@@ -47,38 +99,11 @@ public class Global {
 	public struct TrackData {
 		/// <summary> Array of Index structure for this track</summary>
 		/// <remarks>This array is filled by readStreamTrack() method</remarks>
-		public IndexInfo[] indexes;
-		/// <summary>Effective number of Index structure recorded for this track</summary>
-		/// <remarks>This array is filled by readStreamTrack() method</remarks>
-		public int indexCount;
-		/// <summary>Array of flux transitions for this track</summary>
-		/// <remarks>This array is filled by readStreamTrack() method</remarks>
-		public int[] flux;
-		/// <summary>Effective number of  flux transitions recorded for this track</summary>
-		/// <remarks>This array is filled by readStreamTrack() method</remarks>
-		public int fluxCount;
-		/// <summary>Value of the shortest flux transition recorded for this track in sample clock</summary>
-		/// <remarks>This value is filled by readStreamTrack() method</remarks>
-		public int fluxMin;
-		/// <summary>Value of the largest flux transition recorded for this track in sample clock</summary>
-		/// <remarks>This value is filled by readStreamTrack() method</remarks>
-		public int fluxMax;
+		public RevData[] revData;
 
-		/// <summary>Array of clock values as decoded by the DPLL.</summary>
-		/// This array is filled by mfmDecode() method. The array has the same size as the flux array</remarks>
-		public int[] clock;
-		/// <summary>Array of nbWin values as decoded by the DPLL.</summary>
-		/// This array is filled by mfmDecode() method. The array has the same size as the flux array.
-		/// nbWin is the number of inspection windows to the next flux transition (i.e. bit to shift
-		/// in the DSR</remarks>
-		public int[] nbWin;
-		/// <summary>Smallest value of the clock computed by the DPLL for this track</summary>
-		/// This value is filled in the mfmDecode() method.</remarks>
-		public int clockMin;
-		/// <summary>Smallest value of the clock computed by the DPLL for this track</summary>
-		/// This value is filled in the mfmDecode() method.</remarks>
-		public int clockMax;
-		public int clockAvg;
+		public FluxData fluxData;
+		public decodeData decodeData;
+
 
 		//public byte[] packedBits;
 		//public int[] packedClock;
@@ -102,6 +127,7 @@ public class Global {
 		public List<SectorContent> sectorsContent;
 	}
 
+
 	private static TrackData[,] _diskInfo = new TrackData[85, 2];
 	private static double _sampleClock = 0;
 
@@ -113,6 +139,23 @@ public class Global {
 		Side = 0;
 		Rev = 0;
 	}
+
+	public static int firstOffset(int track, int side, int rev) {
+		// rev == 0 we use the first entry
+		if (rev == 0) rev++;
+		return Disk[track, side].revData[rev - 1].fluxOffset;
+	}
+
+	public static int lastOffset(int track, int side, int rev) {
+		if (rev == 0) rev = Disk[track, side].revData.Count();
+		return (Disk[track, side].revData[rev - 1].fluxOffset + Disk[track, side].revData[rev - 1].fluxCount);
+	}
+
+	public static int indexTimePosition(int track, int side, int rev) {
+		if (rev == 0) rev++;
+		return (Disk[track, side].revData[rev - 1].indexTimePosition);
+	}
+
 
 	public static double SampleClock {
 		get { return _sampleClock; }
