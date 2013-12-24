@@ -202,20 +202,20 @@ class FluxDrawing {
 			currentTime += flux;
 
 			// TODO black line for revolution
-			//if (Global.Rev == 0) {
-			//	for (int j = 1; j < Global.currentTrack().indexCount - 1; j++) {
-			//		if (Global.currentTrack().indexes[j].fluxPosition -1 == i) {
-			//			Line revLine = new Line();
-			//			revLine.Stroke = Brushes.Black;
-			//			revLine.StrokeThickness = 1.5;
-			//			revLine.X1 = _fluxChartLayout.NormPoint(new Point((double)(currentTime + indexFirstFluxCorrection) / 1000000.0, 2)).X;
-			//			revLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
-			//			revLine.X2 = _fluxChartLayout.NormPoint(new Point((double)(currentTime + indexFirstFluxCorrection) / 1000000.0, 10)).X;
-			//			revLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
-			//			_fluxChartLayout.GraphicCanvas.Children.Add(revLine);
-			//		}
-			//	}
-			//}
+			if (Global.Rev == 0) {
+				for (int j = 1; j < Global.currentTrack().revData.Count() - 1; j++) {
+					if (Global.currentTrack().revData[j].fluxOffset - 1 == i) {
+						Line revLine = new Line();
+						revLine.Stroke = Brushes.Black;
+						revLine.StrokeThickness = 1.5;
+						revLine.X1 = _fluxChartLayout.NormPoint(new Point((double)(currentTime + indexFirstFluxCorrection) / 1000000.0, 2)).X;
+						revLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
+						revLine.X2 = _fluxChartLayout.NormPoint(new Point((double)(currentTime + indexFirstFluxCorrection) / 1000000.0, 10)).X;
+						revLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
+						_fluxChartLayout.GraphicCanvas.Children.Add(revLine);
+					}
+				}
+			}
 
 			// red line for sync
 			int nbWin = currentTrack.decodeData.nbWin[i];
@@ -259,7 +259,7 @@ class FluxDrawing {
 			//if (i % 2 == 0) fluxPoints[pointsInViewport].colorIndex += 2; ;
 
 			double r = (zoom > 1) ? (zoom > 25) ? (zoom > 50) ? 2.5 : 1.8 : 1.2 : 0.7;
-			if ((flux > 10000) && (Global.currentTrack().entropy > 0)) {
+			if ((flux > 10000) && (Global.currentTrack().histoData.entropy > 0)) {
 				r = 4;
 				fluxPoints[pointsInViewport].colorIndex = 4;
 			}

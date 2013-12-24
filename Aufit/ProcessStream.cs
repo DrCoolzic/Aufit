@@ -78,19 +78,19 @@ public class ProcessStream {
 			if (tmpHisto[i] >= threshold) break;
 			else histoSize--;
 		}
-		Global.Disk[track, side].histogram = new int[histoSize];
+		Global.Disk[track, side].histoData.histogram = new int[histoSize];
 		for (int i = 0; i < histoSize; i++)
-			Global.Disk[track, side].histogram[i] = tmpHisto[i];
+			Global.Disk[track, side].histoData.histogram[i] = tmpHisto[i];
 
 		int maxFound = 0;
 		bool searchMax = true;
 		int last = 0;
-		Global.Disk[track, side].bands = new List<int>();
+		Global.Disk[track, side].histoData.bands = new List<int>();
 		int notNullEntries = 0;
 
 		// find bands
 		for (int i = 0; i < histoSize; i++) {
-			int current = Global.Disk[track, side].histogram[i] = tmpHisto[i];
+			int current = Global.Disk[track, side].histoData.histogram[i] = tmpHisto[i];
 			if (current > 0) notNullEntries++;
 			if (searchMax) {
 				// we have reached the maximum when we go down but at least 10
@@ -98,7 +98,7 @@ public class ProcessStream {
 					// we ignore too small values
 					if (last > 40) {
 						maxFound++;
-						Global.Disk[track, side].bands.Add(current);
+						Global.Disk[track, side].histoData.bands.Add(current);
 					}
 					searchMax = false;
 				}	// max reached
@@ -112,12 +112,12 @@ public class ProcessStream {
 
 		double entropy = 0;
 		for (int i = 0; i < histoSize; i++)
-			if (Global.Disk[track, side].histogram[i] > 0) {
-				double p = (double)Global.Disk[track, side].histogram[i] / (double)notNullEntries;
+			if (Global.Disk[track, side].histoData.histogram[i] > 0) {
+				double p = (double)Global.Disk[track, side].histoData.histogram[i] / (double)notNullEntries;
 				entropy += p * Math.Log(p, 2);
 			}
-		Global.Disk[track, side].entropy = entropy;
-		if (entropy < 0) Global.Disk[track, side].bands.Clear();
+		Global.Disk[track, side].histoData.entropy = entropy;
+		if (entropy < 0) Global.Disk[track, side].histoData.bands.Clear();
 
 		text.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev));
 		text.AppendText(String.Format(" * {0} * (Ent {1:F0})",
@@ -197,8 +197,8 @@ public class ProcessStream {
 
 		Global.TrackData track = Global.currentTrack();
 		Global.Disk[Global.Track, Global.Side].decodeData = new decodeData();
-		Global.Disk[Global.Track, Global.Side].decodeData.clock = new int[track.fluxData.fluxCount];
-		Global.Disk[Global.Track, Global.Side].decodeData.nbWin = new int[track.fluxData.fluxCount];
+		Global.Disk[Global.Track, Global.Side].decodeData.clock = new int[track.fluxData.fluxCount + 1];
+		Global.Disk[Global.Track, Global.Side].decodeData.nbWin = new int[track.fluxData.fluxCount + 1];
 		
 		DPLL dpll = new DPLL();
 		int sizeBeforeTrim = Global.currentTrack().fluxData.fluxMax + 1;		
@@ -206,6 +206,7 @@ public class ProcessStream {
 
 		// compute min max and store nbWin & clock	
 		//for (int i = 0; i < track.indexes[track.indexCount - 1].fluxPosition; i++) {
+		// TODO check below
 		int lastRev = Global.Disk[Global.Track, Global.Side].revData.Count() - 1;
 		for (int i = Global.Disk[Global.Track, Global.Side].revData[0].fluxOffset; 
 			i < (Global.Disk[Global.Track, Global.Side].revData[lastRev].fluxOffset + Global.Disk[Global.Track, Global.Side].revData[lastRev].fluxCount); i++) {

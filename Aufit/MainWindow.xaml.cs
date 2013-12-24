@@ -553,6 +553,18 @@ namespace Aufit {
 			SCPReader scp = new SCPReader();
 			scp.readSCP("Dungeon Master (FTL).scp");
 
+			Global.Rev = 1;
+
+			BM1.Visibility = Visibility.Visible;
+			BM2.Visibility = Visibility.Visible;
+			tabCtrl.Width = matrixGrid.ActualWidth - 320;
+			Grid.SetColumn(tabCtrl, 2);
+			Grid.SetColumnSpan(tabCtrl, 1);
+
+			infoBox.Clear();
+			drawCharts();
+
+
 		}
 
 

@@ -28,11 +28,12 @@ namespace Aufit {
 		public int fluxOffset;
 	}
 
-	public class TrackHeader {
+	public class TrackInfo {
 		public string identifier = "";
-		public int number;
+		public int track;
 		public int side;
 		public RevInfo[] revInfo;
+		public int[] fluxValues;
 		public long checksum;
 	}
 
@@ -67,21 +68,24 @@ namespace Aufit {
 
 		//private IndexInfo[] _indexArray;
 		/// <summary>Number of IndexInfo structure in the _indexArray</summary>
-		private int _indexCount;
-		/// <summary>Array of FluxValues (flux transition values) in sample clocks</summary>
-		private int[] _fluxValues;
+		//private int _indexCount;
+		///// <summary>Array of FluxValues (flux transition values) in sample clocks</summary>
+		//private int[] _fluxValues;
 
-		/// <summary>Number of flux transitions recorded in the FluxValue array</summary>
-		private int _fluxCount;
+		///// <summary>Number of flux transitions recorded in the FluxValue array</summary>
+		//private int _fluxCount;
 
 
-		/// <summary>minimum flux value found during parsing</summary>
-		private int _fluxMin;
-		/// <summary>maximum flux value found during parsing</summary>
-		private int _fluxMax;
+		///// <summary>minimum flux value found during parsing</summary>
+		//private int _fluxMin;
+		///// <summary>maximum flux value found during parsing</summary>
+		//private int _fluxMax;
 
 		/// <summary> Value of the Sample Clock</summary>
 		private double _sckValue;
+
+		private int _fluxMin = 10000000;
+		private int _fluxMax = 0;
 
 		/// <summary>Reads and decodes the KF Stream file specified</summary>	
 		/// <param name="fileName">Name of the stream file to read and decode</param>
@@ -121,6 +125,8 @@ namespace Aufit {
 
 			// we parse the file
 			SCPStatus status = decodeScp(sbuf);
+
+
 			return status;
 		}
 
@@ -153,7 +159,7 @@ namespace Aufit {
 				bufferIndex += 4;
 				if (file.TrackHeader[tnum] != 0)
 					// TODO if
-					readTrackHeader(buffer, file.TrackHeader[tnum]);
+					readTrack(buffer, tnum, file.TrackHeader[tnum]);
 			}
 
 			// TODO check checksum
@@ -163,44 +169,79 @@ namespace Aufit {
 			return SCPStatus.sdsOk;
 		}
 
-		private SCPStatus readTrackHeader(byte[] buffer, int trackHeaderPosition) {
-			TrackHeader track = new TrackHeader();
+		private SCPStatus readTrack(byte[] buffer, int trackComp, int trackHeaderPosition) {
+			int track = trackComp / 2;
+			int side = trackComp % 2;
+			_fluxMin = 100000;
+			_fluxMax = 0;
+
+			TrackInfo ti = new TrackInfo();
 			int bufferIndex = trackHeaderPosition;
 
-			track.identifier += ((char)buffer[bufferIndex++]).ToString();	// 0x00
-			track.identifier += ((char)buffer[bufferIndex++]).ToString();	// 0x01
-			track.identifier += ((char)buffer[bufferIndex++]).ToString();	// 0x02
-			if (track.identifier != "TRK")
+			ti.identifier += ((char)buffer[bufferIndex++]).ToString();	// 0x00
+			ti.identifier += ((char)buffer[bufferIndex++]).ToString();	// 0x01
+			ti.identifier += ((char)buffer[bufferIndex++]).ToString();	// 0x02
+			if (ti.identifier != "TRK")
 				return SCPStatus.sdsInvalidHeader;
-			track.number = buffer[bufferIndex] / 2;							// 0x03
-			track.side = buffer[bufferIndex++] % 2;
-			track.revInfo = new RevInfo[5];
+			ti.track = buffer[bufferIndex] / 2;							// 0x03
+			ti.side = buffer[bufferIndex++] % 2;
+			ti.revInfo = new RevInfo[5];
 
+			int fluxSize = 0;
 			for (int i = 0; i < 5; i++) {
-				track.revInfo[i] = new RevInfo();
-				track.revInfo[i].indexTime = int32Extract(buffer, bufferIndex);
+				ti.revInfo[i] = new RevInfo();
+				ti.revInfo[i].indexTime = int32Extract(buffer, bufferIndex);
 				bufferIndex += 4;
-				track.revInfo[i].fluxCount = int32Extract(buffer, bufferIndex);
+				ti.revInfo[i].fluxCount = int32Extract(buffer, bufferIndex);
 				bufferIndex += 4;
-				track.revInfo[i].fluxOffset = int32Extract(buffer, bufferIndex);
+				fluxSize += ti.revInfo[i].fluxCount;
+				ti.revInfo[i].fluxOffset = int32Extract(buffer, bufferIndex);
 				bufferIndex += 4;
-				if (track.revInfo[i].indexTime != 0)
-					readTrackFlux(buffer, track.revInfo[i].fluxOffset + trackHeaderPosition, track.revInfo[i].fluxCount);
 			}
-			track.checksum = int32Extract(buffer, bufferIndex);
+
+			ti.fluxValues = new int[fluxSize];
+
+			int nbRev = 0;
+			for (int i = 0; i < 5; i++) {
+				if (ti.revInfo[i].indexTime != 0) {
+					bufferIndex = ti.revInfo[i].fluxOffset + trackHeaderPosition;
+					if (i > 0) ti.revInfo[i].fluxOffset = ti.revInfo[i - 1].fluxOffset + ti.revInfo[i - 1].fluxCount;
+					else ti.revInfo[i].fluxOffset = 0;
+					nbRev++;
+					for (int j = 0; j < ti.revInfo[i].fluxCount; j++) {
+						ti.fluxValues[j] = buffer[bufferIndex++] << 8;
+						ti.fluxValues[j] += buffer[bufferIndex++];
+						if (ti.fluxValues[j] > _fluxMax) _fluxMax = ti.fluxValues[j];
+						if (ti.fluxValues[j] < _fluxMin) _fluxMin = ti.fluxValues[j];
+					}
+				}
+			}
+			ti.checksum = int32Extract(buffer, bufferIndex);
+
+			Global.Rev = 1;
+			Global.Disk[track, side].fluxData = new FluxData();
+			Global.Disk[track, side].fluxData.fluxValue = ti.fluxValues;
+			Global.Disk[track, side].fluxData.fluxCount = ti.fluxValues.Count();
+
+			Global.SampleClock = 40000000.0;	// 1 / 25 ns
+			Global.Disk[track, side].fluxData.fluxMax = _fluxMax;
+			Global.Disk[track, side].fluxData.fluxMin = _fluxMin;
+
+			Global.Disk[track, side].revData = new RevData[nbRev];
+			for (int i = 0; i < nbRev; i++) {
+				Global.Disk[track, side].revData[i].revolutionTime = ti.revInfo[i].indexTime;
+				Global.Disk[track, side].revData[i].fluxCount = ti.revInfo[i].fluxCount;
+				Global.Disk[track, side].revData[i].indexTimePosition = 0;
+				Global.Disk[track, side].revData[i].fluxOffset = ti.revInfo[i].fluxOffset;
+			}
+
+
 
 			return SCPStatus.sdsOk;
 
 		}
 
-		private void readTrackFlux(byte[] buffer, int dataOffset, int count) {
-			int[] flux = new ushort[count];
-			int bufferIndex = dataOffset;
-			for (int i = 0; i < count; i++) {
-				flux[i] = (ushort)(buffer[bufferIndex++] << 8);
-				flux[i] += buffer[bufferIndex++];
-			}
-		}
+
 
 		/// <summary>
 		/// Extract the next 4 bytes from the Stream File as a 32bits integer

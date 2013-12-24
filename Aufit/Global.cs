@@ -85,8 +85,22 @@ public class decodeData {
 	public int clockMin;
 	public int clockMax;
 	//public int clockAvg;
+}
 
+public struct HistoData {
+	/// <summary>Computed entropy for this track</summary>
+	/// <remarks>This value is set by computeHisto()</remarks>
+	//public double entropy;
+	/// <summary>Histogram Array: Flux transition repartition</summary>
+	/// <remarks>This value is set by computeHisto()</remarks>
+	//public int[] histogram;
+	/// <summary>List of maximums in the histogram</summary>
+	/// <remarks>This value is set by computeHisto()</remarks>
+	//public List<int> bands;
 
+	public int[] histogram;
+	public double entropy;
+	public List<int> bands;
 }
 
 /// <summary>
@@ -104,25 +118,16 @@ public class Global {
 		public FluxData fluxData;
 		public decodeData decodeData;
 
+		public HistoData histoData;
 
 		//public byte[] packedBits;
 		//public int[] packedClock;
 		//public int[] bitPosition;
 
-		/// <summary>Computed entropy for this track</summary>
-		/// <remarks>This value is set by computeHisto()</remarks>
-		public double entropy;
-		/// <summary>Histogram Array: Flux transition repartition</summary>
-		/// <remarks>This value is set by computeHisto()</remarks>
-		public int[] histogram;
-		/// <summary>List of maximums in the histogram</summary>
-		/// <remarks>This value is set by computeHisto()</remarks>
-		public List<int> bands;
 
 		/// <summary>Information from a read track</summary>
 		/// <remarks>This value is set by readTrack()</remarks>
 		public TrackContent trackContent;
-
 		public AddrContent addrContent;
 		public List<SectorContent> sectorsContent;
 	}
@@ -132,12 +137,12 @@ public class Global {
 	private static double _sampleClock = 0;
 
 	public static void resetDisk() {
-		_diskInfo = null;
+		//_diskInfo = null;
 		_diskInfo = new TrackData[85, 2];
 		_sampleClock = 0;
 		Track = 0;
 		Side = 0;
-		Rev = 0;
+		Rev = 1;
 	}
 
 	public static int firstOffset(int track, int side, int rev) {
@@ -156,7 +161,9 @@ public class Global {
 		return (Disk[track, side].revData[rev - 1].indexTimePosition);
 	}
 
-
+	/// <summary>
+	/// Return the sample clock frequency in Hz (i.e. 1/sampling_period 
+	/// </summary>
 	public static double SampleClock {
 		get { return _sampleClock; }
 		set { _sampleClock = value; }

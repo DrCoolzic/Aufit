@@ -301,7 +301,7 @@ public class KFStreamReader {
 	}
 
 	/// <summary>Access the Sample Clock value</summary>
-	/// <returns>the value of the Sample Clock</returns>
+	/// <returns>the value of the Sample Clock in ns</returns>
 	/// <remarks>This function is used to get the Sample Clock value.\n
 	/// By default the value of _sckValue = ((18432000.0 * 73.0) / 14.0) / 4.0;\n
 	/// but with firmware 2.0 and above the sample clock values is transmitted

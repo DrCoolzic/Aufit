@@ -148,7 +148,7 @@ namespace Aufit {
 				else if (tc.hasProtection) color = Brushes.Orange;
 			}
 			else {
-				double entropy = td.entropy;
+				double entropy = td.histoData.entropy;
 				color = (entropy < 2000) ? (entropy < 0) ? Brushes.LightGray : Brushes.Yellow : Brushes.Lime;
 			}
 			_buttons[track / 10, track % 10, side].Background = color;		

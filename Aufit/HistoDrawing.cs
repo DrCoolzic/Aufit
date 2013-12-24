@@ -68,16 +68,16 @@ class HistoDrawing {
 		// compute Xmax and Ymax
 		int xmin = Int32.MaxValue;
 		//int xmax = Global.Histo.Length;
-		int xmax = Global.currentTrack().histogram.Length;
+		int xmax = Global.currentTrack().histoData.histogram.Length;
 		int ymin = 0;
 		int ymax = 0;
 
 		//for (int i = 0; i < Global.Histo.Length; i++) {
-		for (int i = 0; i < Global.currentTrack().histogram.Length; i++) {
+		for (int i = 0; i < Global.currentTrack().histoData.histogram.Length; i++) {
 			if (logScale)
-				value = (int)Math.Log(Global.currentTrack().histogram[i] + 1, 1.2);
+				value = (int)Math.Log(Global.currentTrack().histoData.histogram[i] + 1, 1.2);
 			else
-				value = Global.currentTrack().histogram[i];
+				value = Global.currentTrack().histoData.histogram[i];
 			if ((xmin == Int32.MaxValue) && (value != 0))
 				xmin = i - 1;
 			if (value > ymax) ymax = value;
@@ -106,27 +106,27 @@ class HistoDrawing {
 		// first dummy point
 		pg.Points.Add(_histoChartLayout.NormPoint(0, 0));
 
-		Point[] points = new Point[Global.currentTrack().histogram.Length];
+		Point[] points = new Point[Global.currentTrack().histoData.histogram.Length];
 		// all pointsInViewport
-		for (int i = 0; i < Global.currentTrack().histogram.Length - 1; i++) {
+		for (int i = 0; i < Global.currentTrack().histoData.histogram.Length - 1; i++) {
 			if (logScale) {
-				value = (int)Math.Log(Global.currentTrack().histogram[i] + 1, 1.2);
+				value = (int)Math.Log(Global.currentTrack().histoData.histogram[i] + 1, 1.2);
 			}
 			else {
-				value = Global.currentTrack().histogram[i];
+				value = Global.currentTrack().histoData.histogram[i];
 			}
 
 			pg.Points.Add(_histoChartLayout.NormPoint((double)Global.sampleToTiming(i) / 1000.0, value));
 			points[i] = _histoChartLayout.NormPoint((double)Global.sampleToTiming(i) / 1000.0, value);
 		}
 		// force last point to zero
-		pg.Points.Add(_histoChartLayout.NormPoint((double)Global.sampleToTiming(Global.currentTrack().histogram.Length - 1) / 1000.0, 0));
-		points[Global.currentTrack().histogram.Length - 1] = _histoChartLayout.NormPoint((double)Global.sampleToTiming(Global.currentTrack().histogram.Length - 1) / 1000.0, 0);
+		pg.Points.Add(_histoChartLayout.NormPoint((double)Global.sampleToTiming(Global.currentTrack().histoData.histogram.Length - 1) / 1000.0, 0));
+		points[Global.currentTrack().histoData.histogram.Length - 1] = _histoChartLayout.NormPoint((double)Global.sampleToTiming(Global.currentTrack().histoData.histogram.Length - 1) / 1000.0, 0);
 
 		// add polygon to canvas
 		_histoChartLayout.GraphicCanvas.Children.Add(pg);
 
-		if (Global.currentTrack().entropy > 0) {
+		if (Global.currentTrack().histoData.entropy > 0) {
 			// compute control pointsInViewport for Bezier curve
 			Point[] cp1, cp2;
 			ovp.BezierSpline.GetCurveControlPoints(points, out cp1, out cp2);
