@@ -35,6 +35,7 @@ namespace Aufit {
 				TrackContent tc = Global.Disk[Global.Track, Global.Side].trackContent;
 				if (Global.Disk[Global.Track, Global.Side].fluxData == null) continue;
 				tc = await decodeAndReadAsync();
+				//tc = decodeAndRead();
 				drawDiskTrack(tc, track, message);
 				ButtonMatrix.setButtonBG(Global.Track, Global.Side);
 
@@ -54,7 +55,7 @@ namespace Aufit {
 			TrackContent trackInfo = Global.Disk[Global.Track, Global.Side].trackContent;
 			if (trackInfo != null) return trackInfo;
 			ProcessStream.mfmDecode();
-			FDC.readAll(Global.Track, Global.Side, Global.Side);
+			FDC.readAll(Global.Track, Global.Side, Global.Rev);
 			trackInfo = Global.Disk[Global.Track, Global.Side].trackContent;
 			return trackInfo;
 		}

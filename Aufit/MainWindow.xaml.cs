@@ -44,7 +44,7 @@ namespace Aufit {
 		private BufferWindow _sectorWindow = null;
 		private bool _sectorWindowIsOpen = false;
 
-		private string _rootName;
+		private string _diskName;
 
 		//public double MinClock { get; set; }
 		//public double MaxClock { get; set; }
@@ -264,28 +264,62 @@ namespace Aufit {
 		}
 
 
+		private void readKFRawFile(string fileName) {
+			BM1.Visibility = Visibility.Hidden;
+			BM2.Visibility = Visibility.Hidden;
+			tabCtrl.Width = matrixGrid.ActualWidth;
+			Grid.SetColumn(tabCtrl, 0);
+			Grid.SetColumnSpan(tabCtrl, 3);
+			Global.resetDisk();
+
+			bool status = ProcessStream.readStreamTrack(fileName, Global.Track, Global.Side);
+			if (status) {
+				infoBox.Clear();
+				drawCharts();
+			}
+		}
+
+		private async void readSPCFile(string fileName) {
+			BM1.Visibility = Visibility.Visible;
+			BM2.Visibility = Visibility.Visible;
+			tabCtrl.Width = matrixGrid.ActualWidth - 320;
+			Grid.SetColumn(tabCtrl, 2);
+			Grid.SetColumnSpan(tabCtrl, 1);
+			_diskName = System.IO.Path.GetFileNameWithoutExtension(fileName);
+
+			bool fileOK = await SCPReader.readSCPAsync(fileName);
+
+			for (int side = 0; side < 2; side++) {
+				for (int track = 0; track < 84; track++) {
+					ProcessStream.computeHisto(track, side, 1, infoBox);
+					ButtonMatrix.setButtonBG(track, side);
+				}
+			}
+
+			infoBox.Clear();
+			drawCharts();
+		}
+
 
 		private void openFileClick(object sender, RoutedEventArgs e) {
 			OpenFileDialog ofd = new OpenFileDialog();
-			ofd.Filter = "Stream Files|*.raw|All Files|*.*";
+			ofd.Filter = "SuperCard Pro files|*.scp|Stream Files|*.raw|All Files|*.*";
 			bool? ok = ofd.ShowDialog();
 			if (ok == true) {
-				FileName.Text = ofd.FileName;
 				Global.Track = Global.Side = 0;
 				Global.Rev = 1;
-
-				BM1.Visibility = Visibility.Hidden;
-				BM2.Visibility = Visibility.Hidden;
-				tabCtrl.Width = matrixGrid.ActualWidth;
-				Grid.SetColumn(tabCtrl, 0);
-				Grid.SetColumnSpan(tabCtrl, 3);
 				Global.resetDisk();
-
-				bool status = ProcessStream.readStreamTrack(ofd.FileName, Global.Track, Global.Side);
-				if (status) {
-					infoBox.Clear();
-					drawCharts();
+				FileName.Text = ofd.FileName;
+				string extension = System.IO.Path.GetExtension(ofd.FileName);
+				switch (extension) {
+					case ".raw":
+						readKFRawFile(ofd.FileName);
+						break;
+					case ".scp":
+						readSPCFile(ofd.FileName);
+						break;
 				}
+
 			}
 		}
 
@@ -318,7 +352,7 @@ namespace Aufit {
 						readAllTracksAsync(path, root);
 					else
 						readAllTracksTasks(path, root);
-					_rootName = root;
+					_diskName = root;
 				}
 				else
 					FileName.Text = "Sorry no Stream files found in this directory";
@@ -362,7 +396,7 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="path">Path to directory that contains the streams</param>
 		/// <param name="root">Root name expanded with xx.x to create the final name</param>
-		public  void readAllTracksAsync(string path, string root) {
+		public async void readAllTracksAsync(string path, string root) {
 			string fname;
 			_fluxDrawing.FastDraw = true;
 			infoBox.Clear();
@@ -371,8 +405,8 @@ namespace Aufit {
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {
 					fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, track, side);
-					//bool streamOK = await ProcessStream.readStreamTrackAsync(fname, track, side);
-					bool streamOK = ProcessStream.readStreamTrack(fname, track, side);
+					bool streamOK = await ProcessStream.readStreamTrackAsync(fname, track, side);
+					//bool streamOK = ProcessStream.readStreamTrack(fname, track, side);
 					if (streamOK) {
 						//drawCharts();
 						ProcessStream.computeHisto(track, side, 1, infoBox);
@@ -539,7 +573,7 @@ namespace Aufit {
 			if (_diskWindowIsOpen)
 				_diskWindow.Close();
 
-			string message = String.Format("Disk {0} (Side {1})", _rootName, Global.Side);
+			string message = String.Format("Disk {0} (Side {1})", _diskName, Global.Side);
 			_diskWindow = new DiskWindow(message);
 			_diskWindow.Closed += new EventHandler(diskWindowClosed);
 			_diskWindowIsOpen = true;
@@ -551,19 +585,6 @@ namespace Aufit {
 		}
 
 		private void btProtectionClick(object sender, RoutedEventArgs e) {
-			SCPReader.readSCP("Dungeon Master (FTL).scp");
-
-			Global.Rev = 1;
-			Global.Track = Global.Side = 0;
-
-			BM1.Visibility = Visibility.Visible;
-			BM2.Visibility = Visibility.Visible;
-			tabCtrl.Width = matrixGrid.ActualWidth - 320;
-			Grid.SetColumn(tabCtrl, 2);
-			Grid.SetColumnSpan(tabCtrl, 1);
-
-			infoBox.Clear();
-			drawCharts();
 
 
 		}

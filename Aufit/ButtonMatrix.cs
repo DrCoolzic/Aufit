@@ -147,10 +147,12 @@ namespace Aufit {
 				if (tc.sectors.Count == 1) color = Brushes.SlateGray;
 				else if (tc.hasProtection) color = Brushes.Orange;
 			}
-			else {
+			else if (Global.Disk[track, side].fluxData != null) {
 				double entropy = td.histoData.entropy;
 				color = (entropy < 2000) ? (entropy < 0) ? Brushes.LightGray : Brushes.Yellow : Brushes.Lime;
 			}
+			else
+				color = Brushes.White;
 			_buttons[track / 10, track % 10, side].Background = color;		
 		}
 

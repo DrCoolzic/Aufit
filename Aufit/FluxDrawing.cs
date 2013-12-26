@@ -278,7 +278,7 @@ class FluxDrawing {
 		_win.tbFluxInfo.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", Global.Track, Global.Side, Global.Rev));
 		_win.tbFluxInfo.AppendText(String.Format(" - Flux range: {0:F2} {1:F2} µs", (double)minFlux / 1000.0, (double)maxFlux / 1000.0));
 		_win.tbFluxInfo.AppendText(String.Format(" - Track length: {0:F3} ms", (double)(currentTime + indexFirstFluxCorrection) / 1000000.0));
-		_win.tbFluxInfo.AppendText(String.Format(" => z={0:F1} s={1} p={2}", _fluxChartLayout.zoom(), SpeedUp, pointsInViewport));
+		_win.tbFluxInfo.AppendText(String.Format(" - Debug z={0:F1} s={1} p={2}", _fluxChartLayout.zoom(), SpeedUp, pointsInViewport));
 	}
 
 	/// <summary>
