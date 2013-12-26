@@ -197,7 +197,7 @@ class ClockDrawing {
 		Global.TrackData track = Global.currentTrack();
 		int fluxXmin = 0;
 		int fluxXmax = 200;
-		if (Global.Rev == 0) fluxXmax = 800;
+		if (Global.Rev == 0) fluxXmax = 200 * Global.Disk[Global.Track, Global.Side].revData.Count();
 		_clockMin = Global.currentTrack().decodeData.clockMin;
 		_clockMax = Global.currentTrack().decodeData.clockMax;
 

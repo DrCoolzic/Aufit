@@ -203,7 +203,7 @@ class FluxDrawing {
 
 			// TODO black line for revolution
 			if (Global.Rev == 0) {
-				for (int j = 1; j < Global.currentTrack().revData.Count() - 1; j++) {
+				for (int j = 1; j < Global.currentTrack().revData.Count(); j++) {
 					if (Global.currentTrack().revData[j].fluxOffset - 1 == i) {
 						Line revLine = new Line();
 						revLine.Stroke = Brushes.Black;
@@ -294,7 +294,7 @@ class FluxDrawing {
 		if (rev > 0)
 			_viewportXmax = 200;
 		else
-			_viewportXmax = 800;
+			_viewportXmax = 200 * Global.Disk[Global.Track, Global.Side].revData.Count();
 
 		int max = Global.sampleToTiming(track.fluxData.fluxMax) + 500;
 		if (max < 10000) max = 10000;

@@ -155,7 +155,7 @@ namespace Aufit {
 					// INTER
 					if (tc.sectors[i].phases[(byte)Phases.p_outer].byteCount > 0)
 						displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,5:D}\n", tc.sectors[i].phases[(byte)Phases.p_outer].byteCount,
-							tc.sectors[i].phases[(byte)Phases.p_inner].timeLength / 1000));
+							tc.sectors[i].phases[(byte)Phases.p_outer].timeLength / 1000));
 					else
 						displayBuffer.Inlines.Add(String.Format("\n"));
 

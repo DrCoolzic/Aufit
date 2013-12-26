@@ -33,7 +33,7 @@ namespace Aufit {
 			for (int track = 0; track < 84; track++) {
 				Global.Track = track;
 				TrackContent tc = Global.Disk[Global.Track, Global.Side].trackContent;
-				//if (trackInfo == null)
+				if (Global.Disk[Global.Track, Global.Side].fluxData == null) continue;
 				tc = await decodeAndReadAsync();
 				drawDiskTrack(tc, track, message);
 				ButtonMatrix.setButtonBG(Global.Track, Global.Side);

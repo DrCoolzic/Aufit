@@ -272,7 +272,9 @@ namespace SCPReaderNS {
 			int nbRevFound = 0;
 			for (int i = 0; i < 5; i++) {
 				if (ti.revInfo[i].indexTime != 0) {
+					// set bufferIndex to the offset of the data
 					bufferIndex = ti.revInfo[i].fluxOffset + trackHeaderPosition;
+					// now set fluxOffset to offset in the "extracted data buffer"
 					if (i > 0) ti.revInfo[i].fluxOffset = ti.revInfo[i - 1].fluxOffset + ti.revInfo[i - 1].fluxCount;
 					else ti.revInfo[i].fluxOffset = 0;
 					nbRevFound++;
@@ -301,7 +303,7 @@ namespace SCPReaderNS {
 			for (int i = 0; i < nbRevFound; i++) {
 				Global.Disk[track, side].revData[i].revolutionTime = ti.revInfo[i].indexTime;
 				Global.Disk[track, side].revData[i].fluxCount = ti.revInfo[i].fluxCount;
-				Global.Disk[track, side].revData[i].indexTimePosition = ti.revInfo[i].indexTime;
+				Global.Disk[track, side].revData[i].indexTimePosition = ti.revInfo[i].indexTimePosition;
 				Global.Disk[track, side].revData[i].fluxOffset = ti.revInfo[i].fluxOffset;
 			}
 			return SCPStatus.stsOK;
