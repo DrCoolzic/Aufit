@@ -33,7 +33,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-using StreamNS;
+using KFReaderNS;
 using WD1772NS;
 using Aufit;
 
@@ -70,7 +70,7 @@ class DataDrawing {
 		_dataChartLayout.chartResetCanvas();
 		_dataChartLayout.drawChartGrids();
 
-		FDC.readAll(Global.Track, Global.Side);
+		FDC.readAll(Global.Track, Global.Side, Global.Rev);
 
 		TrackContent track = Global.Disk[Global.Track, Global.Side].trackContent;
 		for (int i = 0; i < track.sectors.Count; i++) {

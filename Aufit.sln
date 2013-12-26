@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KFStreamReader", "KFStreamReader\KFStreamReader.csproj", "{B1ABABCF-24FE-41D8-A707-99F4C3C5FB8B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KFReader", "KFStreamReader\KFReader.csproj", "{B1ABABCF-24FE-41D8-A707-99F4C3C5FB8B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KFStreamInfo", "KFStreamInfo\KFStreamInfo.csproj", "{C676744A-6898-435C-83E0-C0A701AFA81D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KFInfo", "KFStreamInfo\KFInfo.csproj", "{C676744A-6898-435C-83E0-C0A701AFA81D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aufit", "Aufit\Aufit.csproj", "{473DA4F9-7AE5-47C2-B6EB-9B3D12B6A9FF}"
 EndProject

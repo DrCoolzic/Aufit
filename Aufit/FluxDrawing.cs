@@ -35,7 +35,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 
 using WD1772NS;
-using StreamNS;
+using KFReaderNS;
 using Aufit;
 
 namespace ChartNS {
@@ -146,8 +146,8 @@ class FluxDrawing {
 		//int rev = Global.Rev;
 		//int track = Global.Track;
 		//int side = Global.Side;
-		start = Global.firstOffset(track, side, rev);
-		stop = Global.lastOffset(track, side, rev);
+		start = Global.startOffset(track, side, rev);
+		stop = Global.stopOffset(track, side, rev);
 		indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 
@@ -218,8 +218,8 @@ class FluxDrawing {
 			}
 
 			// red line for sync
-			int nbWin = currentTrack.decodeData.nbWin[i];
-			int clk = currentTrack.decodeData.clock[i];
+			int nbWin = currentTrack.decodeData.fluxInWin[i];
+			int clk = currentTrack.decodeData.fluxClockPeriod[i];
 			dsr.shiftBitsIn(nbWin);	// push data in register
 			while (dsr.byteReady()) {
 				int bitShift = dsr.searchSynch();	// search sync

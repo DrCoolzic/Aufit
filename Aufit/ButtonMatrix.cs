@@ -8,7 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 
 using WD1772NS;
-using StreamNS;
+using KFReaderNS;
 
 namespace Aufit {
 	/// <summary>

@@ -1,5 +1,5 @@
 ﻿/*!
-@file KFStreamInfo.cs
+@file KFInfo.cs
 @brief Test program of the KFStreamReader code
 
 <div class="jlg">Copyright (C) 2011 Software Preservation Society & Jean 
@@ -33,7 +33,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
-using KFStreamReaderNS;
+using KFReaderNS;
 
 namespace KFStreamInfoNS {
 	/// <summary>
@@ -99,7 +99,7 @@ namespace KFStreamInfoNS {
 			} // line option(s)
 
 			filename = args[idx];
-			KFStreamReader stream = new KFStreamReader();
+			KFReader stream = new KFReader();
 
 			// Read and Decode the stream file
 			Console.Write("Reading and Decoding Stream: {0}\r\n", filename);

@@ -64,8 +64,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Compile Include="..\KFStreamReader\KFStreamReader.cs">
-      <Link>KFStreamReader.cs</Link>
+    <Compile Include="..\KFStreamReader\KFReader.cs">
+      <Link>KFReader.cs</Link>
     </Compile>
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>

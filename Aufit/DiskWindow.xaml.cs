@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
 using WD1772NS;
-using StreamNS;
+using KFReaderNS;
 
 namespace Aufit {
 	/// <summary>
@@ -54,7 +54,7 @@ namespace Aufit {
 			TrackContent trackInfo = Global.Disk[Global.Track, Global.Side].trackContent;
 			if (trackInfo != null) return trackInfo;
 			ProcessStream.mfmDecode();
-			FDC.readAll(Global.Track, Global.Side);
+			FDC.readAll(Global.Track, Global.Side, Global.Side);
 			trackInfo = Global.Disk[Global.Track, Global.Side].trackContent;
 			return trackInfo;
 		}

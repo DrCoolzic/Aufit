@@ -29,7 +29,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using StreamNS;
+using KFReaderNS;
 using Aufit;
 using System.Diagnostics;
 using System.Windows.Media;
@@ -199,48 +199,28 @@ namespace WD1772NS {
 		private readonly static int upperClock = 2000 + (4 * 20);
 		private readonly static int lowerClock = 2000 - (4 * 20);
 
-		//private readonly int BORDER_BIT = 0x0001;
-		//private readonly int TIME_VIOLATION = 0x0002;
-		//private readonly int NFA = 0x0004;
-
 		/// <summary>Read a track by decoding all the track MFM bits</summary>
 		/// <remarks>This function interprets the bits stream as a WD1772 would do with a read track command. 
 		/// It fills a ReadTrackInfo structure that gives detailed information about the track 
 		/// as well as a MFMBuffer that contains all the decoded bytes.</remarks>
-		public static TrackContent readTrack(int track, int side) {
+		public static TrackContent readTrack(int track, int side, int rev) {
 			// check if already there
 			TrackContent tc = Global.Disk[track, side].trackContent;
 			if (tc != null) return tc;
 
-			// not there! Do the work :) and store result Disk
 			tc = new TrackContent();
 			tc.buffer = new TrackBuffer();
 			Global.Disk[track, side].trackContent = tc;
 
 			Global.TrackData currentTrack = Global.Disk[track, side];
-			//int nbRev = currentTrack.indexCount - 1;
-			int start, stop, indexFirstFluxCorrection;
-			//if (Global.Rev > 0) {
-			//	start = currentTrack.indexes[Global.Rev - 1].fluxPosition;
-			//	stop = currentTrack.indexes[Global.Rev].fluxPosition - 1;
-			//	indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[Global.Rev - 1].preIndexTime);
-			//}	// one rev
-			//else {
-			//	start = currentTrack.indexes[0].fluxPosition;
-			//	stop = currentTrack.indexes[nbRev-1].fluxPosition;
-			//	indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[0].preIndexTime);
-			//}	// all but but last rev
-			int rev = Global.Rev;
-			start = Global.firstOffset(track, side, rev);
-			stop = Global.lastOffset(track, side, rev);
-			indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
+			int start = Global.startOffset(track, side, rev);
+			int stop = Global.stopOffset(track, side, rev);
+			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
-
-			// add dummy sector[0] tp store GAP and potentially DATA segment information
+			// add dummy sector[0] to store GAP and potentially DATA segment information
 			tc.sectors.Add(new SectorInfo());
 			Phases phase = Phases.p_outer;
 			DSR dsr = new DSR();
-			//byte syncInf;				// used to pass info to MFMBuffer
 			int syncCount = 0;			// number of sync found
 			byte lastSync = 0;			// last sync value found
 			int byteLeftInBlock = 0;	// byte to go in p_id and p_data
@@ -264,11 +244,12 @@ namespace WD1772NS {
 			// so we detect and display correctly ID over index ...
 			// added syncCount because we may have just the start of the sync of ID are very end !!!
 			// Good example is ComputerHitsVolume2 Disk 2 track 78
-			// For rev==0 we now limit to n-1 revolution so we should not have problem of going
-			// beyond last flux transition. But we do an assert for safety.
 			tc.idOverIdx = false;
-			for (int i = start; (i < stop) || (phase == Phases.p_id) || ((phase == Phases.p_inner) && tc.idOverIdx) || (syncCount > 0); i++) {
-				//Debug.Assert(i < currentTrack.indexes[nbRev].fluxPosition, "Index loop overflow in readTrack()", "Internal error please report");
+			for (int i = start; 
+				(i < stop) || (phase == Phases.p_id) || ((phase == Phases.p_inner) && tc.idOverIdx) || (syncCount > 0); 
+				i++) {
+				if (i >= currentTrack.fluxData.fluxCount)
+					break;
 
 				if ((i >= stop) && (phase == Phases.p_id))
 					tc.idOverIdx = true;
@@ -283,11 +264,11 @@ namespace WD1772NS {
 				currentTime += flux;
 
 				if (flux > 32000)	nbWin = flux / 2000;	// NFA
-				else				nbWin = currentTrack.decodeData.nbWin[i];
+				else				nbWin = currentTrack.decodeData.fluxInWin[i];
 
 				currentBit += nbWin;
 				dsr.shiftBitsIn(nbWin);	// push data in register
-				clock = currentTrack.decodeData.clock[i];
+				clock = currentTrack.decodeData.fluxClockPeriod[i];
 				clockAvg += clock;
 				clockCount++;
 
@@ -333,7 +314,6 @@ namespace WD1772NS {
 					currentBit -= bitShift;
 				
 					if (dsr.SyncFound) {
-						//syncInf |= 0x80;	// set upper bit as indicator
 						syncCount++;
 						tc.syncs.Add(new SyncInfo());
 						tc.syncs[tc.syncs.Count - 1].value = dsr.Data;
@@ -454,7 +434,6 @@ namespace WD1772NS {
 								tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].crc = 0xFFFF; // set to bad value
 								tc.sectors[tc.sectors.Count - 1].endTime = prevBlockEndTime;
 								tc.sectors.Add(new SectorInfo());
-
 								tc.sectors[tc.sectors.Count - 1].startTime = prevBlockEndTime;
 								tc.sectors[tc.sectors.Count - 1].addr.iam = dsr.Data;
 								tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].startBit = currentBit;
@@ -481,11 +460,8 @@ namespace WD1772NS {
 						
 						// in an ID or DATA segment we should not find a sync inside!
 						bitShift = dsr.searchSynch();
-						if (dsr.SyncFound) {
-							//syncInf = (byte)bitShift;
-							//syncInf |= 0x80;
+						if (dsr.SyncFound)
 							tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].badSync++;
-						}
 					} // ID or DATA
 
 					tc.buffer.addByte(dsr.Data, dsr.Clock, dsr.MFM, phase, (ushort)clock, prevBlockEndTime);
@@ -575,22 +551,10 @@ namespace WD1772NS {
 			Global.Disk[track, side].addrContent = ac;
 
 			Global.TrackData currentTrack = Global.Disk[track, side];
-			//int nbRev = currentTrack.indexCount - 1;
-			int start, stop, indexFirstFluxCorrection;
-			//if (Global.Rev > 0) {
-			//	start = currentTrack.indexes[Global.Rev - 1].fluxPosition;
-			//	stop = currentTrack.indexes[Global.Rev].fluxPosition - 1;
-			//	indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[Global.Rev - 1].preIndexTime);
-			//}	// use the rev selected
-			//else {
-			//	start = currentTrack.indexes[0].fluxPosition;
-			//	stop = currentTrack.indexes[nbRev - 1].fluxPosition;
-			//	indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[0].preIndexTime);
-			//}	// if rev is 0 we use first rev
 			int rev = Global.Rev;
-			start = Global.firstOffset(track, side, rev);
-			stop = Global.lastOffset(track, side, rev);
-			indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
+			int start =  Global.startOffset(track, side, rev);
+			int stop = Global.stopOffset(track, side, rev);
+			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 			int currentTime = 0;
 			int currentBit = 0;
@@ -607,9 +571,10 @@ namespace WD1772NS {
 			int clockAvg = 0;			// average clock value of assembled bits
 
 			// We read from start to stop for current revolution. However if we are in the middle of an
-			// ID field we continue to get the complete ID.
+			// ID field we continue to get the complete ID. We also check if in middle of sync seq
 			for (int i = start; (i < stop) || (phase == Phases.p_id) || (syncCount > 0); i++) {
-				//Debug.Assert(i < currentTrack.indexes[nbRev].fluxPosition, "Index loop overflow in readAddr()", "Internal error please report");
+				if (i >= currentTrack.fluxData.fluxCount)
+					break;
 
 				int flux = Global.sampleToTiming(currentTrack.fluxData.fluxValue[i]);
 				if (i == start)				flux -= indexFirstFluxCorrection;
@@ -617,11 +582,11 @@ namespace WD1772NS {
 				currentTime += flux;
 
 				if (flux > 32000) 	nbWin = flux / 2000;	// NFA
-				else				nbWin = currentTrack.decodeData.nbWin[i];
+				else				nbWin = currentTrack.decodeData.fluxInWin[i];
 
 				currentBit += nbWin;
 				dsr.shiftBitsIn(nbWin);	// push data in shift register
-				int clock = currentTrack.decodeData.clock[i];
+				int clock = currentTrack.decodeData.fluxClockPeriod[i];
 				clockAvg += clock;
 				clockCount++;
 
@@ -659,7 +624,6 @@ namespace WD1772NS {
 									IDField id = ac.ids[ac.ids.Count - 1];
 									id.iam = dsr.Data;
 									ac.ids[ac.ids.Count - 1] = id;
-
 									ac.blocs.Add(new BlockInfo());
 									BlockInfo block = ac.blocs[ac.blocs.Count-1];
 									block.startBit = currentBit;
@@ -702,8 +666,6 @@ namespace WD1772NS {
 					prevBlockEndTime = currentTime;
 				}	// more byte to process
 			}	// for all flux
-
-			// Debug.Assert(phase != Phases.p_id, "We are in an ID field at the end of reading all addresses");
 			return ac;
 		}	// end of readAddr()
 
@@ -755,8 +717,8 @@ namespace WD1772NS {
 			//	stop = currentTrack.indexes[nbRev - 1].fluxPosition;
 			//	indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[0].preIndexTime);
 			//}	// for rev = 0 we use Revision 1
-				start = Global.firstOffset(track, side, rev);
-				stop = Global.lastOffset(track, side, rev);
+				start = Global.startOffset(track, side, rev);
+				stop = Global.stopOffset(track, side, rev);
 				indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 			Phases phase = Phases.p_outer;
@@ -778,7 +740,7 @@ namespace WD1772NS {
 			// we loop normally from start to stop of the specified revolution.
 			// However we continue if we are in the middle of an ID or DATA field (or ever starting sync seq! see readAddr() for more info)
 			for (int i = start; (i < stop) || (phase == Phases.p_id) || (phase == Phases.p_inner) || (phase == Phases.p_data) || (syncCount > 0); i++) {
-				if ( breakLoop || (dataFound && (phase != Phases.p_data)) )
+				if ( breakLoop || (dataFound && (phase != Phases.p_data)) || (i >= currentTrack.fluxData.fluxCount) )
 					break;
 				//Debug.Assert(i < currentTrack.indexes[nbRev].fluxPosition, "Index loop overflow in readSect()", "Internal error please report");
 
@@ -788,11 +750,11 @@ namespace WD1772NS {
 				currentTime += flux;
 
 				if (flux > 32000)	nbWin = flux / 2000;
-				else				nbWin = currentTrack.decodeData.nbWin[i];
+				else				nbWin = currentTrack.decodeData.fluxInWin[i];
 
 				currentBit += nbWin;
 				dsr.shiftBitsIn(nbWin);	// push data in register
-				clock = currentTrack.decodeData.clock[i];
+				clock = currentTrack.decodeData.fluxClockPeriod[i];
 
 				while (dsr.byteReady()) {
 					byteCount++;
@@ -984,8 +946,8 @@ namespace WD1772NS {
 		}	// readSector()
 
 
-		public static void readAll(int track, int side) {
-			TrackContent tc = readTrack(track, side);
+		public static void readAll(int track, int side, int rev) {
+			TrackContent tc = readTrack(track, side, rev);
 			AddrContent ac = readAddr(track, side);
 			for (int i = 0; i < ac.ids.Count; i++) {
 				// TODO check duplicate

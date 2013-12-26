@@ -33,7 +33,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows;
 
-using StreamNS;
+using KFReaderNS;
 using Aufit;
 
 namespace ChartNS {
@@ -105,8 +105,8 @@ class ClockDrawing {
 		int rev = Global.Rev;
 		int track = Global.Track;
 		int side = Global.Side;
-		start = Global.firstOffset(track, side, rev);
-		stop = Global.lastOffset(track, side, rev);
+		start = Global.startOffset(track, side, rev);
+		stop = Global.stopOffset(track, side, rev);
 		indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 
@@ -127,14 +127,14 @@ class ClockDrawing {
 			if (i == start) flux -= indexFirstFluxCorrection;
 			currentTime += flux;
 
-			int clk = currentTrack.decodeData.clock[i];
+			int clk = currentTrack.decodeData.fluxClockPeriod[i];
 
 			int avgClock = 0;
 			int avgCount = 0;
 			for (int j = 0; j < bnForAvg; j++) {
 				int index = i - bnForAvg/2 + j;
 				if ((index >= 0) && (index <= lastFlux)) {
-					avgClock += currentTrack.decodeData.clock[index];
+					avgClock += currentTrack.decodeData.fluxClockPeriod[index];
 					avgCount++;
 				}
 			}

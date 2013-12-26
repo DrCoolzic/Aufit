@@ -33,7 +33,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-using StreamNS;
+using KFReaderNS;
 using Aufit;
 
 namespace ChartNS {

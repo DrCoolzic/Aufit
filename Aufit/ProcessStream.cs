@@ -32,11 +32,11 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-using KFStreamReaderNS;
+using KFReaderNS;
 using WD1772NS;
 using Aufit;
 
-namespace StreamNS {
+namespace KFReaderNS {
 public class ProcessStream {
 	/// <summary>
 	/// This function fill the histogram _histo array compute the entropy and display debug information
@@ -61,8 +61,8 @@ public class ProcessStream {
 			//stop = Global.Disk[track, side].indexes[Global.Disk[track, side].indexCount - 1].fluxPosition;
 			threshold = 10;
 		}
-		start = Global.firstOffset(track, side, rev);
-		stop = Global.lastOffset(track, side, rev);
+		start = Global.startOffset(track, side, rev);
+		stop = Global.stopOffset(track, side, rev);
 
 
 		int sizeBeforeTrim = Global.Disk[track, side].fluxData.fluxValue.Max() + 1;
@@ -139,19 +139,16 @@ public class ProcessStream {
 	/// <param name="side">The side number (0-1)</param>
 	/// <returns>True if file processed without problem; false if error while processing</returns>
 	public static bool readStreamTrack(string name, int track, int side) {
-		KFStreamReader stream = new KFStreamReader();
+		KFReader stream = new KFReader();
 		StreamStatus status = stream.readStream(name);
 		if (status == StreamStatus.sdsOk) {
-			//Global.Disk[track, side].fluxData = stream.FluxValues;
 			Global.Disk[track, side].fluxData = new FluxData();
 			Global.Disk[track, side].fluxData.fluxValue = stream.FluxValues;
 			Global.Disk[track, side].fluxData.fluxCount = stream.FluxCount;
-			//Global.Disk[track, side].indexes = stream.Indexes;
-			//Global.Disk[track, side].indexCount = stream.IndexCount;
-			Global.SampleClock = stream.SampleClock;
 			Global.Disk[track, side].fluxData.fluxMax = stream.StreamStat.fluxMax;
 			Global.Disk[track, side].fluxData.fluxMin = stream.StreamStat.fluxMin;
 
+			Global.SampleClock = stream.SampleClock;
 			Global.Disk[track, side].revData = new RevData[stream.IndexCount - 1];
 			for (int i = 0; i < stream.IndexCount - 1; i++) {
 				Global.Disk[track, side].revData[i].revolutionTime = stream.Indexes[i + 1].indexTime;
@@ -163,9 +160,6 @@ public class ProcessStream {
 		}
 
 		Global.Disk[track, side].fluxData = null;
-		//Global.Disk[track, side].fluxCount = 0;
-		//Global.Disk[track, side].indexes = null;
-		//Global.Disk[track, side].indexCount = 0;
 		return false;
 	}
 
@@ -197,8 +191,8 @@ public class ProcessStream {
 
 		Global.TrackData track = Global.currentTrack();
 		Global.Disk[Global.Track, Global.Side].decodeData = new decodeData();
-		Global.Disk[Global.Track, Global.Side].decodeData.clock = new int[track.fluxData.fluxCount + 1];
-		Global.Disk[Global.Track, Global.Side].decodeData.nbWin = new int[track.fluxData.fluxCount + 1];
+		Global.Disk[Global.Track, Global.Side].decodeData.fluxClockPeriod = new int[track.fluxData.fluxCount + 1];
+		Global.Disk[Global.Track, Global.Side].decodeData.fluxInWin = new int[track.fluxData.fluxCount + 1];
 		
 		DPLL dpll = new DPLL();
 		int sizeBeforeTrim = Global.currentTrack().fluxData.fluxMax + 1;		
@@ -215,12 +209,12 @@ public class ProcessStream {
 			curentTime += flux;
 			int nbWin = dpll.dataInWindow(curentTime);
 			currentBit += nbWin;
-			Global.currentTrack().decodeData.nbWin[i] = nbWin;
+			Global.currentTrack().decodeData.fluxInWin[i] = nbWin;
 
 			int clk = dpll.Clock;
 			if (clk > maxClock) maxClock = clk;
 			if (clk < minClock) minClock = clk;
-			Global.currentTrack().decodeData.clock[i] = clk;
+			Global.currentTrack().decodeData.fluxClockPeriod[i] = clk;
 			clockAvg += clk;
 
 		}

@@ -1,5 +1,5 @@
 ﻿/*!
-@file KFStreamReader.cs
+@file KFReader.cs
 <summary>KryoFlux Stream file reader: Functions and Structures</summary>
 <remarks>
 <div class="jlg">Copyright (C) 2011 Software Preservation Society & Jean 
@@ -73,7 +73,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KFStreamReaderNS {
+namespace KFReaderNS {
 
 #region structures
 	/// <summary>Define the Status codes returned by Stream decoding procedures</summary>
@@ -145,8 +145,7 @@ public struct Statistic {
 /// that you can create and call simultaneously as many KFStream classes as you want from
 /// multi-threaded applications safely. :)
 /// </remarks>
-public class KFStreamReader {
-
+public class KFReader {
 	#region Attributes and Internal structures
 
 	/// <summary>KryoFlux Information string builder </summary>
@@ -331,9 +330,9 @@ public class KFStreamReader {
 	}
 	#endregion properties
 
-	#region member functions
+	#region Member functions
 	/// <summary>KFStream Constructor. Create a new KFStreamReader object and set default values</summary>
-	public KFStreamReader() {
+	public KFReader() {
 		_fluxValues = null;
 		_fluxStreamPosition = null;
 		_indexIntInfo = null;

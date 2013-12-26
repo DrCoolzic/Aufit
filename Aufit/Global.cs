@@ -32,35 +32,51 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using KFStreamReaderNS;
+using KFReaderNS;
 using WD1772NS;
 
 namespace Aufit {
 
+/// <summary>
+/// The RevData structure contains the information for all the revolutions of one track including the pointers to the Flux Data.
+/// </summary>
+/// <remarks>The RevData are kept in an array with an entry for each revolution</remarks>
 public struct RevData {
+	/// <summary>
+	/// The time it takes to do a complete revolution. This time is given in number of 
+	/// sample clock. In other word this is the exact time between two index pulses.
+	/// </summary>
 	public int revolutionTime;
+	/// <summary>
+	/// The time it takes to get to the index pulse inside the first transition for this revolution. The position 
+	/// is given as a number of sample clocks before the index signal. Note that in the case of no
+	/// flux area at the beginning of the track this value can be huge
+	/// </summary>
 	public int indexTimePosition;
+	/// <summary>
+	/// Position (index) in the flux array of the first flux that contains the index signal
+	/// </summary>
 	public int fluxOffset;
+	/// <summary>
+	/// The number of flux transitions for this specific revolution
+	/// </summary>
 	public int fluxCount;
 }
 
+/// <summary>
+/// The FluxData structure contains all the flux transition related information
+/// </summary>
 public class FluxData {
-	//public int[] flux;
-	/// <summary>Effective number of  flux transitions recorded for this track</summary>
-	/// <remarks>This array is filled by readStreamTrack() method</remarks>
-	//public int fluxCount;
+	/// <summary>Array of flux transitions recorded for this track (all revolutions). The value is 
+	/// given in number of sample clock</summary>
+	public int[] fluxValue;
+	/// <summary>Total number of  flux transitions recorded for this track (all revolutions)</summary>
+	public int fluxCount;
 	/// <summary>Value of the shortest flux transition recorded for this track in sample clock</summary>
 	/// <remarks>This value is filled by readStreamTrack() method</remarks>
-	//public int fluxMin;
+	public int fluxMin;
 	/// <summary>Value of the largest flux transition recorded for this track in sample clock</summary>
 	/// <remarks>This value is filled by readStreamTrack() method</remarks>
-	//public int fluxMax;
-
-	public int[] fluxValue;
-	public int fluxCount;
-	public int[] density;
-	public int[] nbWin;
-	public int fluxMin;
 	public int fluxMax;
 }
 
@@ -80,9 +96,13 @@ public class decodeData {
 	/// This value is filled in the mfmDecode() method.</remarks>
 	//public int clockMax;
 
-	public int[] clock;
-	public int[] nbWin;
+	/// <summary>The clock period computed by the DPLL for the corresponding flux transition</summary>
+	public int[] fluxClockPeriod;
+	/// <summary>The number of inspection windows to get to the flux. This is the value to enter into the DSR</summary>
+	public int[] fluxInWin;
+	/// <summary>Value minimum value of the clock as computed by the DPLL</summary>
 	public int clockMin;
+	/// <summary>Value maximum value of the clock as computed by the DPLL</summary>
 	public int clockMax;
 	//public int clockAvg;
 }
@@ -104,18 +124,19 @@ public struct HistoData {
 }
 
 /// <summary>
-/// Contains all global parameters and functions ...
+/// Contains all global parameters and functions for AUFIT
 /// </summary>
 public class Global {
-	/// <summary>
-	/// Contains information about one track
-	/// </summary>
-	public struct TrackData {
-		/// <summary> Array of Index structure for this track</summary>
-		/// <remarks>This array is filled by readStreamTrack() method</remarks>
-		public RevData[] revData;
+	private static TrackData[,] _diskInfo = new TrackData[85, 2];
+	private static double _sampleClock = 0;
 
+	/// <summary>Contains information about one track</summary>
+	public struct TrackData {
+		/// <summary> Array of RevData structure for this track. There is one entry for each revolution</summary>
+		public RevData[] revData;
+		/// <summary>Pointer to the flux data structure for this track</summary>
 		public FluxData fluxData;
+		/// <summary>Pointer to the data decoded by the DPLL</summary>
 		public decodeData decodeData;
 
 		public HistoData histoData;
@@ -123,7 +144,6 @@ public class Global {
 		//public byte[] packedBits;
 		//public int[] packedClock;
 		//public int[] bitPosition;
-
 
 		/// <summary>Information from a read track</summary>
 		/// <remarks>This value is set by readTrack()</remarks>
@@ -133,11 +153,10 @@ public class Global {
 	}
 
 
-	private static TrackData[,] _diskInfo = new TrackData[85, 2];
-	private static double _sampleClock = 0;
-
+	/// <summary>
+	/// This function is used to re-initialized all disk/track structure. Should be called each time a new FD is read.
+	/// </summary>
 	public static void resetDisk() {
-		//_diskInfo = null;
 		_diskInfo = new TrackData[85, 2];
 		_sampleClock = 0;
 		Track = 0;
@@ -145,24 +164,51 @@ public class Global {
 		Rev = 1;
 	}
 
-	public static int firstOffset(int track, int side, int rev) {
-		// rev == 0 we use the first entry
+
+	/// <summary>
+	/// This function is used to get the position of the first flux of a track in the FluxValue buffer for a specific revolution
+	/// </summary>
+	/// <param name="track">The track we want to use</param>
+	/// <param name="side">The side we want to use.</param>
+	/// <param name="rev">The revolution we want to use</param>
+	/// <returns>The offset of the first flux in the buffer</returns>
+	/// <remarks>he revision parameter should be in the range 1 to the number of revolutions recorded.
+	/// rev==0 has a special meaning: it indicates that we want to use the data from *all* revolutions</remarks>
+	public static int startOffset(int track, int side, int rev) {
 		if (rev == 0) rev++;
 		return Disk[track, side].revData[rev - 1].fluxOffset;
 	}
 
-	public static int lastOffset(int track, int side, int rev) {
+	/// <summary>
+	/// This function is used to get the position of the last flux of a track in the FluxValue buffer for a specific revolution
+	/// </summary>
+	/// <param name="track">The track we want to use</param>
+	/// <param name="side">The side we want to use.</param>
+	/// <param name="rev">The revolution we want to use</param>
+	/// <returns>The offset of the last flux in the buffer</returns>
+	/// <remarks>The revision parameter should be in the range 1 to the number of revolutions recorded.
+	/// rev==0 has a special meaning: it indicates that we want to use the data from *all* revolutions</remarks>
+	public static int stopOffset(int track, int side, int rev) {
 		if (rev == 0) rev = Disk[track, side].revData.Count();
 		return (Disk[track, side].revData[rev - 1].fluxOffset + Disk[track, side].revData[rev - 1].fluxCount);
 	}
 
+	/// <summary>
+	/// This function is used to get the position of the index in the first flux
+	/// </summary>
+	/// <param name="track">The track we want to use</param>
+	/// <param name="side">The side we want to use.</param>
+	/// <param name="rev">The revolution we want to use</param>
+	/// <returns>The offset of the first flux in the buffer</returns>
+	/// <remarks>he revision parameter should be in the range 1 to the number of revolutions recorded.
 	public static int indexTimePosition(int track, int side, int rev) {
 		if (rev == 0) rev++;
 		return (Disk[track, side].revData[rev - 1].indexTimePosition);
 	}
 
+
 	/// <summary>
-	/// Return the sample clock frequency in Hz (i.e. 1/sampling_period 
+	/// Access the sample clock frequency in Hz (i.e. 1/sampling_period 
 	/// </summary>
 	public static double SampleClock {
 		get { return _sampleClock; }
@@ -171,7 +217,7 @@ public class Global {
 
 	/// <summary>
 	/// A two dimensions array that store TrackData structures for a complete disk.
-	/// There are 85 Tracks * 2 Sides TRackInfo structures.
+	/// There are 85 Tracks * 2 Sides (170) TrackData structures.
 	/// </summary>
 	public static TrackData[,] Disk {
 		get { return _diskInfo; }
@@ -204,7 +250,7 @@ public class Global {
 	public static int Side { get; set; }
 
 	/// <summary>
-	/// This functions takes a KF sample value and returns the corresponding timing in nanoseconds based on the sample clock.
+	/// This functions takes a sample value and returns the corresponding timing in nanoseconds based on the sample clock.
 	/// </summary>
 	/// <param name="sValue">The sample value</param>
 	/// <returns>The timing value in nanoseconds</returns>
@@ -225,4 +271,4 @@ public class Global {
 
 
 }	// class Global
-}	// Aufit namespace
+}	// Aufit name space

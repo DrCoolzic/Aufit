@@ -21,8 +21,9 @@ using System.Threading;
 
 using Ookii.Dialogs.Wpf;
 using ChartNS;
-using StreamNS;
+using KFReaderNS;
 using WD1772NS;
+using SCPReaderNS;
 
 namespace Aufit {
 	/// <summary>
@@ -202,7 +203,7 @@ namespace Aufit {
 			//if (Global.currentTrack().indexes == null) return;
 			if (Global.Rev == 0)
 				//Global.Rev = Global.currentTrack().indexCount - 2;
-				Global.Rev = Global.currentTrack().revData.Count()  - 1;
+				Global.Rev = Global.currentTrack().revData.Count();
 			else Global.Rev--;
 
 			revolution.Text = Global.Rev.ToString();
@@ -218,7 +219,7 @@ namespace Aufit {
 		private void plusRevClicked(object sender, RoutedEventArgs e) {
 			// now we limit the Rev number so we never use the last one
 			//if (Global.currentTrack().indexes == null) return;
-			if (Global.Rev == (Global.currentTrack().revData.Count() - 1))
+			if (Global.Rev == (Global.currentTrack().revData.Count()) )
 			//if (Global.Rev == (Global.currentTrack().indexCount - 2))
 				Global.Rev = 0;
 			else Global.Rev++;
@@ -550,10 +551,10 @@ namespace Aufit {
 		}
 
 		private void btProtectionClick(object sender, RoutedEventArgs e) {
-			SCPReader scp = new SCPReader();
-			scp.readSCP("Dungeon Master (FTL).scp");
+			SCPReader.readSCP("Dungeon Master (FTL).scp");
 
 			Global.Rev = 1;
+			Global.Track = Global.Side = 0;
 
 			BM1.Visibility = Visibility.Visible;
 			BM2.Visibility = Visibility.Visible;
