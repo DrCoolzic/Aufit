@@ -99,7 +99,9 @@ public class DSR {
 		_syncFound = false;
 	}
 
-
+	/// <summary>
+	/// Reset the sync flag of the DSR
+	/// </summary>
 	public void resetSync() {
 		_syncFound = false;
 	}
@@ -212,55 +214,7 @@ public class DSR {
 	}
 
 
-	/// <summary>
-	/// Update the crc with the character provided
-	/// </summary>
-	/// <param name="c">Character used to update CRC</param>
-	/// <param name="crc">Current CRC value</param>
-	/// <returns>Updated CRC</returns>
-	public static ushort update_crc(byte c, ushort crc) {
-		for (int i = 0 ; i < 8 ; i++)
-			crc = (ushort)((crc << 1) ^ (((((crc >> 8) ^ (c << i) ) & 0x0080) != 0) ? 0x1021 : 0));
-		return crc;
-	} // end of update_crc
 
-
-	/// <summary>
-	/// Check if the flux is at a border of an inspection window
-	/// </summary>
-	/// <param name="clock">current PLL clock</param>
-	/// <param name="nb_win">number of inspection windows</param>
-	/// <param name="flux">position of flux</param>
-	/// <returns>true if the flux is at the border of the inspection window</returns>
-	public static bool check_border(int clock, int nb_win, int flux) {
-		int lcenter = nb_win * (clock / 2) + (clock / 4);	// (nb_win * 2000) + 1000;
-		int hcenter = nb_win * (clock / 2) - (clock / 4);	// (nb_win * 2000) - 1000;
-		int tenpc = clock / 10;	// 10%
-		bool lower_win = ((flux > (lcenter - tenpc)) && (flux < (lcenter + tenpc)));	// ((flux > (lcenter - 400)) && (flux < (lcenter + 400)));
-		bool upper_win = ((flux > (hcenter - tenpc)) && (flux < (hcenter + tenpc)));	// ((flux > (hcenter - 400)) && (flux < (hcenter + 400)));
-		return (lower_win || upper_win);
-	}
-
-
-	/// <summary>
-	/// Return the actual size of the data field of a sector
-	/// </summary>
-	/// <param name="size">encoded size of the sector</param>
-	/// <returns>"decoded size" of the data segment</returns>
-	/// 
-	/// In the ID field the size of the sector is coded 0=128, 1=256, 2=512, 3=1024
-	/// The function returns the decoded value. The value 0 and 1 are not used in
-	/// Atari FD and value above 3 is not valid, therefore in all these cases something
-	/// is wrong with the size field in those cases the functions return a "default
-	/// value" of 512.
-	public static int actualSize(byte size) {
-		int s;
-		if (size < 4)
-			s = 128 << (size & 0x03);
-		else
-			s = 512;
-		return s;
-	}
 
 	/// @}
 }

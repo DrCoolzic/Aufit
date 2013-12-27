@@ -35,7 +35,7 @@ using System.Windows.Shapes;
 
 using KFReaderNS;
 using WD1772NS;
-using Aufit;
+using GlobalNS;
 
 namespace ChartNS {
 /// <summary>
@@ -44,6 +44,7 @@ namespace ChartNS {
 class DataDrawing {
 
 	private ChartLayout _dataChartLayout = null;
+	private int _track, _side, _rev;
 
 	/// <summary>
 	/// Get the underlying ChartLayout
@@ -65,21 +66,28 @@ class DataDrawing {
 	/// <summary>
 	/// draw the data chart
 	/// </summary>
-	public void drawTrackData() {
-		if (Global.currentTrack().fluxData == null) return;
+	public void drawTrackData(int track = -1, int side = -1, int rev = -1) {
+		if (track == -1) track = _track;
+		else _track = track;
+		if (side == -1) side = _side;
+		else _side = side;
+		if (rev == -1) rev = _rev;
+		else _rev = rev;
+
+		if (Global.Disk[track, side].fluxData == null) return;
 		_dataChartLayout.chartResetCanvas();
 		_dataChartLayout.drawChartGrids();
 
-		FDC.fdcAllRead(Global.Track, Global.Side, Global.Rev);
+		FDC.fdcAllRead(track, side, rev);
+		TrackContent tc = Global.Disk[track, side].trackContent;
 
-		TrackContent track = Global.Disk[Global.Track, Global.Side].trackContent;
-		for (int i = 0; i < track.sectors.Count; i++) {
-			SectorInfo sector = track.sectors[i];
+		for (int i = 0; i < tc.sectors.Count; i++) {
+			SectorInfo sector = tc.sectors[i];
 			IDField id = new IDField();
 			SectorContent s = new SectorContent(); ;
 			if (i > 0) {
-				id = Global.Disk[Global.Track, Global.Side].addrContent.ids[i-1];
-				s = FDC.findSectorContent(Global.Track, Global.Side, id.number, sector.startTime);
+				id = Global.Disk[track, side].addrContent.ids[i-1];
+				s = FDC.findSectorContent(track, side, id.number, sector.startTime);
 			}
 			Polygon polySect = new Polygon();
 			polySect.Stroke = Brushes.DarkBlue;
@@ -129,12 +137,12 @@ class DataDrawing {
 							tb.Text = String.Format("Data Field {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4}", sector.phases[p].byteCount, blength, sector.phases[p].startByte, bstart, sector.phases[p].startBit);
 							panel.Children.Add(tb);
 							plg.Fill = Brushes.DeepSkyBlue;
-							if (sector.phases[p].overClock > DSR.actualSize(sector.addr.size) / 2)
+							if (sector.phases[p].overClock > Global.sectSize(sector.addr.size) / 2)
 								plg.Fill = Brushes.Blue;
-							if (sector.phases[p].underClock > DSR.actualSize(sector.addr.size) / 2)
+							if (sector.phases[p].underClock > Global.sectSize(sector.addr.size) / 2)
 								plg.Fill = Brushes.Aqua;
 							// macrodos
-							if ((sector.phases[p].underClock > DSR.actualSize(sector.addr.size) / 8) && (sector.phases[p].overClock > DSR.actualSize(sector.addr.size) / 8))
+							if ((sector.phases[p].underClock > Global.sectSize(sector.addr.size) / 8) && (sector.phases[p].overClock > Global.sectSize(sector.addr.size) / 8))
 								plg.Fill = Brushes.BlueViolet;
 
 							if ((i > 0) && (s != null)) {

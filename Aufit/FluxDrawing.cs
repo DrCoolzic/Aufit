@@ -36,6 +36,7 @@ using System.Windows.Shapes;
 
 using WD1772NS;
 using KFReaderNS;
+using GlobalNS;
 using Aufit;
 
 namespace ChartNS {
@@ -49,13 +50,15 @@ class FluxDrawing {
 	private double _viewportXmin;
 	private double _viewportXmax;
 	private MainWindow _win;
+	private static int _speedUp;
 
 	private Point _startPoint = new Point();
 	private Point _endPoint = new Point();
 	private Shape _rubberBand = null;
 	private double _xIncrement = 100;
 	private double _yIncrement = 10;
-	private int _speedUp;
+
+	private int _track, _side, _rev;
 
 	/// <summary>
 	/// Set to true for slow drawing (i.e. draw ALL points)
@@ -65,7 +68,7 @@ class FluxDrawing {
 	/// <summary>
 	/// When set to true we limit the maximum value of the flux to 10µs
 	/// </summary>
-	public bool LimitFlux { get; set; }
+//	public bool LimitFlux { get; set; }
 
 	/// <summary>
 	/// When set we draw the fluxes with a limited number of points for performance
@@ -78,7 +81,7 @@ class FluxDrawing {
 	/// <remarks>The _speedUp value is computed by drawFlux to optimize the speed drawing.
 	/// This value is based on the number of points to display that can vary based on the
 	/// zoom factor. You can access this property to get the computed factor.</remarks>
-	public int SpeedUp {
+	public static int SpeedUp {
 		get { return _speedUp;  }
 	}
 
@@ -110,70 +113,54 @@ class FluxDrawing {
 	/// <param name="grid">Grid in the ChartLayout</param>
 	/// <param name="text">Test canvas in the ChartLayout</param>
 	/// <param name="graphic">Graphic canvas in the ChartLayout</param>
-	/// <param name="tbInfo">Text box used to display information</param>
+	/// <param name="win">Pointer to the MainWindow</param>
 	public FluxDrawing(Grid grid, Canvas text, Canvas graphic, MainWindow win) {
 		_fluxChartLayout = new ChartLayout(grid, text, graphic);
 		_win = win;
 		FastDraw = false;
 		SlowDraw = false;
-		LimitFlux = true;
+		//LimitFlux = true;
 	}
 
 
 	/// <summary>
 	/// draw the flux chart
 	/// </summary>
-	public void drawFlux(int track, int side, int rev) {
+	public void drawFlux(int track = -1, int side = -1, int rev = -1) {
 		_fluxChartLayout.chartResetCanvas();
-		if (Global.currentTrack().fluxData == null) return;
+
+		if (track == -1) track = _track;
+		else _track = track;
+		if (side == -1) side = _side;
+		else _side = side;
+		if (rev == -1) rev = _rev;
+		else _rev = rev;
+		if (Global.Disk[track, side].fluxData == null) return;
+
 		_fluxChartLayout.drawChartGrids();
 
 		DSR dsr = new DSR();
-
-		Global.TrackData currentTrack = Global.currentTrack();
-		//int nbRev = currentTrack.indexCount - 1;
-		int start, stop, indexFirstFluxCorrection;
-		//if (Global.Rev > 0) {
-		//	start = currentTrack.indexes[Global.Rev - 1].fluxPosition;
-		//	stop = currentTrack.indexes[Global.Rev].fluxPosition - 1;
-		//	indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[Global.Rev - 1].preIndexTime);
-		//}	// one rev
-		//else {
-		//	start = currentTrack.indexes[0].fluxPosition;
-		//	stop = currentTrack.indexes[nbRev].fluxPosition;
-		//	indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[0].preIndexTime);
-		//}	// all rev
-		//int rev = Global.Rev;
-		//int track = Global.Track;
-		//int side = Global.Side;
-		start = Global.startOffset(track, side, rev);
-		stop = Global.stopOffset(track, side, rev);
-		indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
-
+		Global.TrackData td = Global.Disk[track, side];
+		int start = Global.startOffset(track, side, rev);
+		int stop = Global.stopOffset(track, side, rev);
+		int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 		int maxFlux = 0;
 		int minFlux = Int32.MaxValue;
 		int pointsInViewport = 0;
 		int currentTime = 0;
-		//int first = start;
-		//int last = stop;
 
 		// compute the number of points in the "extended" viewport
 		if (_fluxChartLayout.zoomed()) {
-			//first = 0;
 			for (int i = start; i < stop; i++) {
-				int flux = Global.sampleToTiming(currentTrack.fluxData.fluxValue[i]);
+				int flux = Global.sampleToTiming(td.fluxData.fluxValue[i]);
 				if (i == start)
 					flux -= indexFirstFluxCorrection;
 				currentTime += flux;
-
-				if (_fluxChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)flux / 1000.0)) {
+				if (_fluxChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)flux / 1000.0))
 					pointsInViewport++;
-					//if (first == 0) first = i;
-					//last = i;
-				}
-			}
-		}
+			}	// for all
+		}	// zoomed
 		else {
 			pointsInViewport = stop - start;
 		}
@@ -194,17 +181,16 @@ class FluxDrawing {
 
 		for (int i = start; i < stop; i++) {
 
-			int flux = Global.sampleToTiming(currentTrack.fluxData.fluxValue[i]);
-			if (i == start)
-				flux -= indexFirstFluxCorrection;
+			int flux = Global.sampleToTiming(td.fluxData.fluxValue[i]);
+			if (i == start) flux -= indexFirstFluxCorrection;
 			if (flux > maxFlux) maxFlux = flux;
 			if (flux < minFlux) minFlux = flux;
 			currentTime += flux;
 
-			// TODO black line for revolution
-			if (Global.Rev == 0) {
-				for (int j = 1; j < Global.currentTrack().revData.Count(); j++) {
-					if (Global.currentTrack().revData[j].fluxOffset - 1 == i) {
+			// black line for revolution
+			if (rev == 0) {
+				for (int j = 1; j < Global.Disk[track, side].revData.Count(); j++) {
+					if (Global.Disk[track, side].revData[j].fluxOffset - 1 == i) {
 						Line revLine = new Line();
 						revLine.Stroke = Brushes.Black;
 						revLine.StrokeThickness = 1.5;
@@ -217,9 +203,9 @@ class FluxDrawing {
 				}
 			}
 
-			// red line for sync
-			int nbWin = currentTrack.decodeData.fluxInWin[i];
-			int clk = currentTrack.decodeData.fluxClockPeriod[i];
+			// line for sync
+			int nbWin = td.decodeData.fluxInWin[i];
+			int clk = td.decodeData.decodedClock[i];
 			dsr.shiftBitsIn(nbWin);	// push data in register
 			while (dsr.byteReady()) {
 				int bitShift = dsr.searchSynch();	// search sync
@@ -238,7 +224,7 @@ class FluxDrawing {
 					}
 					else if ((dsr.Data == 0xC2) && (_win.cbC2.IsChecked.Value)) {
 						syncLine.Stroke = Brushes.Blue;
-						syncLine.StrokeThickness = 0.4;
+						syncLine.StrokeThickness = 0.5;
 						syncLine.X1 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
 						syncLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
 						syncLine.X2 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
@@ -250,7 +236,13 @@ class FluxDrawing {
 			}
 
 			if (i % SpeedUp != 0) continue;
-			//if ((i < first) || (i > last)) continue;
+			if (!_fluxChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)flux/1000.0)) continue;
+
+			double r = (zoom > 1) ? (zoom > 25) ? (zoom > 50) ? 2 : 1.6 : 1.2 : 0.7;
+			if ((flux > 10000) && (Global.Disk[track, side].histoData.entropy > 0)) {
+				r = 4;
+				fluxPoints[pointsInViewport].colorIndex = 4;
+			}
 
 			//if ((flux < 3.85) || ((flux > 4.15) && (flux < 5.85)) || ((flux > 6.15) && (flux < 7.85)) || (flux > 8.15))
 			//	fluxPoints[pointsInViewport].colorIndex = 1;
@@ -258,14 +250,8 @@ class FluxDrawing {
 			fluxPoints[pointsInViewport].colorIndex = 0;
 			//if (i % 2 == 0) fluxPoints[pointsInViewport].colorIndex += 2; ;
 
-			double r = (zoom > 1) ? (zoom > 25) ? (zoom > 50) ? 2.5 : 1.8 : 1.2 : 0.7;
-			if ((flux > 10000) && (Global.currentTrack().histoData.entropy > 0)) {
-				r = 4;
-				fluxPoints[pointsInViewport].colorIndex = 4;
-			}
-			if (!_fluxChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)flux/1000.0)) continue;
+			
 			fluxPoints[pointsInViewport].ellipseGeometry = new EllipseGeometry(_fluxChartLayout.NormPoint((double)currentTime / 1000000.0, (double)flux / 1000.0), r, r);
-
 			pointsInViewport++;
 		}
 
@@ -273,33 +259,39 @@ class FluxDrawing {
 		_fluxEnsemble = new FluxEnsemble(fluxPoints);
 		_fluxChartLayout.GraphicCanvas.Children.Add(_fluxEnsemble);
 
-
 		_win.tbFluxInfo.Clear();
-		_win.tbFluxInfo.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", Global.Track, Global.Side, Global.Rev));
+		_win.tbFluxInfo.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev));
 		_win.tbFluxInfo.AppendText(String.Format(" - Flux range: {0:F2} {1:F2} µs", (double)minFlux / 1000.0, (double)maxFlux / 1000.0));
 		_win.tbFluxInfo.AppendText(String.Format(" - Track length: {0:F3} ms", (double)(currentTime + indexFirstFluxCorrection) / 1000000.0));
 		_win.tbFluxInfo.AppendText(String.Format(" - Debug z={0:F1} s={1} p={2}", _fluxChartLayout.zoom(), SpeedUp, pointsInViewport));
 	}
 
+
 	/// <summary>
 	/// Set the default viewport values for the flux graphic canvas
 	/// </summary>
-	public void setFluxDefault() {
-		if ((_fluxChartLayout == null) || (Global.currentTrack().fluxData == null)) return;
+	public void setFluxDefault(int track = -1, int side = -1, int rev = -1) {
+		if (_fluxChartLayout == null) return; 
+		if (track == -1) track = _track;
+		else _track = track;
+		if (side == -1) side = _side;
+		else _side = side;
+		if (rev == -1) rev = _rev;
+		else _rev = rev;
+		if (Global.Disk[track, side].fluxData == null) return;
 
-		Global.TrackData track = Global.currentTrack();
-		int rev = Global.Rev;
+		Global.TrackData td = Global.Disk[track, side];
 
 		_viewportXmin = 0;
 		if (rev > 0)
 			_viewportXmax = 200;
 		else
-			_viewportXmax = 200 * Global.Disk[Global.Track, Global.Side].revData.Count();
+			_viewportXmax = 200 * Global.Disk[track, side].revData.Count();
 
-		int max = Global.sampleToTiming(track.fluxData.fluxMax) + 500;
+		int max = Global.sampleToTiming(td.fluxData.fluxMax) + 500;
 		if (max < 10000) max = 10000;
-		if (LimitFlux && (max > 10000)) max = 10000;
-		int min = Global.sampleToTiming(track.fluxData.fluxMin) - 500;
+		if (_win.cbLimitFlux.IsChecked.Value && (max > 10000)) max = 10000;
+		int min = Global.sampleToTiming(td.fluxData.fluxMin) - 500;
 		if (min < 2000) min = 2000;
 
 		_fluxChartLayout.setDefaultViewport(_viewportXmin, _viewportXmax, min / 1000, max / 1000);
@@ -328,7 +320,6 @@ class FluxDrawing {
 		double y1 = 1;
 		_endPoint = e.GetPosition(_fluxChartLayout.GraphicCanvas);
 
-		//if (!_zoomed) {
 		if (!_fluxChartLayout.zoomed()) {
 			// we use the 2 pointsInViewport to zoom
 			if (_endPoint.X > _startPoint.X) {
@@ -361,12 +352,8 @@ class FluxDrawing {
 		}
 		_viewportXmin = x0;
 		_viewportXmax = x1;
-
-		//_fluxChartLayout.GraphicCanvas.Children.Clear();
-		//_fluxChartLayout.TextCanvas.Children.RemoveRange(1, _fluxChartLayout.TextCanvas.Children.Count - 1);
 		_fluxChartLayout.setViewport(x0, x1, y0, y1);
-
-		drawFlux(Global.Track, Global.Side, Global.Rev);
+		drawFlux();
 	}
 
 	/// <summary>
@@ -407,7 +394,6 @@ class FluxDrawing {
 				//TranslateTransform tt = new TranslateTransform();
 				double x = _endPoint.X - _startPoint.X;
 				double y = _endPoint.Y - _startPoint.Y;
-				//_fluxDrawing.translateFluxes(x, y);
 				_fluxEnsemble.translateFluxes(x,y);
 			}	// zoomed => pan
 		}
@@ -422,7 +408,7 @@ class FluxDrawing {
 		_fluxChartLayout.GraphicCanvas.Children.Clear();
 		_fluxChartLayout.TextCanvas.Children.RemoveRange(1, _fluxChartLayout.TextCanvas.Children.Count - 1);
 		setFluxDefault();
-		drawFlux(Global.Track, Global.Side, Global.Rev);
+		drawFlux();
 	}
 
 	/// <summary>
@@ -445,7 +431,7 @@ class FluxDrawing {
 		_fluxChartLayout.GraphicCanvas.Children.Clear();
 		_fluxChartLayout.TextCanvas.Children.RemoveRange(1, _fluxChartLayout.TextCanvas.Children.Count - 1);
 		_fluxChartLayout.setViewport(x0, x1, y0, y1);
-		drawFlux(Global.Track, Global.Side, Global.Rev);
+		drawFlux();
 	}
 
 }

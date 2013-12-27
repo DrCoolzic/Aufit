@@ -1,4 +1,29 @@
-﻿using System;
+﻿/*!
+@file MainWindow.xaml.cs
+ * 
+<summary>The Main Window for the AUFIT program</summary>
+
+<div class="jlg">Copyright (C) 2011 Jean Louis-Guerin\n\n
+This file is part of the Atari Universal FD Image Tool project.\n\n
+The Atari Universal FD Image Tool project may be used and distributed without restriction provided
+that this copyright statement is not removed from the file and that any
+derivative work contains the original copyright notice and the associated
+disclaimer.\n\n
+The Atari Universal FD Image Tool project is free software; you can redistribute it
+and/or modify  it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.\n\n
+The Atari Universal FD Image Tool project is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n
+See the GNU General Public License for more details.\n\n
+You should have received a copy of the GNU General Public License
+along with the Atari Universal FD Image Tool project; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</div>
+
+@author Jean Louis-Guerin
+*/
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,6 +49,7 @@ using ChartNS;
 using KFReaderNS;
 using WD1772NS;
 using SCPReaderNS;
+using GlobalNS;
 
 namespace Aufit {
 	/// <summary>
@@ -59,10 +85,10 @@ namespace Aufit {
 
 			_fluxDrawing = new FluxDrawing(fluxGrid, cvTextFlux, cvGraphicFlux, this);
 			_fluxDrawing.SlowDraw = cbSlow.IsChecked.Value;
-			_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
+			//_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
 			_fluxDrawing.Chart.FixOffset = true;
 
-			_histoDrawing = new HistoDrawing(histoGrid, cvTextHisto, cvGraphicHisto);
+			_histoDrawing = new HistoDrawing(histoGrid, cvTextHisto, cvGraphicHisto, this);
 
 			_clockDrawing = new ClockDrawing(clockGrid, cvTextClock, cvGraphicClock);
 			_clockDrawing.Chart.OptimalYSpacing = 18;
@@ -137,7 +163,8 @@ namespace Aufit {
 		private void fluxMouseLBU(object sender, MouseButtonEventArgs e) {
 			_fluxDrawing.mouseLBU(sender, e);
 			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.ClockMin, _clockDrawing.ClockMax);
-			_clockDrawing.drawClock(_fluxDrawing.SpeedUp);
+			_clockDrawing.drawClock();
+			//_clockDrawing.drawClock(_fluxDrawing.SpeedUp);
 			_dataDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
 			_dataDrawing.drawTrackData();
 
@@ -150,7 +177,7 @@ namespace Aufit {
 		private void fluxMouseWheel(object sender, MouseWheelEventArgs e) {
 			_fluxDrawing.mouseWheel(sender, e);
 			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.ClockMin, _clockDrawing.ClockMax);
-			_clockDrawing.drawClock(_fluxDrawing.SpeedUp);
+			_clockDrawing.drawClock();
 			_dataDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
 			_dataDrawing.drawTrackData();
 		}
@@ -162,7 +189,7 @@ namespace Aufit {
 		private void fluxMouseRBDown(object sender, MouseButtonEventArgs e) {
 			_fluxDrawing.mouseRBD(sender, e);
 			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.ClockMin, _clockDrawing.ClockMax);
-			_clockDrawing.drawClock(_fluxDrawing.SpeedUp);
+			_clockDrawing.drawClock();
 			_dataDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
 			_dataDrawing.drawTrackData();
 
@@ -172,21 +199,21 @@ namespace Aufit {
 
 		#region histogram related
 		private void histoGridSizeChanged(object sender, SizeChangedEventArgs e) {
-			_histoDrawing.drawHisto(cbHistoLog.IsChecked.Value, cbLimitFlux.IsChecked.Value);
+			_histoDrawing.drawHisto();
 		}
 		#endregion
 
 
 		#region options
 		private void cbHistoLogClick(object sender, RoutedEventArgs e) {
-			ProcessStream.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox);
-			_histoDrawing.drawHisto(cbHistoLog.IsChecked.Value, cbLimitFlux.IsChecked.Value);
+			Global.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox);
+			_histoDrawing.drawHisto();
 		}
 
 		private void cbLimitClick(object sender, RoutedEventArgs e) {
-			ProcessStream.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox);
-			_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
-			_histoDrawing.drawHisto(cbHistoLog.IsChecked.Value, cbLimitFlux.IsChecked.Value);
+			Global.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox);
+			//_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
+			_histoDrawing.drawHisto();
 			_fluxDrawing.setFluxDefault();
 			_fluxDrawing.drawFlux(Global.Track, Global.Side, Global.Rev);
 		}
@@ -194,7 +221,7 @@ namespace Aufit {
 		private void cbSlowClick(object sender, RoutedEventArgs e) {
 			_fluxDrawing.SlowDraw = cbSlow.IsChecked.Value;
 			_fluxDrawing.drawFlux(Global.Track, Global.Side, Global.Rev);
-			_clockDrawing.drawClock(_fluxDrawing.SpeedUp);
+			_clockDrawing.drawClock();
 		}
 
 		private void minusRevClicked(object sender, RoutedEventArgs e) {
@@ -207,12 +234,12 @@ namespace Aufit {
 			else Global.Rev--;
 
 			revolution.Text = Global.Rev.ToString();
-			ProcessStream.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox);
-			_histoDrawing.drawHisto(cbHistoLog.IsChecked.Value, cbLimitFlux.IsChecked.Value);
+			Global.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox);
+			_histoDrawing.drawHisto();
 			//if ((Global.Rev == 0) || (Global.Rev == Global.currentTrack().indexes.Length - 2))
 			//	_fluxDrawing.setFluxDefault();
 
-			FDC.clearTrackContent();
+			FDC.clearTrackContent(Global.Track, Global.Side);
 			drawCharts();
 		}
 
@@ -225,12 +252,12 @@ namespace Aufit {
 			else Global.Rev++;
 
 			revolution.Text = Global.Rev.ToString();
-			ProcessStream.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox);
-			_histoDrawing.drawHisto(cbHistoLog.IsChecked.Value, cbLimitFlux.IsChecked.Value);
+			Global.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox);
+			_histoDrawing.drawHisto();
 			//if ((Global.Rev == 0) || (Global.Rev == 1))
 			//	_fluxDrawing.setFluxDefault();
 			//_fluxDrawing.drawFlux();
-			FDC.clearTrackContent();
+			FDC.clearTrackContent(Global.Track, Global.Side);
 			drawCharts();
 		}
 		#endregion
@@ -240,26 +267,26 @@ namespace Aufit {
 		/// Display all the charts for the current Track/Side/Rev
 		/// </summary>
 		public void drawCharts() {
-			revolution.Text = Global.Rev.ToString();
-			if (Global.Disk[Global.Track, Global.Side].trackContent == null)
-				ProcessStream.mfmDecode();
-
-			cbLimitFlux.IsChecked = (ProcessStream.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox) > 0);
-			_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
-			_histoDrawing.drawHisto(cbHistoLog.IsChecked.Value, cbLimitFlux.IsChecked.Value);
-
 			int track = Global.Track;
 			int side = Global.Side;
 			int rev = Global.Rev;
-			_fluxDrawing.setFluxDefault();
+
+			revolution.Text = rev.ToString();
+			if (Global.Disk[track, side].trackContent == null)
+				Global.mfmDecode(track, side);
+
+			cbLimitFlux.IsChecked = (Global.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox) > 0);
+			_histoDrawing.drawHisto(track, side, rev);
+
+			_fluxDrawing.setFluxDefault(track, side, rev);
 			_fluxDrawing.drawFlux(track, side, rev);
 
-			_clockDrawing.setClockDefault();
-			_clockDrawing.drawClock(_fluxDrawing.SpeedUp);
+			_clockDrawing.setClockDefault(track, side, rev);
+			_clockDrawing.drawClock(track, side, rev);
 
 			_dataDrawing.Chart.setDefaultViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
-			_dataDrawing.drawTrackData();
-			ButtonMatrix.setButtonBG(Global.Track, Global.Side);
+			_dataDrawing.drawTrackData(track, side, rev);
+			ButtonMatrix.setButtonBG(track, side);
 
 		}
 
@@ -291,7 +318,7 @@ namespace Aufit {
 
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {
-					ProcessStream.computeHisto(track, side, 1, infoBox);
+					Global.computeHisto(track, side, 1, infoBox);
 					ButtonMatrix.setButtonBG(track, side);
 				}
 			}
@@ -377,7 +404,7 @@ namespace Aufit {
 			ButtonMatrix.clearButtons();
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {
-					double entropy = ProcessStream.computeHisto(track, side, 1, infoBox);
+					double entropy = Global.computeHisto(track, side, 1, infoBox);
 					// Brush color = (entropy < 2000) ? (entropy < 0) ? Brushes.LightSlateGray : Brushes.Orange : Brushes.LimeGreen;
 					if (Global.Disk[track, side].fluxData != null)
 						ButtonMatrix.setButtonBG(track, side);
@@ -409,7 +436,7 @@ namespace Aufit {
 					//bool streamOK = ProcessStream.readStreamTrack(fname, track, side);
 					if (streamOK) {
 						//drawCharts();
-						ProcessStream.computeHisto(track, side, 1, infoBox);
+						Global.computeHisto(track, side, 1, infoBox);
 						//double entropy = Global.Disk[track, side].entropy;
 						//Brush color = (entropy < 2000) ? (entropy < 0) ? Brushes.LightSlateGray : Brushes.Orange : Brushes.LimeGreen;
 						ButtonMatrix.setButtonBG(track, side);
@@ -484,7 +511,7 @@ namespace Aufit {
 
 
 		private void clockGridSizeChanged(object sender, SizeChangedEventArgs e) {
-			_clockDrawing.drawClock(_fluxDrawing.SpeedUp);
+			_clockDrawing.drawClock();
 		}
 
 		private void dataGridSizeChanged(object sender, SizeChangedEventArgs e) {
@@ -548,7 +575,7 @@ namespace Aufit {
 				_trackWindow.Close();
 
 			_trackWindow = new BufferWindow();
-			_trackWindow.drawTrackBuffer();
+			_trackWindow.drawTrackBuffer(Global.Track, Global.Side);
 			_trackWindow.Closed += new EventHandler(trackWindowClosed);
 			_trackWindowIsOpen = true;
 			_trackWindow.Show();
@@ -560,7 +587,7 @@ namespace Aufit {
 				_sectorWindow.Close();
 
 			_sectorWindow = new BufferWindow();
-			_sectorWindow.drawSectorBuffer();
+			_sectorWindow.drawSectorBuffer(Global.Track, Global.Side);
 			_sectorWindow.Closed += new EventHandler(sectorWindowClosed);
 			_sectorWindowIsOpen = true;
 			_sectorWindow.Show();
@@ -574,7 +601,7 @@ namespace Aufit {
 				_diskWindow.Close();
 
 			string message = String.Format("Disk {0} (Side {1})", _diskName, Global.Side);
-			_diskWindow = new DiskWindow(message);
+			_diskWindow = new DiskWindow(Global.Side, message);
 			_diskWindow.Closed += new EventHandler(diskWindowClosed);
 			_diskWindowIsOpen = true;
 			_diskWindow.Show();

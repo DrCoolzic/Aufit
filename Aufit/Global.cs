@@ -1,5 +1,5 @@
 ﻿/*!
-@file Aufit.cs
+@file Global.cs
 
 <summary>Contains access to all global variables and function</summary>
 
@@ -34,8 +34,9 @@ using System.Threading.Tasks;
 
 using KFReaderNS;
 using WD1772NS;
+using System.Windows.Controls;
 
-namespace Aufit {
+namespace GlobalNS {
 
 /// <summary>
 /// The RevData structure contains the information for all the revolutions of one track including the pointers to the Flux Data.
@@ -80,25 +81,16 @@ public class FluxData {
 	public int fluxMax;
 }
 
+/// <summary>
+/// Contains the decoded data. These data are decoded by the DPLL from the flux transitions
+/// </summary>
 public class decodeData {
-	/// <summary>Array of clock values as decoded by the DPLL.</summary>
-	/// This array is filled by mfmDecode() method. The array has the same size as the flux array</remarks>
-	//public int[] clock;
-	/// <summary>Array of nbWin values as decoded by the DPLL.</summary>
-	/// This array is filled by mfmDecode() method. The array has the same size as the flux array.
-	/// nbWin is the number of inspection windows to the next flux transition (i.e. bit to shift
-	/// in the DSR</remarks>
-	//public int[] nbWin;
-	/// <summary>Smallest value of the clock computed by the DPLL for this track</summary>
-	/// This value is filled in the mfmDecode() method.</remarks>
-	//public int clockMin;
-	/// <summary>Smallest value of the clock computed by the DPLL for this track</summary>
-	/// This value is filled in the mfmDecode() method.</remarks>
-	//public int clockMax;
-
 	/// <summary>The clock period computed by the DPLL for the corresponding flux transition</summary>
-	public int[] fluxClockPeriod;
-	/// <summary>The number of inspection windows to get to the flux. This is the value to enter into the DSR</summary>
+	public int[] decodedClock;
+	/// <summary>The number of inspection windows to get to the flux.</summary>
+	/// <remarks>This array is filled by mfmDecode() method. The array has the same size as the flux array.
+	/// nbWin is the number of inspection windows to the next flux transition (i.e. bit to shift
+	/// in the DSR</remarks></remarks>
 	public int[] fluxInWin;
 	/// <summary>Value minimum value of the clock as computed by the DPLL</summary>
 	public int clockMin;
@@ -107,19 +99,18 @@ public class decodeData {
 	//public int clockAvg;
 }
 
+/// <summary>
+/// Contains the histogram/entropy information
+/// </summary>
 public struct HistoData {
-	/// <summary>Computed entropy for this track</summary>
-	/// <remarks>This value is set by computeHisto()</remarks>
-	//public double entropy;
 	/// <summary>Histogram Array: Flux transition repartition</summary>
 	/// <remarks>This value is set by computeHisto()</remarks>
-	//public int[] histogram;
+	public int[] histogram;
+	/// <summary>Computed entropy for this track</summary>
+	/// <remarks>This value is set by computeHisto()</remarks>
+	public double entropy;
 	/// <summary>List of maximums in the histogram</summary>
 	/// <remarks>This value is set by computeHisto()</remarks>
-	//public List<int> bands;
-
-	public int[] histogram;
-	public double entropy;
 	public List<int> bands;
 }
 
@@ -138,7 +129,7 @@ public class Global {
 		public FluxData fluxData;
 		/// <summary>Pointer to the data decoded by the DPLL</summary>
 		public decodeData decodeData;
-
+		/// <summary>Histogram / entropy data</summary>
 		public HistoData histoData;
 
 		//public byte[] packedBits;
@@ -148,10 +139,13 @@ public class Global {
 		/// <summary>Information from a read track</summary>
 		/// <remarks>This value is set by readTrack()</remarks>
 		public TrackContent trackContent;
+		/// <summary>Information from a read address</summary>
+		/// <remarks>This value is set by readAddr()</remarks>
 		public AddrContent addrContent;
+		/// <summary>Information from a read sector</summary>
+		/// <remarks>This value is set by readSect()</remarks>
 		public List<SectorContent> sectorsContent;
 	}
-
 
 	/// <summary>
 	/// This function is used to re-initialized all disk/track structure. Should be called each time a new FD is read.
@@ -269,6 +263,216 @@ public class Global {
 		return (int)compute;
 	}
 
+	/// <summary>
+	/// Converts Flux transition into bits and clocks using the DPLL. Also sets min max values
+	/// </summary>
+	public static void mfmDecode(int track, int side) {
+		if (Global.Disk[track, side].decodeData != null) return;
+
+		int minClock = Int32.MaxValue;
+		int maxClock = 0;
+		int clockAvg = 0;
+
+		int curentTime = 0;
+		int currentBit = 0;
+
+		Global.TrackData td = Global.Disk[track, side];
+		Global.Disk[track, side].decodeData = new decodeData();
+		Global.Disk[track, side].decodeData.decodedClock = new int[td.fluxData.fluxCount + 1];
+		Global.Disk[track, side].decodeData.fluxInWin = new int[td.fluxData.fluxCount + 1];
+		
+		DPLL dpll = new DPLL();
+		int sizeBeforeTrim = Global.Disk[track, side].fluxData.fluxMax + 1;		
+		int[] tmpHisto = new int[sizeBeforeTrim];
+
+		// TODO check below
+		int lastRev = Global.Disk[track, side].revData.Count() - 1;
+		for (int i = Global.Disk[track, side].revData[0].fluxOffset;
+			i < (Global.Disk[track, side].revData[lastRev].fluxOffset + Global.Disk[track, side].revData[lastRev].fluxCount); i++) {
+			int flux = Global.sampleToTiming(td.fluxData.fluxValue[i]);
+			tmpHisto[td.fluxData.fluxValue[i]]++;
+			curentTime += flux;
+			int nbWin = dpll.dataInWindow(curentTime);
+			currentBit += nbWin;
+			Global.Disk[track, side].decodeData.fluxInWin[i] = nbWin;
+
+			int clk = dpll.Clock;
+			if (clk > maxClock) maxClock = clk;
+			if (clk < minClock) minClock = clk;
+			Global.Disk[track, side].decodeData.decodedClock[i] = clk;
+			clockAvg += clk;
+
+		}
+
+		Global.Disk[track, side].decodeData.clockMin = minClock;
+		Global.Disk[track, side].decodeData.clockMax = maxClock;
+		//Global.Disk[track, side].clockAvg = clockAvg / track.indexes[track.indexCount - 1].fluxPosition;
+	}
+
+
+//Global.currentTrack().packedBits = new byte[(currentBit / 8) + 1];
+//Global.currentTrack().packedClock = new int[(currentBit / 8) + 1];
+
+//int lastClockPos = 0;
+//int sigmaClocks = 0;
+//int nbClocks = 0;
+//for (int i = 0; i < track.indexes[track.indexCount - 1].fluxPosition; i++) {
+//	int bytePos = Global.currentTrack().bitPosition[i] / 8;
+//	int setBit = 0x1 << (Global.currentTrack().bitPosition[i] % 8);
+//	Global.currentTrack().packedBits[bytePos] |= (byte)setBit;
+
+//	if (Global.currentTrack().nbWin[i] < 100) {
+//		sigmaClocks += Global.currentTrack().clock[i];
+//		nbClocks++;
+//	}
+//	else {
+//		sigmaClocks = Global.currentTrack().clock[i];
+//		nbClocks = 1;
+//	}	// NFA
+//	if (bytePos > lastClockPos) {
+//		while (bytePos > lastClockPos)
+//			Global.currentTrack().packedClock[lastClockPos++] = sigmaClocks / nbClocks;
+//		nbClocks = 0;
+//		sigmaClocks = 0;			
+//	}
+
+//}
+
+
+	/// <summary>
+	/// This function fill the histogram _histo array compute the entropy and display debug information
+	/// </summary>
+	/// <param name="track">We compute the histogram for this track</param>
+	/// <param name="side">We compute the histogram for this side</param>
+	/// /// <param name="rev">We compute the histogram for this revolution</param>
+	/// <param name="text">The TextBox where the debug information are written</param>
+	/// <returns>the computed entropy</returns>
+	public static double computeHisto(int track, int side, int rev, TextBox text) {
+		//if (Global.Disk[track, side].flux == null) return 0;
+		if (Global.Disk[track, side].fluxData == null) return 0;
+
+		int threshold;
+		int[] tmpHisto;
+
+		if (rev > 0)	threshold = 2;
+		else 			threshold = 10;
+
+		int start = Global.startOffset(track, side, rev);
+		int stop = Global.stopOffset(track, side, rev);
+
+		int sizeBeforeTrim = Global.Disk[track, side].fluxData.fluxValue.Max() + 1;
+		tmpHisto = new int[sizeBeforeTrim];
+		for (int i = start; i < stop; i++)
+			tmpHisto[Global.Disk[track, side].fluxData.fluxValue[i]]++;
+
+		// we trim the array size to keep only significant entries. This is useful as
+		// we may end up with a huge array if track has Non Flux areas. Computations for
+		// Bezier takes long time on large array. 
+		int histoSize = sizeBeforeTrim;
+		for (int i = sizeBeforeTrim - 1; i >= 0; i--) {
+			if (tmpHisto[i] >= threshold) break;
+			else histoSize--;
+		}
+		Global.Disk[track, side].histoData.histogram = new int[histoSize];
+		for (int i = 0; i < histoSize; i++)
+			Global.Disk[track, side].histoData.histogram[i] = tmpHisto[i];
+
+		int maxFound = 0;
+		bool searchMax = true;
+		int last = 0;
+		Global.Disk[track, side].histoData.bands = new List<int>();
+		int notNullEntries = 0;
+
+		// find bands
+		for (int i = 0; i < histoSize; i++) {
+			int current = Global.Disk[track, side].histoData.histogram[i] = tmpHisto[i];
+			if (current > 0) notNullEntries++;
+			if (searchMax) {
+				// we have reached the maximum when we go down but at least 10
+				if (current < last - 20) {
+					// we ignore too small values
+					if (last > 40) {
+						maxFound++;
+						Global.Disk[track, side].histoData.bands.Add(current);
+					}
+					searchMax = false;
+				}	// max reached
+			}	// looking for max
+			else {
+				if (current > last)
+					searchMax = true;
+			}
+			last = current;
+		}
+
+		double entropy = 0;
+		for (int i = 0; i < histoSize; i++)
+			if (Global.Disk[track, side].histoData.histogram[i] > 0) {
+				double p = (double)Global.Disk[track, side].histoData.histogram[i] / (double)notNullEntries;
+				entropy += p * Math.Log(p, 2);
+			}
+		Global.Disk[track, side].histoData.entropy = entropy;
+		if (entropy < 0) Global.Disk[track, side].histoData.bands.Clear();
+
+		text.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev));
+		text.AppendText(String.Format(" * {0} * (Ent {1:F0})",
+			(entropy < 2000) ? (entropy < 0) ? "Unformatted track" : "Unformatted area" : "Normal track", entropy));
+		text.AppendText(String.Format(" - Fluxes {0}", stop - start));
+		text.AppendText(String.Format(" - Histo size {0} ({1} ns)\n",
+			histoSize, Global.sampleToTiming(histoSize - 1)));
+		text.ScrollToEnd();
+		return entropy;
+	}
+
+	/// <summary>
+	/// Update the CRC with the character provided
+	/// </summary>
+	/// <param name="c">Character used to update CRC</param>
+	/// <param name="crc">Current CRC value</param>
+	/// <returns>Updated CRC</returns>
+	public static ushort updateCRC(byte c, ushort crc) {
+		for (int i = 0; i < 8; i++)
+			crc = (ushort)((crc << 1) ^ (((((crc >> 8) ^ (c << i)) & 0x0080) != 0) ? 0x1021 : 0));
+		return crc;
+	} // end of update_crc
+
+
+	/// <summary>
+	/// Check if the flux is at a border of an inspection window
+	/// </summary>
+	/// <param name="clock">current PLL clock</param>
+	/// <param name="nb_win">number of inspection windows</param>
+	/// <param name="flux">position of flux</param>
+	/// <returns>true if the flux is at the border of the inspection window</returns>
+	public static bool isBorderBit(int clock, int nb_win, int flux) {
+		int lcenter = nb_win * (clock / 2) + (clock / 4);	// (nb_win * 2000) + 1000;
+		int hcenter = nb_win * (clock / 2) - (clock / 4);	// (nb_win * 2000) - 1000;
+		int tenpc = clock / 10;	// 10%
+		bool lower_win = ((flux > (lcenter - tenpc)) && (flux < (lcenter + tenpc)));	// ((flux > (lcenter - 400)) && (flux < (lcenter + 400)));
+		bool upper_win = ((flux > (hcenter - tenpc)) && (flux < (hcenter + tenpc)));	// ((flux > (hcenter - 400)) && (flux < (hcenter + 400)));
+		return (lower_win || upper_win);
+	}
+
+
+	/// <summary>
+	/// Return the actual size of the data field of a sector
+	/// </summary>
+	/// <param name="size">encoded size of the sector</param>
+	/// <returns>"decoded size" of the data segment</returns>
+	/// 
+	/// In the ID field the size of the sector is coded 0=128, 1=256, 2=512, 3=1024
+	/// The function returns the decoded value. The value 0 and 1 are not used in
+	/// Atari FD and value above 3 is not valid, therefore in all these cases something
+	/// is wrong with the size field in those cases the functions return a "default
+	/// value" of 512.
+	public static int sectSize(byte size) {
+		int s;
+		if (size < 4)
+			s = 128 << (size & 0x03);
+		else
+			s = 512;
+		return s;
+	}
 
 }	// class Global
 }	// Aufit name space

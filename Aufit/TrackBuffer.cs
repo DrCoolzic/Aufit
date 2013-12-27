@@ -80,7 +80,6 @@ namespace Aufit {
 		/// <param name="mfm">MFM word</param>
 		/// <param name="phase">Current Phase</param>
 		/// <param name="density">Current Clock value</param>
-		/// <param name="syncInfo">Flag if byte is sync & number of shift</param>
 		/// <param name="startTime">Byte start time</param>
 		public void addByte(byte data, byte clock, ushort mfm, Phases phase, ushort density, int startTime) {
 			TrackByte b = new TrackByte();

@@ -28,11 +28,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using KFReaderNS;
-using Aufit;
 using System.Diagnostics;
 using System.Windows.Media;
+
+using KFReaderNS;
+using GlobalNS;
+using Aufit;
 
 namespace WD1772NS {
 	/// <summary>
@@ -153,7 +154,9 @@ namespace WD1772NS {
 		public bool dataOverIdx;
 		/// <summary>Set to true when the track has an ID segment that span over index pulse</summary>
 		public bool idOverIdx;
+		/// <summary>Set to true when the track has Data segment beyond the index pulse</summary>
 		public bool dataBeyondIdx;
+		/// <summary>Set to true when protections have been found for this track</summary>
 		public bool hasProtection = false;
 	}
 
@@ -268,12 +271,12 @@ namespace WD1772NS {
 
 				currentBit += nbWin;
 				dsr.shiftBitsIn(nbWin);	// push data in register
-				clock = currentTrack.decodeData.fluxClockPeriod[i];
+				clock = currentTrack.decodeData.decodedClock[i];
 				clockAvg += clock;
 				clockCount++;
 
 				// check border bits
-				if (DSR.check_border(clock, nbWin, flux))
+				if (Global.isBorderBit(clock, nbWin, flux))
 					tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].borderBit++;
 
 				// check timing violation and write splice
@@ -386,7 +389,7 @@ namespace WD1772NS {
 										byteLeftInBlock = 512;	// best guess as we do not have ID before
 									}	// no ID before
 									else
-										byteLeftInBlock = DSR.actualSize(tc.sectors[tc.sectors.Count-1].addr.size) + 3; // AM + 2 CRC + Size
+										byteLeftInBlock = Global.sectSize(tc.sectors[tc.sectors.Count-1].addr.size) + 3; // AM + 2 CRC + Size
 									
 									phase = Phases.p_data;
 									tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].startBit = currentBit;
@@ -465,7 +468,7 @@ namespace WD1772NS {
 					} // ID or DATA
 
 					tc.buffer.addByte(dsr.Data, dsr.Clock, dsr.MFM, phase, (ushort)clock, prevBlockEndTime);
-					crc = DSR.update_crc(dsr.Data, crc);
+					crc = Global.updateCRC(dsr.Data, crc);
 					prevBlockEndTime = currentTime;
 				}	// while bytes in the DSR
 			}	// For all transitions
@@ -585,7 +588,7 @@ namespace WD1772NS {
 
 				currentBit += nbWin;
 				dsr.shiftBitsIn(nbWin);	// push data in shift register
-				int clock = currentTrack.decodeData.fluxClockPeriod[i];
+				int clock = currentTrack.decodeData.decodedClock[i];
 				clockAvg += clock;
 				clockCount++;
 
@@ -661,7 +664,7 @@ namespace WD1772NS {
 						}
 						ac.ids[ac.ids.Count - 1] = id;
 					} // we are in ID
-					crc = DSR.update_crc(dsr.Data, crc);
+					crc = Global.updateCRC(dsr.Data, crc);
 					prevBlockEndTime = currentTime;
 				}	// more byte to process
 			}	// for all flux
@@ -738,7 +741,7 @@ namespace WD1772NS {
 
 				currentBit += nbWin;
 				dsr.shiftBitsIn(nbWin);	// push data in register
-				clock = currentTrack.decodeData.fluxClockPeriod[i];
+				clock = currentTrack.decodeData.decodedClock[i];
 
 				while (dsr.byteReady()) {
 					byteCount++;
@@ -800,7 +803,7 @@ namespace WD1772NS {
 									// and that the DATA block is less than 43 bytes apart
 									if (idFound && ((byteCount - sect.idBlock.startByte - 7) <= 43)) {
 										dataFound = true;
-										byteLeftInBlock = DSR.actualSize(sect.id.size) + 3; // AM + 2 CRC + Size
+										byteLeftInBlock = Global.sectSize(sect.id.size) + 3; // AM + 2 CRC + Size
 										sect.dataBlock.startBit = currentBit;
 										sect.dataBlock.startByte = byteCount;
 										sect.dataBlock.startTime = prevBlockEndTime;
@@ -867,7 +870,7 @@ namespace WD1772NS {
 
 					if (phase == Phases.p_data)
 						sect.buffer.addByte(dsr.Data, dsr.Clock, dsr.MFM, phase, (ushort)clock, prevBlockEndTime);
-					crc = DSR.update_crc(dsr.Data, crc);
+					crc = Global.updateCRC(dsr.Data, crc);
 					prevBlockEndTime = currentTime;
 				}	// while bytes in the DSR
 			}	// For all transitions
@@ -930,7 +933,16 @@ namespace WD1772NS {
 			}	// differential mode
 		}	// readSector()
 
-
+		/// <summary>
+		/// This function calls readTrack(), readAddr() and readSector().
+		/// </summary>
+		/// <remarks>ReadTRack() is called first, then readAddr(). For all sector founds by 
+		/// readAddr() the function readSctor() is called a first time to read the content
+		/// for the current revolution, then it call again the readSector() function in "compare"
+		/// mode for all others revolution. This allow to find fuzzy bits.</remarks>
+		/// <param name="track">The track to read</param>
+		/// <param name="side">The side to read</param>
+		/// <param name="rev">The revolution to use</param>
 		public static void fdcAllRead(int track, int side, int rev) {
 			TrackContent tc = readTrack(track, side, rev);
 			AddrContent ac = readAddr(track, side, rev);
@@ -941,21 +953,35 @@ namespace WD1772NS {
 				SectorContent sc = readSector(track, side, rev, ac.ids[i].number, ac.blocs[i].startTime, false);
 				// TODO check not found
 				// now multiple readSector for fuzzy bits
-				for (int j = 1; j < Global.currentTrack().revData.Count(); j++) {
+				for (int j = 1; j < Global.Disk[track, side].revData.Count(); j++) {
 					if (j == rev) continue;
 					readSector(track, side, j, ac.ids[i].number, ac.blocs[i].startByte, true);
 				}
 			}
 		}
 
-
-		public static void clearTrackContent() {
-			Global.Disk[Global.Track, Global.Side].trackContent = null;
-			Global.Disk[Global.Track, Global.Side].addrContent = null;
-			Global.Disk[Global.Track, Global.Side].sectorsContent = null;
+		/// <summary>
+		/// Free the track, address, and sectors content
+		/// </summary>
+		/// <param name="track"></param>
+		/// <param name="side"></param>
+		public static void clearTrackContent(int track, int side) {
+			Global.Disk[track, side].trackContent = null;
+			Global.Disk[track, side].addrContent = null;
+			Global.Disk[track, side].sectorsContent = null;
 		}
 
 
+		/// <summary>
+		/// Find a specific sector
+		/// </summary>
+		/// <param name="track">The track to use</param>
+		/// <param name="side">The size to use</param>
+		/// <param name="num">The sector to find</param>
+		/// <param name="position">The starting position of the sector</param>
+		/// <returns>The sector found or null if not found</returns>
+		/// <remarks>It is necessary  to use the position parameter for the case where several 
+		/// sectors with the same number are present oin a track</remarks>
 		public static SectorContent findSectorContent(int track, int side, byte num, int position) {
 			List<SectorContent> sectors = Global.Disk[track, side].sectorsContent;
 			foreach(SectorContent sector in sectors)
