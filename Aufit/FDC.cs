@@ -542,7 +542,7 @@ namespace WD1772NS {
 		/// Read all the ID fields of a track
 		/// </summary>
 		/// <returns>The structure that contains all the address info for a track</returns>
-		public static AddrContent readAddr(int track, int side) {
+		public static AddrContent readAddr(int track, int side, int rev) {
 			AddrContent ac = Global.Disk[track, side].addrContent;
 			if (ac != null)
 				return ac;
@@ -551,7 +551,6 @@ namespace WD1772NS {
 			Global.Disk[track, side].addrContent = ac;
 
 			Global.TrackData currentTrack = Global.Disk[track, side];
-			int rev = Global.Rev;
 			int start =  Global.startOffset(track, side, rev);
 			int stop = Global.stopOffset(track, side, rev);
 			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
@@ -675,51 +674,36 @@ namespace WD1772NS {
 		/// </summary>
 		/// <param name="track">Track</param>
 		/// <param name="side">Side</param>
-		/// <param name="sectToRead">Sector number to read</param>
-		/// <param name="position">The sector to find must after this specified position in nanosecond</param>
-		/// <param name="rev">revolution value: if rev == Global.Rev (or if rev is not provided) we are reading the 
-		/// sector normally and we fill the SectorContent structure. But if rev != Global.Rev we are in
-		/// "differential" mode. In that case we read the sector using the rev parameter and we compare the 
-		/// data buffer with the "reference" data buffer to fill the mask structure.</param>
+		/// <param name="rev">Revolution value</param>
+		/// <param name="sectToRead">Sector value to read</param>
+		/// <param name="position">The sector to find must be located after this specified position in nanosecond</param>
+		/// <param name="compare">If set to true we are in compare mode</param>
 		/// <returns>a ReadSectInfo block</returns>
 		/// <remarks>The position parameter is necessary to read the data of a sector multiply  defined 
 		/// (i.e. we have several sectors with same number). Otherwise the data for the first encountered
-		/// sector would always be returned (equivalent to position==0).</remarks>
-		public static SectorContent readSector(int track, int side, byte sectToRead, int position, int rev = -1) {
+		/// sector would always be returned (equivalent to position==0.
+		/// When compare is false we are reading the sector normally and we fill the SectorContent structure. 
+		/// But if compare==true we are in "compare" mode. In that case we read the sector using the rev parameter 
+		/// and we compare the data buffer with the "reference" data buffer to fill the mask structure.</remarks>
+		public static SectorContent readSector(int track, int side, int rev, byte sectToRead, int position, bool compare) {
 			// if no list of sectors exist we need to create one 
 			// ? TODO does not seems to be the best place!
 			if (Global.Disk[track, side].sectorsContent == null)
 				Global.Disk[track, side].sectorsContent = new List<SectorContent>();
 
-			if (rev == -1) rev = Global.Rev;
 			// if not in differential mode and sector already there nothing to do
 			SectorContent sref = findSectorContent(track, side, sectToRead, position);
-			if ((rev == Global.Rev) && (sref != null))
+			if ((!compare) && (sref != null))
 				return sref;
 
-			// if not there or differential mode create a new sectorContent
+			// if not there or compare mode create a new sectorContent
 			SectorContent sect = new SectorContent();
 			sect.buffer = new TrackBuffer();
 
 			Global.TrackData currentTrack = Global.Disk[track, side];
-			//int nbRev = currentTrack.indexCount - 1;
-			int start, stop, indexFirstFluxCorrection;
-
-
-			//if (rev > 0) {
-			//	start = currentTrack.indexes[rev - 1].fluxPosition;
-			//	stop = currentTrack.indexes[rev].fluxPosition - 1;
-			//	indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[rev - 1].preIndexTime);
-
-			//}	// one rev
-			//else {
-			//	start = currentTrack.indexes[0].fluxPosition;
-			//	stop = currentTrack.indexes[nbRev - 1].fluxPosition;
-			//	indexFirstFluxCorrection = Global.sampleToTiming(currentTrack.indexes[0].preIndexTime);
-			//}	// for rev = 0 we use Revision 1
-				start = Global.startOffset(track, side, rev);
-				stop = Global.stopOffset(track, side, rev);
-				indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
+			int start = Global.startOffset(track, side, rev);
+			int stop = Global.stopOffset(track, side, rev);
+			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 			Phases phase = Phases.p_outer;
 			DSR dsr = new DSR();
@@ -890,13 +874,13 @@ namespace WD1772NS {
 
 			sect.sectHasData = idFound && dataFound;
 
-			if (rev == Global.Rev) {
+			if (!compare) {
 				if (!idFound)
 					return null; // request for non existing sector
 				Global.Disk[track, side].sectorsContent.Add(sect);
 				return sect;
 			}	// normal mode
-			else {	// differential mode
+			else {	// compare mode
 				if (!idFound)
 					return null; // request for non existing sector
 
@@ -930,7 +914,8 @@ namespace WD1772NS {
 						byte xor = (byte)(sref.buffer.Bytes[i].dataByte ^ sect.buffer.Bytes[i].dataByte);
 						if (xor != 0) fuzzyFound = true;
 						TrackBuffer.TrackByte tb = new TrackBuffer.TrackByte();
-						tb.dataByte = (byte)~xor;
+						//tb.dataByte = (byte)~xor;
+						tb.dataByte = xor;
 						tb.clockByte = sref.buffer.Bytes[i].clockByte;
 						tb.mfmWord = sref.buffer.Bytes[i].mfmWord;
 						tb.density = sref.buffer.Bytes[i].density; ;
@@ -946,20 +931,19 @@ namespace WD1772NS {
 		}	// readSector()
 
 
-		public static void readAll(int track, int side, int rev) {
+		public static void fdcAllRead(int track, int side, int rev) {
 			TrackContent tc = readTrack(track, side, rev);
-			AddrContent ac = readAddr(track, side);
+			AddrContent ac = readAddr(track, side, rev);
 			for (int i = 0; i < ac.ids.Count; i++) {
 				// TODO check duplicate
 				// TODO check invalid number
 				// TODO check invalid ID field
-				SectorContent sc = readSector(track, side, ac.ids[i].number, ac.blocs[i].startTime);
+				SectorContent sc = readSector(track, side, rev, ac.ids[i].number, ac.blocs[i].startTime, false);
 				// TODO check not found
 				// now multiple readSector for fuzzy bits
-				//for (int j = 1; j < (Global.Disk[track, side].indexCount - 1); j++) {
-				for (int j = 1; j < Global.currentTrack().revData.Count() - 1; j++) {
-					if (j == Global.Rev) continue;
-					readSector(track, side, ac.ids[i].number, ac.blocs[i].startByte, j);
+				for (int j = 1; j < Global.currentTrack().revData.Count(); j++) {
+					if (j == rev) continue;
+					readSector(track, side, j, ac.ids[i].number, ac.blocs[i].startByte, true);
 				}
 			}
 		}

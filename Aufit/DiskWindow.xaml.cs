@@ -55,7 +55,7 @@ namespace Aufit {
 			TrackContent trackInfo = Global.Disk[Global.Track, Global.Side].trackContent;
 			if (trackInfo != null) return trackInfo;
 			ProcessStream.mfmDecode();
-			FDC.readAll(Global.Track, Global.Side, Global.Rev);
+			FDC.fdcAllRead(Global.Track, Global.Side, Global.Rev);
 			trackInfo = Global.Disk[Global.Track, Global.Side].trackContent;
 			return trackInfo;
 		}

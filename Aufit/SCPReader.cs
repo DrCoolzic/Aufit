@@ -217,7 +217,7 @@ namespace SCPReaderNS {
 				file.TrackHeader[tnum] = int32Extract(buffer, bufferIndex);
 				bufferIndex += 4;
 				if (file.TrackHeader[tnum] != 0) {
-					status = readTrack(buffer, tnum, file.TrackHeader[tnum]);
+					status = readSCPTrack(buffer, tnum, file.TrackHeader[tnum]);
 					if (status != SCPStatus.stsOK) return status;
 				}
 			}
@@ -236,7 +236,7 @@ namespace SCPReaderNS {
 		/// <param name="trackSide"></param>
 		/// <param name="trackHeaderPosition"></param>
 		/// <returns></returns>
-		private static SCPStatus readTrack(byte[] buffer, int trackSide, int trackHeaderPosition) {
+		private static SCPStatus readSCPTrack(byte[] buffer, int trackSide, int trackHeaderPosition) {
 			int track = trackSide / 2;
 			int side = trackSide % 2;
 			_fluxMin = Int32.MaxValue;
