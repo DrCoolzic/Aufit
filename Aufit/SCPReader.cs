@@ -304,10 +304,11 @@ namespace SCPReaderNS {
 					else ti.revInfo[i].fluxOffset = 0;
 					nbRevFound++;
 					for (int j = 0; j < ti.revInfo[i].fluxCount; j++) {
-						ti.fluxValues[j] = buffer[bufferIndex++] << 8;
-						ti.fluxValues[j] += buffer[bufferIndex++];
-						if (ti.fluxValues[j] > _fluxMax) _fluxMax = ti.fluxValues[j];
-						if (ti.fluxValues[j] < _fluxMin) _fluxMin = ti.fluxValues[j];
+						int p = j + ti.revInfo[i].fluxOffset;
+						ti.fluxValues[p] = buffer[bufferIndex++] << 8;
+						ti.fluxValues[p] += buffer[bufferIndex++];
+						if (ti.fluxValues[p] > _fluxMax) _fluxMax = ti.fluxValues[p];
+						if (ti.fluxValues[p] < _fluxMin) _fluxMin = ti.fluxValues[p];
 					}
 				}
 			}

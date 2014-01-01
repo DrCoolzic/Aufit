@@ -275,7 +275,7 @@ namespace Aufit {
 			if (Global.Disk[track, side].trackContent == null)
 				Global.mfmDecode(track, side);
 
-			cbLimitFlux.IsChecked = (Global.computeHisto(Global.Track, Global.Side, Global.Rev, infoBox) > 0);
+			cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) > 0);
 			_histoDrawing.drawHisto(track, side, rev);
 
 			_fluxDrawing.setFluxDefault(track, side, rev);
@@ -287,7 +287,6 @@ namespace Aufit {
 			_dataDrawing.Chart.setDefaultViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
 			_dataDrawing.drawTrackData(track, side, rev);
 			ButtonMatrix.setButtonBG(track, side);
-
 		}
 
 
@@ -298,7 +297,7 @@ namespace Aufit {
 			Grid.SetColumn(tabCtrl, 0);
 			Grid.SetColumnSpan(tabCtrl, 3);
 			Global.resetDisk();
-
+			Global.Track = Global.Side = 0;
 			bool status = ProcessStream.readStreamTrack(fileName, Global.Track, Global.Side);
 			if (status) {
 				infoBox.Clear();
@@ -313,9 +312,9 @@ namespace Aufit {
 			Grid.SetColumn(tabCtrl, 2);
 			Grid.SetColumnSpan(tabCtrl, 1);
 			_diskName = System.IO.Path.GetFileNameWithoutExtension(fileName);
-
 			bool fileOK = await SCPReader.readSCPAsync(fileName);
 
+			ButtonMatrix.clearButtons();
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {
 					Global.computeHisto(track, side, 1, infoBox);
@@ -323,6 +322,9 @@ namespace Aufit {
 				}
 			}
 
+			ButtonMatrix.selectButton(0, 0);
+			Global.Track = Global.Side = 0;
+			Global.Rev = 1;
 			infoBox.Clear();
 			drawCharts();
 		}
@@ -346,7 +348,6 @@ namespace Aufit {
 						readSPCFile(ofd.FileName);
 						break;
 				}
-
 			}
 		}
 
@@ -594,14 +595,15 @@ namespace Aufit {
 		}
 
 
-		private void btDiskClick(object sender, RoutedEventArgs e) {
+		private void btDiskLayoutClick(object sender, RoutedEventArgs e) {
 			// TODO if (_trackInfo.TrackInfo == null) return;
 			if (BM1.Visibility == Visibility.Hidden) return;
 			if (_diskWindowIsOpen)
 				_diskWindow.Close();
 
 			string message = String.Format("Disk {0} (Side {1})", _diskName, Global.Side);
-			_diskWindow = new DiskWindow(Global.Side, message);
+			_diskWindow = new DiskWindow();
+			_diskWindow.drawDiskLayout(Global.Side, message);
 			_diskWindow.Closed += new EventHandler(diskWindowClosed);
 			_diskWindowIsOpen = true;
 			_diskWindow.Show();
@@ -614,6 +616,20 @@ namespace Aufit {
 		private void btProtectionClick(object sender, RoutedEventArgs e) {
 
 
+		}
+
+		private void btDiskDataClick(object sender, RoutedEventArgs e) {
+			// TODO if (_trackInfo.TrackInfo == null) return;
+			if (BM1.Visibility == Visibility.Hidden) return;
+			if (_diskWindowIsOpen)
+				_diskWindow.Close();
+
+			string message = String.Format("Disk {0} (Side {1})", _diskName, Global.Side);
+			_diskWindow = new DiskWindow();
+			_diskWindow.drawDiskData(Global.Side, message);
+			_diskWindow.Closed += new EventHandler(diskWindowClosed);
+			_diskWindowIsOpen = true;
+			_diskWindow.Show();
 		}
 
 

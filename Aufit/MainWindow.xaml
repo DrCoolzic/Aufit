@@ -115,7 +115,8 @@
         <StackPanel Grid.Row="6" Margin="10" Orientation="Horizontal" HorizontalAlignment="Left">
             <Button Margin="0,0,10,0" Content="Track Buffer" Width="100" Click="btTrackWindowClick" />
             <Button Margin="0,0,10,0"  Content="Sectors Buffer" Width="100" Click="btSectorWindowClick" />
-            <Button Margin="0,0,10,0"  Content="Disk Layout" Width="100"  Click="btDiskClick"/>
+            <Button Margin="0,0,10,0"  Content="Disk Layout" Width="100"  Click="btDiskLayoutClick"/>
+            <Button Margin="0,0,10,0"  Content="Disk Data" Width="100"  Click="btDiskDataClick"/>
             <Button Margin="0,0,10,0"  Content="Protections" Width="100" Click="btProtectionClick" />
             <Button Margin="0,0,10,0"  Content="Write Disk" Width="100"  />
         </StackPanel>

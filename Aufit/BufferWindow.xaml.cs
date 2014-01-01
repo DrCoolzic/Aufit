@@ -69,6 +69,7 @@ namespace Aufit {
 				) { FontWeight = FontWeights.Bold });
 
 			displayBuffer.Inlines.Add(String.Format("-------------------+---------------------------\n"));
+			displayBuffer.Inlines.Add(String.Format("ID                 | DATA                      \n"));
 			displayBuffer.Inlines.Add(String.Format("SCT    POS LEN CRC | BYTE    POS   LEN CRC FUZ \n"));
 			displayBuffer.Inlines.Add(String.Format("-------------------+---------------------------\n"));
 
@@ -127,14 +128,15 @@ namespace Aufit {
 					track, side, tc.byteCount, tc.timeLength / 1000, tc.sectors.Count - 1)
 				) { FontWeight = FontWeights.Bold });
 
-			displayBuffer.Inlines.Add(String.Format("-------------------+----------+---------------------------+-----------\n"));
-			displayBuffer.Inlines.Add(String.Format("SCT    POS LEN CRC | BYT  LEN | BYTE    POS   LEN CRC FUZ | BYTE  LEN\n"));
-			displayBuffer.Inlines.Add(String.Format("-------------------+----------+---------------------------+-----------\n"));
+			displayBuffer.Inlines.Add(String.Format("-------------------+-----------+---------------------------+-----------\n"));
+			displayBuffer.Inlines.Add(String.Format("ID                 | INTER-GAP | DATA                      | INTRA-GAP\n"));
+			displayBuffer.Inlines.Add(String.Format("SCT    POS LEN CRC | BYTE  LEN | BYTE    POS   LEN CRC FUZ | BYTE  LEN\n"));
+			displayBuffer.Inlines.Add(String.Format("-------------------+-----------+---------------------------+-----------\n"));
 
 			for (int i = 0; i < tc.sectors.Count; i++) {
 				if (i == 0) {
 					displayBuffer.Inlines.Add(String.Format("                   |"));
-					displayBuffer.Inlines.Add(String.Format("          |"));
+					displayBuffer.Inlines.Add(String.Format("           |"));
 					// DATA
 					if (tc.sectors[i].phases[(byte)Phases.p_data].byteCount > 0) {
 						// this should be the data from last id ?
@@ -168,10 +170,10 @@ namespace Aufit {
 						displayBuffer.Inlines.Add(String.Format("                   |"));
 					// INTRA
 					if (tc.sectors[i].phases[(byte)Phases.p_inner].byteCount > 0)
-						displayBuffer.Inlines.Add(String.Format(" {0,3:D} {1,4:D} |", tc.sectors[i].phases[(byte)Phases.p_inner].byteCount,
+						displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,4:D} |", tc.sectors[i].phases[(byte)Phases.p_inner].byteCount,
 							tc.sectors[i].phases[(byte)Phases.p_inner].timeLength / 1000));
 					else
-						displayBuffer.Inlines.Add(String.Format("          |"));
+						displayBuffer.Inlines.Add(String.Format("           |"));
 					// DATA
 					SectorContent sc = FDC.findSectorContent(track, side, ac.ids[i - 1].number, ac.blocs[i - 1].startTime);
 					if ((sc != null) && (sc.dataBlock.byteCount > 0))
@@ -187,7 +189,7 @@ namespace Aufit {
 						displayBuffer.Inlines.Add(String.Format("\n"));
 				}	// real sector
 			}
-			displayBuffer.Inlines.Add(String.Format("-------------------+----------+---------------------------+-----------\n"));
+			displayBuffer.Inlines.Add(String.Format("-------------------+-----------+---------------------------+-----------\n"));
 
 			TrackBuffer buffer = tc.buffer;
 			drawBuffer(buffer);

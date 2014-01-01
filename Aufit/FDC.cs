@@ -422,8 +422,8 @@ namespace WD1772NS {
 									}
 									// ID Block we store the CRC for checking
 									tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].crc = crc;
-									tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].startBit = currentBit;
 									phase = Phases.p_inner;
+									tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].startBit = currentBit;
 									gapPosition = 0;
 									break;
 							}
@@ -439,9 +439,9 @@ namespace WD1772NS {
 								tc.sectors.Add(new SectorInfo());
 								tc.sectors[tc.sectors.Count - 1].startTime = prevBlockEndTime;
 								tc.sectors[tc.sectors.Count - 1].addr.iam = dsr.Data;
-								tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].startBit = currentBit;
 								byteLeftInBlock = 7;
 								phase = Phases.p_id;
+								tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].startBit = currentBit;
 								gapPosition = 0;
 							}	// SWS
 							else switch (byteLeftInBlock) {
@@ -469,11 +469,11 @@ namespace WD1772NS {
 
 					tc.buffer.addByte(dsr.Data, dsr.Clock, dsr.MFM, phase, (ushort)clock, prevBlockEndTime);
 					crc = Global.updateCRC(dsr.Data, crc);
-					prevBlockEndTime = currentTime;
+					prevBlockEndTime += 32000;
 				}	// while bytes in the DSR
+				prevBlockEndTime = currentTime;
 			}	// For all transitions
 
-			tc.byteCount++;
 			UpdateTrackInfo(tc, phase, ref blockStartByte, ref blockStartTime, currentTime);
 			tc.sectors[tc.sectors.Count - 1].endTime = currentTime;
 
@@ -665,8 +665,9 @@ namespace WD1772NS {
 						ac.ids[ac.ids.Count - 1] = id;
 					} // we are in ID
 					crc = Global.updateCRC(dsr.Data, crc);
-					prevBlockEndTime = currentTime;
+					prevBlockEndTime += 32000;
 				}	// more byte to process
+				prevBlockEndTime = currentTime;
 			}	// for all flux
 			return ac;
 		}	// end of readAddr()
@@ -871,8 +872,9 @@ namespace WD1772NS {
 					if (phase == Phases.p_data)
 						sect.buffer.addByte(dsr.Data, dsr.Clock, dsr.MFM, phase, (ushort)clock, prevBlockEndTime);
 					crc = Global.updateCRC(dsr.Data, crc);
-					prevBlockEndTime = currentTime;
+					prevBlockEndTime += 32000;
 				}	// while bytes in the DSR
+				prevBlockEndTime = currentTime;
 			}	// For all transitions
 
 			sect.sectHasData = idFound && dataFound;
@@ -891,8 +893,13 @@ namespace WD1772NS {
 				bool fuzzyFound = false;
 				TrackBuffer mask;
 				if ((sref.buffer.Bytes.Count == 0) || (sect.buffer.Bytes.Count == 0)) return null;
+				//Debug.Assert(sref.buffer.Bytes.Count == sect.buffer.Bytes.Count, "Possible truncation",
+				//	String.Format("buffers size s1={0} s2={1}\n", sref.buffer.Bytes.Count, sect.buffer.Bytes.Count));
+				// we may have data beyond index and therefore on the last rev the sector can get truncated
+				if (size > sect.dataBlock.byteCount)
+					size = sect.dataBlock.byteCount;
 
-				if (sref.mask != null) {
+				if (sref.mask != null) {	// previous mask exist append
 					mask = sref.mask;
 					for (int i = 0; i < size; i++) {
 						byte xor = (byte)(sref.buffer.Bytes[i].dataByte ^ sect.buffer.Bytes[i].dataByte);
@@ -900,7 +907,7 @@ namespace WD1772NS {
 						if (xor != 0) {
 							fuzzyFound = true;
 							TrackBuffer.TrackByte tb = mask.Bytes[i];
-							tb.dataByte = (byte)~xor;
+							tb.dataByte = (byte)xor;
 							tb.clockByte = sref.buffer.Bytes[i].clockByte;
 							tb.mfmWord = sref.buffer.Bytes[i].mfmWord;
 							tb.density = sref.buffer.Bytes[i].density;
@@ -910,14 +917,13 @@ namespace WD1772NS {
 						}
 					}
 				}
-				else {
+				else {	// previous mask does not exist we create
 					mask = new TrackBuffer();
-					// compare buffers
 					for (int i = 0; i < size; i++) {
 						byte xor = (byte)(sref.buffer.Bytes[i].dataByte ^ sect.buffer.Bytes[i].dataByte);
-						if (xor != 0) fuzzyFound = true;
+						if (xor != 0) 
+							fuzzyFound = true;
 						TrackBuffer.TrackByte tb = new TrackBuffer.TrackByte();
-						//tb.dataByte = (byte)~xor;
 						tb.dataByte = xor;
 						tb.clockByte = sref.buffer.Bytes[i].clockByte;
 						tb.mfmWord = sref.buffer.Bytes[i].mfmWord;
@@ -947,13 +953,12 @@ namespace WD1772NS {
 			TrackContent tc = readTrack(track, side, rev);
 			AddrContent ac = readAddr(track, side, rev);
 			for (int i = 0; i < ac.ids.Count; i++) {
-				// TODO check duplicate
-				// TODO check invalid number
-				// TODO check invalid ID field
+				// TODO check duplicate, invalid number, invalid ID field
+
 				SectorContent sc = readSector(track, side, rev, ac.ids[i].number, ac.blocs[i].startTime, false);
 				// TODO check not found
 				// now multiple readSector for fuzzy bits
-				for (int j = 1; j < Global.Disk[track, side].revData.Count(); j++) {
+				for (int j = 1; j < Global.Disk[track, side].revData.Count() + 1; j++) {
 					if (j == rev) continue;
 					readSector(track, side, j, ac.ids[i].number, ac.blocs[i].startByte, true);
 				}

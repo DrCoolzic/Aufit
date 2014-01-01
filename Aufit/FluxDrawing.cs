@@ -240,7 +240,7 @@ class FluxDrawing {
 
 			double r = (zoom > 1) ? (zoom > 25) ? (zoom > 50) ? 2 : 1.6 : 1.2 : 0.7;
 			if ((flux > 10000) && (Global.Disk[track, side].histoData.entropy > 0)) {
-				r = 4;
+				r = 2.5;
 				fluxPoints[pointsInViewport].colorIndex = 4;
 			}
 
