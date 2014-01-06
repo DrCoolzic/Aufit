@@ -535,6 +535,7 @@ namespace Aufit {
 						// infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", _dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, index));
 						byte number = Global.currentTrack().trackContent.sectors[index].addr.number;
 						SectorContent sect = FDC.findSectorContent(Global.Track, Global.Side, number, Global.currentTrack().trackContent.sectors[index].startTime);
+						if (sect == null) return;	// TODO for now we return
 						TrackBuffer buffer = sect.buffer;
 						string message = String.Format("Sector {0} with {1} bytes {2} {3}\n", number, sect.dataBlock.byteCount, (sect.dataBlock.crc == 0) ? "crc OK" : "Bad crc", (sect.mask != null) ? "Has fuzzy bits" : "");
 						if (_sectorWindowIsOpen)

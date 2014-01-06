@@ -183,7 +183,7 @@ namespace WD1772NS {
 		/// <summary>buffer for all the byte read in the DATA field of the sector</summary>
 		public TrackBuffer buffer;
 		/// <summary>Block information for ID field of the sector</summary>
-		public BlockInfo idBlock;
+		public BlockInfo idField;
 		/// <summary>contains the information of the ID field of the sector</summary>
 		public IDField id;
 		/// <summary>This flag is set to true when a sector has a DATA field. If the 
@@ -206,6 +206,7 @@ namespace WD1772NS {
 		/// <remarks>This function interprets the bits stream as a WD1772 would do with a read track command. 
 		/// It fills a ReadTrackInfo structure that gives detailed information about the track 
 		/// as well as a MFMBuffer that contains all the decoded bytes.</remarks>
+		/// TODO do something special for SDS ?
 		public static TrackContent readTrack(int track, int side, int rev) {
 			// check if already there
 			TrackContent tc = Global.Disk[track, side].trackContent;
@@ -776,9 +777,9 @@ namespace WD1772NS {
 									// this means that no DATA block were found before this ID
 									// therefore we should break
 									if (idFound) {
-										sect.idBlock.crc = crc;
-										sect.idBlock.byteCount = byteCount - sect.idBlock.startByte;
-										sect.idBlock.timeLength = prevBlockEndTime - sect.idBlock.startTime;
+										sect.idField.crc = crc;
+										sect.idField.byteCount = byteCount - sect.idField.startByte;
+										sect.idField.timeLength = prevBlockEndTime - sect.idField.startTime;
 										dataFound = false;
 										phase = Phases.p_id;
 										breakLoop = true;
@@ -789,9 +790,9 @@ namespace WD1772NS {
 										break;
 
 									sect.id.iam = dsr.Data;
-									sect.idBlock.startBit = currentBit;
-									sect.idBlock.startByte = byteCount;
-									sect.idBlock.startTime = prevBlockEndTime;
+									sect.idField.startBit = currentBit;
+									sect.idField.startByte = byteCount;
+									sect.idField.startTime = prevBlockEndTime;
 									byteLeftInBlock = 7;
 									phase = Phases.p_id;
 									break;
@@ -802,7 +803,7 @@ namespace WD1772NS {
 								case 0xF9:
 									// we check that this DATA block is for the ID we are looking for
 									// and that the DATA block is less than 43 bytes apart
-									if (idFound && ((byteCount - sect.idBlock.startByte - 7) <= 43)) {
+									if (idFound && ((byteCount - sect.idField.startByte - 7) <= 43)) {
 										dataFound = true;
 										byteLeftInBlock = Global.sectSize(sect.id.size) + 3; // AM + 2 CRC + Size
 										sect.dataBlock.startBit = currentBit;
@@ -842,9 +843,9 @@ namespace WD1772NS {
 									sect.id.crc += dsr.Data;
 									break;
 								case 0:	// end of ID block
-									sect.idBlock.crc = crc;
-									sect.idBlock.byteCount = byteCount - sect.idBlock.startByte;
-									sect.idBlock.timeLength = prevBlockEndTime - sect.idBlock.startTime;
+									sect.idField.crc = crc;
+									sect.idField.byteCount = byteCount - sect.idField.startByte;
+									sect.idField.timeLength = prevBlockEndTime - sect.idField.startTime;
 									phase = Phases.p_inner;
 									break;
 								default:
@@ -990,7 +991,7 @@ namespace WD1772NS {
 		public static SectorContent findSectorContent(int track, int side, byte num, int position) {
 			List<SectorContent> sectors = Global.Disk[track, side].sectorsContent;
 			foreach(SectorContent sector in sectors)
-				if ((sector.id.number == num) && (sector.idBlock.startTime >= position))
+				if ((sector.id.number == num) && (sector.idField.startTime >= position))
 					return sector;
 			return null;
 		}

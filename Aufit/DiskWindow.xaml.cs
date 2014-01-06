@@ -139,7 +139,7 @@ public partial class DiskWindow : Window {
 			for (int i = 0; i < tc.sectors.Count; i++) {
 				SectorInfo sector = tc.sectors[i];
 				IDField id = new IDField();
-				SectorContent s = new SectorContent();
+				SectorContent s = new SectorContent();	// TODO why not null?
 				if (i > 0) {
 					id = Global.Disk[track, side].addrContent.ids[i - 1];
 					s = FDC.findSectorContent(track, side, id.number, sector.startTime);
