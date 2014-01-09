@@ -10,7 +10,7 @@ not removed from the file and that any derivative work contains the
 original copyright notice and the associated disclaimer. \n
 The Atari Universal FD Image Tool project are free software; you can 
 redistribute it and/or modify  it under the terms of the GNU General Public 
-License as published by the Free Software Foundation; either version 2 of 
+License as published by the Free Software Foundation; either version 3 of 
 the License, or (at your option) any later version.\n\n 
 The Atari Universal FD Image Tool project is distributed in the hope that 
 it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
@@ -73,7 +73,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KFReaderNS {
+namespace KFReaderSpace {
 
 #region structures
 	/// <summary>Define the Status codes returned by Stream decoding procedures</summary>

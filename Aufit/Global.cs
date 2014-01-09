@@ -11,7 +11,7 @@ derivative work contains the original copyright notice and the associated
 disclaimer.\n\n
 The Atari Universal FD Image Tool project is free software; you can redistribute it
 and/or modify  it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
+as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.\n\n
 The Atari Universal FD Image Tool project is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -32,11 +32,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using KFReaderNS;
-using WD1772NS;
+using KFReaderSpace;
+using WD1772Space;
 using System.Windows.Controls;
 
-namespace GlobalNS {
+namespace GlobalSpace {
 
 /// <summary>
 /// The RevData structure contains the information for all the revolutions of one track including the pointers to the Flux Data.
@@ -153,9 +153,6 @@ public class Global {
 	public static void resetDisk() {
 		_diskInfo = new TrackData[85, 2];
 		_sampleClock = 0;
-		Track = 0;
-		Side = 0;
-		Rev = 1;
 	}
 
 
@@ -218,30 +215,6 @@ public class Global {
 		set { _diskInfo = value; }
 	}
 
-	/// <summary>
-	/// Shortcut to get access to the current track info. This is equivalent to DiskTracks[Track, Side]
-	/// </summary>
-	/// <returns>DiskTracks[Track, Side]</returns>
-	public static TrackData currentTrack() {
-		return _diskInfo[Track, Side];
-	}
-
-
-	// we use auto-implemented properties (C# 3.0++) that uses anonymous backing field
-	/// <summary>
-	/// Return the current revolution value
-	/// </summary>
-	public static int Rev { get; set;  }
-
-	/// <summary>
-	/// Return the current Track value
-	/// </summary>
-	public static int Track { get; set; }
-
-	/// <summary>
-	/// Return the current Side value
-	/// </summary>
-	public static int Side { get; set; }
 
 	/// <summary>
 	/// This functions takes a sample value and returns the corresponding timing in nanoseconds based on the sample clock.
@@ -253,6 +226,7 @@ public class Global {
 		return (int)compute;
 	}
 
+
 	/// <summary>
 	/// This function takes a timing value and convert it back to the corresponding integer sample value
 	/// </summary>
@@ -262,6 +236,7 @@ public class Global {
 		double compute = _sampleClock * (double)tValue / 1000000000.0;
 		return (int)compute;
 	}
+
 
 	/// <summary>
 	/// Converts Flux transition into bits and clocks using the DPLL. Also sets min max values

@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Aufit.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="AUFIT Analyzer Prototype" Height="750" Width="1000" Closing="mainWinClosing">
+        Title="AUFIT Analyzer V0.1a" Height="750" Width="1000" Closing="mainWinClosing">
     <Grid KeyDown="keyDown">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -58,13 +58,6 @@
                 </TabItem>
                 <TabItem Header="Information">
                     <TextBox Name="infoBox" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/>
-                </TabItem>
-                <TabItem Header="Sector">
-                    <Grid Margin="0,0,0,0" x:Name ="sectGrid"  ClipToBounds="True" Background="Transparent" SizeChanged="sectGridSizeChanged">
-                        <Canvas Margin="2" Name="cvTextSect" ClipToBounds="True" >
-                            <Canvas Name="cvGraphicSect" ClipToBounds="True"/>
-                        </Canvas>
-                    </Grid>
                 </TabItem>
             </TabControl>
         </Grid>

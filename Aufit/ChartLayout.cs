@@ -10,7 +10,7 @@ derivative work contains the original copyright notice and the associated
 disclaimer.\n\n
 The Atari Universal FD Image Tool project is free software; you can redistribute it
 and/or modify  it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
+as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.\n\n
 The Atari Universal FD Image Tool project is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -30,7 +30,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-namespace ChartNS {
+namespace ChartSpace {
 /// <summary>
 /// Contains all layout information necessary for drawing the different charts ...
 /// </summary>

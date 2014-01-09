@@ -11,7 +11,7 @@ derivative work contains the original copyright notice and the associated
 disclaimer.\n\n
 The Atari Universal FD Image Tool project is free software; you can redistribute it
 and/or modify  it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
+as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.\n\n
 The Atari Universal FD Image Tool project is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -31,9 +31,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using GlobalNS;
+using GlobalSpace;
+using Aufit;
 
-namespace SCPReaderNS {
+namespace SCPReaderSpace {
 	/// <summary>
 	/// This structure contains the information related to the SCP File header
 	/// </summary>
@@ -316,7 +317,7 @@ namespace SCPReaderNS {
 			// TODO checksum
 
 			// now we transfer to the Global Disk structure
-			Global.Rev = 1;
+			MainWindow.Rev = 1;
 			Global.Disk[track, side].fluxData = new FluxData();
 			Global.Disk[track, side].fluxData.fluxValue = ti.fluxValues;
 			Global.Disk[track, side].fluxData.fluxCount = ti.fluxValues.Count();
@@ -346,7 +347,6 @@ namespace SCPReaderNS {
 		private static int int32Extract(byte[] sbuf, int pos) {
 			return sbuf[pos] + (sbuf[pos + 1] << 8) + (sbuf[pos + 2] << 16) + (sbuf[pos + 3] << 24);
 		}
-
 
 	}
 }

@@ -10,7 +10,7 @@ derivative work contains the original copyright notice and the associated
 disclaimer.\n\n
 The Atari Universal FD Image Tool project is free software; you can redistribute it
 and/or modify  it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
+as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.\n\n
 The Atari Universal FD Image Tool project is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -33,11 +33,11 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-using KFReaderNS;
-using WD1772NS;
-using GlobalNS;
+using KFReaderSpace;
+using WD1772Space;
+using GlobalSpace;
 
-namespace ChartNS {
+namespace ChartSpace {
 /// <summary>
 /// This class contains all functions required to draw the track data chart
 /// </summary>
@@ -83,8 +83,8 @@ class DataDrawing {
 
 		for (int i = 0; i < tc.sectors.Count; i++) {
 			SectorInfo sector = tc.sectors[i];
-			IDField id = new IDField();
-			SectorContent s = new SectorContent(); ;
+			IDField id = new IDField();	// TODO null ?
+			SectorContent s = null;
 			if (i > 0) {
 				id = Global.Disk[track, side].addrContent.ids[i-1];
 				s = FDC.findSectorContent(track, side, id.number, sector.startTime);
@@ -117,7 +117,8 @@ class DataDrawing {
 						case (byte)Phases.p_id:
 							polySect.Points.Add(_dataChartLayout.NormPoint(bstart, 0.2));
 							polySect.Points.Add(_dataChartLayout.NormPoint(bstart, 0.8));
-							tb.Text = String.Format("ID Field {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4}", sector.phases[p].byteCount, blength, sector.phases[p].startByte, bstart, sector.phases[p].startBit);
+							tb.Text = String.Format("ID Field {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4}", 
+								sector.phases[p].byteCount, blength, sector.phases[p].startByte, bstart, sector.phases[p].startBit);
 							panel.Children.Add(tb);
 
 
@@ -128,13 +129,15 @@ class DataDrawing {
 							break;
 
 						case (byte)Phases.p_inner:
-							tb.Text = String.Format("Intra GAP {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4}", sector.phases[p].byteCount, blength, sector.phases[p].startByte, bstart, sector.phases[p].startBit);
+							tb.Text = String.Format("Intra GAP {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4}", 
+								sector.phases[p].byteCount, blength, sector.phases[p].startByte, bstart, sector.phases[p].startBit);
 							panel.Children.Add(tb);
 							plg.Fill = Brushes.LightGreen;
 							break;
 
 						case (byte)Phases.p_data:
-							tb.Text = String.Format("Data Field {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4}", sector.phases[p].byteCount, blength, sector.phases[p].startByte, bstart, sector.phases[p].startBit);
+							tb.Text = String.Format("Data Field {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4}", 
+								sector.phases[p].byteCount, blength, sector.phases[p].startByte, bstart, sector.phases[p].startBit);
 							panel.Children.Add(tb);
 							plg.Fill = Brushes.DeepSkyBlue;
 							if (sector.phases[p].overClock > Global.sectSize(sector.addr.size) / 2)
