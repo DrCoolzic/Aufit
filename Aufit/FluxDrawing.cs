@@ -303,12 +303,13 @@ class FluxDrawing {
 	/// <param name="sender"></param>
 	/// <param name="e"></param>
 	public void mouseLBU(object sender, MouseButtonEventArgs e) {
-		if (_fluxChartLayout.GraphicCanvas.IsMouseCaptured) {
+		// BUG FIX ABOVE
+		//if (_fluxChartLayout.GraphicCanvas.IsMouseCaptured) {
 			_fluxChartLayout.GraphicCanvas.ReleaseMouseCapture();
 			_fluxChartLayout.GraphicCanvas.Cursor = Cursors.Arrow;
-		}
-		else
-			return;		// we receive a mouse up event from Openfiledialog !!! Bug?
+		//}
+		//else
+		//	return;		// we receive a mouse up event from Openfiledialog !!! Bug?
 
 		if (_rubberBand != null) {
 			_rubberBand = null;

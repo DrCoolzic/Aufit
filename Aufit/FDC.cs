@@ -170,9 +170,13 @@ namespace WD1772Space {
 		public bool sectorUnique = true;
 		/// <summary>All sectors in the track have standard timing values</summary>
 		public bool sectorStandard = true;
+		/// <summary>All sector has standard size</summary>
 		public bool sectorSandardSize = true;
+		/// <summary>Short track</summary>
 		public bool shortTrack = false;
+		/// <summary>Long Track</summary>
 		public bool longTrack = false;
+		/// <summary>Position of NFA on track</summary>
 		public int NFA = -1;
 	}
 
@@ -210,12 +214,17 @@ namespace WD1772Space {
 		/// the mask pointer is kept null (no memory allocation)</summary>
 		public TrackBuffer mask;
 
+		/// <summary>Sector has more than 50% of the bytes with clock above 5%</summary>
 		public bool sectorOverClocked = false;
+		/// <summary>Sector has more than 50% of the bytes with clock below 5%</summary>
 		public bool sectorUnderClocked = false;
+		/// <summary>Sector has more than 25% of the bytes with clock above 5% AND more than 25% of the bytes with clock below 5%</summary>
 		public bool sectorIntraVariation = false;
+		/// <summary>Sector has data byte in range 0xF5 - 0xF7 in the GAP field</summary>
 		public bool sectorBadDataInGap = false;
 		/// <summary>The Track field in the ID is not equal to current track</summary>
 		public bool sectorValidTrack = true;
+		/// <summary>Sector contains invalid sync sequences</summary>
 		public bool sectorBadSync = false;
 	}
 

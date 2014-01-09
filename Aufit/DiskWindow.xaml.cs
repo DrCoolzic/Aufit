@@ -50,8 +50,6 @@ public partial class DiskWindow : Window {
 	/// <summary>
 	/// Create a window and call the draw disk function
 	/// </summary>
-	/// <param name="side">Specify the side to display</param>
-	/// <param name="message">A message displayed in the disk window</param>
 	public DiskWindow() {
 		InitializeComponent();
 	}
@@ -62,7 +60,6 @@ public partial class DiskWindow : Window {
 	/// <param name="side">Side of the FD</param>
 	/// <param name="message">Message to display at end of drawing</param>
 	public async void drawDiskLayout(int side, string message) {
-
 		for (int track = 0; track < 84; track++) {
 			if (Global.Disk[track, side].fluxData == null) continue;
 			await decodeAndReadAsync(track, side, 1);
@@ -126,7 +123,6 @@ public partial class DiskWindow : Window {
 	/// </summary>
 	/// <param name="track">The track to display</param>
 	/// <param name="side">The side of the FD</param>
-	/// <param name="message">A message to display</param>
 	public void drawDiskTrack(int track, int side) {
 		TrackContent tc = Global.Disk[track, side].trackContent;
 		Point center = new Point(450, 450);
@@ -280,7 +276,6 @@ public partial class DiskWindow : Window {
 	/// </summary>
 	/// <param name="track">The track to display</param>
 	/// <param name="side">The side of the FD</param>
-	/// <param name="message">A message to display</param>
 	public void drawDiskTrackData(int track, int side) {
 		Point center = new Point(450, 450);
 		double rad_max = 400;

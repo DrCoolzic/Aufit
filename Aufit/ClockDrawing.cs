@@ -98,10 +98,12 @@ class ClockDrawing {
 		else _rev = rev;
 
 		if (Global.Disk[track, side].fluxData == null) return;
+		Global.TrackData td = Global.Disk[track, side];
+		if (td.decodeData == null) return;
+
 		_clockChartLayout.drawChartGrids();
 		int speedUp = FluxDrawing.SpeedUp;
 
-		Global.TrackData td = Global.Disk[track, side];
 		int start = Global.startOffset(track, side, rev);
 		int stop = Global.stopOffset(track, side, rev);
 		int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);

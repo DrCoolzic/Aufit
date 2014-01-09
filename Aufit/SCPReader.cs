@@ -74,13 +74,14 @@ namespace SCPReaderSpace {
 		public int checksum;
 		/// <summary> Contains the 32 bit offset (from the start of the file) of the tracks
 		/// data headers.  </summary> 
-		/// <remarks>There is an offset entry for every track, with up to 164 tracks supported.
-		/// This means that disk images of up to 82 tracks with sides 0/1 are possible.  If no
+		/// <remarks>There is an offset entry for every track, with up to 166 tracks supported.
+		/// This means that disk images of up to 83 tracks with sides 0/1 are possible.  If no
 		/// track data for a track is present, then the entry will contain a longword of zeros
 		/// (0x00000000).  The 1st track header should start at offset 0x000002A8, but could
 		/// technically start anywhere in the file.  Since offsets are used, track data does not
 		/// have to be in any order, so you could append track data to the file and change the
-		/// header to point to the appended data.</remarks>
+		/// header to point to the appended data. For simplicity it is recommended that you follow
+		/// the normal image format shown below, with all tracks in sequential order.</remarks>
 		public int[] TrackHeader;
 		/// <summary>After the last byte of track data there will be a timestamp.  
 		/// This timestamp is an ASCII string, ie: 10/15/2013 5:52:30 PM </summary>
@@ -118,7 +119,7 @@ namespace SCPReaderSpace {
 		/// <summary>The SuperCard Pro Track Header should be TRK</summary>
 		public string identifier = "";
 		/// <summary>
-		/// contains the track number (0-163).  For single sided disks, tracks 0-41 (48TPI)
+		/// contains the track number (0-165).  For single sided disks, tracks 0-41 (48TPI)
 		/// or 0-83 (96TPI) are used.  For double-sided disks, the actual track number is this value
 		/// divided by 2.  The remainder (0 or 1) is the head.  0 represents the bottom head and
 		/// 1 represents the top head.  For example, 0x0B would be 11/2 = track 5, head 1 (top).
@@ -166,7 +167,7 @@ namespace SCPReaderSpace {
 	/// </summary>
 	public class SCPReader {
 		private static double _sckValue = 40000000.0;	//		1 /25 ns
-		private static int _fluxMin = 10000000;
+		private static int _fluxMin = Int32.MaxValue;
 		private static int _fluxMax = 0;
 
 		/// <summary>
@@ -235,15 +236,13 @@ namespace SCPReaderSpace {
 			file.bitcellWidth = buffer[bufferIndex++];						// 0x09
 			bufferIndex++;													// 0x0A reserved
 			bufferIndex++;													// 0x0B reserved
-			file.checksum = int32Extract(buffer, bufferIndex);				// 0x0C-0x0F
-			bufferIndex += 4;
+			file.checksum = readInt32(buffer, ref bufferIndex);				// 0x0C-0x0F
 			
-			file.TrackHeader = new int[164];
-			for (int tnum = 0; tnum < 164; tnum++) {
-				file.TrackHeader[tnum] = int32Extract(buffer, bufferIndex);
-				bufferIndex += 4;
+			file.TrackHeader = new int[166];
+			for (int tnum = 0; tnum < 165; tnum++) {
+				file.TrackHeader[tnum] = readInt32(buffer, ref bufferIndex);
 				if (file.TrackHeader[tnum] != 0) {
-					status = readSCPTrack(buffer, tnum, file.TrackHeader[tnum]);
+					status = readSCPTrack(buffer, tnum, file.TrackHeader[tnum], file.revCount);
 					if (status != SCPStatus.stsOK) return status;
 				}
 			}
@@ -262,7 +261,7 @@ namespace SCPReaderSpace {
 		/// <param name="trackSide"></param>
 		/// <param name="trackHeaderPosition"></param>
 		/// <returns></returns>
-		private static SCPStatus readSCPTrack(byte[] buffer, int trackSide, int trackHeaderPosition) {
+		private static SCPStatus readSCPTrack(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount) {
 			int track = trackSide / 2;
 			int side = trackSide % 2;
 			_fluxMin = Int32.MaxValue;
@@ -278,42 +277,68 @@ namespace SCPReaderSpace {
 				return SCPStatus.stsInvalidTrack;
 			ti.trackSide = buffer[bufferIndex++];						// 0x03
 
-			ti.revInfo = new RevInfo[5];
-			int fluxSize = 0;
-			for (int i = 0; i < 5; i++) {
+			// read rev headers
+			ti.revInfo = new RevInfo[revCount];
+			int fluxSize = 0;	// sum all the flux transitions
+			for (int i = 0; i < revCount; i++) {
 				ti.revInfo[i] = new RevInfo();
-				ti.revInfo[i].indexTime = int32Extract(buffer, bufferIndex);
-				bufferIndex += 4;
-				ti.revInfo[i].fluxCount = int32Extract(buffer, bufferIndex);
-				bufferIndex += 4;
+				ti.revInfo[i].indexTime = readInt32(buffer, ref bufferIndex);
+				ti.revInfo[i].fluxCount = readInt32(buffer, ref bufferIndex);
 				fluxSize += ti.revInfo[i].fluxCount;
-				ti.revInfo[i].fluxOffset = int32Extract(buffer, bufferIndex);
-				bufferIndex += 4;
+				ti.revInfo[i].fluxOffset = readInt32(buffer, ref bufferIndex);
 				ti.revInfo[i].indexTimePosition = 0;	// not provided currently
 			}
 
 			// create buffer for all flux transitions
+			// note this buffer might be bigger that what is needed because of null entries (strongbits)
 			ti.fluxValues = new int[fluxSize];
 
-			int nbRevFound = 0;
-			for (int i = 0; i < 5; i++) {
+			for (int i = 0; i < revCount; i++) {
 				if (ti.revInfo[i].indexTime != 0) {
+					int overflowCount = 0;
 					// set bufferIndex to the offset of the data
 					bufferIndex = ti.revInfo[i].fluxOffset + trackHeaderPosition;
 					// now set fluxOffset to offset in the "extracted data buffer"
 					if (i > 0) ti.revInfo[i].fluxOffset = ti.revInfo[i - 1].fluxOffset + ti.revInfo[i - 1].fluxCount;
 					else ti.revInfo[i].fluxOffset = 0;
-					nbRevFound++;
+					//revCount++;
+					int p = ti.revInfo[i].fluxOffset;
 					for (int j = 0; j < ti.revInfo[i].fluxCount; j++) {
-						int p = j + ti.revInfo[i].fluxOffset;
-						ti.fluxValues[p] = buffer[bufferIndex++] << 8;
-						ti.fluxValues[p] += buffer[bufferIndex++];
-						if (ti.fluxValues[p] > _fluxMax) _fluxMax = ti.fluxValues[p];
-						if (ti.fluxValues[p] < _fluxMin) _fluxMin = ti.fluxValues[p];
+						int val = buffer[bufferIndex++] << 8;
+						val += buffer[bufferIndex++];
+						if (val == 0) {
+							ti.fluxValues[p] += 65536;
+							overflowCount++;
+						}
+						else {
+							ti.fluxValues[p++] += val;
+							if (val > _fluxMax) _fluxMax = val;
+							if (val < _fluxMin) _fluxMin = val;
+						}
 					}
-				}
-			}
-			ti.checksum = int32Extract(buffer, bufferIndex);
+					ti.revInfo[i].fluxCount -= overflowCount;
+				}	// existing revolution
+			}	// for all revolutions
+
+			//for (int i = 0; i < revCount; i++) {
+			//	if (ti.revInfo[i].indexTime != 0) {
+			//		// set bufferIndex to the offset of the data
+			//		bufferIndex = ti.revInfo[i].fluxOffset + trackHeaderPosition;
+			//		// now set fluxOffset to offset in the "extracted data buffer"
+			//		if (i > 0) ti.revInfo[i].fluxOffset = ti.revInfo[i - 1].fluxOffset + ti.revInfo[i - 1].fluxCount;
+			//		else ti.revInfo[i].fluxOffset = 0;
+			//		for (int j = 0; j < ti.revInfo[i].fluxCount; j++) {
+			//			int p = j + ti.revInfo[i].fluxOffset;
+			//			ti.fluxValues[p] = buffer[bufferIndex++] << 8;
+			//			ti.fluxValues[p] += buffer[bufferIndex++];
+			//			if (ti.fluxValues[p] > _fluxMax) _fluxMax = ti.fluxValues[p];
+			//			if (ti.fluxValues[p] < _fluxMin) _fluxMin = ti.fluxValues[p];
+			//		}
+			//	}
+			//}
+
+			ti.checksum = readInt32(buffer, ref bufferIndex);
+
 			// TODO checksum
 
 			// now we transfer to the Global Disk structure
@@ -326,8 +351,8 @@ namespace SCPReaderSpace {
 			Global.Disk[track, side].fluxData.fluxMax = _fluxMax;
 			Global.Disk[track, side].fluxData.fluxMin = _fluxMin;
 
-			Global.Disk[track, side].revData = new RevData[nbRevFound];
-			for (int i = 0; i < nbRevFound; i++) {
+			Global.Disk[track, side].revData = new RevData[revCount];
+			for (int i = 0; i < revCount; i++) {
 				Global.Disk[track, side].revData[i].revolutionTime = ti.revInfo[i].indexTime;
 				Global.Disk[track, side].revData[i].fluxCount = ti.revInfo[i].fluxCount;
 				Global.Disk[track, side].revData[i].indexTimePosition = ti.revInfo[i].indexTimePosition;
@@ -344,8 +369,14 @@ namespace SCPReaderSpace {
 		/// <param name="pos">Position of the first byte</param>
 		/// <returns>The 32 bits integer</returns>
 		/// <remarks>This is due to the poor casting capabilities of C#</remarks>
-		private static int int32Extract(byte[] sbuf, int pos) {
-			return sbuf[pos] + (sbuf[pos + 1] << 8) + (sbuf[pos + 2] << 16) + (sbuf[pos + 3] << 24);
+		private static int readInt32(byte[] sbuf, ref int pos) {
+			int value = sbuf[pos] + (sbuf[pos + 1] << 8) + (sbuf[pos + 2] << 16) + (sbuf[pos + 3] << 24);
+			pos += 4;
+			return value;
+		}
+
+		private static byte readByte(byte[] sbuf, ref int pos) {
+			return sbuf[pos++];
 		}
 
 	}

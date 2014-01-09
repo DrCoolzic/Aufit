@@ -75,6 +75,7 @@ class DataDrawing {
 		else _rev = rev;
 
 		if (Global.Disk[track, side].fluxData == null) return;
+		// Global.mfmDecode(track, side);
 		_dataChartLayout.chartResetCanvas();
 		_dataChartLayout.drawChartGrids();
 

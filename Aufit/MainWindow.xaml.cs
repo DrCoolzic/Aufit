@@ -71,8 +71,17 @@ namespace Aufit {
 		private string _fileName;
 
 		// current display
+		/// <summary>
+		/// The track currently selected and displayed
+		/// </summary>
 		public static int Track { get; set; }
+		/// <summary>
+		/// The side currently selected and displayed
+		/// </summary>
 		public static int Side { get; set; }
+		/// <summary>
+		/// The revolution currently selected and displayed
+		/// </summary>
 		public static int Rev { get; set; }
 
 
@@ -158,6 +167,10 @@ namespace Aufit {
 		}
 
 		private void fluxMouseLBU(object sender, MouseButtonEventArgs e) {
+			// NASTI BUG we receive a mouse up event from Openfiledialog
+			if (!_fluxDrawing.Chart.GraphicCanvas.IsMouseCaptured) 
+				return;		// we receive a mouse up event from Openfiledialog !!! Bug?
+
 			_fluxDrawing.mouseLBU(sender, e);
 			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.ClockMin, _clockDrawing.ClockMax);
 			_clockDrawing.drawClock();

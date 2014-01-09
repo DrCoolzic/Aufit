@@ -86,12 +86,12 @@ public class FluxData {
 /// </summary>
 public class decodeData {
 	/// <summary>The clock period computed by the DPLL for the corresponding flux transition</summary>
-	public int[] decodedClock;
+	public ushort[] decodedClock;
 	/// <summary>The number of inspection windows to get to the flux.</summary>
 	/// <remarks>This array is filled by mfmDecode() method. The array has the same size as the flux array.
 	/// nbWin is the number of inspection windows to the next flux transition (i.e. bit to shift
 	/// in the DSR</remarks></remarks>
-	public int[] fluxInWin;
+	public ushort[] fluxInWin;
 	/// <summary>Value minimum value of the clock as computed by the DPLL</summary>
 	public int clockMin;
 	/// <summary>Value maximum value of the clock as computed by the DPLL</summary>
@@ -253,8 +253,8 @@ public class Global {
 
 		Global.TrackData td = Global.Disk[track, side];
 		Global.Disk[track, side].decodeData = new decodeData();
-		Global.Disk[track, side].decodeData.decodedClock = new int[td.fluxData.fluxCount + 1];
-		Global.Disk[track, side].decodeData.fluxInWin = new int[td.fluxData.fluxCount + 1];
+		Global.Disk[track, side].decodeData.decodedClock = new ushort[td.fluxData.fluxCount + 1];
+		Global.Disk[track, side].decodeData.fluxInWin = new ushort[td.fluxData.fluxCount + 1];
 		
 		DPLL dpll = new DPLL();
 		int sizeBeforeTrim = Global.Disk[track, side].fluxData.fluxMax + 1;		
@@ -269,12 +269,12 @@ public class Global {
 			curentTime += flux;
 			int nbWin = dpll.dataInWindow(curentTime);
 			currentBit += nbWin;
-			Global.Disk[track, side].decodeData.fluxInWin[i] = nbWin;
+			Global.Disk[track, side].decodeData.fluxInWin[i] = (ushort)nbWin;
 
 			int clk = dpll.Clock;
 			if (clk > maxClock) maxClock = clk;
 			if (clk < minClock) minClock = clk;
-			Global.Disk[track, side].decodeData.decodedClock[i] = clk;
+			Global.Disk[track, side].decodeData.decodedClock[i] = (ushort)clk;
 			clockAvg += clk;
 
 		}

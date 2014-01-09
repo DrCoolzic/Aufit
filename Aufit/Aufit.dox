@@ -19,15 +19,32 @@ along with the Atari Universal FD Image Tools project; if not, write to the Free
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</div>
 
 @section kfc_intro Introduction
-The xxx
+This document describes the usage of the AUFIT program. AUFIT is the acronym for Atari 
+Universal Floppy-Disk Image Tool. 
 
-@section progdes Program Description
-xxx
+The program can read many Floppy Disk image's formats 
+used with the Atari platform including images generated at the flux level by devices like 
+SuperCard Pro, KryoFlux, and Discovery Cartridge. Once read the FD image can be analyzed 
+and the content can be displayed using Graphical and Text outputs. 
+
+It is also possible to output the information read to several image formats. It is 
+therefore possible to use the program to convert from one format to another. 
+
+Usage has been designed to be as simple as possible for casual users. However 
+the program also provides powerful features for advanced users.
 
 @section _proguse Program Usage
 
-xxx
+Currently the program does not requires to be installed and is provided directly 
+as an executable: Aufit.exe. To run the program just double click the executable.
 
+The program run under Windows Vista SP2, Windows 7 SP1, and Widows 8 or above. 
+The program requires that the Microsoft.NET Framework 4.5 or above is installed. 
+It also requires the Ookii Dialogs class library. The Ookii DLL is provided along 
+with the executable and documentation.
+
+This documentation is primarily for developers.
+For more information please refer to Aufit User's Manual.
 Enjoy
 
 @author	Jean Louis-Guerin
