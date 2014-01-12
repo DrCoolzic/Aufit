@@ -285,7 +285,7 @@ namespace Aufit {
 		}
 
 
-		private void readKFRawFile(string fileName) {
+		private bool readKFRawFile(string fileName) {
 			BM1.Visibility = Visibility.Hidden;
 			BM2.Visibility = Visibility.Hidden;
 			tabCtrl.Width = matrixGrid.ActualWidth;
@@ -295,15 +295,16 @@ namespace Aufit {
 			Track = Side = 0;
 			Rev = 1;
 			_fileName = fileName;
-			bool status = ProcessStream.readStreamTrack(fileName, Track, Side);
-			if (status) {
+			bool ok = ProcessStream.readStreamTrack(fileName, Track, Side);
+			if (ok) {
 				infoBox.Clear();
 				drawCharts();
 			}
+			return ok;
 		}
 
 
-		private async void readSPCFile(string fileName) {
+		private async Task<bool> readSPCFile(string fileName) {
 			BM1.Visibility = Visibility.Visible;
 			BM2.Visibility = Visibility.Visible;
 			tabCtrl.Width = matrixGrid.ActualWidth - 320;
@@ -311,6 +312,7 @@ namespace Aufit {
 			Grid.SetColumnSpan(tabCtrl, 1);
 			_fileName = System.IO.Path.GetFileNameWithoutExtension(fileName);
 			bool fileOK = await SCPReader.readSCPAsync(fileName);
+			if (!fileOK) return false;
 
 			ButtonMatrix.clearButtons();
 			for (int side = 0; side < 2; side++) {
@@ -326,28 +328,33 @@ namespace Aufit {
 			Rev = 1;
 			infoBox.Clear();
 			drawCharts();
+			return true;
 		}
 
 
-		private void openFileClick(object sender, RoutedEventArgs e) {
+		private async void openFileClick(object sender, RoutedEventArgs e) {
 			OpenFileDialog ofd = new OpenFileDialog();
 			ofd.Filter = "SuperCard Pro files|*.scp|Stream Files|*.raw|All Files|*.*";
 			bool? ok = ofd.ShowDialog();
+			bool readOK = false;			
 			if (ok == true) {
 				Track = Side = 0;
 				Rev = 1;
 				Global.resetDisk();
+
 				FileName.Text = ofd.FileName;
 				string extension = System.IO.Path.GetExtension(ofd.FileName);
 				switch (extension) {
 					case ".raw":
-						readKFRawFile(ofd.FileName);
+						readOK = readKFRawFile(ofd.FileName);
 						break;
 					case ".scp":
-						readSPCFile(ofd.FileName);
+						readOK = await readSPCFile(ofd.FileName);
 						break;
 				}
 			}
+			if (!readOK)
+				FileName.Text = "Sorry could not read correctly the input file";
 		}
 
 

@@ -136,10 +136,6 @@ namespace SCPReaderSpace {
 		/// or skew of any kind results from storage.
 		/// </summary>
 		public int[] fluxValues;
-		/// <summary>
-		/// The checksum of the Track data Block
-		/// </summary>
-		public long checksum;
 	}
 
 	/// <summary>
@@ -154,12 +150,10 @@ namespace SCPReaderSpace {
 		stsInvalidTrack,
 		/// <summary>File checksum error</summary>
 		stsFileChecksum,
-		/// <summary>Track chacksum error</summary>
-		stsTackChecksum,
 		/// <summary>Error in file content</summary>
 		stsFileContent,
-		/// <summary>Error opening/reading the stream file</summary>
-		stsReadError
+		/// <summary>Error opening the stream file</summary>
+		stsFileOpen
 	}	
 	
 	/// <summary>
@@ -218,44 +212,50 @@ namespace SCPReaderSpace {
 
 		private static SCPStatus decodeScp(byte[] buffer) {
 			FileHeader file = new FileHeader();
-			int bufferIndex = 0;
+			int idx = 0;
 			SCPStatus status;
 
 			// Read File Header
-			file.identifier += ((char)buffer[bufferIndex++]).ToString();	// 0x00
-			file.identifier += ((char)buffer[bufferIndex++]).ToString();	// 0x01
-			file.identifier += ((char)buffer[bufferIndex++]).ToString();	// 0x02
+			file.identifier += readChar(buffer, ref idx).ToString();	// 0x00
+			file.identifier += readChar(buffer, ref idx).ToString();	// 0x01
+			file.identifier += readChar(buffer, ref idx).ToString();	// 0x02
 			if (file.identifier != "SCP")
 				return SCPStatus.stsInvalidFile;
-			file.version = buffer[bufferIndex++];							// 0x03
-			file.diskType = buffer[bufferIndex++];							// 0x04
-			file.revCount = buffer[bufferIndex++];							// 0x05
-			file.firstTrack = buffer[bufferIndex++];						// 0x06
-			file.lastTrack = buffer[bufferIndex++];							// 0x07
-			file.imageFlags = buffer[bufferIndex++];						// 0x08
-			file.bitcellWidth = buffer[bufferIndex++];						// 0x09
-			bufferIndex++;													// 0x0A reserved
-			bufferIndex++;													// 0x0B reserved
-			file.checksum = readInt32(buffer, ref bufferIndex);				// 0x0C-0x0F
+			file.version = readByte(buffer, ref idx);					// 0x03
+			file.diskType = readByte(buffer, ref idx);					// 0x04
+			file.revCount = readByte(buffer, ref idx);					// 0x05
+			file.firstTrack = readByte(buffer, ref idx);				// 0x06
+			file.lastTrack = readByte(buffer, ref idx);					// 0x07
+			file.imageFlags = readByte(buffer, ref idx);				// 0x08
+			file.bitcellWidth = readByte(buffer, ref idx);				// 0x09
+			idx++;														// 0x0A reserved
+			idx++;														// 0x0B reserved
+			file.checksum = readInt32(buffer, ref idx);					// 0x0C-0x0F
 			
 			file.TrackHeader = new int[166];
 			for (int tnum = 0; tnum < 165; tnum++) {
-				file.TrackHeader[tnum] = readInt32(buffer, ref bufferIndex);
+				file.TrackHeader[tnum] = readInt32(buffer, ref idx);
 				if (file.TrackHeader[tnum] != 0) {
 					status = readSCPTrack(buffer, tnum, file.TrackHeader[tnum], file.revCount);
-					if (status != SCPStatus.stsOK) return status;
+					if (status != SCPStatus.stsOK) 
+						return status;
+					if ((tnum < file.firstTrack) || (tnum > file.lastTrack))
+						return SCPStatus.stsFileContent;
 				}
 			}
 
-			// TODO check checksum
-			// TODO read timestamp
+			int checksum = 0;
+			for (int i = 0x10; i < buffer.Count(); i++)
+				checksum += buffer[i];
+			if (checksum != file.checksum)
+				return SCPStatus.stsFileChecksum;
 			
 			return SCPStatus.stsOK;
 		}
 
 
 		/// <summary>
-		/// Reads information from buffer
+		/// Reads one Track information from buffer
 		/// </summary>
 		/// <param name="buffer"></param>
 		/// <param name="trackSide"></param>
@@ -268,44 +268,47 @@ namespace SCPReaderSpace {
 			_fluxMax = 0;
 
 			TrackInfo ti = new TrackInfo();
-			int bufferIndex = trackHeaderPosition;
+			int idx = trackHeaderPosition;
 
-			ti.identifier += ((char)buffer[bufferIndex++]).ToString();	// 0x00
-			ti.identifier += ((char)buffer[bufferIndex++]).ToString();	// 0x01
-			ti.identifier += ((char)buffer[bufferIndex++]).ToString();	// 0x02
+			ti.identifier += readChar(buffer, ref idx).ToString();	// 0x00
+			ti.identifier += readChar(buffer, ref idx).ToString();	// 0x01
+			ti.identifier += readChar(buffer, ref idx).ToString();	// 0x02
 			if (ti.identifier != "TRK")
 				return SCPStatus.stsInvalidTrack;
-			ti.trackSide = buffer[bufferIndex++];						// 0x03
+			ti.trackSide = readByte(buffer, ref idx);				// 0x03
+			// check track number
+			//if (ti.trackSide != trackSide)
+			//	return SCPStatus.stsFileContent;
 
 			// read rev headers
 			ti.revInfo = new RevInfo[revCount];
 			int fluxSize = 0;	// sum all the flux transitions
 			for (int i = 0; i < revCount; i++) {
 				ti.revInfo[i] = new RevInfo();
-				ti.revInfo[i].indexTime = readInt32(buffer, ref bufferIndex);
-				ti.revInfo[i].fluxCount = readInt32(buffer, ref bufferIndex);
+				ti.revInfo[i].indexTime = readInt32(buffer, ref idx);
+				ti.revInfo[i].fluxCount = readInt32(buffer, ref idx);
 				fluxSize += ti.revInfo[i].fluxCount;
-				ti.revInfo[i].fluxOffset = readInt32(buffer, ref bufferIndex);
+				ti.revInfo[i].fluxOffset = readInt32(buffer, ref idx);
 				ti.revInfo[i].indexTimePosition = 0;	// not provided currently
 			}
 
 			// create buffer for all flux transitions
-			// note this buffer might be bigger that what is needed because of null entries (strongbits)
+			// note this buffer might be bigger that what is needed because of null entries (strong bits)
 			ti.fluxValues = new int[fluxSize];
 
 			for (int i = 0; i < revCount; i++) {
 				if (ti.revInfo[i].indexTime != 0) {
 					int overflowCount = 0;
 					// set bufferIndex to the offset of the data
-					bufferIndex = ti.revInfo[i].fluxOffset + trackHeaderPosition;
+					idx = ti.revInfo[i].fluxOffset + trackHeaderPosition;
 					// now set fluxOffset to offset in the "extracted data buffer"
 					if (i > 0) ti.revInfo[i].fluxOffset = ti.revInfo[i - 1].fluxOffset + ti.revInfo[i - 1].fluxCount;
 					else ti.revInfo[i].fluxOffset = 0;
 					//revCount++;
 					int p = ti.revInfo[i].fluxOffset;
 					for (int j = 0; j < ti.revInfo[i].fluxCount; j++) {
-						int val = buffer[bufferIndex++] << 8;
-						val += buffer[bufferIndex++];
+						int val = buffer[idx++] << 8;
+						val += buffer[idx++];
 						if (val == 0) {
 							ti.fluxValues[p] += 65536;
 							overflowCount++;
@@ -320,28 +323,7 @@ namespace SCPReaderSpace {
 				}	// existing revolution
 			}	// for all revolutions
 
-			//for (int i = 0; i < revCount; i++) {
-			//	if (ti.revInfo[i].indexTime != 0) {
-			//		// set bufferIndex to the offset of the data
-			//		bufferIndex = ti.revInfo[i].fluxOffset + trackHeaderPosition;
-			//		// now set fluxOffset to offset in the "extracted data buffer"
-			//		if (i > 0) ti.revInfo[i].fluxOffset = ti.revInfo[i - 1].fluxOffset + ti.revInfo[i - 1].fluxCount;
-			//		else ti.revInfo[i].fluxOffset = 0;
-			//		for (int j = 0; j < ti.revInfo[i].fluxCount; j++) {
-			//			int p = j + ti.revInfo[i].fluxOffset;
-			//			ti.fluxValues[p] = buffer[bufferIndex++] << 8;
-			//			ti.fluxValues[p] += buffer[bufferIndex++];
-			//			if (ti.fluxValues[p] > _fluxMax) _fluxMax = ti.fluxValues[p];
-			//			if (ti.fluxValues[p] < _fluxMin) _fluxMin = ti.fluxValues[p];
-			//		}
-			//	}
-			//}
-
-			ti.checksum = readInt32(buffer, ref bufferIndex);
-
-			// TODO checksum
-
-			// now we transfer to the Global Disk structure
+			// now we transfer to our Global Disk structure
 			MainWindow.Rev = 1;
 			Global.Disk[track, side].fluxData = new FluxData();
 			Global.Disk[track, side].fluxData.fluxValue = ti.fluxValues;
@@ -379,5 +361,8 @@ namespace SCPReaderSpace {
 			return sbuf[pos++];
 		}
 
+		private static char readChar(byte[] sbuf, ref int pos) {
+			return (char)(sbuf[pos++]);
+		}
 	}
 }
