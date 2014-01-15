@@ -141,8 +141,8 @@ class FluxDrawing {
 
 		DSR dsr = new DSR();
 		Global.TrackData td = Global.Disk[track, side];
-		int start = Global.startOffset(track, side, rev);
-		int stop = Global.stopOffset(track, side, rev);
+		int start = Global.firstIndex(track, side, rev);
+		int stop = Global.lastIndex(track, side, rev);
 		int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 		int maxFlux = 0;
@@ -190,7 +190,7 @@ class FluxDrawing {
 			// black line for revolution
 			if (rev == 0) {
 				for (int j = 1; j < Global.Disk[track, side].revData.Count(); j++) {
-					if (Global.Disk[track, side].revData[j].fluxOffset - 1 == i) {
+					if (Global.Disk[track, side].revData[j].fluxIndex - 1 == i) {
 						Line revLine = new Line();
 						revLine.Stroke = Brushes.Black;
 						revLine.StrokeThickness = 1.5;
@@ -204,8 +204,8 @@ class FluxDrawing {
 			}
 
 			// line for sync
-			int nbWin = td.decodeData.fluxInWin[i];
-			int clk = td.decodeData.decodedClock[i];
+			int nbWin = td.decodeData.fluxInWindow[i];
+			int clk = td.decodeData.clockPeriod[i];
 			dsr.shiftBitsIn(nbWin);	// push data in register
 			while (dsr.byteReady()) {
 				int bitShift = dsr.searchSynch();	// search sync
@@ -239,16 +239,21 @@ class FluxDrawing {
 			if (!_fluxChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)flux/1000.0)) continue;
 
 			double r = (zoom > 1) ? (zoom > 25) ? (zoom > 50) ? 2 : 1.6 : 1.2 : 0.7;
-			if ((flux > 10000) && (Global.Disk[track, side].histoData.entropy > 0)) {
-				r = 2.5;
+			fluxPoints[pointsInViewport].colorIndex = 0;
+
+			// border flux
+			if ( ((flux > 4900) && (flux < 5100)) || ((flux > 6900) && (flux < 7100)) ) {
+				r *= 2;
+				fluxPoints[pointsInViewport].colorIndex = 2;
+			}
+
+			// invalid flux
+			if ((flux < 3500) || (flux > 8500)) {
+				r = 2.5 * r;
 				fluxPoints[pointsInViewport].colorIndex = 4;
 			}
 
-			//if ((flux < 3.85) || ((flux > 4.15) && (flux < 5.85)) || ((flux > 6.15) && (flux < 7.85)) || (flux > 8.15))
-			//	fluxPoints[pointsInViewport].colorIndex = 1;
-			//else
-			fluxPoints[pointsInViewport].colorIndex = 0;
-			//if (i % 2 == 0) fluxPoints[pointsInViewport].colorIndex += 2; ;
+			if (i % 2 == 0) fluxPoints[pointsInViewport].colorIndex++;
 
 			
 			fluxPoints[pointsInViewport].ellipseGeometry = new EllipseGeometry(_fluxChartLayout.NormPoint((double)currentTime / 1000000.0, (double)flux / 1000.0), r, r);
@@ -303,13 +308,8 @@ class FluxDrawing {
 	/// <param name="sender"></param>
 	/// <param name="e"></param>
 	public void mouseLBU(object sender, MouseButtonEventArgs e) {
-		// BUG FIX ABOVE
-		//if (_fluxChartLayout.GraphicCanvas.IsMouseCaptured) {
-			_fluxChartLayout.GraphicCanvas.ReleaseMouseCapture();
-			_fluxChartLayout.GraphicCanvas.Cursor = Cursors.Arrow;
-		//}
-		//else
-		//	return;		// we receive a mouse up event from Openfiledialog !!! Bug?
+		_fluxChartLayout.GraphicCanvas.ReleaseMouseCapture();
+		_fluxChartLayout.GraphicCanvas.Cursor = Cursors.Arrow;
 
 		if (_rubberBand != null) {
 			_rubberBand = null;
@@ -357,6 +357,7 @@ class FluxDrawing {
 		drawFlux();
 	}
 
+
 	/// <summary>
 	/// Mouse Left Button Down event handler
 	/// </summary>
@@ -368,6 +369,7 @@ class FluxDrawing {
 			_fluxChartLayout.GraphicCanvas.CaptureMouse();
 		}
 	}
+
 
 	/// <summary>
 	/// Mouse move event handler
@@ -400,6 +402,7 @@ class FluxDrawing {
 		}
 	}
 
+
 	/// <summary>
 	/// Mouse Right Button Down event handler
 	/// </summary>
@@ -411,6 +414,7 @@ class FluxDrawing {
 		setFluxDefault();
 		drawFlux();
 	}
+
 
 	/// <summary>
 	/// Mouse wheel event handler

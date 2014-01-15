@@ -33,6 +33,7 @@ using System.Threading.Tasks;
 
 using GlobalSpace;
 using Aufit;
+using System.Windows.Controls;
 
 namespace SCPReaderSpace {
 	/// <summary>
@@ -172,23 +173,13 @@ namespace SCPReaderSpace {
 		}
 
 
-
-		/// <summary>
-		/// This is an asynchronous wrapper of the readSCP() function
-		/// </summary>
-		/// <param name="name">Name of the stream file to read</param>
-		/// <returns>True if file processed without problem; false if error while processing</returns>
-		public static Task<bool> readSCPAsync(string name) {
-			return Task<bool>.Run(() => readSCP(name));
-		}
-
-
 		/// <summary>Reads and decodes the SCP file specified in the parameter</summary>	
 		/// <param name="fileName">Name of the stream file to read and decode</param>
+		/// <param name="infobox">TextBox used to display histogram info</param>
 		/// <returns>True to indicate that the file was read and parsed correctly, false otherwise</returns>
 		/// <see cref="SCPStatus"/>
 		/// <remarks></remarks>
-		public static bool readSCP(string fileName) {
+		public async static Task<bool> readScpAsync(string fileName, TextBox infobox) {
 			FileStream fs;
 			try {
 				fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -205,12 +196,12 @@ namespace SCPReaderSpace {
 			fs.Close();
 
 			// we parse the file
-			SCPStatus status = decodeScp(sbuf);
+			SCPStatus status = await decodeScp(sbuf, infobox);
 			return (status == SCPStatus.stsOK) ? true : false;
 		}
 
 
-		private static SCPStatus decodeScp(byte[] buffer) {
+		private async static Task<SCPStatus> decodeScp(byte[] buffer, TextBox infoBox) {
 			FileHeader file = new FileHeader();
 			int idx = 0;
 			SCPStatus status;
@@ -231,26 +222,44 @@ namespace SCPReaderSpace {
 			idx++;														// 0x0A reserved
 			idx++;														// 0x0B reserved
 			file.checksum = readInt32(buffer, ref idx);					// 0x0C-0x0F
-			
+
+			//int checksum = 0;
+			//for (int i = 0x10; i < buffer.Count(); i++)
+			//	checksum += buffer[i];
+			//if (checksum != file.checksum)
+			//	return SCPStatus.stsFileChecksum;
+
+			ButtonMatrix.clearButtons();
 			file.TrackHeader = new int[166];
-			for (int tnum = 0; tnum < 165; tnum++) {
-				file.TrackHeader[tnum] = readInt32(buffer, ref idx);
-				if (file.TrackHeader[tnum] != 0) {
-					status = readSCPTrack(buffer, tnum, file.TrackHeader[tnum], file.revCount);
+			for (int trackAndSide = 0; trackAndSide < 165; trackAndSide++) {
+				file.TrackHeader[trackAndSide] = readInt32(buffer, ref idx);
+				if (file.TrackHeader[trackAndSide] != 0) {
+					status = await readSCPTrackAsync(buffer, trackAndSide, file.TrackHeader[trackAndSide], file.revCount);
 					if (status != SCPStatus.stsOK) 
 						return status;
-					if ((tnum < file.firstTrack) || (tnum > file.lastTrack))
+					if ((trackAndSide < file.firstTrack) || (trackAndSide > file.lastTrack))
 						return SCPStatus.stsFileContent;
+					int track = trackAndSide / 2;
+					int side = trackAndSide % 2;
+					Global.computeHisto(track, side, 1, infoBox);
+					ButtonMatrix.setButtonBG(track, side);
 				}
 			}
 
-			int checksum = 0;
-			for (int i = 0x10; i < buffer.Count(); i++)
-				checksum += buffer[i];
-			if (checksum != file.checksum)
-				return SCPStatus.stsFileChecksum;
-			
 			return SCPStatus.stsOK;
+		}
+
+
+		/// <summary>
+		/// Read asynchronously one track of an SCP file
+		/// </summary>
+		/// <param name="buffer">The read buffer</param>
+		/// <param name="trackSide">The Trackand Side parameter</param>
+		/// <param name="trackHeaderPosition">Position of the header in the buffer</param>
+		/// <param name="revCount">Number of revision used</param>
+		/// <returns>The status</returns>
+		public static Task<SCPStatus> readSCPTrackAsync(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount) {
+			return Task<bool>.Run(() => readSCPTrack(buffer, trackSide, trackHeaderPosition, revCount));
 		}
 
 
@@ -260,6 +269,7 @@ namespace SCPReaderSpace {
 		/// <param name="buffer"></param>
 		/// <param name="trackSide"></param>
 		/// <param name="trackHeaderPosition"></param>
+		/// <param name="revCount">Number of revision imaged in the file</param>
 		/// <returns></returns>
 		private static SCPStatus readSCPTrack(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount) {
 			int track = trackSide / 2;
@@ -276,6 +286,7 @@ namespace SCPReaderSpace {
 			if (ti.identifier != "TRK")
 				return SCPStatus.stsInvalidTrack;
 			ti.trackSide = readByte(buffer, ref idx);				// 0x03
+
 			// check track number
 			//if (ti.trackSide != trackSide)
 			//	return SCPStatus.stsFileContent;
@@ -319,6 +330,7 @@ namespace SCPReaderSpace {
 							if (val < _fluxMin) _fluxMin = val;
 						}
 					}
+					// if we had overflow we must remove from number of fluxes
 					ti.revInfo[i].fluxCount -= overflowCount;
 				}	// existing revolution
 			}	// for all revolutions
@@ -338,7 +350,7 @@ namespace SCPReaderSpace {
 				Global.Disk[track, side].revData[i].revolutionTime = ti.revInfo[i].indexTime;
 				Global.Disk[track, side].revData[i].fluxCount = ti.revInfo[i].fluxCount;
 				Global.Disk[track, side].revData[i].indexTimePosition = ti.revInfo[i].indexTimePosition;
-				Global.Disk[track, side].revData[i].fluxOffset = ti.revInfo[i].fluxOffset;
+				Global.Disk[track, side].revData[i].fluxIndex = ti.revInfo[i].fluxOffset;
 			}
 			return SCPStatus.stsOK;
 		}

@@ -39,28 +39,27 @@ using System.Windows.Controls;
 namespace GlobalSpace {
 
 /// <summary>
-/// The RevData structure contains the information for all the revolutions of one track including the pointers to the Flux Data.
+/// The RevData structure contains the information for all the revolutions of one track including 
+/// the pointers to the actual Flux Data.
 /// </summary>
 /// <remarks>The RevData are kept in an array with an entry for each revolution</remarks>
 public struct RevData {
 	/// <summary>
 	/// The time it takes to do a complete revolution. This time is given in number of 
-	/// sample clock. In other word this is the exact time between two index pulses.
+	/// sample clock. In other word this is the time between two index pulses.
 	/// </summary>
 	public int revolutionTime;
 	/// <summary>
-	/// The time it takes to get to the index pulse inside the first transition for this revolution. The position 
-	/// is given as a number of sample clocks before the index signal. Note that in the case of no
-	/// flux area at the beginning of the track this value can be huge
+	/// The time it takes to get to the index pulse inside the first transition for this revolution. 
+	/// The position is given as a number of sample clocks before the index signal. Note that in 
+	/// the case of no flux area at the beginning of the track this value can be huge.
 	/// </summary>
 	public int indexTimePosition;
 	/// <summary>
 	/// Position (index) in the flux array of the first flux that contains the index signal
 	/// </summary>
-	public int fluxOffset;
-	/// <summary>
-	/// The number of flux transitions for this specific revolution
-	/// </summary>
+	public int fluxIndex;
+	/// <summary>The number of flux transitions for THIS specific revolution</summary>
 	public int fluxCount;
 }
 
@@ -68,10 +67,10 @@ public struct RevData {
 /// The FluxData structure contains all the flux transition related information
 /// </summary>
 public class FluxData {
-	/// <summary>Array of flux transitions recorded for this track (all revolutions). The value is 
-	/// given in number of sample clock</summary>
+	/// <summary>Array of flux transitions recorded for this track (including all revolutions). 
+	/// The value is given in number of sample clock</summary>
 	public int[] fluxValue;
-	/// <summary>Total number of  flux transitions recorded for this track (all revolutions)</summary>
+	/// <summary>Total number of  flux transitions recorded for this track  for ALL revolutions</summary>
 	public int fluxCount;
 	/// <summary>Value of the shortest flux transition recorded for this track in sample clock</summary>
 	/// <remarks>This value is filled by readStreamTrack() method</remarks>
@@ -81,23 +80,26 @@ public class FluxData {
 	public int fluxMax;
 }
 
-/// <summary>
-/// Contains the decoded data. These data are decoded by the DPLL from the flux transitions
-/// </summary>
+/// <summary>Contains the decoded data. These data are decoded by the DPLL from the flux transitions</summary>
+/// <remarks>Once decoded the information is kept so we do not call the decode function several times</remarks>
 public class decodeData {
 	/// <summary>The clock period computed by the DPLL for the corresponding flux transition</summary>
-	public ushort[] decodedClock;
+	public ushort[] clockPeriod;
 	/// <summary>The number of inspection windows to get to the flux.</summary>
 	/// <remarks>This array is filled by mfmDecode() method. The array has the same size as the flux array.
-	/// nbWin is the number of inspection windows to the next flux transition (i.e. bit to shift
-	/// in the DSR</remarks></remarks>
-	public ushort[] fluxInWin;
-	/// <summary>Value minimum value of the clock as computed by the DPLL</summary>
-	public int clockMin;
-	/// <summary>Value maximum value of the clock as computed by the DPLL</summary>
-	public int clockMax;
+	/// nbWin is the number of inspection windows to the next flux transition (i.e. it is equal to the
+	/// number bit to shift in the DSR</remarks>
+	public ushort[] fluxInWindow;
+	/// <summary>Value minimum value of the clock period as computed by the DPLL</summary>
+	public int minClockPeriod;
+	/// <summary>Value maximum value of the clock period as computed by the DPLL</summary>
+	public int maxClockPeriod;
 	//public int clockAvg;
+	//public byte[] packedBits;
+	//public int[] packedClock;
+	//public int[] bitPosition;
 }
+
 
 /// <summary>
 /// Contains the histogram/entropy information
@@ -109,10 +111,11 @@ public struct HistoData {
 	/// <summary>Computed entropy for this track</summary>
 	/// <remarks>This value is set by computeHisto()</remarks>
 	public double entropy;
-	/// <summary>List of maximums in the histogram</summary>
-	/// <remarks>This value is set by computeHisto()</remarks>
-	public List<int> bands;
+	///// <summary>List of maximums in the histogram</summary>
+	///// <remarks>This value is set by computeHisto()</remarks>
+	//public List<int> bands;
 }
+
 
 /// <summary>
 /// Contains all global parameters and functions for AUFIT
@@ -132,23 +135,20 @@ public class Global {
 		/// <summary>Histogram / entropy data</summary>
 		public HistoData histoData;
 
-		//public byte[] packedBits;
-		//public int[] packedClock;
-		//public int[] bitPosition;
-
-		/// <summary>Information from a read track</summary>
+		/// <summary>Information from a FDC read track command</summary>
 		/// <remarks>This value is set by readTrack()</remarks>
 		public TrackContent trackContent;
-		/// <summary>Information from a read address</summary>
+		/// <summary>Information from a FDC read address command</summary>
 		/// <remarks>This value is set by readAddr()</remarks>
 		public AddrContent addrContent;
-		/// <summary>Information from a read sector</summary>
+		/// <summary>Information from a FDC read sector command</summary>
 		/// <remarks>This value is set by readSect()</remarks>
 		public List<SectorContent> sectorsContent;
 	}
 
 	/// <summary>
 	/// This function is used to re-initialized all disk/track structure. Should be called each time a new FD is read.
+	/// Hopefully should also free all memory from previous read.
 	/// </summary>
 	public static void resetDisk() {
 		_diskInfo = new TrackData[85, 2];
@@ -157,18 +157,19 @@ public class Global {
 
 
 	/// <summary>
-	/// This function is used to get the position of the first flux of a track in the FluxValue buffer for a specific revolution
+	/// This function is used to get the index of the first flux of a track in the FluxValue buffer for a specific revolution
 	/// </summary>
 	/// <param name="track">The track we want to use</param>
 	/// <param name="side">The side we want to use.</param>
 	/// <param name="rev">The revolution we want to use</param>
-	/// <returns>The offset of the first flux in the buffer</returns>
-	/// <remarks>he revision parameter should be in the range 1 to the number of revolutions recorded.
+	/// <returns>The index of the first flux in the buffer</returns>
+	/// <remarks>The revision parameter should be in the range 1 to the number of revolutions recorded.
 	/// rev==0 has a special meaning: it indicates that we want to use the data from *all* revolutions</remarks>
-	public static int startOffset(int track, int side, int rev) {
+	public static int firstIndex(int track, int side, int rev) {
 		if (rev == 0) rev++;
-		return Disk[track, side].revData[rev - 1].fluxOffset;
+		return Disk[track, side].revData[rev - 1].fluxIndex;
 	}
+
 
 	/// <summary>
 	/// This function is used to get the position of the last flux of a track in the FluxValue buffer for a specific revolution
@@ -176,31 +177,28 @@ public class Global {
 	/// <param name="track">The track we want to use</param>
 	/// <param name="side">The side we want to use.</param>
 	/// <param name="rev">The revolution we want to use</param>
-	/// <returns>The offset of the last flux in the buffer</returns>
+	/// <returns>The index of the last flux in the buffer</returns>
 	/// <remarks>The revision parameter should be in the range 1 to the number of revolutions recorded.
 	/// rev==0 has a special meaning: it indicates that we want to use the data from *all* revolutions</remarks>
-	public static int stopOffset(int track, int side, int rev) {
+	public static int lastIndex(int track, int side, int rev) {
 		if (rev == 0) rev = Disk[track, side].revData.Count();
-		return (Disk[track, side].revData[rev - 1].fluxOffset + Disk[track, side].revData[rev - 1].fluxCount);
+		return (Disk[track, side].revData[rev - 1].fluxIndex + Disk[track, side].revData[rev - 1].fluxCount);
 	}
 
-	/// <summary>
-	/// This function is used to get the position of the index in the first flux
-	/// </summary>
+
+	/// <summary>This function is used to get the position of the index in the first flux</summary>
 	/// <param name="track">The track we want to use</param>
 	/// <param name="side">The side we want to use.</param>
 	/// <param name="rev">The revolution we want to use</param>
 	/// <returns>The offset of the first flux in the buffer</returns>
-	/// <remarks>he revision parameter should be in the range 1 to the number of revolutions recorded.
+	/// <remarks>The revision parameter should be in the range 1 to the number of revolutions recorded.
 	public static int indexTimePosition(int track, int side, int rev) {
 		if (rev == 0) rev++;
 		return (Disk[track, side].revData[rev - 1].indexTimePosition);
 	}
 
 
-	/// <summary>
-	/// Access the sample clock frequency in Hz (i.e. 1/sampling_period 
-	/// </summary>
+	/// <summary>Access the sample clock frequency in Hz (i.e. 1/sampling_period </summary>
 	public static double SampleClock {
 		get { return _sampleClock; }
 		set { _sampleClock = value; }
@@ -216,9 +214,8 @@ public class Global {
 	}
 
 
-	/// <summary>
-	/// This functions takes a sample value and returns the corresponding timing in nanoseconds based on the sample clock.
-	/// </summary>
+	/// <summary> This functions takes a sample value and returns the corresponding 
+	/// timing in nanoseconds based on the sample clock.</summary>
 	/// <param name="sValue">The sample value</param>
 	/// <returns>The timing value in nanoseconds</returns>
 	public static int sampleToTiming(int sValue) {
@@ -239,48 +236,47 @@ public class Global {
 
 
 	/// <summary>
-	/// Converts Flux transition into bits and clocks using the DPLL. Also sets min max values
-	/// </summary>
+	/// decode Flux transition into bits in window and clocks using the DPLL. 
+	/// Also sets min max values</summary>
 	public static void mfmDecode(int track, int side) {
+		// if already there nothing to do
 		if (Global.Disk[track, side].decodeData != null) return;
 
 		int minClock = Int32.MaxValue;
 		int maxClock = 0;
-		int clockAvg = 0;
-
 		int curentTime = 0;
-		int currentBit = 0;
+		//int clockAvg = 0;
+		//int currentBit = 0;
 
 		Global.TrackData td = Global.Disk[track, side];
 		Global.Disk[track, side].decodeData = new decodeData();
-		Global.Disk[track, side].decodeData.decodedClock = new ushort[td.fluxData.fluxCount + 1];
-		Global.Disk[track, side].decodeData.fluxInWin = new ushort[td.fluxData.fluxCount + 1];
+		Global.Disk[track, side].decodeData.clockPeriod = new ushort[td.fluxData.fluxCount + 1];
+		Global.Disk[track, side].decodeData.fluxInWindow = new ushort[td.fluxData.fluxCount + 1];
 		
 		DPLL dpll = new DPLL();
 		int sizeBeforeTrim = Global.Disk[track, side].fluxData.fluxMax + 1;		
 		int[] tmpHisto = new int[sizeBeforeTrim];
 
-		// TODO check below
+
 		int lastRev = Global.Disk[track, side].revData.Count() - 1;
-		for (int i = Global.Disk[track, side].revData[0].fluxOffset;
-			i < (Global.Disk[track, side].revData[lastRev].fluxOffset + Global.Disk[track, side].revData[lastRev].fluxCount); i++) {
+		for (int i = Global.Disk[track, side].revData[0].fluxIndex;
+			i < (Global.Disk[track, side].revData[lastRev].fluxIndex + Global.Disk[track, side].revData[lastRev].fluxCount); i++) {
 			int flux = Global.sampleToTiming(td.fluxData.fluxValue[i]);
 			tmpHisto[td.fluxData.fluxValue[i]]++;
 			curentTime += flux;
-			int nbWin = dpll.dataInWindow(curentTime);
-			currentBit += nbWin;
-			Global.Disk[track, side].decodeData.fluxInWin[i] = (ushort)nbWin;
+			int nbWin = dpll.fluxInWindow(curentTime);
+			//currentBit += nbWin;
+			Global.Disk[track, side].decodeData.fluxInWindow[i] = (ushort)nbWin;
 
-			int clk = dpll.Clock;
+			int clk = dpll.ClockPeriod;
 			if (clk > maxClock) maxClock = clk;
 			if (clk < minClock) minClock = clk;
-			Global.Disk[track, side].decodeData.decodedClock[i] = (ushort)clk;
-			clockAvg += clk;
-
+			Global.Disk[track, side].decodeData.clockPeriod[i] = (ushort)clk;
+			//clockAvg += clk;
 		}
 
-		Global.Disk[track, side].decodeData.clockMin = minClock;
-		Global.Disk[track, side].decodeData.clockMax = maxClock;
+		Global.Disk[track, side].decodeData.minClockPeriod = minClock;
+		Global.Disk[track, side].decodeData.maxClockPeriod = maxClock;
 		//Global.Disk[track, side].clockAvg = clockAvg / track.indexes[track.indexCount - 1].fluxPosition;
 	}
 
@@ -326,18 +322,18 @@ public class Global {
 		//if (Global.Disk[track, side].flux == null) return 0;
 		if (Global.Disk[track, side].fluxData == null) return 0;
 
-		int threshold;
+		int threshold = 2;
 		int[] tmpHisto;
 
-		if (rev > 0)	threshold = 2;
-		else 			threshold = 10;
+		if (rev == 0)
+			threshold *= Global.Disk[track, side].revData.Count();
 
-		int start = Global.startOffset(track, side, rev);
-		int stop = Global.stopOffset(track, side, rev);
+		int first = Global.firstIndex(track, side, rev);
+		int last = Global.lastIndex(track, side, rev);
 
 		int sizeBeforeTrim = Global.Disk[track, side].fluxData.fluxValue.Max() + 1;
 		tmpHisto = new int[sizeBeforeTrim];
-		for (int i = start; i < stop; i++)
+		for (int i = first; i < last; i++)
 			tmpHisto[Global.Disk[track, side].fluxData.fluxValue[i]]++;
 
 		// we trim the array size to keep only significant entries. This is useful as
@@ -352,32 +348,32 @@ public class Global {
 		for (int i = 0; i < histoSize; i++)
 			Global.Disk[track, side].histoData.histogram[i] = tmpHisto[i];
 
-		int maxFound = 0;
-		bool searchMax = true;
-		int last = 0;
-		Global.Disk[track, side].histoData.bands = new List<int>();
+		//int maxFound = 0;
+		//bool searchMax = true;
+		//int last = 0;
+		//Global.Disk[track, side].histoData.bands = new List<int>();
 		int notNullEntries = 0;
 
-		// find bands
+		//// find bands
 		for (int i = 0; i < histoSize; i++) {
 			int current = Global.Disk[track, side].histoData.histogram[i] = tmpHisto[i];
 			if (current > 0) notNullEntries++;
-			if (searchMax) {
-				// we have reached the maximum when we go down but at least 10
-				if (current < last - 20) {
-					// we ignore too small values
-					if (last > 40) {
-						maxFound++;
-						Global.Disk[track, side].histoData.bands.Add(current);
-					}
-					searchMax = false;
-				}	// max reached
-			}	// looking for max
-			else {
-				if (current > last)
-					searchMax = true;
-			}
-			last = current;
+		//	if (searchMax) {
+		//		// we have reached the maximum when we go down but at least 10
+		//		if (current < last - 20) {
+		//			// we ignore too small values
+		//			if (last > 40) {
+		//				maxFound++;
+		//				Global.Disk[track, side].histoData.bands.Add(current);
+		//			}
+		//			searchMax = false;
+		//		}	// max reached
+		//	}	// looking for max
+		//	else {
+		//		if (current > last)
+		//			searchMax = true;
+		//	}
+		//	last = current;
 		}
 
 		double entropy = 0;
@@ -386,13 +382,14 @@ public class Global {
 				double p = (double)Global.Disk[track, side].histoData.histogram[i] / (double)notNullEntries;
 				entropy += p * Math.Log(p, 2);
 			}
+
 		Global.Disk[track, side].histoData.entropy = entropy;
-		if (entropy < 0) Global.Disk[track, side].histoData.bands.Clear();
+		//if (entropy < 0) Global.Disk[track, side].histoData.bands.Clear();
 
 		text.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev));
 		text.AppendText(String.Format(" * {0} * (Ent {1:F0})",
 			(entropy < 2000) ? (entropy < 0) ? "Unformatted track" : "Unformatted area" : "Normal track", entropy));
-		text.AppendText(String.Format(" - Fluxes {0}", stop - start));
+		text.AppendText(String.Format(" - Fluxes {0}", last - first));
 		text.AppendText(String.Format(" - Histo size {0} ({1} ns)\n",
 			histoSize, Global.sampleToTiming(histoSize - 1)));
 		text.ScrollToEnd();
@@ -410,23 +407,6 @@ public class Global {
 			crc = (ushort)((crc << 1) ^ (((((crc >> 8) ^ (c << i)) & 0x0080) != 0) ? 0x1021 : 0));
 		return crc;
 	} // end of update_crc
-
-
-	/// <summary>
-	/// Check if the flux is at a border of an inspection window
-	/// </summary>
-	/// <param name="clock">current PLL clock</param>
-	/// <param name="nb_win">number of inspection windows</param>
-	/// <param name="flux">position of flux</param>
-	/// <returns>true if the flux is at the border of the inspection window</returns>
-	public static bool isBorderBit(int clock, int nb_win, int flux) {
-		int lcenter = nb_win * (clock / 2) + (clock / 4);	// (nb_win * 2000) + 1000;
-		int hcenter = nb_win * (clock / 2) - (clock / 4);	// (nb_win * 2000) - 1000;
-		int tenpc = clock / 10;	// 10%
-		bool lower_win = ((flux > (lcenter - tenpc)) && (flux < (lcenter + tenpc)));	// ((flux > (lcenter - 400)) && (flux < (lcenter + 400)));
-		bool upper_win = ((flux > (hcenter - tenpc)) && (flux < (hcenter + tenpc)));	// ((flux > (hcenter - 400)) && (flux < (hcenter + 400)));
-		return (lower_win || upper_win);
-	}
 
 
 	/// <summary>

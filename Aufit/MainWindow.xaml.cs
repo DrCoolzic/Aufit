@@ -50,6 +50,7 @@ using KFReaderSpace;
 using WD1772Space;
 using SCPReaderSpace;
 using GlobalSpace;
+using PastiSpace;
 
 namespace Aufit {
 	/// <summary>
@@ -138,7 +139,7 @@ namespace Aufit {
 		private void btMatrixClicked(object sender, RoutedEventArgs e) {
 			Button button = (Button)sender;
 			if (ButtonMatrix.buttonClicked(button)) {
-				drawCharts();
+				drawAllCharts();
 				Protections.checkProtection(Track, Side, infoBox);
 			}
 		}
@@ -241,7 +242,7 @@ namespace Aufit {
 			Global.computeHisto(Track, Side, Rev, infoBox);
 			_histoDrawing.drawHisto();
 			FDC.clearTrackContent(Track, Side);
-			drawCharts();
+			drawAllCharts();
 		}
 
 		private void plusRevClicked(object sender, RoutedEventArgs e) {
@@ -253,7 +254,7 @@ namespace Aufit {
 			Global.computeHisto(Track, Side, Rev, infoBox);
 			_histoDrawing.drawHisto();
 			FDC.clearTrackContent(Track, Side);
-			drawCharts();
+			drawAllCharts();
 		}
 		#endregion
 
@@ -261,13 +262,13 @@ namespace Aufit {
 		/// <summary>
 		/// Display all the charts for the current Track/Side/Rev
 		/// </summary>
-		public void drawCharts() {
+		public void drawAllCharts() {
 			int track = Track;
 			int side = Side;
 			int rev = Rev;
 
 			revolution.Text = rev.ToString();
-			if (Global.Disk[track, side].trackContent == null)
+			if (Global.Disk[track, side].decodeData == null)
 				Global.mfmDecode(track, side);
 
 			cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) > 0);
@@ -285,53 +286,6 @@ namespace Aufit {
 		}
 
 
-		private bool readKFRawFile(string fileName) {
-			BM1.Visibility = Visibility.Hidden;
-			BM2.Visibility = Visibility.Hidden;
-			tabCtrl.Width = matrixGrid.ActualWidth;
-			Grid.SetColumn(tabCtrl, 0);
-			Grid.SetColumnSpan(tabCtrl, 3);
-			Global.resetDisk();
-			Track = Side = 0;
-			Rev = 1;
-			_fileName = fileName;
-			bool ok = ProcessStream.readStreamTrack(fileName, Track, Side);
-			if (ok) {
-				infoBox.Clear();
-				drawCharts();
-			}
-			return ok;
-		}
-
-
-		private async Task<bool> readSPCFile(string fileName) {
-			BM1.Visibility = Visibility.Visible;
-			BM2.Visibility = Visibility.Visible;
-			tabCtrl.Width = matrixGrid.ActualWidth - 320;
-			Grid.SetColumn(tabCtrl, 2);
-			Grid.SetColumnSpan(tabCtrl, 1);
-			_fileName = System.IO.Path.GetFileNameWithoutExtension(fileName);
-			bool fileOK = await SCPReader.readSCPAsync(fileName);
-			if (!fileOK) return false;
-
-			ButtonMatrix.clearButtons();
-			for (int side = 0; side < 2; side++) {
-				for (int track = 0; track < 84; track++) {
-					Global.computeHisto(track, side, 1, infoBox);
-					ButtonMatrix.setButtonBG(track, side);
-				}
-			}
-
-			//ButtonMatrix.selectButton(0, 0);
-			selectAndCheck(0 , 0);
-			Track = Side = 0;
-			Rev = 1;
-			infoBox.Clear();
-			drawCharts();
-			return true;
-		}
-
-
 		private async void openFileClick(object sender, RoutedEventArgs e) {
 			OpenFileDialog ofd = new OpenFileDialog();
 			ofd.Filter = "SuperCard Pro files|*.scp|Stream Files|*.raw|All Files|*.*";
@@ -342,7 +296,7 @@ namespace Aufit {
 				Rev = 1;
 				Global.resetDisk();
 
-				FileName.Text = ofd.FileName;
+				tbFileName.Text = ofd.FileName;
 				string extension = System.IO.Path.GetExtension(ofd.FileName);
 				switch (extension) {
 					case ".raw":
@@ -354,7 +308,43 @@ namespace Aufit {
 				}
 			}
 			if (!readOK)
-				FileName.Text = "Sorry could not read correctly the input file";
+				tbFileName.Text = "Sorry could not read correctly the input file";
+		}
+
+
+		private bool readKFRawFile(string fileName) {
+			BM1.Visibility = Visibility.Hidden;
+			BM2.Visibility = Visibility.Hidden;
+			tabCtrl.Width = matrixGrid.ActualWidth;
+			Grid.SetColumn(tabCtrl, 0);
+			Grid.SetColumnSpan(tabCtrl, 3);
+
+			_fileName = fileName;
+			bool ok = ProcessStream.readStreamTrack(fileName, Track, Side);
+			if (ok) {
+				infoBox.Clear();
+				drawAllCharts();
+			}
+			return ok;
+		}
+
+
+		private async Task<bool> readSPCFile(string fileName) {
+			BM1.Visibility = Visibility.Visible;
+			BM2.Visibility = Visibility.Visible;
+			tabCtrl.Width = matrixGrid.ActualWidth - 320;
+			Grid.SetColumn(tabCtrl, 2);
+			Grid.SetColumnSpan(tabCtrl, 1);
+
+			_fileName = System.IO.Path.GetFileNameWithoutExtension(fileName);
+			bool ok = await SCPReader.readScpAsync(fileName, infoBox);
+			if (ok) {
+				selectAndCheck(0, 0);
+				infoBox.Clear();
+				drawAllCharts();
+			}
+
+			return ok;
 		}
 
 
@@ -365,16 +355,15 @@ namespace Aufit {
 			if ((bool)dialog.ShowDialog(this)) {
 				string selectedDir = dialog.SelectedPath;
 				DirectoryInfo di = new DirectoryInfo(selectedDir);
-				// for some reason this also includes the directories
+				// for some reason this may also includes the directories
 				FileInfo[] fi = di.GetFiles("*.raw");
 				// to remove the number of directories from the count
 				DirectoryInfo[] children = di.GetDirectories();
 				if (fi.Length != 0) {
 					if (fi.Length == children.Length) {
-						FileName.Text = "Sorry no Stream files found in this directory";
+						tbFileName.Text = "Sorry no Stream files found in this directory";
 						return;
 					}
-					Rev = 1;
 
 					BM1.Visibility = Visibility.Visible;
 					BM2.Visibility = Visibility.Visible;
@@ -386,19 +375,20 @@ namespace Aufit {
 					string file = fi[0].Name;
 					string path = fi[0].DirectoryName;
 					string root = file.Remove(file.Length - 8, 8);
-					FileName.Text = selectedDir;
+					tbFileName.Text = selectedDir;
+					_fileName = root;
 					Global.resetDisk();
 
 					if (cbDispRead.IsChecked == true)
 						readAllTracksAsync(path, root);
 					else
 						readAllTracksTasks(path, root);
-					_fileName = root;
 				}
 				else
-					FileName.Text = "Sorry no Stream files found in this directory";
+					tbFileName.Text = "Sorry no Stream files found in this directory";
 			}
 		}
+
 
 		/// <summary>
 		/// Read the stream files for all the tracks of a FD using 170 Tasks!
@@ -424,12 +414,11 @@ namespace Aufit {
 					}
 				}
 			}
-			//ButtonMatrix.selectButton(0, 0);
 			selectAndCheck(0 , 0);
 			Track = Side = 0;
 			Rev = 1;
 			infoBox.Clear();
-			drawCharts();
+			drawAllCharts();
 		}
 
 
@@ -465,7 +454,7 @@ namespace Aufit {
 			if (Global.Disk[Track, Side].fluxData != null) {
 				ButtonMatrix.selectButton(Track, Side);
 			}
-			drawCharts();
+			drawAllCharts();
 		}
 
 
@@ -521,7 +510,7 @@ namespace Aufit {
 			Side = side;
 			ButtonMatrix.deselectButton();
 			//ButtonMatrix.selectButton(track, side);
-			drawCharts();
+			drawAllCharts();
 			selectAndCheck(track, side);
 		}
 
@@ -634,6 +623,11 @@ namespace Aufit {
 
 
 		private async void btProtectionClick(object sender, RoutedEventArgs e) {
+			await checkProtectionAsync();
+		}
+
+
+		private async Task checkProtectionAsync() {
 			for (int side = 0; side < 2; side++)
 				for (int track = 0; track < 84; track++) {
 					await DiskWindow.decodeAndReadAsync(track, side, 1);
@@ -641,7 +635,6 @@ namespace Aufit {
 					ButtonMatrix.setButtonBG(track, side);
 				}
 		}
-
 
 		private void btDiskDataClick(object sender, RoutedEventArgs e) {
 			// TODO if (_trackInfo.TrackInfo == null) return;
@@ -660,6 +653,19 @@ namespace Aufit {
 		private void selectAndCheck(int track, int side) {
 			ButtonMatrix.selectButton(track, side);
 			Protections.checkProtection(track, side, infoBox);
+		}
+
+		private async void btWriteDiskClick(object sender, RoutedEventArgs e) {
+			SaveFileDialog sfd = new SaveFileDialog();
+			sfd.Filter = "Pasti file|*.stx|All Files|*.*";
+			bool? ok = sfd.ShowDialog();
+			if (ok == true) {
+				await checkProtectionAsync();
+				tbFileName.Text  = sfd.FileName;
+				PastiWriter pasti = new PastiWriter(infoBox);
+				pasti.writePasti(sfd.FileName);
+			}
+
 		}
 	}
 }

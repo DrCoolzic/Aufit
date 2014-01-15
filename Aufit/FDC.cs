@@ -88,8 +88,6 @@ namespace WD1772Space {
 		public int badSync;
 		/// <summary>Count the number of timing violations (under 2 or over 4 inspection windows)</summary>
 		public int timingViolation;
-		/// <summary>Count the number of "border bits"</summary>
-		public int borderBit;
 		/// <summary>Count the number of invalid data into gap</summary>
 		public int invDataGap;
 		/// <summary>?? TODO</summary>
@@ -124,7 +122,9 @@ namespace WD1772Space {
 	/// <summary>Store information for each sync found on the track</summary>
 	public class SyncInfo {
 		/// <summary>Time position of the sync</summary>
-		public int time;
+		public int startTime;
+		/// <summary>Byte position of the sync</summary>
+		public int startByte;
 		/// <summary>How many sync in a row</summary>
 		public int row;
 		/// <summary>Sync value</summary>
@@ -250,8 +250,8 @@ namespace WD1772Space {
 			Global.Disk[track, side].trackContent = tc;
 
 			Global.TrackData currentTrack = Global.Disk[track, side];
-			int start = Global.startOffset(track, side, rev);
-			int stop = Global.stopOffset(track, side, rev);
+			int start = Global.firstIndex(track, side, rev);
+			int stop = Global.lastIndex(track, side, rev);
 			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 			// add dummy sector[0] to store GAP and potentially DATA segment information
@@ -303,17 +303,13 @@ namespace WD1772Space {
 					nbWin = flux / 2000;	// NFA
 				}
 				else 
-					nbWin = currentTrack.decodeData.fluxInWin[i];
+					nbWin = currentTrack.decodeData.fluxInWindow[i];
 				currentTime += flux;
 				currentBit += nbWin;
 				dsr.shiftBitsIn(nbWin);	// push data in register
-				clock = currentTrack.decodeData.decodedClock[i];
+				clock = currentTrack.decodeData.clockPeriod[i];
 				clockAvg += clock;
 				clockCount++;
-
-				// check border bits
-				if (Global.isBorderBit(clock, nbWin, flux))
-					tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].borderBit++;
 
 				// check timing violation and write splice
 				if ((nbWin < 2) || nbWin > 4) {
@@ -356,7 +352,8 @@ namespace WD1772Space {
 						syncCount++;
 						tc.syncs.Add(new SyncInfo());
 						tc.syncs[tc.syncs.Count - 1].value = dsr.Data;
-						tc.syncs[tc.syncs.Count - 1].time = currentTime;
+						tc.syncs[tc.syncs.Count - 1].startTime = currentTime;
+						tc.syncs[tc.syncs.Count - 1].startByte = tc.byteCount;
 						tc.syncs[tc.syncs.Count - 1].row = syncCount;
 						tc.syncs[tc.syncs.Count - 1].badSync = false;
 
@@ -500,7 +497,8 @@ namespace WD1772Space {
 						// in an ID or DATA segment we should not find a sync inside!
 						bitShift = dsr.searchSynch();
 						if (dsr.SyncFound)
-							tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].badSync++;	// TODO ??? sync at all time here?
+							// was not very useful but now we can use it to optimize Pasti Write
+							tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].badSync++;
 					} // ID or DATA
 
 					tc.buffer.addByte(dsr.Data, dsr.Clock, dsr.MFM, phase, (ushort)clock, prevBlockEndTime);
@@ -592,8 +590,8 @@ namespace WD1772Space {
 			Global.Disk[track, side].addrContent = ac;
 
 			Global.TrackData currentTrack = Global.Disk[track, side];
-			int start =  Global.startOffset(track, side, rev);
-			int stop = Global.stopOffset(track, side, rev);
+			int start =  Global.firstIndex(track, side, rev);
+			int stop = Global.lastIndex(track, side, rev);
 			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 			int currentTime = 0;
@@ -622,11 +620,11 @@ namespace WD1772Space {
 				currentTime += flux;
 
 				if (flux > 32000) 	nbWin = flux / 2000;	// NFA
-				else				nbWin = currentTrack.decodeData.fluxInWin[i];
+				else				nbWin = currentTrack.decodeData.fluxInWindow[i];
 
 				currentBit += nbWin;
 				dsr.shiftBitsIn(nbWin);	// push data in shift register
-				int clock = currentTrack.decodeData.decodedClock[i];
+				int clock = currentTrack.decodeData.clockPeriod[i];
 				clockAvg += clock;
 				clockCount++;
 
@@ -743,8 +741,8 @@ namespace WD1772Space {
 			sect.buffer = new TrackBuffer();
 
 			Global.TrackData currentTrack = Global.Disk[track, side];
-			int start = Global.startOffset(track, side, rev);
-			int stop = Global.stopOffset(track, side, rev);
+			int start = Global.firstIndex(track, side, rev);
+			int stop = Global.lastIndex(track, side, rev);
 			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 			Phases phase = Phases.p_outer;
@@ -778,11 +776,11 @@ namespace WD1772Space {
 				currentTime += flux;
 
 				if (flux > 32000)	nbWin = flux / 2000;
-				else				nbWin = currentTrack.decodeData.fluxInWin[i];
+				else				nbWin = currentTrack.decodeData.fluxInWindow[i];
 
 				currentBit += nbWin;
 				dsr.shiftBitsIn(nbWin);	// push data in register
-				clock = currentTrack.decodeData.decodedClock[i];
+				clock = currentTrack.decodeData.clockPeriod[i];
 				clockAvg += clock;
 				clockCount++;
 
@@ -825,9 +823,9 @@ namespace WD1772Space {
 									// this means that no DATA block were found before this ID
 									// therefore we should break
 									if (idFound) {
-										sect.idBlock.crc = crc;
-										sect.idBlock.byteCount = byteCount - sect.idBlock.startByte;
-										sect.idBlock.timeLength = prevBlockEndTime - sect.idBlock.startTime;
+										//sect.idBlock.crc = crc;
+										//sect.idBlock.byteCount = byteCount - sect.idBlock.startByte;
+										//sect.idBlock.timeLength = prevBlockEndTime - sect.idBlock.startTime;
 										dataFound = false;
 										phase = Phases.p_id;
 										breakLoop = true;

@@ -64,7 +64,7 @@ namespace KFReaderSpace {
 					Global.Disk[track, side].revData[i].revolutionTime = stream.Indexes[i + 1].indexTime;
 					Global.Disk[track, side].revData[i].fluxCount = stream.Indexes[i + 1].fluxPosition - stream.Indexes[i].fluxPosition;
 					Global.Disk[track, side].revData[i].indexTimePosition = stream.Indexes[i].preIndexTime;
-					Global.Disk[track, side].revData[i].fluxOffset = stream.Indexes[i].fluxPosition;
+					Global.Disk[track, side].revData[i].fluxIndex = stream.Indexes[i].fluxPosition;
 				}
 				return true;
 			}

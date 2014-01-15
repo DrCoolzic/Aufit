@@ -104,8 +104,8 @@ class ClockDrawing {
 		_clockChartLayout.drawChartGrids();
 		int speedUp = FluxDrawing.SpeedUp;
 
-		int start = Global.startOffset(track, side, rev);
-		int stop = Global.stopOffset(track, side, rev);
+		int start = Global.firstIndex(track, side, rev);
+		int stop = Global.lastIndex(track, side, rev);
 		int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 		int currentTime = 0;
@@ -114,7 +114,7 @@ class ClockDrawing {
 		clockLine.StrokeThickness = 1;
 
 		int lastRev = Global.Disk[track, side].revData.Count() - 1;
-		int lastFlux = Global.Disk[track, side].revData[lastRev].fluxOffset + Global.Disk[track, side].revData[lastRev].fluxCount - 1;
+		int lastFlux = Global.Disk[track, side].revData[lastRev].fluxIndex + Global.Disk[track, side].revData[lastRev].fluxCount - 1;
 		int nbForAvg = 50;
 
 		// populate
@@ -123,13 +123,13 @@ class ClockDrawing {
 			if (i == start) flux -= indexFirstFluxCorrection;
 			currentTime += flux;
 
-			int clk = td.decodeData.decodedClock[i];
+			int clk = td.decodeData.clockPeriod[i];
 			int avgClock = 0;
 			int avgCount = 0;
 			for (int j = 0; j < nbForAvg; j++) {
 				int index = i - nbForAvg/2 + j;
 				if ((index >= 0) && (index <= lastFlux)) {
-					avgClock += td.decodeData.decodedClock[index];
+					avgClock += td.decodeData.clockPeriod[index];
 					avgCount++;
 				}
 			}
@@ -201,8 +201,8 @@ class ClockDrawing {
 		int fluxXmin = 0;
 		int fluxXmax = 200;
 		if (rev == 0) fluxXmax = 200 * Global.Disk[track, side].revData.Count();
-		_clockMin = Global.Disk[track, side].decodeData.clockMin;
-		_clockMax = Global.Disk[track, side].decodeData.clockMax;
+		_clockMin = Global.Disk[track, side].decodeData.minClockPeriod;
+		_clockMax = Global.Disk[track, side].decodeData.maxClockPeriod;
 		_clockChartLayout.setViewport(fluxXmin, fluxXmax, _clockMin, _clockMax);
 	}
 

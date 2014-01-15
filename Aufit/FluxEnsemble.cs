@@ -61,14 +61,15 @@ namespace ChartSpace {
 
 			for (int i = 0; i < fluxElipses.Length; i++) {
 				EllipseGeometry eg = fluxElipses[i].ellipseGeometry;
-				Brush color;
+				Brush color = Brushes.Black;
 
 				switch (fluxElipses[i].colorIndex) {
 					case 0: color = Brushes.Blue; break;
-					case 1: color = Brushes.Red; break;
-					case 2: color = Brushes.Green; break;
-					case 3: color = Brushes.Gray; break;
-					default: color = Brushes.Black; break;
+					case 1: color = Brushes.MidnightBlue; break;
+					case 2: color = Brushes.LimeGreen; break;
+					case 3: color = Brushes.Green; break;
+					case 4: color = Brushes.Orange; break;
+					case 5: color = Brushes.DarkRed; break;
 				}
 
 				//switch (fluxElipses[i].colorIndex) {

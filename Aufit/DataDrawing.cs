@@ -67,6 +67,7 @@ class DataDrawing {
 	/// draw the data chart
 	/// </summary>
 	public void drawTrackData(int track = -1, int side = -1, int rev = -1) {
+
 		if (track == -1) track = _track;
 		else _track = track;
 		if (side == -1) side = _side;
@@ -75,7 +76,6 @@ class DataDrawing {
 		else _rev = rev;
 
 		if (Global.Disk[track, side].fluxData == null) return;
-		// Global.mfmDecode(track, side);
 		_dataChartLayout.chartResetCanvas();
 		_dataChartLayout.drawChartGrids();
 
@@ -83,12 +83,12 @@ class DataDrawing {
 		TrackContent tc = Global.Disk[track, side].trackContent;
 
 		for (int i = 0; i < tc.sectors.Count; i++) {
-			SectorInfo sector = tc.sectors[i];
-			IDField id = new IDField();	// TODO null ?
-			SectorContent s = null;
+			SectorInfo si = tc.sectors[i];
+			IDField id = new IDField();
+			SectorContent sc = null;
 			if (i > 0) {
 				id = Global.Disk[track, side].addrContent.ids[i-1];
-				s = FDC.findSectorContent(track, side, id.number, sector.startTime);
+				sc = FDC.findSectorContent(track, side, id.number, si.startTime);
 			}
 			Polygon polySect = new Polygon();
 			polySect.Stroke = Brushes.DarkBlue;
@@ -96,33 +96,32 @@ class DataDrawing {
 			polySect.Fill = Brushes.Transparent;
 			StackPanel panel = new StackPanel();
 			TextBox snum = new TextBox();
-			if ((i > 0) && (s != null))
-				snum.Text = String.Format("Sector {0} Start-Stop: {1:F2}-{2:F2} ms - {3} {4}",
-					id.number, (double)sector.startTime / 1000000.0, (double)sector.endTime / 1000000.0,
-					(s.dataBlock.crc == 0) ? "CRC OK" : "Bad CRC", (s.mask != null) ? "- Has fuzzy bytes" : "");
+			if ((i > 0) && (sc != null))
+				snum.Text = String.Format("Sector {0} Start - Stop: {1:F2} - {2:F2} ms - {3} {4}",
+					id.number, (double)si.startTime / 1000000.0, (double)si.endTime / 1000000.0,
+					(sc.dataBlock.crc == 0) ? "CRC OK" : "Bad CRC", (sc.mask != null) ? "- Has fuzzy bytes" : "");
 			panel.Children.Add(snum);
 			bool open = false;
 			double bstart = 0;
 			double bstop = 0;
 			double blength;
 			for (byte p = 0; p < 4; p++) {
-				if (sector.phases[p].byteCount > 0) {
+				if (si.phases[p].byteCount > 0) {
 					Polygon plg = new Polygon();
 					plg.Stroke = Brushes.Black;
 					plg.StrokeThickness = 0.5;
-					bstart = (double)sector.phases[p].startTime / 1000000.0;
-					bstop = (double)(sector.phases[p].startTime + sector.phases[p].timeLength) / 1000000.0;
-					blength = (double)sector.phases[p].timeLength / 1000.0;
+					bstart = (double)si.phases[p].startTime / 1000000.0;
+					bstop = (double)(si.phases[p].startTime + si.phases[p].timeLength) / 1000000.0;
+					blength = (double)si.phases[p].timeLength / 1000.0;
 					TextBox tb = new TextBox();
 					switch (p) {
 						case (byte)Phases.p_id:
 							polySect.Points.Add(_dataChartLayout.NormPoint(bstart, 0.2));
 							polySect.Points.Add(_dataChartLayout.NormPoint(bstart, 0.8));
-							tb.Text = String.Format("ID Field {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4}", 
-								sector.phases[p].byteCount, blength, sector.phases[p].startByte, bstart, sector.phases[p].startBit);
+							tb.Text = String.Format("ID Field [T={0} H={1} N={2} S={3}] @ {4} ({5:F2} ms) bit {6}",
+ 								si.addr.track, si.addr.head, si.addr.number, si.addr.size,
+								si.phases[p].startByte, bstart, si.phases[p].startBit);
 							panel.Children.Add(tb);
-
-
 							plg.Fill = Brushes.Yellow;
 							//if (sector.phases[p].crc != 0) plg.Opacity = 0.7;
 							//if (sector.phases[p].crc != 0) plg.Fill = Brushes.Orange;
@@ -130,52 +129,54 @@ class DataDrawing {
 							break;
 
 						case (byte)Phases.p_inner:
-							tb.Text = String.Format("Intra GAP {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4}", 
-								sector.phases[p].byteCount, blength, sector.phases[p].startByte, bstart, sector.phases[p].startBit);
+							tb.Text = String.Format("Intra GAP {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4} {5}",
+								si.phases[p].byteCount, blength, si.phases[p].startByte, bstart, si.phases[p].startBit,
+									(si.phases[p].invDataGap > 0) ? "contains invalid data in gap" : "");
 							panel.Children.Add(tb);
 							plg.Fill = Brushes.LightGreen;
 							break;
 
 						case (byte)Phases.p_data:
-							tb.Text = String.Format("Data Field {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4}", 
-								sector.phases[p].byteCount, blength, sector.phases[p].startByte, bstart, sector.phases[p].startBit);
+							tb.Text = String.Format("Data Field {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4}{5}{6}",
+								si.phases[p].byteCount, blength, si.phases[p].startByte, bstart, si.phases[p].startBit,
+								(si.phases[p].crc == 0) ? " Bad CRC" : "", (sc == null) ? "" : ((sc.mask == null) ? "" : " has fuzzy bytes"));
 							panel.Children.Add(tb);
 							plg.Fill = Brushes.DeepSkyBlue;
-							if (sector.phases[p].overClock > Global.sectSize(sector.addr.size) / 2)
+							if (si.phases[p].overClock > Global.sectSize(si.addr.size) / 2)
 								plg.Fill = Brushes.Blue;
-							if (sector.phases[p].underClock > Global.sectSize(sector.addr.size) / 2)
+							if (si.phases[p].underClock > Global.sectSize(si.addr.size) / 2)
 								plg.Fill = Brushes.Aqua;
 							// macrodos
-							if ((sector.phases[p].underClock > Global.sectSize(sector.addr.size) / 8) && (sector.phases[p].overClock > Global.sectSize(sector.addr.size) / 8))
+							if ((si.phases[p].underClock > Global.sectSize(si.addr.size) / 8) && (si.phases[p].overClock > Global.sectSize(si.addr.size) / 8))
 								plg.Fill = Brushes.BlueViolet;
 
-							if ((i > 0) && (s != null)) {
+							if ((i > 0) && (sc != null)) {
 
-								if (s.dataBlock.crc != 0) {
+								if (sc.dataBlock.crc != 0) {
 									Polygon perr = new Polygon();
 									perr.Fill = Brushes.Red;
 									perr.StrokeThickness = 0;
-									perr.Points.Add(_dataChartLayout.NormPoint(sector.phases[p].startTime / 1000000.0, 0.1));
-									perr.Points.Add(_dataChartLayout.NormPoint(sector.phases[p].startTime / 1000000.0, 0.9));
-									perr.Points.Add(_dataChartLayout.NormPoint((sector.phases[p].startTime + sector.phases[p].timeLength) / 1000000.0, 0.9));
-									perr.Points.Add(_dataChartLayout.NormPoint((sector.phases[p].startTime + sector.phases[p].timeLength) / 1000000.0, 0.1));
+									perr.Points.Add(_dataChartLayout.NormPoint(si.phases[p].startTime / 1000000.0, 0.1));
+									perr.Points.Add(_dataChartLayout.NormPoint(si.phases[p].startTime / 1000000.0, 0.9));
+									perr.Points.Add(_dataChartLayout.NormPoint((si.phases[p].startTime + si.phases[p].timeLength) / 1000000.0, 0.9));
+									perr.Points.Add(_dataChartLayout.NormPoint((si.phases[p].startTime + si.phases[p].timeLength) / 1000000.0, 0.1));
 									_dataChartLayout.GraphicCanvas.Children.Add(perr);
 								}
-								if (s.mask != null) {
+								if (sc.mask != null) {
 									Polygon perr = new Polygon();
 									perr.Fill = Brushes.Orange;
 									perr.StrokeThickness = 0;
-									perr.Points.Add(_dataChartLayout.NormPoint(sector.phases[p].startTime / 1000000.0, 0.1));
-									perr.Points.Add(_dataChartLayout.NormPoint(sector.phases[p].startTime / 1000000.0, 0.9));
-									perr.Points.Add(_dataChartLayout.NormPoint((sector.phases[p].startTime + sector.phases[p].timeLength) / 1000000.0, 0.9));
-									perr.Points.Add(_dataChartLayout.NormPoint((sector.phases[p].startTime + sector.phases[p].timeLength) / 1000000.0, 0.1));
+									perr.Points.Add(_dataChartLayout.NormPoint(si.phases[p].startTime / 1000000.0, 0.1));
+									perr.Points.Add(_dataChartLayout.NormPoint(si.phases[p].startTime / 1000000.0, 0.9));
+									perr.Points.Add(_dataChartLayout.NormPoint((si.phases[p].startTime + si.phases[p].timeLength) / 1000000.0, 0.9));
+									perr.Points.Add(_dataChartLayout.NormPoint((si.phases[p].startTime + si.phases[p].timeLength) / 1000000.0, 0.1));
 									_dataChartLayout.GraphicCanvas.Children.Add(perr);
 
 									int nbFuzzy = 0;
-									for (int j = 0; j < s.mask.Bytes.Count; j++) {
-										if (s.mask.Bytes[j].dataByte != 0) nbFuzzy++;
+									for (int j = 0; j < sc.mask.Bytes.Count; j++) {
+										if (sc.mask.Bytes[j].dataByte != 0) nbFuzzy++;
 									}
-									if (nbFuzzy > (int)((double)s.mask.Bytes.Count * 0.6)) plg.Fill = Brushes.DarkSlateGray;
+									if (nbFuzzy > (int)((double)sc.mask.Bytes.Count * 0.6)) plg.Fill = Brushes.DarkSlateGray;
 								}
 
 
@@ -184,7 +185,9 @@ class DataDrawing {
 							//if (sector.phases[p].crc != 0) plg.Fill = Brushes.Plum;
 							break;
 						case (byte)Phases.p_outer:
-							tb.Text = String.Format("Inter GAP {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4}", sector.phases[p].byteCount, blength, sector.phases[p].startByte, bstart, sector.phases[p].startBit);
+							tb.Text = String.Format("Inter GAP {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4} {5}", 
+								si.phases[p].byteCount, blength, si.phases[p].startByte, bstart, si.phases[p].startBit,
+								(si.phases[p].invDataGap > 0) ? "contains invalid data in gap" : "");
 							panel.Children.Add(tb);
 							plg.Fill = Brushes.LimeGreen;
 							if (open) {

@@ -73,7 +73,9 @@ class HistoDrawing {
 		else _side = side;
 		if (rev == -1) rev = _rev;
 		else _rev = rev;
+
 		if (Global.Disk[track , side].fluxData == null) return;
+		if (Global.Disk[track, side].histoData.histogram == null) return;
 
 		if (_win.cbHistoLog.IsChecked.Value) _histoChartLayout.HasYGrid = false;
 		else _histoChartLayout.HasYGrid = true;
@@ -129,26 +131,25 @@ class HistoDrawing {
 		}
 		// force last point to zero
 		pg.Points.Add(_histoChartLayout.NormPoint((double)Global.sampleToTiming(Global.Disk[track, side].histoData.histogram.Length - 1) / 1000.0, 0));
-		points[Global.Disk[track, side].histoData.histogram.Length - 1] = _histoChartLayout.NormPoint((double)Global.sampleToTiming(Global.Disk[track, side].histoData.histogram.Length - 1) / 1000.0, 0);
+		points[Global.Disk[track, side].histoData.histogram.Length - 1] = 
+			_histoChartLayout.NormPoint((double)Global.sampleToTiming(Global.Disk[track, side].histoData.histogram.Length - 1) / 1000.0, 0);
 
 		// add polygon to canvas
 		_histoChartLayout.GraphicCanvas.Children.Add(pg);
 
-		if (Global.Disk[track, side].histoData.entropy > 0) {
-			// compute control pointsInViewport for Bezier curve
+		// compute control pointsInViewport for Bezier curve if formatted
+		if (Global.Disk[track, side].histoData.entropy > 0) {			
 			Point[] cp1, cp2;
 			ovp.BezierSpline.GetCurveControlPoints(points, out cp1, out cp2);
 			PathSegmentCollection lines = new PathSegmentCollection();
-			for (int i = 0; i < cp1.Length; ++i) {
+			for (int i = 0; i < cp1.Length; ++i)
 				lines.Add(new BezierSegment(cp1[i], cp2[i], points[i + 1], true));
-			}
 			PathFigure f = new PathFigure(points[0], lines, false);
 			PathGeometry g = new PathGeometry(new PathFigure[] { f });
 			System.Windows.Shapes.Path path = new System.Windows.Shapes.Path() { Stroke = Brushes.Blue, StrokeThickness = 1, Data = g };
-
 			_histoChartLayout.GraphicCanvas.Children.Add(path);
-		}
-	}
+		}	// formatted
+	}	// drawHisto()
 
 }
 }

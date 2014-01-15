@@ -67,7 +67,7 @@ public class DPLL {
 
 	/// <summary>get current PLL clock period in nanoseconds </summary>
 	/// <returns>The actual period of the adjusted clock in nanoseconds</returns>
-	public int Clock {
+	public int ClockPeriod {
 		get {
 			// clock = (2048 * 125ns) / period_count
 			int clock = 256000 / count;
@@ -112,7 +112,7 @@ public class DPLL {
 	/// The window size (fixed by periodCount) changed based on MSB error history.
 	///	The data position (phase) in window changed based on adder MSB to
 	///	try to move data pulse in middle of inspection window
-	public int dataInWindow(int dataTime) {
+	public int fluxInWindow(int dataTime) {
 		bool dataFound = false;		// set to true if data found in window
 		bool readPulse = false;		// set to true for one loop
 		int error = 0;				// MSB + history (3 bits)

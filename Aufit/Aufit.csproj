@@ -88,6 +88,8 @@
     <Compile Include="BufferWindow.xaml.cs">
       <DependentUpon>BufferWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="PastiStruct.cs" />
+    <Compile Include="PastiWrite.cs" />
     <Compile Include="Protections.cs" />
     <Compile Include="SCPReader.cs" />
     <Compile Include="TrackBuffer.cs" />
