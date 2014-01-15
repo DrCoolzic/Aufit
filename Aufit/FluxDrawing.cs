@@ -241,19 +241,23 @@ class FluxDrawing {
 			double r = (zoom > 1) ? (zoom > 25) ? (zoom > 50) ? 2 : 1.6 : 1.2 : 0.7;
 			fluxPoints[pointsInViewport].colorIndex = 0;
 
-			// border flux
-			if ( ((flux > 4900) && (flux < 5100)) || ((flux > 6900) && (flux < 7100)) ) {
-				r *= 2;
-				fluxPoints[pointsInViewport].colorIndex = 2;
+			if (td.histoData.entropy > 0) {
+				// border flux
+				if (((flux > 4900) && (flux < 5100)) || ((flux > 6900) && (flux < 7100))) {
+					r *= 2;
+					fluxPoints[pointsInViewport].colorIndex = 2;
+				}
+				// invalid flux
+				if ((flux < 3500) || (flux > 8500)) {
+					r = 2.5 * r;
+					fluxPoints[pointsInViewport].colorIndex = 4;
+				}
+				// odd even
+				if (i % 2 == 0) fluxPoints[pointsInViewport].colorIndex++;
 			}
 
-			// invalid flux
-			if ((flux < 3500) || (flux > 8500)) {
-				r = 2.5 * r;
-				fluxPoints[pointsInViewport].colorIndex = 4;
-			}
-
-			if (i % 2 == 0) fluxPoints[pointsInViewport].colorIndex++;
+			else
+				fluxPoints[pointsInViewport].colorIndex = 6;
 
 			
 			fluxPoints[pointsInViewport].ellipseGeometry = new EllipseGeometry(_fluxChartLayout.NormPoint((double)currentTime / 1000000.0, (double)flux / 1000.0), r, r);

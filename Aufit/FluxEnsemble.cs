@@ -69,7 +69,8 @@ namespace ChartSpace {
 					case 2: color = Brushes.LimeGreen; break;
 					case 3: color = Brushes.Green; break;
 					case 4: color = Brushes.Orange; break;
-					case 5: color = Brushes.DarkRed; break;
+					case 5: color = Brushes.Red; break;
+					case 6: color = Brushes.Black; break;
 				}
 
 				//switch (fluxElipses[i].colorIndex) {
