@@ -140,7 +140,7 @@ class FluxDrawing {
 		_fluxChartLayout.drawChartGrids();
 
 		DSR dsr = new DSR();
-		Global.TrackData td = Global.Disk[track, side];
+		Global.DiskTrack td = Global.Disk[track, side];
 		int start = Global.firstIndex(track, side, rev);
 		int stop = Global.lastIndex(track, side, rev);
 		int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
@@ -289,7 +289,7 @@ class FluxDrawing {
 		else _rev = rev;
 		if (Global.Disk[track, side].fluxData == null) return;
 
-		Global.TrackData td = Global.Disk[track, side];
+		Global.DiskTrack td = Global.Disk[track, side];
 
 		_viewportXmin = 0;
 		if (rev > 0)

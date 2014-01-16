@@ -129,7 +129,16 @@ namespace Aufit {
 					//writeInfo(info, "has not a standard size");
 				}
 
+
+				// sector within sector
+				if (tc.sectors[sect + 1].sws != -1) {
+					trackProtection(tc);
+					writeInfo(info, String.Format("is inside sector {0}", tc.sectors[sect + 1].sws));
+				}
+
 				SectorContent sc = FDC.findSectorContent(track, side, ac.ids[sect].number, ac.blocs[sect].startTime);
+				if (sc == null)
+					continue;
 
 				// Invalid Data into GAP
 				if ((tc.sectors[sect+1].phases[(int)Phases.p_inner].invDataGap + tc.sectors[sect+1].phases[(int)Phases.p_outer].invDataGap) > 0) {
@@ -174,7 +183,7 @@ namespace Aufit {
 				}
 
 				// fuzzy bits
-				if (sc.mask != null) {
+				if (sc.fuzzyMask != null) {
 					trackProtection(tc);
 					writeInfo(info, "has fuzzy bits");
 				}
@@ -213,11 +222,6 @@ namespace Aufit {
 					writeInfo(info, String.Format("has invalid track number {0}", sc.id.track));
 				}
 
-				// sector within sector
-				if (tc.sectors[sect+1].sws != -1) {
-					trackProtection(tc);
-					writeInfo(info, String.Format("is inside sector {0}", tc.sectors[sect+1].sws));
-				}
 
 			}	// for all sector
 

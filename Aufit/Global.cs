@@ -121,11 +121,11 @@ public struct HistoData {
 /// Contains all global parameters and functions for AUFIT
 /// </summary>
 public class Global {
-	private static TrackData[,] _diskInfo = new TrackData[85, 2];
+	private static DiskTrack[,] _diskInfo = new DiskTrack[85, 2];
 	private static double _sampleClock = 0;
 
 	/// <summary>Contains information about one track</summary>
-	public struct TrackData {
+	public struct DiskTrack {
 		/// <summary> Array of RevData structure for this track. There is one entry for each revolution</summary>
 		public RevData[] revData;
 		/// <summary>Pointer to the flux data structure for this track</summary>
@@ -151,7 +151,7 @@ public class Global {
 	/// Hopefully should also free all memory from previous read.
 	/// </summary>
 	public static void resetDisk() {
-		_diskInfo = new TrackData[85, 2];
+		_diskInfo = new DiskTrack[85, 2];
 		_sampleClock = 0;
 	}
 
@@ -208,7 +208,7 @@ public class Global {
 	/// A two dimensions array that store TrackData structures for a complete disk.
 	/// There are 85 Tracks * 2 Sides (170) TrackData structures.
 	/// </summary>
-	public static TrackData[,] Disk {
+	public static DiskTrack[,] Disk {
 		get { return _diskInfo; }
 		set { _diskInfo = value; }
 	}
@@ -248,7 +248,7 @@ public class Global {
 		//int clockAvg = 0;
 		//int currentBit = 0;
 
-		Global.TrackData td = Global.Disk[track, side];
+		Global.DiskTrack td = Global.Disk[track, side];
 		Global.Disk[track, side].decodeData = new decodeData();
 		Global.Disk[track, side].decodeData.clockPeriod = new ushort[td.fluxData.fluxCount + 1];
 		Global.Disk[track, side].decodeData.fluxInWindow = new ushort[td.fluxData.fluxCount + 1];

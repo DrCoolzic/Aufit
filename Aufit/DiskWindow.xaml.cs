@@ -177,7 +177,7 @@ public partial class DiskWindow : Window {
 
 								if ((i > 0) && (s != null)) {
 
-									if ((s.dataBlock.crc != 0) || (s.mask != null)) {
+									if ((s.dataBlock.crc != 0) || (s.fuzzyMask != null)) {
 										path.StrokeThickness = 5;
 										path.Stroke = Brushes.Red;
 										//Path patherr = new Path();
@@ -188,12 +188,12 @@ public partial class DiskWindow : Window {
 										//patherr.Data = perr;
 										//cvDisk.Children.Add(patherr);
 
-										if (s.mask != null) {
+										if (s.fuzzyMask != null) {
 											int nbFuzzy = 0;
-											for (int j = 0; j < s.mask.Bytes.Count; j++) {
-												if (s.mask.Bytes[j].dataByte != 0) nbFuzzy++;
+											for (int j = 0; j < s.fuzzyMask.Bytes.Count; j++) {
+												if (s.fuzzyMask.Bytes[j].dataByte != 0) nbFuzzy++;
 											}
-											if (nbFuzzy > (int)((double)s.mask.Bytes.Count * 0.6)) 
+											if (nbFuzzy > (int)((double)s.fuzzyMask.Bytes.Count * 0.6)) 
 												path.Stroke = Brushes.DarkSlateGray;
 										}
 

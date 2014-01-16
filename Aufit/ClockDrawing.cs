@@ -98,7 +98,7 @@ class ClockDrawing {
 		else _rev = rev;
 
 		if (Global.Disk[track, side].fluxData == null) return;
-		Global.TrackData td = Global.Disk[track, side];
+		Global.DiskTrack td = Global.Disk[track, side];
 		if (td.decodeData == null) return;
 
 		_clockChartLayout.drawChartGrids();

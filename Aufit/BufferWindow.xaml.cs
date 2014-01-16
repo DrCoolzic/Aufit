@@ -56,7 +56,8 @@ namespace Aufit {
 		/// <summary>
 		/// Draw the content of the buffer
 		/// </summary>
-		public void drawSectorBuffer(int track, int side) {
+		public void drawSectorBuffer(int track, int side, int rev) {
+			FDC.fdcAllRead(track, side, rev, true);
 			AddrContent ac = Global.Disk[track, side].addrContent;
 
 			displayBuffer.FontFamily = new FontFamily("Consolas");
@@ -84,7 +85,7 @@ namespace Aufit {
 				SectorContent sc = FDC.findSectorContent(track, side, ac.ids[i].number, ac.blocs[i].startTime);
 				if ((sc != null) && (sc.dataBlock.byteCount > 0))
 					displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4}",
-						sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000, (sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.mask != null) ? "Yes" : " No"));
+						sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000, (sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.fuzzyMask != null) ? "Yes" : " No"));
 				displayBuffer.Inlines.Add("\n");
 			}			
 			displayBuffer.Inlines.Add(String.Format("-------------------+---------------------------\n\n"));
@@ -95,11 +96,11 @@ namespace Aufit {
 				if ((sc != null) && (sc.dataBlock.byteCount > 0)) {
 					displayBuffer.Inlines.Add(String.Format(" {0} bytes start at {1} length {2} {3} {4}\n",
 						sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000,
-						(sc.dataBlock.crc == 0) ? "Good CRC" : "Bad CRC", (sc.mask != null) ? "Has Fuzzy bytes" : "" ));
+						(sc.dataBlock.crc == 0) ? "Good CRC" : "Bad CRC", (sc.fuzzyMask != null) ? "Has Fuzzy bytes" : "" ));
 					drawBuffer(sc.buffer);
-					if (sc.mask != null) {
+					if (sc.fuzzyMask != null) {
 						displayBuffer.Inlines.Add(String.Format("\nFuzzy bytes for sector {0}\n", ac.ids[i].number));
-						drawBuffer(sc.mask);
+						drawBuffer(sc.fuzzyMask);
 					}
 				}
 				else
@@ -113,7 +114,8 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="track">Specifies the track from the disk</param>
 		/// <param name="side">Specifies the side from the disk</param>
-		public void drawTrackBuffer(int track, int side) {
+		public void drawTrackBuffer(int track, int side, int rev) {
+			FDC.fdcAllRead(track, side, rev, true);
 			TrackContent tc = Global.Disk[track, side].trackContent;
 			AddrContent ac = Global.Disk[track, side].addrContent;
 
@@ -143,7 +145,7 @@ namespace Aufit {
 						SectorContent sc = FDC.findSectorContent(track, side, ac.ids[tc.sectors.Count - 2].number, ac.blocs[tc.sectors.Count - 2].startTime);
 						if (sc != null)
 							displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4} |",
-								sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000, (sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.mask != null) ? "Yes" : " No"));
+								sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000, (sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.fuzzyMask != null) ? "Yes" : " No"));
 						else
 							displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4} |",
 								tc.sectors[i].phases[(byte)Phases.p_data].byteCount, tc.sectors[i].phases[(byte)Phases.p_data].startTime / 1000,
@@ -178,7 +180,7 @@ namespace Aufit {
 					SectorContent sc = FDC.findSectorContent(track, side, ac.ids[i - 1].number, ac.blocs[i - 1].startTime);
 					if ((sc != null) && (sc.dataBlock.byteCount > 0))
 						displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4} |",
-							sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000, (sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.mask != null) ? "Yes" : " No"));
+							sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000, (sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.fuzzyMask != null) ? "Yes" : " No"));
 					else
 						displayBuffer.Inlines.Add(String.Format("                           |"));
 					// INTER

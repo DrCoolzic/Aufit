@@ -541,7 +541,7 @@ namespace Aufit {
 						SectorContent sect = FDC.findSectorContent(Track, Side, number, Global.Disk[Track, Side].trackContent.sectors[index].startTime);
 						if (sect == null) return;	// TODO for now we return
 						TrackBuffer buffer = sect.buffer;
-						string message = String.Format("Sector {0} with {1} bytes {2} {3}\n", number, sect.dataBlock.byteCount, (sect.dataBlock.crc == 0) ? "crc OK" : "Bad crc", (sect.mask != null) ? "Has fuzzy bits" : "");
+						string message = String.Format("Sector {0} with {1} bytes {2} {3}\n", number, sect.dataBlock.byteCount, (sect.dataBlock.crc == 0) ? "crc OK" : "Bad crc", (sect.fuzzyMask != null) ? "Has fuzzy bits" : "");
 						if (_sectorWindowIsOpen)
 							_sectorWindow.Close();
 
@@ -579,7 +579,7 @@ namespace Aufit {
 				_trackWindow.Close();
 
 			_trackWindow = new BufferWindow();
-			_trackWindow.drawTrackBuffer(Track, Side);
+			_trackWindow.drawTrackBuffer(Track, Side, Rev);
 			_trackWindow.Closed += new EventHandler(trackWindowClosed);
 			_trackWindowIsOpen = true;
 			_trackWindow.Show();
@@ -596,7 +596,7 @@ namespace Aufit {
 				_sectorWindow.Close();
 
 			_sectorWindow = new BufferWindow();
-			_sectorWindow.drawSectorBuffer(Track, Side);
+			_sectorWindow.drawSectorBuffer(Track, Side, Rev);
 			_sectorWindow.Closed += new EventHandler(sectorWindowClosed);
 			_sectorWindowIsOpen = true;
 			_sectorWindow.Show();
@@ -662,7 +662,8 @@ namespace Aufit {
 			if (ok == true) {
 				await checkProtectionAsync();
 				tbFileName.Text  = sfd.FileName;
-				PastiWriter pasti = new PastiWriter(infoBox);
+				//PastiWriter pasti = new PastiWriter(infoBox);
+				PastiWriter pasti = new PastiWriter();
 				pasti.writePasti(sfd.FileName);
 			}
 

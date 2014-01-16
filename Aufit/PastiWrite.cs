@@ -137,7 +137,7 @@ namespace PastiSpace {
 			// Write all track records
 			for (int track = 0; track < 84; track++) {
 				for (int side = 0; side < 2; side++) {
-					Global.TrackData tdata = Global.Disk[track, side];
+					Global.DiskTrack tdata = Global.Disk[track, side];
 					if (tdata.trackContent == null) 
 						continue;
 					if (tdata.sectorsContent == null)
@@ -169,8 +169,8 @@ namespace PastiSpace {
 
 					// do we need fuzzy record
 					for (int sect = 0; sect < sectorCount; sect++)
-						if (tdata.sectorsContent[sect].mask != null)
-							tdesc.fuzzyCount += (uint)tdata.sectorsContent[sect].mask.Bytes.Count - 3;
+						if (tdata.sectorsContent[sect].fuzzyMask != null)
+							tdesc.fuzzyCount += (uint)tdata.sectorsContent[sect].fuzzyMask.Bytes.Count - 3;
 					tdesc.recordSize += tdesc.fuzzyCount;
 
 					bool trkSync = false;
@@ -273,7 +273,7 @@ namespace PastiSpace {
 								if (tdata.sectorsContent[sect].dataBlock.crc != 0)
 									fdcFlag |= SectorDesc.CRC_ERR;
 							}	// these two flags are only meaningful if record has bytes
-							if (tdata.sectorsContent[sect].mask != null)
+							if (tdata.sectorsContent[sect].fuzzyMask != null)
 								fdcFlag |= SectorDesc.FUZZY_BITS;
 							if (tdata.sectorsContent[sect].sectorIntraVariation)
 								fdcFlag |= SectorDesc.BIT_WIDTH;
@@ -302,12 +302,12 @@ namespace PastiSpace {
 
 					// write fuzzy mask if needed
 					for (int sect = 0; sect < sectorCount; sect++) {
-						if (tdata.sectorsContent[sect].mask != null) {
+						if (tdata.sectorsContent[sect].fuzzyMask != null) {
 							start = buffer.Count;
-							for (int i = 0; i < tdata.sectorsContent[sect].mask.Bytes.Count - 3; i++)
-								writeByte(buffer, (byte)~tdata.sectorsContent[sect].mask.Bytes[i+1].dataByte);
+							for (int i = 0; i < tdata.sectorsContent[sect].fuzzyMask.Bytes.Count - 3; i++)
+								writeByte(buffer, (byte)~tdata.sectorsContent[sect].fuzzyMask.Bytes[i+1].dataByte);
 							if (_infoBox != null) _infoBox.AppendText(String.Format("   Writing Fuzzy {0} bytes for sector {1} ({2}-{3})\n",
-								tdata.sectorsContent[sect].mask.Bytes.Count -3, tdata.sectorsContent[sect].id.number, start, buffer.Count - 1));
+								tdata.sectorsContent[sect].fuzzyMask.Bytes.Count -3, tdata.sectorsContent[sect].id.number, start, buffer.Count - 1));
 						}	// fuzzy found
 					}	// all sect
 
@@ -411,7 +411,7 @@ namespace PastiSpace {
 		}
 
 
-		private bool trackNeedSectorDesc(Global.TrackData tdata) {
+		private bool trackNeedSectorDesc(Global.DiskTrack tdata) {
 			// here we test for
 			// - All the sectors of the track are numbered sequentially from 1 to n
 			// - All the sectors use valid sector numbers from 0x00-0xF4
@@ -481,7 +481,7 @@ namespace PastiSpace {
 		}
 
 
-		private bool trackNeedTrackData(Global.TrackData tdata) {
+		private bool trackNeedTrackData(Global.DiskTrack tdata) {
 			// We need Optional Track Data when:
 			// - Single Data Segment = ID found but no data
 			// - Invalid Data in Gap ?

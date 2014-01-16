@@ -99,7 +99,7 @@ class DataDrawing {
 			if ((i > 0) && (sc != null))
 				snum.Text = String.Format("Sector {0} Start - Stop: {1:F2} - {2:F2} ms - {3} {4}",
 					id.number, (double)si.startTime / 1000000.0, (double)si.endTime / 1000000.0,
-					(sc.dataBlock.crc == 0) ? "CRC OK" : "Bad CRC", (sc.mask != null) ? "- Has fuzzy bytes" : "");
+					(sc.dataBlock.crc == 0) ? "CRC OK" : "Bad CRC", (sc.fuzzyMask != null) ? "- Has fuzzy bytes" : "");
 			panel.Children.Add(snum);
 			bool open = false;
 			double bstart = 0;
@@ -139,7 +139,8 @@ class DataDrawing {
 						case (byte)Phases.p_data:
 							tb.Text = String.Format("Data Field {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4}{5}{6}",
 								si.phases[p].byteCount, blength, si.phases[p].startByte, bstart, si.phases[p].startBit,
-								(si.phases[p].crc == 0) ? " Bad CRC" : "", (sc == null) ? "" : ((sc.mask == null) ? "" : " has fuzzy bytes"));
+								(sc == null) ? "" : (sc.dataBlock.crc != 0) ? " Bad CRC" : "", 
+								(sc == null) ? "" : ((sc.fuzzyMask == null) ? "" : " has fuzzy bytes"));
 							panel.Children.Add(tb);
 							plg.Fill = Brushes.DeepSkyBlue;
 							if (si.phases[p].overClock > Global.sectSize(si.addr.size) / 2)
@@ -162,7 +163,7 @@ class DataDrawing {
 									perr.Points.Add(_dataChartLayout.NormPoint((si.phases[p].startTime + si.phases[p].timeLength) / 1000000.0, 0.1));
 									_dataChartLayout.GraphicCanvas.Children.Add(perr);
 								}
-								if (sc.mask != null) {
+								if (sc.fuzzyMask != null) {
 									Polygon perr = new Polygon();
 									perr.Fill = Brushes.Orange;
 									perr.StrokeThickness = 0;
@@ -173,10 +174,10 @@ class DataDrawing {
 									_dataChartLayout.GraphicCanvas.Children.Add(perr);
 
 									int nbFuzzy = 0;
-									for (int j = 0; j < sc.mask.Bytes.Count; j++) {
-										if (sc.mask.Bytes[j].dataByte != 0) nbFuzzy++;
+									for (int j = 0; j < sc.fuzzyMask.Bytes.Count; j++) {
+										if (sc.fuzzyMask.Bytes[j].dataByte != 0) nbFuzzy++;
 									}
-									if (nbFuzzy > (int)((double)sc.mask.Bytes.Count * 0.6)) plg.Fill = Brushes.DarkSlateGray;
+									if (nbFuzzy > (int)((double)sc.fuzzyMask.Bytes.Count * 0.6)) plg.Fill = Brushes.DarkSlateGray;
 								}
 
 

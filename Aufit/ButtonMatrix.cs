@@ -168,7 +168,7 @@ namespace Aufit {
 		/// <param name="side">Side Number </param>
 		public static void setButtonBG(int track, int side) {
 			Brush color = Brushes.LimeGreen;
-			Global.TrackData td = Global.Disk[track, side];
+			Global.DiskTrack td = Global.Disk[track, side];
 			TrackContent tc = td.trackContent;
 			// track not processed
 			if (tc != null) {
