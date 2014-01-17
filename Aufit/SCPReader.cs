@@ -307,16 +307,17 @@ namespace SCPReaderSpace {
 			// note this buffer might be bigger that what is needed because of null entries (strong bits)
 			ti.fluxValues = new int[fluxSize];
 
+			int[] fluxOffset = new int[revCount];
 			for (int i = 0; i < revCount; i++) {
 				if (ti.revInfo[i].indexTime != 0) {
 					int overflowCount = 0;
 					// set bufferIndex to the offset of the data
 					idx = ti.revInfo[i].fluxOffset + trackHeaderPosition;
 					// now set fluxOffset to offset in the "extracted data buffer"
-					if (i > 0) ti.revInfo[i].fluxOffset = ti.revInfo[i - 1].fluxOffset + ti.revInfo[i - 1].fluxCount;
-					else ti.revInfo[i].fluxOffset = 0;
+					if (i > 0) fluxOffset[i] = fluxOffset[i - 1] + ti.revInfo[i - 1].fluxCount;
+					else fluxOffset[i] = 0;
 					//revCount++;
-					int p = ti.revInfo[i].fluxOffset;
+					int p = fluxOffset[i];
 					for (int j = 0; j < ti.revInfo[i].fluxCount; j++) {
 						int val = buffer[idx++] << 8;
 						val += buffer[idx++];
@@ -325,9 +326,10 @@ namespace SCPReaderSpace {
 							overflowCount++;
 						}
 						else {
-							ti.fluxValues[p++] += val;
-							if (val > _fluxMax) _fluxMax = val;
-							if (val < _fluxMin) _fluxMin = val;
+							ti.fluxValues[p] += val;
+							if (ti.fluxValues[p] > _fluxMax) _fluxMax = ti.fluxValues[p];
+							if (ti.fluxValues[p] < _fluxMin) _fluxMin = ti.fluxValues[p];
+							p++;
 						}
 					}
 					// if we had overflow we must remove from number of fluxes
@@ -350,7 +352,7 @@ namespace SCPReaderSpace {
 				Global.Disk[track, side].revData[i].revolutionTime = ti.revInfo[i].indexTime;
 				Global.Disk[track, side].revData[i].fluxCount = ti.revInfo[i].fluxCount;
 				Global.Disk[track, side].revData[i].indexTimePosition = ti.revInfo[i].indexTimePosition;
-				Global.Disk[track, side].revData[i].fluxIndex = ti.revInfo[i].fluxOffset;
+				Global.Disk[track, side].revData[i].fluxIndex = fluxOffset[i];
 			}
 			return SCPStatus.stsOK;
 		}

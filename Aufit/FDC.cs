@@ -244,10 +244,10 @@ namespace WD1772Space {
 		/// It fills a ReadTrackInfo structure that gives detailed information about the track 
 		/// as well as a MFMBuffer that contains all the decoded bytes.</remarks>
 		/// TODO do something special for SDS ?
-		public static TrackContent readTrack(int track, int side, int rev, bool forceRead = false) {
+		public static TrackContent readTrack(int track, int side, int rev) {
 			// check if already there
 			TrackContent tc = Global.Disk[track, side].trackContent;
-			if ((tc != null) && !forceRead)
+			if (tc != null)
 				return tc;
 
 			tc = new TrackContent();
@@ -282,34 +282,43 @@ namespace WD1772Space {
 			int lastTrackByte = 0;
 			int lastTrackTime = 0;
 
+			tc.idOverIdx = false;
+			tc.dataOverIdx = false;
+			tc.dataBeyondIdx = false;
+
 			// normally we stop at the stop value (last transition of the track)
-			// however we continue if we are in middle of an ID or an intra-gap field (after idOverIdx)
+			// however we continue if we are not in an outer GAP because this indicates
+			// we have a shifted track.
+			// .... in middle of an ID or an intra-gap field (after idOverIdx)
 			// so we detect and display correctly ID over index ...
 			// added syncCount because we may have just the start of the sync of ID are very end !!!
 			// Good example is ComputerHitsVolume2 Disk 2 track 78
-			tc.idOverIdx = false;
-			for (int i = start; 
-				(i < stop) || (phase == Phases.p_id) || ((phase == Phases.p_inner) && tc.idOverIdx) || (syncInSeq > 0); 
+			for (int i = start;
+				//(i < stop) || (phase == Phases.p_id) || ((phase == Phases.p_inner) && tc.idOverIdx) || (syncInSeq > 0)  ; 
+				(i < stop) || (phase != Phases.p_outer) || (syncInSeq > 0);
 				i++) {
 				// we cannot go beyond last flux so we always abort. This imply that last revolution might no be detected correctly
 				if (i >= dt.fluxData.fluxCount) break;
 
-				if ((i >= stop) && (phase == Phases.p_id))
-					tc.idOverIdx = true;
-				// we store the number of byte and timing
-				if ((i >= stop) && (lastTrackByte == 0)) {
+				if (i == stop) {
+					switch(phase) {
+						case Phases.p_id: tc.idOverIdx = true;	break;
+						case Phases.p_inner: tc.dataBeyondIdx = true; break;
+						case Phases.p_data: tc.dataOverIdx = true; break;
+					}
+					// we store the number of byte and timing
 					lastTrackByte = tc.byteCount;
 					lastTrackTime = currentTime;
 				}
-				
+
 				int flux = Global.sampleToTiming(dt.fluxData.fluxValue[i]);
-				if (i == start)				flux -= indexFirstFluxCorrection;
-				else if (i == (stop - 1))	flux += indexFirstFluxCorrection;
+				if (i == start) flux -= indexFirstFluxCorrection;
+				else if (i == (stop - 1)) flux += indexFirstFluxCorrection;
 				if (flux > 150000) {
 					tc.NFA = currentTime;
 					nbWin = flux / 2000;	// NFA
 				}
-				else 
+				else
 					nbWin = dt.decodeData.fluxInWindow[i];
 				currentTime += flux;
 				currentBit += nbWin;
@@ -354,7 +363,7 @@ namespace WD1772Space {
 					int bitShift = dsr.searchSynch();
 					dsr.extract();
 					currentBit -= bitShift;		// correction current bit
-				
+
 					if (dsr.SyncFound) {
 						syncInSeq++;
 						tc.syncs.Add(new SyncInfo());
@@ -366,7 +375,7 @@ namespace WD1772Space {
 
 						// check bad sequence
 						if ((syncInSeq > 1) && (dsr.Data != lastSync)) {
-							syncInSeq = 1;
+							syncInSeq = 1;	// restart
 							// We do not report 0xC2 followed by 0xA1 as an error because this happen often during re-sync
 							if (lastSync != 0xC2) {
 								tc.syncs[tc.syncs.Count - 1].badSync = true;
@@ -386,34 +395,36 @@ namespace WD1772Space {
 					}	// sync byte
 
 					// check short sync sequence
-					if ((syncInSeq > 0) && (syncInSeq < 3) && !dsr.SyncFound) {
+					//if ((syncInSeq > 0) && (syncInSeq < 3) && !dsr.SyncFound) {
+					if ((syncInSeq == 1) && !dsr.SyncFound) {
 						syncInSeq = 0;
 						tc.syncs[tc.syncs.Count - 1].badSync = true;
 						tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].badSync++;
 					}	// short sync sequence
-					
+
 					if ((phase != Phases.p_id) && (phase != Phases.p_data)) {	// We are in a GAP						
 						// check for invalid data into gap
 						if ((dsr.Data >= 0xF5) && (dsr.Data <= 0xF7)) {
 							tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].invDataGap++;
 						} // IDG invalid data in GAP
 
-						if ((syncInSeq > 2) && !dsr.SyncFound) {
+						if ((syncInSeq > 1) && !dsr.SyncFound) {
 							// 3+ sync & data not sync => should be an AM
 							syncInSeq = 0;	// reset sync count
+							crc = 0xCDB4;
 							switch (dsr.Data) {
 								case 0xFC:	// IAM - IBM 34 Format - ignore
 								case 0xFD:
 									break;
 
 								case 0xFE:	// IDAM - start of an ID block
-								case 0xFF:
+									//case 0xFF:
 									// if (phase == Phases.p_inner) TODO ID no DATA ?
 									UpdateTrackInfo(tc, phase, ref blockStartByte, ref blockStartTime, prevBlockEndTime);
 									tc.sectors[tc.sectors.Count - 1].endTime = prevBlockEndTime;
 
 									tc.sectors.Add(new SectorInfo());
-									tc.sectors[tc.sectors.Count-1].addr.iam = dsr.Data;
+									tc.sectors[tc.sectors.Count - 1].addr.iam = dsr.Data;
 									tc.sectors[tc.sectors.Count - 1].startTime = prevBlockEndTime;
 									byteLeftInBlock = 7;
 									phase = Phases.p_id;
@@ -422,8 +433,8 @@ namespace WD1772Space {
 
 								case 0xFB:	// DAM - Start of a DATA block
 								case 0xF8:	// DDAM
-								case 0xFA:
-								case 0xF9:
+									//case 0xFA:
+									//case 0xF9:
 									UpdateTrackInfo(tc, phase, ref blockStartByte, ref blockStartTime, prevBlockEndTime);
 
 									// check DATA before found a sector ID
@@ -431,8 +442,8 @@ namespace WD1772Space {
 										byteLeftInBlock = 512;	// best guess as we do not have ID information
 									}	// no ID before
 									else
-										byteLeftInBlock = Global.sectSize(tc.sectors[tc.sectors.Count-1].addr.size) + 3; // AM + 2 CRC + Size
-									
+										byteLeftInBlock = Global.sectSize(tc.sectors[tc.sectors.Count - 1].addr.size) + 3; // AM + 2 CRC + Size
+
 									phase = Phases.p_data;
 									tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].startBit = currentBit;
 									break;
@@ -467,7 +478,7 @@ namespace WD1772Space {
 									tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].startBit = currentBit;
 									gapPosition = 0;
 									break;
-						}
+							}
 						else {	// DATA Segment 
 							// 3+ sync followed by IDAM => SWS
 							// note: we also check that sync is A1 as we may detect C2 in data block
@@ -502,9 +513,9 @@ namespace WD1772Space {
 										phase = Phases.p_outer;
 										tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].startBit = currentBit;
 										break;
-							}	// not a SWS
+								}	// not a SWS
 						}	// DATA Segment
-						
+
 						// we look for sync inside ID or DATA segment.
 						bitShift = dsr.searchSynch();
 						if (dsr.SyncFound)
@@ -522,31 +533,33 @@ namespace WD1772Space {
 			UpdateTrackInfo(tc, phase, ref blockStartByte, ref blockStartTime, currentTime);
 			tc.sectors[tc.sectors.Count - 1].endTime = currentTime;
 
-			// data beyond index (not set for single sector track)
-			if ((phase == Phases.p_inner) && (tc.sectors.Count > 2))
-				tc.dataBeyondIdx = true;
+			//// data beyond index (not set for single sector track)
+			//if ((phase == Phases.p_inner) && (tc.sectors.Count > 2))
+			//	tc.dataBeyondIdx = true;
 
-			// phase DATA but not just after an id over index
-			if ((phase == Phases.p_data) && !tc.idOverIdx) {
-				tc.dataOverIdx = true;
-				// we put the byteLeftInBlock to sector 0 data block
-				// We limit the size to keep 15 (12 0x00 + 3 sync) bytes in front of ID
-				if (byteLeftInBlock > (tc.sectors[0].phases[(byte)Phases.p_outer].byteCount - 15)) {
-					byteLeftInBlock = tc.sectors[0].phases[(byte)Phases.p_outer].byteCount - 15;
-					if (byteLeftInBlock < 0) byteLeftInBlock = 0;
-				}
+			// should not happen anymore keep code for now
 
-				tc.sectors[0].phases[(byte)Phases.p_data].startByte = 0;
-				tc.sectors[0].phases[(byte)Phases.p_data].byteCount = byteLeftInBlock;
-				tc.sectors[0].phases[(byte)Phases.p_data].startTime = 0;
-				tc.sectors[0].phases[(byte)Phases.p_data].timeLength = byteLeftInBlock * 32000;
-				tc.sectors[0].phases[(byte)Phases.p_data].startBit = 0;
+			//// phase DATA but not just after an id over index
+			//if ((phase == Phases.p_data) && !tc.idOverIdx) {
+			//	tc.dataOverIdx = true;
+			//	// we put the byteLeftInBlock to sector 0 data block
+			//	// We limit the size to keep 15 (12 0x00 + 3 sync) bytes in front of ID
+			//	if (byteLeftInBlock > (tc.sectors[0].phases[(byte)Phases.p_outer].byteCount - 15)) {
+			//		byteLeftInBlock = tc.sectors[0].phases[(byte)Phases.p_outer].byteCount - 15;
+			//		if (byteLeftInBlock < 0) byteLeftInBlock = 0;
+			//	}
 
-				tc.sectors[0].phases[(byte)Phases.p_outer].startByte = byteLeftInBlock;
-				tc.sectors[0].phases[(byte)Phases.p_outer].byteCount -= byteLeftInBlock;
-				tc.sectors[0].phases[(byte)Phases.p_outer].startTime = byteLeftInBlock * 32000;
-				tc.sectors[0].phases[(byte)Phases.p_outer].timeLength -= byteLeftInBlock * 32000;
-			}
+			//	tc.sectors[0].phases[(byte)Phases.p_data].startByte = 0;
+			//	tc.sectors[0].phases[(byte)Phases.p_data].byteCount = byteLeftInBlock;
+			//	tc.sectors[0].phases[(byte)Phases.p_data].startTime = 0;
+			//	tc.sectors[0].phases[(byte)Phases.p_data].timeLength = byteLeftInBlock * 32000;
+			//	tc.sectors[0].phases[(byte)Phases.p_data].startBit = 0;
+
+			//	tc.sectors[0].phases[(byte)Phases.p_outer].startByte = byteLeftInBlock;
+			//	tc.sectors[0].phases[(byte)Phases.p_outer].byteCount -= byteLeftInBlock;
+			//	tc.sectors[0].phases[(byte)Phases.p_outer].startTime = byteLeftInBlock * 32000;
+			//	tc.sectors[0].phases[(byte)Phases.p_outer].timeLength -= byteLeftInBlock * 32000;
+			//}
 
 			tc.timeLength = currentTime;
 			// we went beyond the last byte of track
@@ -587,9 +600,9 @@ namespace WD1772Space {
 		/// Read all the ID fields of a track
 		/// </summary>
 		/// <returns>The structure that contains all the address info for a track</returns>
-		public static AddrContent readAddr(int track, int side, int rev, bool forceRead = false) {
+		public static AddrContent readAddr(int track, int side, int rev) {
 			AddrContent ac = Global.Disk[track, side].addrContent;
-			if ((ac != null) && !forceRead)
+			if (ac != null)
 				return ac;
 
 			ac = new AddrContent();
@@ -621,7 +634,7 @@ namespace WD1772Space {
 
 				int flux = Global.sampleToTiming(dt.fluxData.fluxValue[i]);
 				if (i == start)				flux -= indexFirstFluxCorrection;
-				else if (i == (stop - 1))	flux += indexFirstFluxCorrection;
+				//else if (i == (stop - 1))	flux += indexFirstFluxCorrection;
 				if (flux > 150000) 
 					nbWin = flux / 2000;	// NFA
 				else				
@@ -665,16 +678,18 @@ namespace WD1772Space {
 					}	// sync byte
 
 					// check short sync sequence
-					if ((syncInSeq > 0) && (syncInSeq < 3) && !dsr.SyncFound)
+					//if ((syncInSeq > 0) && (syncInSeq < 3) && !dsr.SyncFound)
+					if ((syncInSeq == 1) && !dsr.SyncFound)
 						syncInSeq = 0;
 
 					if (phase != Phases.p_id) {	// not in ID
-						if ((syncInSeq > 2) && !dsr.SyncFound) {
+						if ((syncInSeq > 1) && !dsr.SyncFound) {
 							// 3+ sync & not sync => should be an AM
 							syncInSeq = 0;	// reset sync count
+							crc = 0xCDB4;
 							switch (dsr.Data) {
 								case 0xFE:	// IDAM - start of an ID block
-								case 0xFF:
+								//case 0xFF:
 									ac.ids.Add(new IDField());
 
 									IDField id = ac.ids[ac.ids.Count - 1];
@@ -745,7 +760,7 @@ namespace WD1772Space {
 		/// When compare is false we are reading the sector normally and we fill the SectorContent structure. 
 		/// But if compare==true we are in "compare" mode. In that case we read the sector using the rev parameter 
 		/// and we compare the data buffer read with the "reference" data buffer to fill the fuzzyMask structure.</remarks>
-		public static SectorContent readSector(int track, int side, int rev, byte sectToRead, int position, bool compare, bool forceRead = false) {
+		public static SectorContent readSector(int track, int side, int rev, byte sectToRead, int position, bool compare) {
 			// if no list of sectors exist we need to create one 
 			// ? TODO does not seems to be the best place!
 			if (Global.Disk[track, side].sectorsContent == null)
@@ -753,7 +768,10 @@ namespace WD1772Space {
 
 			// if not in compare mode and sector already there nothing to do
 			SectorContent sref = findSectorContent(track, side, sectToRead, position);
-			if ((!compare) && (sref != null) && !forceRead) return sref;
+			if (!compare && (sref != null))
+				return sref;
+
+			Debug.Assert(!(compare && (sref == null)), "Read Sector: Reference sector not found in compare mode");
 
 			// if not there or we are in compare mode create a new sectorContent
 			SectorContent sc = new SectorContent();
@@ -784,10 +802,15 @@ namespace WD1772Space {
 
 			// we loop normally from start to stop of the specified revolution.
 			// However we continue if we are in the middle of an ID or DATA field (or ever starting sync seq! see readAddr() for more info)
-			for (int i = start; (i < stop) || (phase == Phases.p_id) || (phase == Phases.p_inner) || (phase == Phases.p_data) || (syncInSeq > 0); i++) {
-				if ( breakLoop || (dataFound && (phase != Phases.p_data)) || (i >= dt.fluxData.fluxCount) )
-					break;
+			//for (int i = start; (i < stop) || (phase == Phases.p_id) || (phase == Phases.p_inner) || (phase == Phases.p_data)  || (syncInSeq > 0) ; i++) {
+			//	if ( breakLoop || (dataFound && (phase != Phases.p_data)) || (i >= dt.fluxData.fluxCount) )
+			//		break;
 				//Debug.Assert(i < currentTrack.indexes[nbRev].fluxPosition, "Index loop overflow in readSect()", "Internal error please report");
+
+			for (int i = start; (i < stop) || (phase != Phases.p_outer) || (syncInSeq > 0); i++) {
+				if (breakLoop || (i >= dt.fluxData.fluxCount))
+					break;
+
 
 				int flux = Global.sampleToTiming(dt.fluxData.fluxValue[i]);			
 				if (i == start) flux -= indexFirstFluxCorrection;
@@ -831,15 +854,18 @@ namespace WD1772Space {
 					}	// sync byte
 
 					// check short sync sequence
-					if ((syncInSeq > 0) && (syncInSeq < 3) && !dsr.SyncFound) syncInSeq = 0;
+					//if ((syncInSeq > 0) && (syncInSeq < 3) && !dsr.SyncFound) 
+					if ((syncInSeq == 1) && !dsr.SyncFound)
+						syncInSeq = 0;
 
 					if ((phase != Phases.p_id) && (phase != Phases.p_data)) { // We are in a GAP
-							if ((syncInSeq > 2) && !dsr.SyncFound) {
+						if ((syncInSeq > 1) && !dsr.SyncFound) {
 							// 3+ sync & not sync => should be an AM
 							syncInSeq = 0;	// reset sync count
+							crc = 0xCDB4;
 							switch (dsr.Data) {
 								case 0xFE:	// IDAM - start of an ID block
-								case 0xFF:
+								//case 0xFF:
 									// if we have already found the requested ID and we find another ID
 									// this means that no DATA block were found before this ID
 									// therefore we should break
@@ -866,8 +892,8 @@ namespace WD1772Space {
 
 								case 0xFB:	// DAM - Start of a DATA block
 								case 0xF8:	// DDAM
-								case 0xFA:
-								case 0xF9:
+									//case 0xFA:
+									//case 0xF9:
 									// we check that this DATA block is for the ID we are looking for
 									// and that the DATA block is less than 43 bytes apart
 									if (idFound && ((byteCount - sc.idBlock.startByte - 7) <= 43)) {
@@ -1025,17 +1051,17 @@ namespace WD1772Space {
 		/// <param name="track">The track to read</param>
 		/// <param name="side">The side to read</param>
 		/// <param name="rev">The revolution to use</param>
-		public static void fdcAllRead(int track, int side, int rev, bool forceRead = false) {
-			TrackContent tc = readTrack(track, side, rev, forceRead);
-			AddrContent ac = readAddr(track, side, rev, forceRead);
+		public static void fdcAllRead(int track, int side, int rev) {
+			TrackContent tc = readTrack(track, side, rev);
+			AddrContent ac = readAddr(track, side, rev);
 			for (int i = 0; i < ac.ids.Count; i++) {
-				SectorContent sc = readSector(track, side, rev, ac.ids[i].number, ac.blocs[i].startTime, false, forceRead);
+				SectorContent sc = readSector(track, side, rev, ac.ids[i].number, ac.blocs[i].startTime, false);
 				if (sc == null) 
 					continue;
 				// now multiple readSector() for fuzzy bits
 				for (int j = 1; j < Global.Disk[track, side].revData.Count() + 1; j++) {
 					if (j == rev) continue;
-					readSector(track, side, j, ac.ids[i].number, ac.blocs[i].startByte, true);
+					readSector(track, side, j, ac.ids[i].number, ac.blocs[i].startTime, true);
 				}
 				if (sc.fuzzyMask != null)
 					tc.hasProtection = true;				

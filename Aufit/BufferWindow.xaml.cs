@@ -57,7 +57,12 @@ namespace Aufit {
 		/// Draw the content of the buffer
 		/// </summary>
 		public void drawSectorBuffer(int track, int side, int rev) {
-			FDC.fdcAllRead(track, side, rev, true);
+			// force re read
+			Global.Disk[track, side].addrContent = null;
+			Global.Disk[track, side].sectorsContent = null;
+			Global.Disk[track, side].trackContent = null;
+
+			FDC.fdcAllRead(track, side, rev);
 			AddrContent ac = Global.Disk[track, side].addrContent;
 
 			displayBuffer.FontFamily = new FontFamily("Consolas");
@@ -66,7 +71,7 @@ namespace Aufit {
 			displayBuffer.FontWeight = FontWeights.Normal;
 
 			displayBuffer.Inlines.Add(new Run(
-				String.Format("Track {0:D2}.{1} has {2} sectors\n", track, side, ac.ids.Count)
+				String.Format("Read Sectors for Track {0:D2}.{1} has {2} sectors\n", track, side, ac.ids.Count)
 				) { FontWeight = FontWeights.Bold });
 
 			displayBuffer.Inlines.Add(String.Format("-------------------+---------------------------\n"));
@@ -115,7 +120,12 @@ namespace Aufit {
 		/// <param name="track">Specifies the track from the disk</param>
 		/// <param name="side">Specifies the side from the disk</param>
 		public void drawTrackBuffer(int track, int side, int rev) {
-			FDC.fdcAllRead(track, side, rev, true);
+			// force re read
+			Global.Disk[track, side].addrContent = null;
+			Global.Disk[track, side].sectorsContent = null;
+			Global.Disk[track, side].trackContent = null;
+
+			FDC.fdcAllRead(track, side, rev);
 			TrackContent tc = Global.Disk[track, side].trackContent;
 			AddrContent ac = Global.Disk[track, side].addrContent;
 
@@ -126,7 +136,7 @@ namespace Aufit {
 			displayBuffer.FontWeight = FontWeights.Normal;
 
 			displayBuffer.Inlines.Add(new Run(
-				String.Format("Track {0:D2}.{1} {2} bytes Length {3} µs with {4} sectors\n",
+				String.Format("Read Track for track {0:D2}.{1} {2} bytes Length {3} µs with {4} sectors\n",
 					track, side, tc.byteCount, tc.timeLength / 1000, tc.sectors.Count - 1)
 				) { FontWeight = FontWeights.Bold });
 
@@ -145,7 +155,10 @@ namespace Aufit {
 						SectorContent sc = FDC.findSectorContent(track, side, ac.ids[tc.sectors.Count - 2].number, ac.blocs[tc.sectors.Count - 2].startTime);
 						if (sc != null)
 							displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4} |",
-								sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000, (sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.fuzzyMask != null) ? "Yes" : " No"));
+								//sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000, (sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.fuzzyMask != null) ? "Yes" : " No"));
+								tc.sectors[i].phases[(byte)Phases.p_data].byteCount, tc.sectors[i].phases[(byte)Phases.p_data].startTime / 1000,
+								tc.sectors[i].phases[(byte)Phases.p_data].timeLength / 1000,
+								(sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.fuzzyMask != null) ? "Yes" : " No"));
 						else
 							displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4} |",
 								tc.sectors[i].phases[(byte)Phases.p_data].byteCount, tc.sectors[i].phases[(byte)Phases.p_data].startTime / 1000,

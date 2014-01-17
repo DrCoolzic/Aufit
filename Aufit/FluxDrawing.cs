@@ -145,8 +145,8 @@ class FluxDrawing {
 		int stop = Global.lastIndex(track, side, rev);
 		int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
-		int maxFlux = 0;
-		int minFlux = Int32.MaxValue;
+		//int maxFlux = 0;
+		//int minFlux = Int32.MaxValue;
 		int pointsInViewport = 0;
 		int currentTime = 0;
 
@@ -183,8 +183,8 @@ class FluxDrawing {
 
 			int flux = Global.sampleToTiming(td.fluxData.fluxValue[i]);
 			if (i == start) flux -= indexFirstFluxCorrection;
-			if (flux > maxFlux) maxFlux = flux;
-			if (flux < minFlux) minFlux = flux;
+			//if (flux > maxFlux) maxFlux = flux;
+			//if (flux < minFlux) minFlux = flux;
 			currentTime += flux;
 
 			// black line for revolution
@@ -270,7 +270,8 @@ class FluxDrawing {
 
 		_win.tbFluxInfo.Clear();
 		_win.tbFluxInfo.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev));
-		_win.tbFluxInfo.AppendText(String.Format(" - Flux range: {0:F2} {1:F2} µs", (double)minFlux / 1000.0, (double)maxFlux / 1000.0));
+		//_win.tbFluxInfo.AppendText(String.Format(" - Flux range: {0:F2} {1:F2} µs", (double)minFlux / 1000.0, (double)maxFlux / 1000.0));
+		_win.tbFluxInfo.AppendText(String.Format(" - Flux range: {0:F2}-{1:F2} µs", Global.sampleToTiming(td.fluxData.fluxMin) / 1000.0, Global.sampleToTiming(td.fluxData.fluxMax)/1000.0));
 		_win.tbFluxInfo.AppendText(String.Format(" - Track length: {0:F3} ms", (double)(currentTime + indexFirstFluxCorrection) / 1000000.0));
 		_win.tbFluxInfo.AppendText(String.Format(" - Debug z={0:F1} s={1} p={2}", _fluxChartLayout.zoom(), SpeedUp, pointsInViewport));
 	}
