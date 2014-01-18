@@ -46,6 +46,7 @@ namespace Aufit {
 	/// Interaction logic for TrackBuffer.xaml
 	/// </summary>
 	public partial class BufferWindow : Window {
+		bool _noColor = false;
 		/// <summary>
 		/// Create a new BufferWindow object.
 		/// </summary>
@@ -105,7 +106,9 @@ namespace Aufit {
 					drawBuffer(sc.buffer);
 					if (sc.fuzzyMask != null) {
 						displayBuffer.Inlines.Add(String.Format("\nFuzzy bytes for sector {0}\n", ac.ids[i].number));
+						_noColor = true;
 						drawBuffer(sc.fuzzyMask);
+						_noColor = false;
 					}
 				}
 				else
@@ -240,32 +243,35 @@ namespace Aufit {
 				string ascii = "  ";
 				for (int j = 0; j < 16; j++) {
 					if ((i + j) < buffer.Bytes.Count) {
-						displayBuffer.Inlines.Add(new Run(
-							String.Format("{0:X2} ", buffer.Bytes[i + j].dataByte)) {
-								Background =
-									((buffer.Bytes[i + j].dataByte >= 0xF5) && (buffer.Bytes[i + j].dataByte <= 0xF7) && 
-									 ((buffer.Bytes[i + j].phase == Phases.p_inner) || (buffer.Bytes[i + j].phase == Phases.p_outer))) ? Brushes.Red :
-									(buffer.Bytes[i + j].mfmWord == 0x00) ? Brushes.Coral :
-									//((buffer.Bytes[i + j].dataByte == 0xA1) || (buffer.Bytes[i + j].dataByte == 0xC2)) && ((buffer.Bytes[i + j].syncInfo & 0x80) == 0x80 ) ? Brushes.Yellow :
-									(((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ||
-									 ((buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224))) ? Brushes.Yellow :
-									((buffer.Bytes[i + j].phase == Phases.p_data) || (buffer.Bytes[i + j].phase == Phases.p_id)) ? Brushes.LightGreen :
-									Brushes.White,
-								Foreground =
-									((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ? Brushes.Red :
-									(buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224) ? Brushes.Green :
-									(buffer.Bytes[i + j].phase == Phases.p_id) ? Brushes.Blue :
-									(buffer.Bytes[i + j].phase == Phases.p_data) ? Brushes.Black :
-									(buffer.Bytes[i + j].phase == Phases.p_inner) ? Brushes.Black :
-									Brushes.Green,
-								FontWeight =
-									((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ||
-									((buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224)) ||
-									(buffer.Bytes[i + j].phase == Phases.p_id) ? FontWeights.Bold : 
-									FontWeights.Normal,
-								//FontStyle = (((buffer.Bytes[i + j].syncInfo & 0x80) == 0x80) && ((buffer.Bytes[i + j].syncInfo & 0x7F) != 0x00)) ?
-								//	FontStyle = FontStyles.Italic : FontStyles.Normal
-							});
+						if (_noColor)
+							displayBuffer.Inlines.Add(String.Format("{0:X2} ", buffer.Bytes[i + j].dataByte));
+						else
+							displayBuffer.Inlines.Add(new Run(
+								String.Format("{0:X2} ", buffer.Bytes[i + j].dataByte)) {
+									Background =
+										((buffer.Bytes[i + j].dataByte >= 0xF5) && (buffer.Bytes[i + j].dataByte <= 0xF7) && 
+										 ((buffer.Bytes[i + j].phase == Phases.p_inner) || (buffer.Bytes[i + j].phase == Phases.p_outer))) ? Brushes.Red :
+										(buffer.Bytes[i + j].mfmWord == 0x00) ? Brushes.Coral :
+										(((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ||
+										 ((buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224))) ? Brushes.Yellow :
+										(buffer.Bytes[i + j].phase == Phases.p_data) ? Brushes.LightGreen :
+										(buffer.Bytes[i + j].phase == Phases.p_id) ? Brushes.GreenYellow :
+										Brushes.White,
+									Foreground =
+										((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ? Brushes.Red :
+										(buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224) ? Brushes.Green :
+										(buffer.Bytes[i + j].phase == Phases.p_id) ? Brushes.Blue :
+										(buffer.Bytes[i + j].phase == Phases.p_data) ? Brushes.Black :
+										(buffer.Bytes[i + j].phase == Phases.p_inner) ? Brushes.Black :
+										Brushes.DarkBlue,
+									FontWeight =
+										((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ||
+										((buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224)) ||
+										(buffer.Bytes[i + j].phase == Phases.p_id) ? FontWeights.Bold : 
+										FontWeights.Normal,
+									//FontStyle = (((buffer.Bytes[i + j].syncInfo & 0x80) == 0x80) && ((buffer.Bytes[i + j].syncInfo & 0x7F) != 0x00)) ?
+									//	FontStyle = FontStyles.Italic : FontStyles.Normal
+								});
 						char ch = Convert.ToChar(buffer.Bytes[i + j].dataByte);
 						ascii += Char.IsControl(ch) ? "." : ch.ToString();
 					}

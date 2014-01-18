@@ -110,7 +110,7 @@ namespace SCPReaderSpace {
 		/// <summary>
 		/// The position of the index inside the first flux. Currently not available in SCP file :(
 		/// </summary>
-		public int indexTimePosition;
+//		public int indexTimePosition;
 	}
 
 	/// <summary>
@@ -300,7 +300,7 @@ namespace SCPReaderSpace {
 				ti.revInfo[i].fluxCount = readInt32(buffer, ref idx);
 				fluxSize += ti.revInfo[i].fluxCount;
 				ti.revInfo[i].fluxOffset = readInt32(buffer, ref idx);
-				ti.revInfo[i].indexTimePosition = 0;	// not provided currently
+				//ti.revInfo[i].indexTimePosition = 0;	// not provided currently
 			}
 
 			// create buffer for all flux transitions
@@ -309,32 +309,31 @@ namespace SCPReaderSpace {
 
 			int[] fluxOffset = new int[revCount];
 			for (int i = 0; i < revCount; i++) {
-				if (ti.revInfo[i].indexTime != 0) {
-					int overflowCount = 0;
-					// set bufferIndex to the offset of the data
-					idx = ti.revInfo[i].fluxOffset + trackHeaderPosition;
-					// now set fluxOffset to offset in the "extracted data buffer"
-					if (i > 0) fluxOffset[i] = fluxOffset[i - 1] + ti.revInfo[i - 1].fluxCount;
-					else fluxOffset[i] = 0;
-					//revCount++;
-					int p = fluxOffset[i];
-					for (int j = 0; j < ti.revInfo[i].fluxCount; j++) {
-						int val = buffer[idx++] << 8;
-						val += buffer[idx++];
-						if (val == 0) {
-							ti.fluxValues[p] += 65536;
-							overflowCount++;
-						}
-						else {
-							ti.fluxValues[p] += val;
-							if (ti.fluxValues[p] > _fluxMax) _fluxMax = ti.fluxValues[p];
-							if (ti.fluxValues[p] < _fluxMin) _fluxMin = ti.fluxValues[p];
-							p++;
-						}
-					}
-					// if we had overflow we must remove from number of fluxes
-					ti.revInfo[i].fluxCount -= overflowCount;
-				}	// existing revolution
+
+				int overflowCount = 0;
+				// set bufferIndex to the offset of the data
+				idx = ti.revInfo[i].fluxOffset + trackHeaderPosition;
+				// now set fluxOffset to offset in the "extracted data buffer"
+				if (i > 0) fluxOffset[i] = fluxOffset[i - 1] + ti.revInfo[i - 1].fluxCount;
+				else fluxOffset[i] = 0;
+				int p = fluxOffset[i];
+				for (int j = 0; j < ti.revInfo[i].fluxCount; j++) {
+					int val = buffer[idx++] << 8;
+					val += buffer[idx++];
+					if (val == 0) {
+						ti.fluxValues[p] += 65536;
+						overflowCount++;
+					}	// overflow
+					else {
+						ti.fluxValues[p] += val;
+						if (ti.fluxValues[p] > _fluxMax) _fluxMax = ti.fluxValues[p];
+						if (ti.fluxValues[p] < _fluxMin) _fluxMin = ti.fluxValues[p];
+						p++;
+					}	// normal
+				}
+				// if we had overflow we must remove from number of fluxes
+				if (overflowCount > 0)
+					ti.revInfo[i].fluxCount = ti.revInfo[i].fluxCount - overflowCount;
 			}	// for all revolutions
 
 			// now we transfer to our Global Disk structure
@@ -351,7 +350,8 @@ namespace SCPReaderSpace {
 			for (int i = 0; i < revCount; i++) {
 				Global.Disk[track, side].revData[i].revolutionTime = ti.revInfo[i].indexTime;
 				Global.Disk[track, side].revData[i].fluxCount = ti.revInfo[i].fluxCount;
-				Global.Disk[track, side].revData[i].indexTimePosition = ti.revInfo[i].indexTimePosition;
+				//Global.Disk[track, side].revData[i].indexTimePosition = ti.revInfo[i].indexTimePosition;
+				Global.Disk[track, side].revData[i].indexTimePosition = 0;
 				Global.Disk[track, side].revData[i].fluxIndex = fluxOffset[i];
 			}
 			return SCPStatus.stsOK;

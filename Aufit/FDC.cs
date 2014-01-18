@@ -422,13 +422,17 @@ namespace WD1772Space {
 									// if (phase == Phases.p_inner) TODO ID no DATA ?
 									UpdateTrackInfo(tc, phase, ref blockStartByte, ref blockStartTime, prevBlockEndTime);
 									tc.sectors[tc.sectors.Count - 1].endTime = prevBlockEndTime;
-
-									tc.sectors.Add(new SectorInfo());
-									tc.sectors[tc.sectors.Count - 1].addr.iam = dsr.Data;
-									tc.sectors[tc.sectors.Count - 1].startTime = prevBlockEndTime;
-									byteLeftInBlock = 7;
-									phase = Phases.p_id;
-									tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].startBit = currentBit;
+									if (i > stop) {
+										phase = Phases.p_outer;
+									}	// already in next revolution
+									else {
+										tc.sectors.Add(new SectorInfo());
+										tc.sectors[tc.sectors.Count - 1].addr.iam = dsr.Data;
+										tc.sectors[tc.sectors.Count - 1].startTime = prevBlockEndTime;
+										byteLeftInBlock = 7;
+										phase = Phases.p_id;
+										tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].startBit = currentBit;
+									}	// not in next revolution
 									break;
 
 								case 0xFB:	// DAM - Start of a DATA block
@@ -482,7 +486,7 @@ namespace WD1772Space {
 						else {	// DATA Segment 
 							// 3+ sync followed by IDAM => SWS
 							// note: we also check that sync is A1 as we may detect C2 in data block
-							if ((syncInSeq > 2) && (lastSync == 0xA1) && !dsr.SyncFound && (dsr.Data == 0xFE)) {
+							if ((syncInSeq > 2) && (lastSync == 0xA1) && !dsr.SyncFound && (dsr.Data == 0xFE) && (i < stop)) {
 								sws = true;
 								syncInSeq = 0;
 								UpdateTrackInfo(tc, phase, ref blockStartByte, ref blockStartTime, prevBlockEndTime);
@@ -626,7 +630,7 @@ namespace WD1772Space {
 			int clockCount = 0;			// number of clock accumulated for avg
 			int clockAvg = 0;			// average clock value of assembled bits
 			int byteCount = 0;
-
+			int trackLength = 0;
 			// We read from start to stop for current revolution. However if we are in the middle of an
 			// ID field we continue to get the complete ID. We also check if in middle of sync seq
 			for (int i = start; (i < stop) || (phase == Phases.p_id) || (syncInSeq > 0); i++) {
@@ -641,6 +645,8 @@ namespace WD1772Space {
 					nbWin = dt.decodeData.fluxInWindow[i];
 				currentTime += flux;
 				currentBit += nbWin;
+				if (i == stop)
+					trackLength = currentTime;
 
 				dsr.shiftBitsIn(nbWin);	// push data in shift register
 				int clock = dt.decodeData.clockPeriod[i];
@@ -740,6 +746,13 @@ namespace WD1772Space {
 				}	// more byte to process
 				prevBlockEndTime = currentTime;
 			}	// for all flux
+
+			if (trackLength == 0)
+				trackLength = currentTime;
+			// since we now continue when finding sync we can have duplicate sector in first last position
+			if ((ac.ids.Count > 0) && (ac.ids[0].number == ac.ids[ac.ids.Count - 1].number) && (ac.blocs[ac.ids.Count - 1].startTime > trackLength))
+					ac.ids.RemoveAt(ac.ids.Count - 1);
+
 			return ac;
 		}	// end of readAddr()
 
