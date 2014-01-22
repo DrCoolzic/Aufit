@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Aufit.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="AUFIT Analyzer V0.2a" Height="750" Width="1000" Closing="mainWinClosing">
+        Title="AUFIT Analyzer V0.2b" Height="750" Width="1000" Closing="mainWinClosing">
     <Grid KeyDown="keyDown">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -32,8 +32,8 @@
             <TextBox Grid.Column="2" Name="tbFileName" BorderThickness="0" Margin="5,0"/>
             <CheckBox Grid.Column="7" x:Name="cbLimitFlux" Content="Limit Flux" Margin="10,0,10,0" VerticalAlignment="Center" 
                       Click="cbLimitClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
-            <CheckBox Grid.Column="8" x:Name="cbDispRead" Content="Disp.Read" Margin="10,0,10,0" VerticalAlignment="Center" 
-                      FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
+            <CheckBox Grid.Column="8" x:Name="cbRecover" Content="Recover" Margin="10,0,10,0" VerticalAlignment="Center" 
+                      Click="cbRecoverClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
             <CheckBox Grid.Column="9" x:Name="cbSlow" Content="Slow" Margin="10,0,10,0" VerticalAlignment="Center" Click="cbSlowClick"
                       FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
         </Grid>

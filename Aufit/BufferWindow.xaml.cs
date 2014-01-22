@@ -103,7 +103,7 @@ namespace Aufit {
 					displayBuffer.Inlines.Add(String.Format(" {0} bytes start at {1} length {2} {3} {4}\n",
 						sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000,
 						(sc.dataBlock.crc == 0) ? "Good CRC" : "Bad CRC", (sc.fuzzyMask != null) ? "Has Fuzzy bytes" : "" ));
-					drawBuffer(sc.buffer);
+					drawBuffer(sc.data);
 					if (sc.fuzzyMask != null) {
 						displayBuffer.Inlines.Add(String.Format("\nFuzzy bytes for sector {0}\n", ac.ids[i].number));
 						_noColor = true;

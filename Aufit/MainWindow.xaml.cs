@@ -347,6 +347,8 @@ namespace Aufit {
 			return ok;
 		}
 
+		// Do we read KF directory using Asynchronous read or as tasks.
+		private bool _readKFAsync = true;
 
 		private void openDirectoryClick(object sender, RoutedEventArgs e) {
 			VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
@@ -379,7 +381,7 @@ namespace Aufit {
 					_fileName = root;
 					Global.resetDisk();
 
-					if (cbDispRead.IsChecked == true)
+					if (_readKFAsync)
 						readAllTracksAsync(path, root);
 					else
 						readAllTracksTasks(path, root);
@@ -540,8 +542,9 @@ namespace Aufit {
 						byte number = Global.Disk[Track, Side].trackContent.sectors[index].addr.number;
 						SectorContent sect = FDC.findSectorContent(Track, Side, number, Global.Disk[Track, Side].trackContent.sectors[index].startTime);
 						if (sect == null) return;	// TODO for now we return
-						TrackBuffer buffer = sect.buffer;
-						string message = String.Format("Sector {0} with {1} bytes {2} {3}\n", number, sect.dataBlock.byteCount, (sect.dataBlock.crc == 0) ? "crc OK" : "Bad crc", (sect.fuzzyMask != null) ? "Has fuzzy bits" : "");
+						TrackBuffer buffer = sect.data;
+						string message = String.Format("Sector {0} with {1} bytes {2} {3}\n", 
+							number, sect.dataBlock.byteCount, (sect.dataBlock.crc == 0) ? "crc OK" : "Bad crc", (sect.fuzzyMask != null) ? "Has fuzzy bits" : "");
 						if (_sectorWindowIsOpen)
 							_sectorWindow.Close();
 
@@ -667,6 +670,10 @@ namespace Aufit {
 				pasti.writePasti(sfd.FileName);
 			}
 
+		}
+
+		private void cbRecoverClick(object sender, RoutedEventArgs e) {
+			// TODO
 		}
 	}
 }

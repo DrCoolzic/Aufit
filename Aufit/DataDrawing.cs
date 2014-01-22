@@ -157,10 +157,10 @@ class DataDrawing {
 									Polygon perr = new Polygon();
 									perr.Fill = Brushes.Red;
 									perr.StrokeThickness = 0;
-									perr.Points.Add(_dataChartLayout.NormPoint(si.phases[p].startTime / 1000000.0, 0.1));
-									perr.Points.Add(_dataChartLayout.NormPoint(si.phases[p].startTime / 1000000.0, 0.9));
-									perr.Points.Add(_dataChartLayout.NormPoint((si.phases[p].startTime + si.phases[p].timeLength) / 1000000.0, 0.9));
-									perr.Points.Add(_dataChartLayout.NormPoint((si.phases[p].startTime + si.phases[p].timeLength) / 1000000.0, 0.1));
+									perr.Points.Add(_dataChartLayout.NormPoint(si.phases[p].startTime / 1000000.0, 0.05));
+									perr.Points.Add(_dataChartLayout.NormPoint(si.phases[p].startTime / 1000000.0, 0.95));
+									perr.Points.Add(_dataChartLayout.NormPoint((si.phases[p].startTime + si.phases[p].timeLength) / 1000000.0, 0.95));
+									perr.Points.Add(_dataChartLayout.NormPoint((si.phases[p].startTime + si.phases[p].timeLength) / 1000000.0, 0.05));
 									_dataChartLayout.GraphicCanvas.Children.Add(perr);
 								}
 								if (sc.fuzzyMask != null) {
@@ -177,7 +177,7 @@ class DataDrawing {
 									for (int j = 0; j < sc.fuzzyMask.Bytes.Count; j++) {
 										if (sc.fuzzyMask.Bytes[j].dataByte != 0) nbFuzzy++;
 									}
-									if (nbFuzzy > (int)((double)sc.fuzzyMask.Bytes.Count * 0.6)) plg.Fill = Brushes.DarkSlateGray;
+									if (nbFuzzy > (int)((double)sc.fuzzyMask.Bytes.Count * 0.6)) plg.Fill = Brushes.Gray;
 								}
 
 

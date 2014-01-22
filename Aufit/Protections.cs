@@ -210,7 +210,7 @@ namespace Aufit {
 				}
 
 				// sector with no data
-				if (sc.buffer.Bytes.Count == 0) {
+				if (sc.data.Bytes.Count == 0) {
 					trackProtection(tc);
 					writeInfo(info, "sector with no data");
 				}

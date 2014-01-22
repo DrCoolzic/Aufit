@@ -46,6 +46,8 @@ class ClockDrawing {
 	private int _clockMax;
 	private int _track, _side, _rev;
 
+	//readonly int nbForAvg = 50;
+	const int CLK_AVG_COUNT = 1;
 
 	/// <summary>
 	/// Access the minimum value of the clock computed in setClockDefault()
@@ -115,7 +117,6 @@ class ClockDrawing {
 
 		int lastRev = Global.Disk[track, side].revData.Count() - 1;
 		int lastFlux = Global.Disk[track, side].revData[lastRev].fluxIndex + Global.Disk[track, side].revData[lastRev].fluxCount - 1;
-		int nbForAvg = 50;
 
 		// populate
 		for (int i = start; i < stop; i++) {
@@ -126,8 +127,8 @@ class ClockDrawing {
 			int clk = td.decodeData.clockPeriod[i];
 			int avgClock = 0;
 			int avgCount = 0;
-			for (int j = 0; j < nbForAvg; j++) {
-				int index = i - nbForAvg/2 + j;
+			for (int j = 0; j < CLK_AVG_COUNT; j++) {
+				int index = i - CLK_AVG_COUNT/2 + j;
 				if ((index >= 0) && (index <= lastFlux)) {
 					avgClock += td.decodeData.clockPeriod[index];
 					avgCount++;

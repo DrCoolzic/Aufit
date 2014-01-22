@@ -34,6 +34,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using GlobalSpace;
 using WD1772Space;
+using Aufit;
 
 namespace PastiSpace {
 	/// <summary>
@@ -41,6 +42,13 @@ namespace PastiSpace {
 	/// </summary>
 	class PastiWriter {
 		TextBox _infoBox;
+
+		// when set the track data header contains sync position
+		readonly bool TRK_SYNC = false;
+		// when set sector data try to use track data
+		readonly bool OPT_SECT = false;
+		// simulate fuzzy bits on Rob Northen
+		readonly bool SIM_FUZZY = false;
 
 		/// <summary>
 		/// Constructor
@@ -101,14 +109,21 @@ namespace PastiSpace {
 		private FileStatus encodePasti(List<byte> buffer) {
 			int start = 0;
 			byte trackCount = 0;
-			// skip not imaged and track with no sector probably unformatted
-			for (int s = 0; s < 2; s++)
-				for (int t = 0; t < 84; t++)
-					if (Global.Disk[t, s].trackContent != null) 
-						if (Global.Disk[t, s].sectorsContent != null) 
-							if (Global.Disk[t, s].sectorsContent.Count != 0)
-								trackCount++;
+			int sideCount = 1;	// single sided
 
+			// check for double sided - we check that we have some sectors on side 1
+			for (int track = 0; track < 84; track++)
+				if ((Global.Disk[track, 1].trackContent != null) && (Global.Disk[track, 1].sectorsContent != null) && (Global.Disk[track, 1].sectorsContent.Count != 0)) {
+					sideCount = 2;	// found at least one sector
+					break;
+				}
+
+			// number of track descriptor
+			for (int side = 0; side < sideCount; side++)
+				for (int track = 0; track < 84; track++)
+					if (Global.Disk[track, side].trackContent != null)
+						trackCount++;
+				
 			FileDesc fd = new FileDesc();
 			fd.version = 3;
 			fd.revision = 2;
@@ -136,21 +151,20 @@ namespace PastiSpace {
 						
 			// Write all track records
 			for (int track = 0; track < 84; track++) {
-				for (int side = 0; side < 2; side++) {
+				for (int side = 0; side < sideCount; side++) {
 					Global.DiskTrack tdata = Global.Disk[track, side];
 					if (tdata.trackContent == null) 
 						continue;
-					if (tdata.sectorsContent == null)
-						continue;
-					int sectorCount = tdata.sectorsContent.Count;
-					if (sectorCount == 0)
-						continue;	// unformated
+
+					int sectorCount = 0;
+					if (tdata.sectorsContent != null) 
+						sectorCount = tdata.sectorsContent.Count;
 
 					int startTrackRecord = buffer.Count;
 					TrackDesc tdesc = new TrackDesc();
 
 					tdesc.recordSize = 16;			// initial value = size of TrackDesc
-					//track.trackFlags = 0x0010;	// Only bit 5 set to 1 initially
+					tdesc.trackFlags = 0x0020;		// Bit 5 has to be set to 1 for new format
 					tdesc.sectorCount = (ushort)sectorCount;
 
 					tdesc.trackLength = (ushort)tdata.trackContent.byteCount;
@@ -167,17 +181,34 @@ namespace PastiSpace {
 						tdesc.recordSize += (uint)(16 * tdesc.sectorCount);
 					}
 
+
 					// do we need fuzzy record
-					for (int sect = 0; sect < sectorCount; sect++)
+					for (int sect = 0; sect < sectorCount; sect++) {
 						if (tdata.sectorsContent[sect].fuzzyMask != null)
 							tdesc.fuzzyCount += (uint)tdata.sectorsContent[sect].fuzzyMask.Bytes.Count - 3;
+						else if (SIM_FUZZY && (tdata.sectorsContent[sect].dataBlock.crc != 0) &&
+							(tdata.sectorsContent[sect].dataBlock.overClock > Global.sectSize(tdata.sectorsContent[sect].id.size) / 2)) {
+							// Rob Northen protection we force fuzzy bits if not there
+							tdata.sectorsContent[sect].fuzzyMask = new Aufit.TrackBuffer();
+							for (int i = 0; i < Global.sectSize(tdata.sectorsContent[sect].id.size) + 3; i++) {
+								TrackBuffer.TrackByte tb = new TrackBuffer.TrackByte();
+								tb.dataByte = (byte)((i < 30) ? 0x00 : 0xFF);
+								tb.clockByte = 0;
+								tb.mfmWord = 0;
+								tb.density = 0;
+								tb.startTime = 0;
+								tb.phase = Phases.p_inner;
+								tdata.sectorsContent[sect].fuzzyMask.Bytes.Add(tb);
+							}
+							tdesc.fuzzyCount += (uint)tdata.sectorsContent[sect].fuzzyMask.Bytes.Count - 3;
+						}
+					}
 					tdesc.recordSize += tdesc.fuzzyCount;
 
-					bool trkSync = false;
 					// do we have track data
 					if (trackNeedTrackData(tdata)) {
 						needTrackData = true;
-						if (trkSync) {
+						if (TRK_SYNC) {
 							tdesc.trackFlags |= TrackDesc.TRK_IMAGE | TrackDesc.TRK_SYNC;
 							tdesc.recordSize += 4;	// header
 						}
@@ -199,12 +230,17 @@ namespace PastiSpace {
 					if (timingEntries > 0)
 						tdesc.recordSize += (uint)((2 * timingEntries) + 4);
 
-					// we had up the sector data - 
-					// we do not add up if we can take in track
+					// we had up the sector data -
 					for (int sect = 0; sect < sectorCount; sect++)
-						if (tdata.sectorsContent[sect].dataBlock.byteCount != 0)
-							if (needTrackData && (tdata.trackContent.sectors[sect + 1].phases[(int)Phases.p_data].badSync != 0))
-								tdesc.recordSize += (uint)tdata.sectorsContent[sect].buffer.Bytes.Count -3;
+						if (tdata.sectorsContent[sect].dataBlock.byteCount != 0) {
+							// we do not add up if we already have it in track
+							if (OPT_SECT) {
+								if (needTrackData && ((tdata.trackContent.sectors[sect + 1].phases[(int)Phases.p_data].badSync != 0) || (tdata.trackContent.sectors[sect + 1].sws != -1)))
+									tdesc.recordSize += (uint)tdata.sectorsContent[sect].data.Bytes.Count - 3;
+							}
+							else
+								tdesc.recordSize += (uint)tdata.sectorsContent[sect].data.Bytes.Count - 3;
+						}
 
 					// Track Descriptor is now ready => write it
 					start = buffer.Count;
@@ -224,7 +260,7 @@ namespace PastiSpace {
 						uint startSectorOffset = 0;
 						uint trackOffset = 0;
 						if (needTrackData)
-							startSectorOffset = (uint)(tdata.trackContent.byteCount + (tdata.trackContent.byteCount % 2) + (trkSync ? 4 : 2));
+							startSectorOffset = (uint)(tdata.trackContent.byteCount + (tdata.trackContent.byteCount % 2) + (TRK_SYNC ? 4 : 2));
 						for (int sect = 0; sect < sectorCount; sect++) {
 							SectorDesc sd = new SectorDesc();
 
@@ -232,7 +268,7 @@ namespace PastiSpace {
 							if ((tdata.sectorsContent[sect].dataBlock.byteCount) != 0) {
 
 								// we check to see if we already have the same content in track data
-								if (needTrackData && (tdata.trackContent.sectors[sect + 1].phases[(int)Phases.p_data].badSync == 0)) {
+									if (OPT_SECT && needTrackData && (tdata.trackContent.sectors[sect + 1].phases[(int)Phases.p_data].badSync == 0) && (tdata.trackContent.sectors[sect + 1].sws == -1)) {
 									// as some bytes may have been shifted we start from inner-gap till we find the 0xFB
 									int firstByte = tdata.trackContent.sectors[sect + 1].phases[(int)Phases.p_inner].startByte;
 									int lastByte = firstByte + tdata.trackContent.sectors[sect + 1].phases[(int)Phases.p_inner].byteCount + 10;
@@ -242,6 +278,7 @@ namespace PastiSpace {
 											break;
 										}
 								}
+
 								if (trackOffset > 0) {
 									sd.dataOffset = trackOffset + 3;
 									trackOffset = 0;
@@ -268,7 +305,7 @@ namespace PastiSpace {
 							if (tdata.sectorsContent[sect].dataBlock.byteCount == 0)
 								fdcFlag |= SectorDesc.SECT_RNF;
 							else {
-								if (tdata.sectorsContent[sect].buffer.Bytes[0].dataByte != 0xFB)
+								if (tdata.sectorsContent[sect].data.Bytes[0].dataByte != 0xFB)
 									fdcFlag |= SectorDesc.REC_TYPE;
 								if (tdata.sectorsContent[sect].dataBlock.crc != 0)
 									fdcFlag |= SectorDesc.CRC_ERR;
@@ -319,8 +356,10 @@ namespace PastiSpace {
 					// write track data if needed
 					if (trackNeedTrackData(tdata)) {
 						start = buffer.Count;
-						int firstSyncOffset = (tdata.trackContent.syncs[0] != null) ? tdata.trackContent.syncs[0].startByte : 0;
-						if (trkSync)
+						int firstSyncOffset = 0;
+						if ((tdata.trackContent.syncs.Count > 0) &&  (tdata.trackContent.syncs[0] != null))
+							firstSyncOffset = tdata.trackContent.syncs[0].startByte;
+						if (TRK_SYNC)
 							writeInt16(buffer, (ushort)(firstSyncOffset));
 						writeInt16(buffer, (ushort)tdata.trackContent.byteCount);
 						for (int i = 0; i < tdata.trackContent.byteCount; i++)
@@ -330,23 +369,24 @@ namespace PastiSpace {
 							writeByte(buffer, 0xFF);
 
 						if (_infoBox != null) _infoBox.AppendText(String.Format("      Writing Track {0}{1} bytes SyncPos={2} ({3}-{4})\n",
-							tdata.trackContent.byteCount + ((trkSync) ? 4 : 2), ((tdata.trackContent.byteCount % 2) != 0) ? "(+1)" : "",
+							tdata.trackContent.byteCount + ((TRK_SYNC) ? 4 : 2), ((tdata.trackContent.byteCount % 2) != 0) ? "(+1)" : "",
 							firstSyncOffset, start, buffer.Count - 1));
 					}
 
 					// write all sectors data
 					for (int sect = 0; sect < sectorCount; sect++) {
 						start = buffer.Count;
-						if (tdata.sectorsContent[sect].buffer.Bytes.Count != 0) {
-							if (needTrackData && (tdata.trackContent.sectors[sect + 1].phases[(int)Phases.p_data].badSync == 0)) {
+						if (tdata.sectorsContent[sect].data.Bytes.Count != 0) {
+							if (OPT_SECT && needTrackData && (tdata.trackContent.sectors[sect + 1].phases[(int)Phases.p_data].badSync == 0) &&
+								(tdata.trackContent.sectors[sect + 1].sws == -1)) {
 								if (_infoBox != null) _infoBox.AppendText(String.Format("      Sector {0} {1} bytes already in track data\n",
-									tdata.sectorsContent[sect].id.number, tdata.sectorsContent[sect].buffer.Bytes.Count - 3));
+									tdata.sectorsContent[sect].id.number, tdata.sectorsContent[sect].data.Bytes.Count - 3));
 							}
 							else {
-								for (int i = 0; i < tdata.sectorsContent[sect].buffer.Bytes.Count - 3; i++)
-									writeByte(buffer, tdata.sectorsContent[sect].buffer.Bytes[i + 1].dataByte);
+								for (int i = 0; i < tdata.sectorsContent[sect].data.Bytes.Count - 3; i++)
+									writeByte(buffer, tdata.sectorsContent[sect].data.Bytes[i + 1].dataByte);
 								if (_infoBox != null) _infoBox.AppendText(String.Format("      Writing Sector {0} {1} bytes ({2}-{3})\n",
-									tdata.sectorsContent[sect].id.number, tdata.sectorsContent[sect].buffer.Bytes.Count - 3, start, buffer.Count - 1));
+									tdata.sectorsContent[sect].id.number, tdata.sectorsContent[sect].data.Bytes.Count - 3, start, buffer.Count - 1));
 							}
 						}
 					}
@@ -364,7 +404,7 @@ namespace PastiSpace {
 							if (tdata.sectorsContent[sect].sectorIntraVariation) {
 								int timingSum = 0;
 								for (int i = 0; i < (tdata.sectorsContent[sect].dataBlock.byteCount - 3); i++) {
-									timingSum += (tdata.sectorsContent[sect].buffer.Bytes[i + 1].density * 16);
+									timingSum += (tdata.sectorsContent[sect].data.Bytes[i + 1].density * 16);
 									if (((i+1) % 16) == 0) {
 										timingSum = timingSum / 4000;
 										buffer.Add((byte)(timingSum << 8));
