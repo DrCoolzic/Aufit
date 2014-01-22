@@ -224,6 +224,22 @@ public class Global {
 	}
 
 
+	public static int sampleCorrectedTiming(int sValue, int track, int side, int rev) {
+		double correction = 1;
+		if (rev != 0)
+			correction = 200000000.0 / (double)sampleToTiming(Disk[track, side].revData[rev-1].revolutionTime);
+		else {
+			int revCount = Disk[track, side].revData.Count();
+			int totalRevTime = 0;
+			for (int i = 0; i < revCount; i++)
+				totalRevTime += Global.Disk[track, side].revData[i].revolutionTime;
+			correction = (double)revCount * 200000000.0 / (double)sampleToTiming(totalRevTime);
+		}
+		int time = (int)((double)sampleToTiming(sValue) * correction);
+		return time;
+	}
+
+
 	/// <summary>
 	/// This function takes a timing value and convert it back to the corresponding integer sample value
 	/// </summary>

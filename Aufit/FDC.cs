@@ -257,10 +257,12 @@ namespace WD1772Space {
 			tc.buffer = new TrackBuffer();
 			Global.Disk[track, side].trackContent = tc;
 
+			AddrContent ac = Global.Disk[track, side].addrContent;
+
 			Global.DiskTrack dt = Global.Disk[track, side];
 			int start = Global.firstIndex(track, side, rev);
 			int stop = Global.lastIndex(track, side, rev);
-			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
+			int indexFirstFluxCorrection = Global.sampleToTiming(Global.indexTimePosition(track, side, rev));
 
 			// add dummy sector[0] to store GAP and potentially DATA segment information
 			tc.sectors.Add(new SectorInfo());
@@ -294,7 +296,7 @@ namespace WD1772Space {
 			// we have a shifted track. I have also added continuation on syncCount 
 			// because we may have just the start of the sync of ID are very end !!!
 			// Good example is ComputerHitsVolume2 Disk 2 track 78
-			for (int i = start; (i < stop) || (phase != Phases.p_outer) || (syncInSeq > 0); i++) {
+			for (int i = start; (i < stop) || (phase != Phases.p_outer) || (syncInSeq > 0) || (ac != null) && (ac.ids.Count > (tc.sectors.Count - 1)); i++) {
 				// we cannot go beyond last flux so we always abort. 
 				// This imply that last revolution might no be detected correctly
 				if (i >= dt.fluxData.fluxCount) break;
@@ -312,7 +314,8 @@ namespace WD1772Space {
 					lastTrackTime = currentTime;
 				}
 
-				int flux = Global.sampleToTiming(dt.fluxData.fluxValue[i]);
+				//int flux = Global.sampleToTiming(dt.fluxData.fluxValue[i]);
+				int flux = Global.sampleCorrectedTiming(dt.fluxData.fluxValue[i], track, side, rev);
 				if (i == start) flux -= indexFirstFluxCorrection;
 				//else if (i == (stop - 1)) flux += indexFirstFluxCorrection;
 
@@ -428,7 +431,7 @@ namespace WD1772Space {
 									UpdateTrackInfo(tc, phase, ref blockStartByte, ref blockStartTime, prevBlockEndTime);
 									tc.sectors[tc.sectors.Count - 1].endTime = prevBlockEndTime;
 
-									if (i > stop) {
+									if ((i > stop) &&  (!(ac != null) && (ac.ids.Count > (tc.sectors.Count - 1)))) {
 										phase = Phases.p_outer;
 									}	// we are already in next revolution therefore we stop
 									else {
@@ -614,7 +617,7 @@ namespace WD1772Space {
 			Global.DiskTrack dt = Global.Disk[track, side];
 			int start =  Global.firstIndex(track, side, rev);
 			int stop = Global.lastIndex(track, side, rev);
-			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
+			int indexFirstFluxCorrection = Global.sampleToTiming(Global.indexTimePosition(track, side, rev));
 
 			Phases phase = Phases.p_outer;
 			DSR dsr = new DSR();
@@ -636,7 +639,8 @@ namespace WD1772Space {
 			for (int i = start; (i < stop) || (phase == Phases.p_id) || (syncInSeq > 0); i++) {
 				if (i >= dt.fluxData.fluxCount) break;
 
-				int flux = Global.sampleToTiming(dt.fluxData.fluxValue[i]);
+				//int flux = Global.sampleToTiming(dt.fluxData.fluxValue[i]);
+				int flux = Global.sampleCorrectedTiming(dt.fluxData.fluxValue[i], track, side, rev);
 				if (i == start)				flux -= indexFirstFluxCorrection;
 				//else if (i == (stop - 1))	flux += indexFirstFluxCorrection;
 				if (flux > 150000) 
@@ -791,7 +795,7 @@ namespace WD1772Space {
 			Global.DiskTrack dt = Global.Disk[track, side];
 			int start = Global.firstIndex(track, side, rev);
 			int stop = Global.lastIndex(track, side, rev);
-			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
+			int indexFirstFluxCorrection = Global.sampleToTiming(Global.indexTimePosition(track, side, rev));
 
 			Phases phase = Phases.p_outer;
 			DSR dsr = new DSR();
@@ -817,7 +821,8 @@ namespace WD1772Space {
 				if (breakLoop || (i >= dt.fluxData.fluxCount))
 					break;
 
-				int flux = Global.sampleToTiming(dt.fluxData.fluxValue[i]);			
+				//int flux = Global.sampleToTiming(dt.fluxData.fluxValue[i]);
+				int flux = Global.sampleCorrectedTiming(dt.fluxData.fluxValue[i], track, side, rev);
 				if (i == start) flux -= indexFirstFluxCorrection;
 				//if (i == (stop - 1)) flux += indexFirstFluxCorrection;
 				currentTime += flux;
@@ -1054,8 +1059,8 @@ namespace WD1772Space {
 		/// <param name="side">The side to read</param>
 		/// <param name="rev">The revolution to use</param>
 		public static void fdcAllRead(int track, int side, int rev) {
-			TrackContent tc = readTrack(track, side, rev);
 			AddrContent ac = readAddr(track, side, rev);
+			TrackContent tc = readTrack(track, side, rev);
 			for (int i = 0; i < ac.ids.Count; i++) {
 				SectorContent sc = readSector(track, side, rev, ac.ids[i].number, ac.blocs[i].startTime, false);
 				if (sc == null) 
@@ -1068,6 +1073,8 @@ namespace WD1772Space {
 				if (sc.fuzzyMask != null)
 					tc.hasProtection = true;				
 			}
+			Debug.Assert((tc.sectors.Count - 1) == ac.ids.Count, "Inconsistent number of sectors",
+				String.Format("Track {0:D2}.{1} T={2} A={3}", track, side, tc.sectors.Count - 1, ac.ids.Count));
 			Protections.checkProtection(track, side);
 		}
 

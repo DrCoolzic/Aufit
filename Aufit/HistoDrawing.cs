@@ -118,6 +118,7 @@ class HistoDrawing {
 
 		Point[] points = new Point[Global.Disk[track, side].histoData.histogram.Length];
 		// all pointsInViewport
+		double timing;
 		for (int i = 0; i < Global.Disk[track, side].histoData.histogram.Length - 1; i++) {
 			if (_win.cbHistoLog.IsChecked.Value) {
 				value = (int)Math.Log(Global.Disk[track, side].histoData.histogram[i] + 1, 1.2);
@@ -126,13 +127,16 @@ class HistoDrawing {
 				value = Global.Disk[track, side].histoData.histogram[i];
 			}
 
-			pg.Points.Add(_histoChartLayout.NormPoint((double)Global.sampleToTiming(i) / 1000.0, value));
-			points[i] = _histoChartLayout.NormPoint((double)Global.sampleToTiming(i) / 1000.0, value);
+			//timing = (double)Global.sampleToTiming(i) / 1000.0;
+			timing = Global.sampleCorrectedTiming(i, track, side, rev) / 1000.0;
+
+			pg.Points.Add(_histoChartLayout.NormPoint(timing, value));
+			points[i] = _histoChartLayout.NormPoint(timing, value);
 		}
 		// force last point to zero
-		pg.Points.Add(_histoChartLayout.NormPoint((double)Global.sampleToTiming(Global.Disk[track, side].histoData.histogram.Length - 1) / 1000.0, 0));
-		points[Global.Disk[track, side].histoData.histogram.Length - 1] = 
-			_histoChartLayout.NormPoint((double)Global.sampleToTiming(Global.Disk[track, side].histoData.histogram.Length - 1) / 1000.0, 0);
+		timing = Global.sampleCorrectedTiming(Global.Disk[track, side].histoData.histogram.Length - 1, track, side, rev) / 1000.0;
+		pg.Points.Add(_histoChartLayout.NormPoint(timing, 0));
+		points[Global.Disk[track, side].histoData.histogram.Length - 1] = _histoChartLayout.NormPoint(timing, 0);
 
 		// add polygon to canvas
 		_histoChartLayout.GraphicCanvas.Children.Add(pg);

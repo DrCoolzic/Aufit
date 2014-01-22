@@ -143,7 +143,7 @@ class FluxDrawing {
 		Global.DiskTrack td = Global.Disk[track, side];
 		int start = Global.firstIndex(track, side, rev);
 		int stop = Global.lastIndex(track, side, rev);
-		int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
+		int indexFirstFluxCorrection = Global.sampleToTiming(Global.indexTimePosition(track, side, rev));
 
 		//int maxFlux = 0;
 		//int minFlux = Int32.MaxValue;
@@ -153,7 +153,8 @@ class FluxDrawing {
 		// compute the number of points in the "extended" viewport
 		if (_fluxChartLayout.zoomed()) {
 			for (int i = start; i < stop; i++) {
-				int flux = Global.sampleToTiming(td.fluxData.fluxValue[i]);
+				//int flux = Global.sampleToTiming(td.fluxData.fluxValue[i]);
+				int flux = Global.sampleCorrectedTiming(td.fluxData.fluxValue[i], track, side, rev);
 				if (i == start)
 					flux -= indexFirstFluxCorrection;
 				currentTime += flux;
@@ -181,7 +182,8 @@ class FluxDrawing {
 
 		for (int i = start; i < stop; i++) {
 
-			int flux = Global.sampleToTiming(td.fluxData.fluxValue[i]);
+			//int flux = Global.sampleToTiming(td.fluxData.fluxValue[i]);
+			int flux = Global.sampleCorrectedTiming(td.fluxData.fluxValue[i], track, side, rev);
 			if (i == start) flux -= indexFirstFluxCorrection;
 			//if (flux > maxFlux) maxFlux = flux;
 			//if (flux < minFlux) minFlux = flux;
