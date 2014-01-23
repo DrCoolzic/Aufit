@@ -3,7 +3,7 @@
  * 
 <summary>The Main Window for the AUFIT program</summary>
 
-<div class="jlg">Copyright (C) 2011 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -45,12 +45,12 @@ using System.IO;
 using System.Threading;
 
 using Ookii.Dialogs.Wpf;
-using ChartSpace;
-using KFReaderSpace;
-using WD1772Space;
-using SCPReaderSpace;
-using GlobalSpace;
-using PastiSpace;
+using ChartPackage;
+using KFReaderPackage;
+using WD1772Package;
+using SCPReaderPackage;
+using GlobalPackage;
+using PastiPackage;
 
 namespace Aufit {
 	/// <summary>

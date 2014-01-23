@@ -2,7 +2,7 @@
 @file FluxEnsemble.cs
 <summary>Custom Framework to draw fluxes (performance)</summary>
 
-<div class="jlg">Copyright (C) 2011 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -29,7 +29,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 
 
-namespace ChartSpace {
+namespace ChartPackage {
 	/// <summary>
 	/// Framework elements that draws the Flux ensemble
 	/// </summary>

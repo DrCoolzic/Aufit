@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using WD1772Space;
-using GlobalSpace;
+using WD1772Package;
+using GlobalPackage;
 using System.Windows.Controls;
 
 namespace Aufit {

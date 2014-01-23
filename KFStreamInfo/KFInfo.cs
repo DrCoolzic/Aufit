@@ -2,7 +2,7 @@
 @file KFInfo.cs
 @brief Test program of the KFStreamReader code
 
-<div class="jlg">Copyright (C) 2011 Software Preservation Society & Jean 
+<div class="jlg">Copyright (C) 2013-2014 Software Preservation Society & Jean 
 Louis-Guerin\n\n This file is part of the Atari Universal FD Image Tool 
 project.\n\n The Atari Universal FD Image Tool project may be used and 
 distributed without restriction provided that this copyright statement is 
@@ -33,7 +33,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
-using KFReaderSpace;
+using KFReaderPackage;
 
 namespace KFStreamInfoNS {
 	/// <summary>

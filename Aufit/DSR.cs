@@ -3,7 +3,7 @@
  * 
 <summary>DSR Class: implements a shift register equivalent to the one used in the WD1772 FDC</summary>
 
-<div class="jlg">Copyright (C) 2011 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</di
 
 using System.Diagnostics;
 
-namespace WD1772Space {
+namespace WD1772Package {
 
 /// <summary>Implement a DSR (Data Shift Register of 32 bits) to store incoming bits</summary>
 ///

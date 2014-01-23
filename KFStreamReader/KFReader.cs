@@ -2,7 +2,7 @@
 @file KFReader.cs
 <summary>KryoFlux Stream file reader: Functions and Structures</summary>
 <remarks>
-<div class="jlg">Copyright (C) 2011 Software Preservation Society & Jean 
+<div class="jlg">Copyright (C) 2013-2014 Software Preservation Society & Jean 
 Louis-Guerin\n\n This file is part of the Atari Universal FD Image Tool 
 project.\n\n The Atari Universal FD Image Tool project may be used and 
 distributed without restriction provided that this copyright statement is 
@@ -73,7 +73,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KFReaderSpace {
+namespace KFReaderPackage {
 
 #region structures
 	/// <summary>Define the Status codes returned by Stream decoding procedures</summary>

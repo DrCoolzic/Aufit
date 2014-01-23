@@ -2,7 +2,7 @@
 @file PastiStruct.cs
 <summary>Functions to write Pasti File</summary>
 
-<div class="jlg">Copyright (C) 2011 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -32,11 +32,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media;
-using GlobalSpace;
-using WD1772Space;
+using GlobalPackage;
+using WD1772Package;
 using Aufit;
 
-namespace PastiSpace {
+namespace PastiPackage {
 	/// <summary>
 	/// Pasti Writer Functions
 	/// </summary>

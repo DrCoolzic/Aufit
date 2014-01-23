@@ -2,7 +2,7 @@
 @file FluxDrawing.cs
 <summary>Everything related to drawing the Flux chart</summary>
 
-<div class="jlg">Copyright (C) 2011 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -34,12 +34,12 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-using WD1772Space;
-using KFReaderSpace;
-using GlobalSpace;
+using WD1772Package;
+using KFReaderPackage;
+using GlobalPackage;
 using Aufit;
 
-namespace ChartSpace {
+namespace ChartPackage {
 /// <summary>
 /// This class contains all functions required to draw the flux chart
 /// </summary>

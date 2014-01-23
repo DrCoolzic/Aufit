@@ -3,7 +3,7 @@
 
 <summary>Contains access to all global variables and function</summary>
 
-<div class="jlg">Copyright (C) 2011 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -32,11 +32,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using KFReaderSpace;
-using WD1772Space;
+using KFReaderPackage;
+using WD1772Package;
 using System.Windows.Controls;
 
-namespace GlobalSpace {
+namespace GlobalPackage {
 
 /// <summary>
 /// The RevData structure contains the information for all the revolutions of one track including 
@@ -214,7 +214,7 @@ public class Global {
 	}
 
 
-	/// <summary> This functions takes a sample value and returns the corresponding 
+	/// <summary> This function takes a sample value and returns the corresponding 
 	/// timing in nanoseconds based on the sample clock.</summary>
 	/// <param name="sValue">The sample value</param>
 	/// <returns>The timing value in nanoseconds</returns>
@@ -224,6 +224,18 @@ public class Global {
 	}
 
 
+	/// <summary>
+	/// This function convert a sample into a timing value in nanoseconds.
+	/// </summary>
+	/// <remarks>This function is similar to sampleToTiming(). The difference is
+	/// that the value is corrected by a factor based on revolution time. The
+	/// correction factor take in account the actual rotation speed versus
+	/// 200 ms (300 RPM)</remarks>
+	/// <param name="sValue">Sample value</param>
+	/// <param name="track">Track used to recover the rotation time</param>
+	/// <param name="side">Side used to recover the rotation time</param>
+	/// <param name="rev">Revolution used to recover the rotation time</param>
+	/// <returns>The converted time in nanoseconds</returns>
 	public static int sampleCorrectedTiming(int sValue, int track, int side, int rev) {
 		double correction = 1;
 		if (rev != 0)

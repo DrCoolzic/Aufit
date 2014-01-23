@@ -3,7 +3,7 @@
  
 <summary>Open a Window and displays buffer information</summary>
 
-<div class="jlg">Copyright (C) 2011 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -38,8 +38,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-using WD1772Space;
-using GlobalSpace;
+using WD1772Package;
+using GlobalPackage;
 
 namespace Aufit {
 	/// <summary>
@@ -122,6 +122,7 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="track">Specifies the track from the disk</param>
 		/// <param name="side">Specifies the side from the disk</param>
+		/// <param name="rev">Revolution number</param>
 		public void drawTrackBuffer(int track, int side, int rev) {
 			// force re read
 			Global.Disk[track, side].addrContent = null;

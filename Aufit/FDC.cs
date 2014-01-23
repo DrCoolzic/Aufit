@@ -3,7 +3,7 @@
  * 
 <summary>Emulate WD1772 FDC commands: read track, read address, read sector</summary>
 
-<div class="jlg">Copyright (C) 2011 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -31,11 +31,11 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Windows.Media;
 
-using KFReaderSpace;
-using GlobalSpace;
+using KFReaderPackage;
+using GlobalPackage;
 using Aufit;
 
-namespace WD1772Space {
+namespace WD1772Package {
 	/// <summary>
 	/// Different phases inside a sector: ID, Inner Gap, Data, Outer Gap
 	/// </summary>

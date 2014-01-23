@@ -2,7 +2,7 @@
 @file ClockDrawing.cs
 <summary>Everything related to drawing the Clock chart</summary>
 
-<div class="jlg">Copyright (C) 2011 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -33,10 +33,10 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows;
 
-using KFReaderSpace;
-using GlobalSpace;
+using KFReaderPackage;
+using GlobalPackage;
 
-namespace ChartSpace {
+namespace ChartPackage {
 /// <summary>
 /// This class contains all functions required to draw the Clock chart
 /// </summary>

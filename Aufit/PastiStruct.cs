@@ -2,7 +2,7 @@
 @file PastiStruct.cs
 <summary>Pasti STX file - Basic Pasti structures definition</summary>
 
-<div class="jlg">Copyright (C) 2011 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -32,7 +32,7 @@ using System.Diagnostics;
 using System.Windows.Media;
 
 
-namespace PastiSpace {
+namespace PastiPackage {
 	/// <summary>Pasti File Header Descriptor</summary>
 	/// <remarks>The file Header is used to identify a Pasti File
 	/// and to provide some information about the file content
