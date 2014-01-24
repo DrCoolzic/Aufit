@@ -290,8 +290,6 @@ namespace Aufit {
 			//displayBuffer.Inlines.Add(new Run("text formatting ") { Foreground = Brushes.Blue });
 			//displayBuffer.Inlines.Add("from ");
 			//displayBuffer.Inlines.Add(new Run("Code-Behind") { TextDecorations = TextDecorations.Underline, Foreground = Brushes.Blue });
-			//displayBuffer.Inlines.Add(".");
-			////this.Content = tb;
 
 		}
 

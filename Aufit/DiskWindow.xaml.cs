@@ -63,7 +63,7 @@ public partial class DiskWindow : Window {
 		for (int track = 0; track < 84; track++) {
 			if (Global.Disk[track, side].fluxData == null) continue;
 			await decodeAndReadAsync(track, side, 1);
-			drawDiskTrack(track, side);
+			drawDiskTrackLayout(track, side);
 			ButtonMatrix.setButtonBG(track, side);
 		}
 		tbDisk.Text = message;
@@ -97,6 +97,7 @@ public partial class DiskWindow : Window {
 		return Task<TrackContent>.Run(() => decodeAndRead(track, side, rev));
 	}
 
+
 	/// <summary>
 	/// Decode the flux transitions and do all FDC read commands
 	/// </summary>
@@ -123,7 +124,7 @@ public partial class DiskWindow : Window {
 	/// </summary>
 	/// <param name="track">The track to display</param>
 	/// <param name="side">The side of the FD</param>
-	public void drawDiskTrack(int track, int side) {
+	public void drawDiskTrackLayout(int track, int side) {
 		TrackContent tc = Global.Disk[track, side].trackContent;
 		Point center = new Point(450, 450);
 		double rad_max = 400;
@@ -196,7 +197,6 @@ public partial class DiskWindow : Window {
 											if (nbFuzzy > (int)((double)s.fuzzyMask.Bytes.Count * 0.6)) 
 												path.Stroke = Brushes.DarkSlateGray;
 										}
-
 									}
 								}
 								addArc(pg, startAngle, stopAngle, center, radius);
@@ -285,33 +285,45 @@ public partial class DiskWindow : Window {
 		tbDisk.Text = String.Format("Processing track {0}", track);
 
 		TrackContent tc = Global.Disk[track, side].trackContent;
-		int count = 0;
-		for (int i = 0; i < tc.byteCount; i++) {
-			count++;
-			//if ((tc.buffer.Bytes[i].mfmWord != 0x4489) && (tc.buffer.Bytes[i].mfmWord != 0) && (i % 3 != 0)) continue;
-			if (i % 3 != 0) continue;
 
-			double startAngle = timeAngle(tc.buffer.Bytes[i].startTime);
-			double stopAngle = timeAngle(tc.buffer.Bytes[i].startTime + (32000 * count));
+		Phases lastPhase = Phases.p_inner;
+		double startAngle = 0;
+		TrackBuffer.TrackByte startByte = new TrackBuffer.TrackByte();
+		int count = 0;		
+		for (int i = 0; i < tc.byteCount; i++) {
+			if (count == 0) {
+				startAngle = timeAngle(tc.buffer.Bytes[i].startTime);
+				startByte = tc.buffer.Bytes[i];
+			}
+			count++;
+			if ( ((tc.buffer.Bytes[i].dataByte == startByte.dataByte) || (count < 6)) && 
+				 (tc.buffer.Bytes[i].phase == lastPhase) && (i < tc.byteCount -1) &&
+				(tc.buffer.Bytes[i].mfmWord != 0) && (tc.buffer.Bytes[i].mfmWord != 0x4489)	) continue;
+
+			if ((count < 5) && (tc.buffer.Bytes[i].phase == lastPhase))  continue;
+
+			double stopAngle = timeAngle(tc.buffer.Bytes[i].startTime);
 			count = 0;
+			lastPhase = tc.buffer.Bytes[i].phase;
+
 			SolidColorBrush b = new SolidColorBrush();
 			Path path = new Path();
 
-			byte data = tc.buffer.Bytes[i].dataByte;
-			if (tc.buffer.Bytes[i].mfmWord == 0x4489) {
+			byte data = startByte.dataByte;
+			if (startByte.mfmWord == 0x4489) {
 				path.StrokeThickness = 5;				
 				b.Color = Color.FromRgb(255, 0, 0);
 				//Canvas.SetZIndex(path, 99);
 			}
-			else if (tc.buffer.Bytes[i].mfmWord == 0) {
+			else if (startByte.mfmWord == 0) {
 				path.StrokeThickness = 5;
 				b.Color = Color.FromRgb(255, 255, 0);
 			}
-			else if (tc.buffer.Bytes[i].phase == Phases.p_id) {
-				b.Color = Color.FromRgb(0, 0, data);
+			else if (startByte.phase == Phases.p_id) {
+				b.Color = Color.FromRgb(0, 0, 255);
 				path.StrokeThickness = 3;
 			}
-			else if (tc.buffer.Bytes[i].phase == Phases.p_data) {
+			else if (startByte.phase == Phases.p_data) {
 				b.Color = Color.FromRgb(0, data, data);
 				path.StrokeThickness = 3;
 			}

@@ -46,8 +46,7 @@ class ClockDrawing {
 	private int _clockMax;
 	private int _track, _side, _rev;
 
-	//readonly int nbForAvg = 50;
-	const int CLK_AVG_COUNT = 1;
+	private const int CLK_AVG_COUNT = 1;
 
 	/// <summary>
 	/// Access the minimum value of the clock computed in setClockDefault()

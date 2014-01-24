@@ -179,12 +179,10 @@ class DataDrawing {
 									}
 									if (nbFuzzy > (int)((double)sc.fuzzyMask.Bytes.Count * 0.6)) plg.Fill = Brushes.Gray;
 								}
-
-
 							}
-
 							//if (sector.phases[p].crc != 0) plg.Fill = Brushes.Plum;
 							break;
+
 						case (byte)Phases.p_outer:
 							tb.Text = String.Format("Inter GAP {0} bytes ({1:F2} µs) @ byte {2} ({3:F2} ms) bit {4} {5}", 
 								si.phases[p].byteCount, blength, si.phases[p].startByte, bstart, si.phases[p].startBit,
@@ -197,6 +195,7 @@ class DataDrawing {
 							}
 							open = false;
 							break;
+
 						default:
 							plg.Fill = Brushes.Red;
 							break;
@@ -220,7 +219,6 @@ class DataDrawing {
 		}	// all sectors
 	}
 		
-
 }
 }
 

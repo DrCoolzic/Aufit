@@ -92,7 +92,6 @@ namespace Aufit {
 							_buttons[x - 1, y - 1, side - 1].Margin = new Thickness(left, top, 0, 0);
 							_buttons[x - 1, y - 1, side - 1].Height = 13;
 							_buttons[x - 1, y - 1, side - 1].Width = 13;
-							//_buttons[x - 1, y - 1, side - 1].Click += new RoutedEventHandler(btMatrixClicked);
 							_buttons[x - 1, y - 1, side - 1].Click += btMatrixClicked;
 							_buttons[x - 1, y - 1, side - 1].BorderThickness = thinButtonBorder;
 							_buttons[x - 1, y - 1, side - 1].BorderBrush = Brushes.Black;
