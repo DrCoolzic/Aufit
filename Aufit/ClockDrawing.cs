@@ -107,7 +107,7 @@ class ClockDrawing {
 
 		int start = Global.firstIndex(track, side, rev);
 		int stop = Global.lastIndex(track, side, rev);
-		int indexFirstFluxCorrection = Global.sampleToTiming(Global.indexTimePosition(track, side, rev));
+		int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 		int currentTime = 0;
 		Polyline clockLine = new Polyline();
@@ -119,9 +119,11 @@ class ClockDrawing {
 
 		// populate
 		for (int i = start; i < stop; i++) {
-			//int flux = Global.sampleToTiming(td.fluxData.fluxValue[i]);
-			int flux = Global.sampleCorrectedTiming(td.fluxData.fluxValue[i], track, side, rev);
-			if (i == start) flux -= indexFirstFluxCorrection;
+			int flux = Global.CorrectedSampleToTiming(td.fluxData.fluxValue[i], track, side, rev);
+			if (i == start)
+				flux -= Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
+			else if (i == (stop - 1))
+				flux += Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
 			currentTime += flux;
 
 			int clk = td.decodeData.clockPeriod[i];

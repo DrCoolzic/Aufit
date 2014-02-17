@@ -99,9 +99,11 @@ namespace Aufit {
 			for (int i = 0; i < ac.ids.Count; i++) {
 				displayBuffer.Inlines.Add(String.Format("Sector {0}", ac.ids[i].number));
 				SectorContent sc = FDC.findSectorContent(track, side, ac.ids[i].number, ac.blocs[i].startTime);
-				if ((sc != null) && (sc.dataBlock.byteCount > 0)) {
+				if ((sc != null) && (sc.data.Bytes.Count > 0)) {
+					if (sc.data.Bytes.Count != Global.sectSize(ac.ids[i].size) + 3)
+						displayBuffer.Inlines.Add(" *** Imcomplete ***");
 					displayBuffer.Inlines.Add(String.Format(" {0} bytes start at {1} length {2} {3} {4}\n",
-						sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000,
+						sc.data.Bytes.Count, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000,
 						(sc.dataBlock.crc == 0) ? "Good CRC" : "Bad CRC", (sc.fuzzyMask != null) ? "Has Fuzzy bytes" : "" ));
 					drawBuffer(sc.data);
 					if (sc.fuzzyMask != null) {
@@ -270,8 +272,9 @@ namespace Aufit {
 										((buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224)) ||
 										(buffer.Bytes[i + j].phase == Phases.p_id) ? FontWeights.Bold : 
 										FontWeights.Normal,
-									//FontStyle = (((buffer.Bytes[i + j].syncInfo & 0x80) == 0x80) && ((buffer.Bytes[i + j].syncInfo & 0x7F) != 0x00)) ?
-									//	FontStyle = FontStyles.Italic : FontStyles.Normal
+									FontStyle = 
+									(buffer.Bytes[i + j].startTime > 200000000) ? FontStyle = FontStyles.Italic : 
+									FontStyles.Normal
 								});
 						char ch = Convert.ToChar(buffer.Bytes[i + j].dataByte);
 						ascii += Char.IsControl(ch) ? "." : ch.ToString();

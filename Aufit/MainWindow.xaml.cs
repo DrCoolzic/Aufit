@@ -665,8 +665,8 @@ namespace Aufit {
 			if (ok == true) {
 				await checkProtectionAsync();
 				tbFileName.Text  = sfd.FileName;
-				//PastiWriter pasti = new PastiWriter(infoBox);
-				PastiWriter pasti = new PastiWriter();
+				PastiWriter pasti = new PastiWriter(infoBox);
+				//PastiWriter pasti = new PastiWriter();
 				pasti.writePasti(sfd.FileName);
 			}
 

@@ -183,6 +183,7 @@ namespace WD1772Package {
 		public bool shortTrack = false;
 		/// <summary>Long Track</summary>
 		public bool longTrack = false;
+		public bool incompleteTrack = false;
 	}
 
 
@@ -262,7 +263,7 @@ namespace WD1772Package {
 			Global.DiskTrack dt = Global.Disk[track, side];
 			int start = Global.firstIndex(track, side, rev);
 			int stop = Global.lastIndex(track, side, rev);
-			int indexFirstFluxCorrection = Global.sampleToTiming(Global.indexTimePosition(track, side, rev));
+			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 			// add dummy sector[0] to store GAP and potentially DATA segment information
 			tc.sectors.Add(new SectorInfo());
@@ -297,35 +298,44 @@ namespace WD1772Package {
 			// because we may have just the start of the sync of ID are very end !!!
 			// Good example is ComputerHitsVolume2 Disk 2 track 78
 			for (int i = start; (i < stop) || (phase != Phases.p_outer) || (syncInSeq > 0) || (ac != null) && (ac.ids.Count > (tc.sectors.Count - 1)); i++) {
-				// we cannot go beyond last flux so we always abort. 
-				// This imply that last revolution might no be detected correctly
-				if (i >= dt.fluxData.fluxCount) break;
-
 				// here we are in a shifted track - we store the real end of the track
 				// and sets indicators.
 				if (i == stop) {
-					switch(phase) {
-						case Phases.p_id: tc.idOverIdx = true;	break;
+					switch (phase) {
+						case Phases.p_id: tc.idOverIdx = true; break;
 						case Phases.p_inner: tc.dataBeyondIdx = true; break;
 						case Phases.p_data: tc.dataOverIdx = true; break;
 					}
 					// we store the number of byte and timing
-					lastTrackByte = tc.byteCount;
-					lastTrackTime = currentTime;
+					int iff = Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
+					lastTrackByte = tc.byteCount + (iff / (2000 * 16));
+					lastTrackTime = currentTime + iff;
 				}
 
-				//int flux = Global.sampleToTiming(dt.fluxData.fluxValue[i]);
-				int flux = Global.sampleCorrectedTiming(dt.fluxData.fluxValue[i], track, side, rev);
-				if (i == start) flux -= indexFirstFluxCorrection;
-				//else if (i == (stop - 1)) flux += indexFirstFluxCorrection;
+				// we cannot go beyond last flux so we always abort. 
+				// This imply that last revolution might no be detected correctly
+				// and that if we have only one revolution the data are incomplete
+				if (i >= dt.fluxData.fluxCount) {
+					if (Global.Disk[track, side].revData.Count() == 1)
+						Global.DataIncomplete = true;
+					tc.incompleteTrack = true;
+					break;
+				}
+
+				int flux = Global.CorrectedSampleToTiming(dt.fluxData.fluxValue[i], track, side, rev);
+				nbWin = dt.decodeData.fluxInWindow[i];
 
 				if (flux > 150000) {
 					tc.NFA = currentTime;
-					nbWin = flux / 2000;	// NFA
 				}	// NFA
-				else
-					nbWin = dt.decodeData.fluxInWindow[i];
-				currentTime += flux;
+
+				if (i == start) {
+					int iff = Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
+					flux -= iff;
+					nbWin -= iff / 2000;
+				}
+
+				currentTime += flux;				
 				currentBit += nbWin;
 
 				dsr.shiftBitsIn(nbWin);	// push data in register
@@ -431,9 +441,9 @@ namespace WD1772Package {
 									UpdateTrackInfo(tc, phase, ref blockStartByte, ref blockStartTime, prevBlockEndTime);
 									tc.sectors[tc.sectors.Count - 1].endTime = prevBlockEndTime;
 
-									if ((i > stop) &&  (!(ac != null) && (ac.ids.Count > (tc.sectors.Count - 1)))) {
+									if ( (i > stop) && ((ac.ids == null) || (tc.sectors.Count > ac.ids.Count ) )) {
 										phase = Phases.p_outer;
-									}	// we are already in next revolution therefore we stop
+									}	// we are already in next revolution therefore we stop unless we miss some ids
 									else {
 										tc.sectors.Add(new SectorInfo());
 										tc.sectors[tc.sectors.Count - 1].addr.iam = dsr.Data;
@@ -578,6 +588,13 @@ namespace WD1772Package {
 				tc.sectors[tc.sectors.Count - 1].valid = true;
 			}	// empty track
 
+			// sanity check
+			while ((ac != null) && (ac.ids.Count < (tc.sectors.Count - 1))) {
+				//Debug.Assert((tc.sectors.Count - 1) == ac.ids.Count, "Inconsistent number of sectors (will be fixed)",
+				//	String.Format("Track {0:D2}.{1} T={2} A={3}", track, side, tc.sectors.Count - 1, ac.ids.Count));
+				tc.sectors.RemoveAt(tc.sectors.Count -1);
+			}
+
 			tc.hasProtection = 
 				tc.dataOverIdx ||				// we have DATA over the index
 				tc.idOverIdx ||					// we have ID over the index
@@ -617,7 +634,7 @@ namespace WD1772Package {
 			Global.DiskTrack dt = Global.Disk[track, side];
 			int start =  Global.firstIndex(track, side, rev);
 			int stop = Global.lastIndex(track, side, rev);
-			int indexFirstFluxCorrection = Global.sampleToTiming(Global.indexTimePosition(track, side, rev));
+			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 			Phases phase = Phases.p_outer;
 			DSR dsr = new DSR();
@@ -637,20 +654,29 @@ namespace WD1772Package {
 			// We read from start to stop for current revolution. However if we are in the middle of an
 			// ID field we continue to get the complete ID. We also check if in middle of sync seq
 			for (int i = start; (i < stop) || (phase == Phases.p_id) || (syncInSeq > 0); i++) {
-				if (i >= dt.fluxData.fluxCount) break;
+
+				// if we reach end of input buffer we need to stop
+				if (i >= dt.fluxData.fluxCount) {
+					if (Global.Disk[track, side].revData.Count() == 1)
+						Global.DataIncomplete = true;
+					break;
+				}
 
 				//int flux = Global.sampleToTiming(dt.fluxData.fluxValue[i]);
-				int flux = Global.sampleCorrectedTiming(dt.fluxData.fluxValue[i], track, side, rev);
-				if (i == start)				flux -= indexFirstFluxCorrection;
-				//else if (i == (stop - 1))	flux += indexFirstFluxCorrection;
-				if (flux > 150000) 
-					nbWin = flux / 2000;	// NFA
-				else				
-					nbWin = dt.decodeData.fluxInWindow[i];
+				int flux = Global.CorrectedSampleToTiming(dt.fluxData.fluxValue[i], track, side, rev);
+				nbWin = dt.decodeData.fluxInWindow[i];
+
+				if (i == start) {
+					int iff = Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
+					flux -= iff;
+					nbWin -= iff / 2000;
+				}
+					
 				currentTime += flux;
 				currentBit += nbWin;
+
 				if (i == stop)
-					trackLength = currentTime;
+					trackLength = currentTime + Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
 
 				dsr.shiftBitsIn(nbWin);	// push data in shift register
 				int clock = dt.decodeData.clockPeriod[i];
@@ -694,9 +720,9 @@ namespace WD1772Package {
 
 					if (phase != Phases.p_id) {	// not in ID
 						if ((syncInSeq > 1) && !dsr.SyncFound) {
-							// 3+ sync & not sync => should be an AM
-							syncInSeq = 0;	// reset sync count
-							crc = 0xCDB4;
+							// 2+ sync & not sync => should be an AM
+							syncInSeq = 0;		// reset sync count
+							crc = 0xCDB4;		// initialize CRC
 							switch (dsr.Data) {
 								case 0xFE:	// IDAM - start of an ID block
 								//case 0xFF:
@@ -748,6 +774,14 @@ namespace WD1772Package {
 				prevBlockEndTime = currentTime;
 			}	// for all flux
 
+			if (phase == Phases.p_id) {
+				BlockInfo block = ac.blocs[ac.blocs.Count - 1];
+				block.byteCount = byteCount - block.startByte;
+				block.crc = crc;
+				block.timeLength = prevBlockEndTime - block.startTime;
+				ac.blocs[ac.blocs.Count - 1] = block;
+			}	// we have stoped in p_id - probably eof need to update block info
+
 			if (trackLength == 0)
 				trackLength = currentTime;
 			// since we now continue when finding sync we can have duplicate sector in first last position
@@ -786,7 +820,8 @@ namespace WD1772Package {
 				return sref;
 
 			// sanity check in compare mode the reference should already be there
-			Debug.Assert(!(compare && (sref == null)), "Read Sector: Reference sector not found in compare mode");
+			Debug.Assert(!(compare && (sref == null)), "Read Sector: Reference sector not found in compare mode",
+				String.Format("Track {0:D2}.{1} Rev {2} Sector {3} at {4}", track, side, rev, sectToRead, position));
 
 			// if not there or we are in compare mode create a new sectorContent
 			SectorContent sc = new SectorContent();
@@ -795,7 +830,7 @@ namespace WD1772Package {
 			Global.DiskTrack dt = Global.Disk[track, side];
 			int start = Global.firstIndex(track, side, rev);
 			int stop = Global.lastIndex(track, side, rev);
-			int indexFirstFluxCorrection = Global.sampleToTiming(Global.indexTimePosition(track, side, rev));
+			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
 
 			Phases phase = Phases.p_outer;
 			DSR dsr = new DSR();
@@ -815,24 +850,33 @@ namespace WD1772Package {
 			bool dataFound = false;
 			bool breakLoop = false;
 
-			// we loop normally from start to stop of the specified revolution.
-			// However we continue if we are in the middle of an ID or DATA field (or ever starting sync seq! see readAddr() for more info)
+			// we normally loop from start to stop for the specified revolution.
+			// However we continue if we are in the middle of ID, Inner GAP, or DATA field
 			for (int i = start; (i < stop) || (phase != Phases.p_outer) || (syncInSeq > 0); i++) {
-				if (breakLoop || (i >= dt.fluxData.fluxCount))
+				if (breakLoop) break;
+
+				// we cannot access beyond buffer. If this happen with only one revolution it
+				// indicates that we do not have enough data. If this happen in the last revolution
+				// the data for this revolution will be recovered incorrectly.
+				if (i >= dt.fluxData.fluxCount) {
+					if (Global.Disk[track, side].revData.Count() == 1)
+						Global.DataIncomplete = true;
 					break;
+				}
 
 				//int flux = Global.sampleToTiming(dt.fluxData.fluxValue[i]);
-				int flux = Global.sampleCorrectedTiming(dt.fluxData.fluxValue[i], track, side, rev);
-				if (i == start) flux -= indexFirstFluxCorrection;
-				//if (i == (stop - 1)) flux += indexFirstFluxCorrection;
+				int flux = Global.CorrectedSampleToTiming(dt.fluxData.fluxValue[i], track, side, rev);
+				nbWin = dt.decodeData.fluxInWindow[i];
+
+				if (i == start) {
+					int iff = Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
+					flux -= -iff;
+					nbWin -= iff / 2000;
+				}
+
 				currentTime += flux;
-
-				if (flux > 150000) 
-					nbWin = flux / 2000;
-				else				
-					nbWin = dt.decodeData.fluxInWindow[i];
-
 				currentBit += nbWin;
+
 				dsr.shiftBitsIn(nbWin);	// push data in register
 				clock = dt.decodeData.clockPeriod[i];
 				clockAvg += clock;
@@ -869,7 +913,7 @@ namespace WD1772Package {
 
 					if ((phase != Phases.p_id) && (phase != Phases.p_data)) { // We are in a GAP
 						if ((syncInSeq > 1) && !dsr.SyncFound) {
-							// 3+ sync & not sync => should be an AM
+							// 2+ sync & not sync => should be an AM
 							syncInSeq = 0;	// reset sync count
 							crc = 0xCDB4;
 							switch (dsr.Data) {
@@ -984,6 +1028,17 @@ namespace WD1772Package {
 				prevBlockEndTime = currentTime;
 			}	// For all transitions
 
+			if (phase == Phases.p_id) {
+				sc.idBlock.crc = crc;
+				sc.idBlock.byteCount = byteCount - sc.idBlock.startByte;
+				sc.idBlock.timeLength = prevBlockEndTime - sc.idBlock.startTime;
+			}
+			else if (phase == Phases.p_data) {
+				sc.dataBlock.crc = crc;
+				sc.dataBlock.byteCount = byteCount - sc.dataBlock.startByte;
+				sc.dataBlock.timeLength = prevBlockEndTime - sc.dataBlock.startTime;
+			}
+
 			sc.sectHasData = idFound && dataFound;
 
 			if (!compare) {
@@ -1000,6 +1055,14 @@ namespace WD1772Package {
 				bool fuzzyFound = false;
 				TrackBuffer fuzzyMask;
 				if ((sref.data.Bytes.Count == 0) || (sc.data.Bytes.Count == 0)) return null;
+
+				if (sref.data.Bytes.Count != sc.data.Bytes.Count) {
+					// we have incomplete sector data if revCount is less than 3 we
+					// are in trouble (2 incomplete non OK)
+					if (Global.Disk[track, side].revData.Count() < 3)
+						Global.DataIncomplete = true;
+				}
+
 				//Debug.Assert(sref.buffer.Bytes.Count == sect.buffer.Bytes.Count, "Possible truncation",
 				//	String.Format("buffers size s1={0} s2={1}\n", sref.buffer.Bytes.Count, sect.buffer.Bytes.Count));
 

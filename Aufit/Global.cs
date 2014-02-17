@@ -123,6 +123,7 @@ public struct HistoData {
 public class Global {
 	private static DiskTrack[,] _diskInfo = new DiskTrack[85, 2];
 	private static double _sampleClock = 0;
+	private static bool _incompleteData = false;
 
 	/// <summary>Contains information about one track</summary>
 	public struct DiskTrack {
@@ -153,6 +154,15 @@ public class Global {
 	public static void resetDisk() {
 		_diskInfo = new DiskTrack[85, 2];
 		_sampleClock = 0;
+		_incompleteData = false;
+	}
+
+	/// <summary>Set to true if we do not have enough data</summary>
+	/// <remarks>This usually happen if we need more than one revolution to get all
+	/// data. For example if we have data over index.</remarks>
+	public static bool DataIncomplete {
+		get { return _incompleteData; }
+		set { _incompleteData = value; }
 	}
 
 
@@ -236,7 +246,7 @@ public class Global {
 	/// <param name="side">Side used to recover the rotation time</param>
 	/// <param name="rev">Revolution used to recover the rotation time</param>
 	/// <returns>The converted time in nanoseconds</returns>
-	public static int sampleCorrectedTiming(int sValue, int track, int side, int rev) {
+	public static int CorrectedSampleToTiming(int sValue, int track, int side, int rev) {
 		double correction = 1;
 		if (rev != 0)
 			correction = 200000000.0 / (double)sampleToTiming(Disk[track, side].revData[rev-1].revolutionTime);

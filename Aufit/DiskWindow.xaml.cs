@@ -127,7 +127,7 @@ public partial class DiskWindow : Window {
 	public void drawDiskTrackLayout(int track, int side) {
 		TrackContent tc = Global.Disk[track, side].trackContent;
 		Point center = new Point(450, 450);
-		double rad_max = 400;
+		double rad_max = 420;
 		double rad_start = 80;
 		double rad_inc = (rad_max - rad_start) / 85;
 		double radius = rad_max - track * rad_inc;
@@ -137,7 +137,7 @@ public partial class DiskWindow : Window {
 			for (int i = 0; i < tc.sectors.Count; i++) {
 				SectorInfo sector = tc.sectors[i];
 				IDField id = new IDField();
-				SectorContent s = new SectorContent();	// TODO why not null?
+				SectorContent s = new SectorContent();
 				if (i > 0) {
 					id = Global.Disk[track, side].addrContent.ids[i - 1];
 					s = FDC.findSectorContent(track, side, id.number, sector.startTime);
@@ -156,7 +156,7 @@ public partial class DiskWindow : Window {
 
 						switch (p) {
 							case (byte)Phases.p_id:
-								path.Stroke = Brushes.White;
+								path.Stroke = Brushes.Blue;
 								addArc(pg, startAngle, stopAngle, center, radius);
 								// if (sector.phases[p].crc != 0) plg.Fill = Brushes.Orange;
 								break;
@@ -176,29 +176,27 @@ public partial class DiskWindow : Window {
 								if ((sector.phases[p].underClock > Global.sectSize(sector.addr.size) / 8) && (sector.phases[p].overClock > Global.sectSize(sector.addr.size) / 8))
 									path.Stroke = Brushes.BlueViolet;
 
-								if ((i > 0) && (s != null)) {
+								if ((i > 0) && (s != null) && ((s.dataBlock.crc != 0) || (s.fuzzyMask != null))) {
+									path.StrokeThickness = 5;
+									path.Stroke = Brushes.Red;
+									//Path patherr = new Path();
+									//patherr.StrokeThickness = 5;
+									//patherr.Stroke = Brushes.Red;
+									//PathGeometry perr = new PathGeometry();
+									//addArc(perr, startAngle, stopAngle, center, radius);
+									//patherr.Data = perr;
+									//cvDisk.Children.Add(patherr);
 
-									if ((s.dataBlock.crc != 0) || (s.fuzzyMask != null)) {
-										path.StrokeThickness = 5;
-										path.Stroke = Brushes.Red;
-										//Path patherr = new Path();
-										//patherr.StrokeThickness = 5;
-										//patherr.Stroke = Brushes.Red;
-										//PathGeometry perr = new PathGeometry();
-										//addArc(perr, startAngle, stopAngle, center, radius);
-										//patherr.Data = perr;
-										//cvDisk.Children.Add(patherr);
-
-										if (s.fuzzyMask != null) {
-											int nbFuzzy = 0;
-											for (int j = 0; j < s.fuzzyMask.Bytes.Count; j++) {
-												if (s.fuzzyMask.Bytes[j].dataByte != 0) nbFuzzy++;
-											}
-											if (nbFuzzy > (int)((double)s.fuzzyMask.Bytes.Count * 0.6)) 
-												path.Stroke = Brushes.DarkSlateGray;
-										}
-									}
-								}
+								//	if (s.fuzzyMask != null) {
+								//		int nbFuzzy = 0;
+								//		for (int j = 0; j < s.fuzzyMask.Bytes.Count; j++) {
+								//			if (s.fuzzyMask.Bytes[j].dataByte != 0) 
+								//				nbFuzzy++;
+								//		}
+								//		if (nbFuzzy > (int)((double)s.fuzzyMask.Bytes.Count * 0.6))
+								//			path.Stroke = Brushes.DarkSlateGray;
+								//	}	// has many fuzzy = unformatted ?
+								}	// crc error or fuzzy bytes
 								addArc(pg, startAngle, stopAngle, center, radius);
 								break;
 
@@ -243,21 +241,20 @@ public partial class DiskWindow : Window {
 
 
 		for (int i = 0; i < tc.byteCount; i++) {
+			//double startAngle = timeAngle(tc.buffer.Bytes[i].startTime);
+			//double stopAngle = timeAngle(tc.buffer.Bytes[i].startTime + 32000);
+			double startAngle = byteAngle(i - 1, tc.byteCount);
+			double stopAngle = byteAngle(i, tc.byteCount);
 			if (tc.buffer.Bytes[i].mfmWord == 0x4489) {
-				double startAngle = timeAngle(tc.buffer.Bytes[i].startTime);
-				double stopAngle = timeAngle(tc.buffer.Bytes[i].startTime + 32000);
 				Path path = new Path();
 				path.StrokeThickness = 3;
 				PathGeometry pg = new PathGeometry();
-				path.Stroke = Brushes.Black;
+				path.Stroke = Brushes.Red;
 				addArc(pg, startAngle, stopAngle, center, radius);
 				path.Data = pg;
 				cvDisk.Children.Add(path);
-
 			}
 			else if (tc.buffer.Bytes[i].mfmWord == 0) {
-				double startAngle = timeAngle(tc.buffer.Bytes[i].startTime);
-				double stopAngle = timeAngle(tc.buffer.Bytes[i].startTime + 32000);
 				Path path = new Path();
 				path.StrokeThickness = 3;
 				PathGeometry pg = new PathGeometry();
@@ -278,52 +275,48 @@ public partial class DiskWindow : Window {
 	/// <param name="side">The side of the FD</param>
 	public void drawDiskTrackData(int track, int side) {
 		Point center = new Point(450, 450);
-		double rad_max = 400;
+		double rad_max = 420;
 		double rad_start = 80;
 		double rad_inc = (rad_max - rad_start) / 85;
 		double radius = rad_max - track * rad_inc;
 		tbDisk.Text = String.Format("Processing track {0}", track);
 
 		TrackContent tc = Global.Disk[track, side].trackContent;
-
-		Phases lastPhase = Phases.p_inner;
-		double startAngle = 0;
-		TrackBuffer.TrackByte startByte = new TrackBuffer.TrackByte();
-		int count = 0;		
+		double startAngle = byteAngle(0, tc.byteCount);
+		TrackBuffer.TrackByte lastByte = new TrackBuffer.TrackByte();
+		lastByte = tc.buffer.Bytes[0];
+		int count = 0;	
+	
 		for (int i = 0; i < tc.byteCount; i++) {
-			if (count == 0) {
-				startAngle = timeAngle(tc.buffer.Bytes[i].startTime);
-				startByte = tc.buffer.Bytes[i];
-			}
 			count++;
-			if ( ((tc.buffer.Bytes[i].dataByte == startByte.dataByte) || (count < 6)) && 
-				 (tc.buffer.Bytes[i].phase == lastPhase) && (i < tc.byteCount -1) &&
-				(tc.buffer.Bytes[i].mfmWord != 0) && (tc.buffer.Bytes[i].mfmWord != 0x4489)	) continue;
+			if (((tc.buffer.Bytes[i].dataByte == lastByte.dataByte) || (count < 6)) &&
+				 (tc.buffer.Bytes[i].phase == lastByte.phase) &&
+				 (tc.buffer.Bytes[i].mfmWord != 0) &&
+				 (tc.buffer.Bytes[i].mfmWord != 0x4489) &&
+				 (i != tc.byteCount - 1)) continue;
+			//if ((i % 3) != 0) continue;
 
-			if ((count < 5) && (tc.buffer.Bytes[i].phase == lastPhase))  continue;
-
-			double stopAngle = timeAngle(tc.buffer.Bytes[i].startTime);
+			double stopAngle = byteAngle(i, tc.byteCount);
 			count = 0;
-			lastPhase = tc.buffer.Bytes[i].phase;
-
 			SolidColorBrush b = new SolidColorBrush();
 			Path path = new Path();
+			byte data = lastByte.dataByte;
 
-			byte data = startByte.dataByte;
-			if (startByte.mfmWord == 0x4489) {
+			if (tc.buffer.Bytes[i].mfmWord == 0x4489) {
 				path.StrokeThickness = 5;				
 				b.Color = Color.FromRgb(255, 0, 0);
 				//Canvas.SetZIndex(path, 99);
-			}
-			else if (startByte.mfmWord == 0) {
+			}	// sync in red
+			else if (tc.buffer.Bytes[i].mfmWord == 0) {
 				path.StrokeThickness = 5;
 				b.Color = Color.FromRgb(255, 255, 0);
+				//Canvas.SetZIndex(path, 99);
 			}
-			else if (startByte.phase == Phases.p_id) {
+			else if (tc.buffer.Bytes[i].phase == Phases.p_id) {
 				b.Color = Color.FromRgb(0, 0, 255);
 				path.StrokeThickness = 3;
-			}
-			else if (startByte.phase == Phases.p_data) {
+			}	// id in blue
+			else if (tc.buffer.Bytes[i].phase == Phases.p_data) {
 				b.Color = Color.FromRgb(0, data, data);
 				path.StrokeThickness = 3;
 			}
@@ -338,7 +331,10 @@ public partial class DiskWindow : Window {
 			pg.Freeze();
 			path.Data = pg;
 			cvDisk.Children.Add(path);
-		}
+
+			lastByte = tc.buffer.Bytes[i];
+			startAngle = stopAngle;
+		}	// all bytes
 	}	// End of drawDiskTrackData()
 
 
@@ -355,7 +351,9 @@ public partial class DiskWindow : Window {
 		Point stopPoint = center + new Vector(Math.Cos(stop), Math.Sin(stop)) * radius;
 		SweepDirection direction = SweepDirection.Clockwise;
 		bool isLargeArc = false;
+
 		if ((stop - start) > Math.PI) isLargeArc = true;
+		if (stop < start) isLargeArc = false;
 		ArcSegment aseg = new ArcSegment(stopPoint, new Size(radius, radius), 0, isLargeArc, direction, true);
 		PathFigure pf = new PathFigure();
 		pf.IsClosed = false;
@@ -373,6 +371,11 @@ public partial class DiskWindow : Window {
 	private double timeAngle(double time) {
 		double angle = Math.PI / 2 + Math.PI * time / 100000000.0;
 		//while (angle > 2 * Math.PI) angle -= 2 * Math.PI;
+		return angle;
+	}
+
+	private double byteAngle(int pos, int count) {
+		double angle = Math.PI / 2 + 2 * Math.PI * (double)pos / (double)count;
 		return angle;
 	}
 

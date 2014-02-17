@@ -128,13 +128,13 @@ class HistoDrawing {
 			}
 
 			//timing = (double)Global.sampleToTiming(i) / 1000.0;
-			timing = Global.sampleCorrectedTiming(i, track, side, rev) / 1000.0;
+			timing = Global.CorrectedSampleToTiming(i, track, side, rev) / 1000.0;
 
 			pg.Points.Add(_histoChartLayout.NormPoint(timing, value));
 			points[i] = _histoChartLayout.NormPoint(timing, value);
 		}
 		// force last point to zero
-		timing = Global.sampleCorrectedTiming(Global.Disk[track, side].histoData.histogram.Length - 1, track, side, rev) / 1000.0;
+		timing = Global.CorrectedSampleToTiming(Global.Disk[track, side].histoData.histogram.Length - 1, track, side, rev) / 1000.0;
 		pg.Points.Add(_histoChartLayout.NormPoint(timing, 0));
 		points[Global.Disk[track, side].histoData.histogram.Length - 1] = _histoChartLayout.NormPoint(timing, 0);
 
