@@ -1,0 +1,26 @@
+* V0.3a February 19, 2014
+- modified displayed information read updated documentation)
+- NFA should now be displayed correctly when NFA over index (KryoFlux only)
+- Detection of incomplete data
+- Pasti not written if incomplete data
+- Should be more robust when reading corrupted FD
+
+* V0.2c January 22, 2014
+- bug in NFA
+- flux value are now corrected by rotation speed
+- improved FDC emulation
+
+* V0.2b January 22, 2014
+- bug fix
+- improved data display
+- improved Pasti support (SD/DD), fixed bug trackFlags* V0.1a January 2014
+- Added Protections analysis
+
+* V0.2a January 18, 2014
+- Write of Pasti file
+- Buffer display now uses revolution information
+- Improved FDC emulation
+
+* V0.1b January 9, 2014
+- Bug fixes, support NFA in SCP
+

@@ -665,12 +665,28 @@ namespace Aufit {
 			if (ok == true) {
 				await checkProtectionAsync();
 				tbFileName.Text  = sfd.FileName;
+				if (Global.DataIncomplete) {
+					MessageBoxResult result = MessageBox.Show(
+						"The image does not contains enough data\nYou should have imaged more revolutions\nDo you still want to proceed?", 
+						"Incomplete Image Data", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
+					if (result == MessageBoxResult.No) return;				
+				}	// incomplete
 				PastiWriter pasti = new PastiWriter(infoBox);
 				//PastiWriter pasti = new PastiWriter();
 				pasti.writePasti(sfd.FileName);
 			}
 
 		}
+
+		private MessageBoxResult ask(string caption, string messageBoxText) {
+			MessageBoxButton button = MessageBoxButton.YesNoCancel;
+			MessageBoxImage icon = MessageBoxImage.Question;
+			MessageBoxResult defaultResult = MessageBoxResult.Cancel;
+			MessageBoxResult result;
+			result = MessageBox.Show(messageBoxText, caption, button, icon, defaultResult);
+			return result;
+		}
+
 
 		private void cbRecoverClick(object sender, RoutedEventArgs e) {
 			// TODO

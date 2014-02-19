@@ -102,7 +102,7 @@ namespace Aufit {
 				if ((sc != null) && (sc.data.Bytes.Count > 0)) {
 					if (sc.data.Bytes.Count != Global.sectSize(ac.ids[i].size) + 3)
 						displayBuffer.Inlines.Add(" *** Imcomplete ***");
-					displayBuffer.Inlines.Add(String.Format(" {0} bytes start at {1} length {2} {3} {4}\n",
+					displayBuffer.Inlines.Add(String.Format(" {0} bytes start at {1}µs length {2}µs {3} {4}\n",
 						sc.data.Bytes.Count, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000,
 						(sc.dataBlock.crc == 0) ? "Good CRC" : "Bad CRC", (sc.fuzzyMask != null) ? "Has Fuzzy bytes" : "" ));
 					drawBuffer(sc.data);
@@ -214,7 +214,6 @@ namespace Aufit {
 
 			TrackBuffer buffer = tc.buffer;
 			drawBuffer(buffer);
-
 		}
 
 		/// <summary>

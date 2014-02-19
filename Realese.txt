@@ -1,2 +1,0 @@
-* V0.1a Junuary 2014
-- Added Protections analysis

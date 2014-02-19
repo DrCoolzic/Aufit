@@ -419,10 +419,6 @@ namespace PastiPackage {
 						}	// all sect
 					}
 
-					if (buffer.Count % 2 != 0) {
-						writeByte(buffer, 0xFF);	// dummy extra byte
-					}	// even
-
 					Debug.Assert(buffer.Count == startTrackRecord + tdesc.recordSize, "Invalid Track Size",
 						String.Format("Track {0} Current pointer position = {1} next track = {2}", tdesc.trackNumber, buffer.Count, startTrackRecord + tdesc.recordSize));
 				} // for all tracks
@@ -460,63 +456,63 @@ namespace PastiPackage {
 			// - invalid track number
 			// - Special Flags: No data, CRC, DDAM (cover sector no data)
 
-		//	int secnum = 1;
-		//	for (int sect = 0; sect < tdata.sectorCount; sect++) {
-		//		// sequential sector number 1..n
-		//		if (tdata.sectors[sect].id.number != secnum++) 
-		//			tdata.standardSectors = false;
+			//	int secnum = 1;
+			//	for (int sect = 0; sect < tdata.sectorCount; sect++) {
+			//		// sequential sector number 1..n
+			//		if (tdata.sectors[sect].id.number != secnum++) 
+			//			tdata.standardSectors = false;
 
-		//		// duplicate sector
-		//		for (int j = sect + 1; j < tdata.sectorCount; j++)
-		//			if (tdata.sectors[sect].id.number == tdata.sectors[j].id.number)
-		//				tdata.standardSectors = false;
+			//		// duplicate sector
+			//		for (int j = sect + 1; j < tdata.sectorCount; j++)
+			//			if (tdata.sectors[sect].id.number == tdata.sectors[j].id.number)
+			//				tdata.standardSectors = false;
 
-		//		// sector with invalid sector number
-		//		if ((tdata.sectors[sect].id.number >= 0xF5) && (tdata.sectors[sect].id.number <= 0xF7))
-		//			tdata.standardSectors = false;
+			//		// sector with invalid sector number
+			//		if ((tdata.sectors[sect].id.number >= 0xF5) && (tdata.sectors[sect].id.number <= 0xF7))
+			//			tdata.standardSectors = false;
 
-		//		// sector with invalid track number
-		//		if (tdata.sectors[sect].id.track != tdata.number)
-		//			tdata.standardSectors = false;
+			//		// sector with invalid track number
+			//		if (tdata.sectors[sect].id.track != tdata.number)
+			//			tdata.standardSectors = false;
 
-		//		// sector with invalid side/head
-		//		if (tdata.sectors[sect].id.side != tdata.side)
-		//			tdata.standardSectors = false;
+			//		// sector with invalid side/head
+			//		if (tdata.sectors[sect].id.side != tdata.side)
+			//			tdata.standardSectors = false;
 
-		//		// sector with invalid size
-		//		if (tdata.sectors[sect].id.size > 3)
-		//			tdata.standardSectors = false;
+			//		// sector with invalid size
+			//		if (tdata.sectors[sect].id.size > 3)
+			//			tdata.standardSectors = false;
 
-		//		// short long sector time
-		//		if (tdata.sectors[sect].readTime != 0)
-		//			tdata.standardSectors = false;
+			//		// short long sector time
+			//		if (tdata.sectors[sect].readTime != 0)
+			//			tdata.standardSectors = false;
 
-		//		// FDC Flags - Here we read the saved flags
+			//		// FDC Flags - Here we read the saved flags
 
-		//		// RNF = sector with no data
-		//		//if ((track.sectors[sect].fdcFlags & SectorDesc.SECT_RNF) != 0)
-		//		if (tdata.sectors[sect].sectorData == null)
-		//			tdata.standardSectors = false;
+			//		// RNF = sector with no data
+			//		//if ((track.sectors[sect].fdcFlags & SectorDesc.SECT_RNF) != 0)
+			//		if (tdata.sectors[sect].sectorData == null)
+			//			tdata.standardSectors = false;
 
-		//		// CRC error = ID / Data
-		//		if ((tdata.sectors[sect].fdcFlags & SectorDesc.CRC_ERR) != 0)
-		//			tdata.standardSectors = false;
+			//		// CRC error = ID / Data
+			//		if ((tdata.sectors[sect].fdcFlags & SectorDesc.CRC_ERR) != 0)
+			//			tdata.standardSectors = false;
 
-		//		// Record type = DDAM
-		//		if ((tdata.sectors[sect].fdcFlags & SectorDesc.REC_TYPE) != 0)
-		//			tdata.standardSectors = false;
-				
-		//		// FDC - Fuzzy
-		//		if (tdata.sectors[sect].sectorFuzzy != null)
-		//			tdata.standardSectors = false;
+			//		// Record type = DDAM
+			//		if ((tdata.sectors[sect].fdcFlags & SectorDesc.REC_TYPE) != 0)
+			//			tdata.standardSectors = false;
 
-		//		// FDC - Timing
-		//		if (tdata.sectors[sect].sectorTiming != null)
-		//			tdata.standardSectors = false;
-		//	}
-		//	if (trackNeedTrackData(tdata))
-		//		return true;
-		//	return !tdata.standardSectors;
+			//		// FDC - Fuzzy
+			//		if (tdata.sectors[sect].sectorFuzzy != null)
+			//			tdata.standardSectors = false;
+
+			//		// FDC - Timing
+			//		if (tdata.sectors[sect].sectorTiming != null)
+			//			tdata.standardSectors = false;
+			//	}
+			//	if (trackNeedTrackData(tdata))
+			//		return true;
+			//	return !tdata.standardSectors;
 			return true;
 		}
 
@@ -532,9 +528,6 @@ namespace PastiPackage {
 			// - Short long track ??
 			// - SWS
 			// - no data
-
-			// for now we are cheating by using the TRK_IMAGE flag
-			//return !track.standardTrack;
 			return true;
 		}
 
