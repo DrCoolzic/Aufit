@@ -108,9 +108,9 @@ namespace SCPReaderPackage {
 		/// </summary>
 		public int fluxOffset;
 		/// <summary>
-		/// The position of the index inside the first flux. Currently not available in SCP file :(
+		/// The position of the index inside the first flux. has to be computed in SCP file :(
 		/// </summary>
-//		public int indexTimePosition;
+		public int indexTimePosition;
 	}
 
 	/// <summary>
@@ -304,12 +304,13 @@ namespace SCPReaderPackage {
 			}
 
 			// create buffer for all flux transitions
-			// note this buffer might be bigger that what is needed because of null entries (strong bits)
+			// note this buffer might be bigger that what is needed because of null entries (NFA)
 			ti.fluxValues = new int[fluxSize];
 
 			int[] fluxOffset = new int[revCount];
-			for (int i = 0; i < revCount; i++) {
 
+			for (int i = 0; i < revCount; i++) {
+				int fluxSum = 0;
 				int overflowCount = 0;
 				// set bufferIndex to the offset of the data
 				idx = ti.revInfo[i].fluxOffset + trackHeaderPosition;
@@ -317,23 +318,35 @@ namespace SCPReaderPackage {
 				if (i > 0) fluxOffset[i] = fluxOffset[i - 1] + ti.revInfo[i - 1].fluxCount;
 				else fluxOffset[i] = 0;
 				int p = fluxOffset[i];
+
 				for (int j = 0; j < ti.revInfo[i].fluxCount; j++) {
-					int val = buffer[idx++] << 8;
+					int val = buffer[idx++] << 8;	// read next 2 bytes
 					val += buffer[idx++];
+
 					if (val == 0) {
 						ti.fluxValues[p] += 65536;
 						overflowCount++;
-					}	// overflow
+					}	// overflow (probably NFA)
 					else {
 						ti.fluxValues[p] += val;
 						if (ti.fluxValues[p] > _fluxMax) _fluxMax = ti.fluxValues[p];
 						if (ti.fluxValues[p] < _fluxMin) _fluxMin = ti.fluxValues[p];
+						fluxSum += ti.fluxValues[p];
 						p++;
 					}	// normal
 				}
+
 				// if we had overflow we must remove from number of fluxes
 				if (overflowCount > 0)
 					ti.revInfo[i].fluxCount = ti.revInfo[i].fluxCount - overflowCount;
+
+				// SCP does not provide the indexTime Position so we have to compute it
+				if (i == 0) {
+					ti.revInfo[0].indexTimePosition = ti.revInfo[0].indexTime - fluxSum;
+					ti.fluxValues[0] += ti.revInfo[0].indexTimePosition;
+				}
+				else
+					ti.revInfo[i].indexTimePosition = ti.revInfo[0].indexTimePosition;
 			}	// for all revolutions
 
 			// now we transfer to our Global Disk structure
@@ -350,8 +363,8 @@ namespace SCPReaderPackage {
 			for (int i = 0; i < revCount; i++) {
 				Global.Disk[track, side].revData[i].revolutionTime = ti.revInfo[i].indexTime;
 				Global.Disk[track, side].revData[i].fluxCount = ti.revInfo[i].fluxCount;
-				//Global.Disk[track, side].revData[i].indexTimePosition = ti.revInfo[i].indexTimePosition;
-				Global.Disk[track, side].revData[i].indexTimePosition = 0;
+				Global.Disk[track, side].revData[i].indexTimePosition = ti.revInfo[i].indexTimePosition;
+				//Global.Disk[track, side].revData[i].indexTimePosition = 0;
 				Global.Disk[track, side].revData[i].fluxIndex = fluxOffset[i];
 			}
 			return SCPStatus.stsOK;

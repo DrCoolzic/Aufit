@@ -151,7 +151,7 @@ namespace Aufit {
 		/// <param name="e"></param>
 		private void matrixGridSizeChanged(object sender, SizeChangedEventArgs e) {
 			if (BM2.Visibility == Visibility.Visible)
-				tabCtrl.Width = matrixGrid.ActualWidth - 320;
+				tabCtrl.Width = matrixGrid.ActualWidth - 370;
 			else
 				tabCtrl.Width = matrixGrid.ActualWidth;
 		}
@@ -323,6 +323,7 @@ namespace Aufit {
 			bool ok = ProcessStream.readStreamTrack(fileName, Track, Side);
 			if (ok) {
 				infoBox.Clear();
+				infoBox.FontSize = 11;
 				drawAllCharts();
 			}
 			return ok;
@@ -332,7 +333,7 @@ namespace Aufit {
 		private async Task<bool> readSPCFile(string fileName) {
 			BM1.Visibility = Visibility.Visible;
 			BM2.Visibility = Visibility.Visible;
-			tabCtrl.Width = matrixGrid.ActualWidth - 320;
+			tabCtrl.Width = matrixGrid.ActualWidth - 370;
 			Grid.SetColumn(tabCtrl, 2);
 			Grid.SetColumnSpan(tabCtrl, 1);
 
@@ -341,6 +342,7 @@ namespace Aufit {
 			if (ok) {
 				selectAndCheck(0, 0);
 				infoBox.Clear();
+				infoBox.FontSize = 11;
 				drawAllCharts();
 			}
 
@@ -369,11 +371,12 @@ namespace Aufit {
 
 					BM1.Visibility = Visibility.Visible;
 					BM2.Visibility = Visibility.Visible;
-					tabCtrl.Width = matrixGrid.ActualWidth - 320;
+					tabCtrl.Width = matrixGrid.ActualWidth - 370;
 					Grid.SetColumn(tabCtrl, 2);
 					Grid.SetColumnSpan(tabCtrl, 1);
 
 					infoBox.Clear();
+					infoBox.FontSize = 11;
 					string file = fi[0].Name;
 					string path = fi[0].DirectoryName;
 					string root = file.Remove(file.Length - 8, 8);
@@ -420,6 +423,7 @@ namespace Aufit {
 			Track = Side = 0;
 			Rev = 1;
 			infoBox.Clear();
+			infoBox.FontSize = 11;
 			drawAllCharts();
 		}
 
@@ -433,6 +437,7 @@ namespace Aufit {
 			string fname;
 			_fluxDrawing.FastDraw = true;
 			infoBox.Clear();
+			infoBox.FontSize = 11;
 			ButtonMatrix.clearButtons();
 
 			for (int side = 0; side < 2; side++) {
@@ -671,8 +676,8 @@ namespace Aufit {
 						"Incomplete Image Data", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
 					if (result == MessageBoxResult.No) return;				
 				}	// incomplete
-				PastiWriter pasti = new PastiWriter(infoBox);
-				//PastiWriter pasti = new PastiWriter();
+				//PastiWriter pasti = new PastiWriter(infoBox);
+				PastiWriter pasti = new PastiWriter();
 				pasti.writePasti(sfd.FileName);
 			}
 

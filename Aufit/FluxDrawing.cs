@@ -195,9 +195,9 @@ class FluxDrawing {
 						Line revLine = new Line();
 						revLine.Stroke = Brushes.Black;
 						revLine.StrokeThickness = 1.5;
-						revLine.X1 = _fluxChartLayout.NormPoint(new Point((double)(currentTime + indexFirstFluxCorrection) / 1000000.0, 2)).X;
+						revLine.X1 = _fluxChartLayout.NormPoint(new Point((double)(currentTime + Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev)) / 1000000.0, 2)).X;
 						revLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
-						revLine.X2 = _fluxChartLayout.NormPoint(new Point((double)(currentTime + indexFirstFluxCorrection) / 1000000.0, 10)).X;
+						revLine.X2 = _fluxChartLayout.NormPoint(new Point((double)(currentTime + Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev)) / 1000000.0, 10)).X;
 						revLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
 						_fluxChartLayout.GraphicCanvas.Children.Add(revLine);
 					}

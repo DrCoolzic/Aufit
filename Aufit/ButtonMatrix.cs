@@ -65,11 +65,12 @@ namespace Aufit {
 					if ((x == 0) && (y != 0)) {
 						TextBox tb = new TextBox();
 						tb.Margin = new Thickness(left, top, 0, 0);
-						tb.Height = 13;
-						tb.Width = 13;
+						tb.Height = 15;
+						tb.Width = 15;
 						tb.FontFamily = new FontFamily("Segoe UI");
 						tb.BorderThickness = new Thickness(0);
-						tb.FontSize = 10;
+						tb.FontSize = 11;
+						tb.HorizontalContentAlignment = HorizontalAlignment.Center;
 						tb.Text = (y - 1).ToString();
 						cv.Children.Add(tb);
 					}
@@ -78,11 +79,12 @@ namespace Aufit {
 							if (x != 0) {
 								TextBox tb = new TextBox();
 								tb.Margin = new Thickness(left, top, 0, 0);
-								tb.Height = 13;
-								tb.Width = 13;
+								tb.Height = 15;
+								tb.Width = 15;
 								tb.FontFamily = new FontFamily("Segoe UI");
 								tb.BorderThickness = new Thickness(0);
-								tb.FontSize = 10;
+								tb.FontSize = 11;
+								tb.VerticalContentAlignment = VerticalAlignment.Center;
 								tb.Text = (x - 1).ToString();
 								cv.Children.Add(tb);
 							}
@@ -90,8 +92,8 @@ namespace Aufit {
 						else {
 							_buttons[x - 1, y - 1, side - 1] = new Button();
 							_buttons[x - 1, y - 1, side - 1].Margin = new Thickness(left, top, 0, 0);
-							_buttons[x - 1, y - 1, side - 1].Height = 13;
-							_buttons[x - 1, y - 1, side - 1].Width = 13;
+							_buttons[x - 1, y - 1, side - 1].Height = 15;
+							_buttons[x - 1, y - 1, side - 1].Width = 15;
 							_buttons[x - 1, y - 1, side - 1].Click += btMatrixClicked;
 							_buttons[x - 1, y - 1, side - 1].BorderThickness = thinButtonBorder;
 							_buttons[x - 1, y - 1, side - 1].BorderBrush = Brushes.Black;
@@ -106,10 +108,10 @@ namespace Aufit {
 							cv.Children.Add(_buttons[x - 1, y - 1, side - 1]);
 						}
 					}
-					left += 14;
+					left += 16;
 				}
 				left = 0;
-				top += 14;
+				top += 16;
 			}
 		}
 
@@ -140,8 +142,8 @@ namespace Aufit {
 			int z = side;
 			_buttons[x, y, z].BorderThickness = thickButtonBorder;
 			_buttons[x, y, z].BorderBrush = Brushes.Black;
-			_buttons[x, y, z].Width = 15;
-			_buttons[x, y, z].Height = 15;
+			_buttons[x, y, z].Width = 17;
+			_buttons[x, y, z].Height = 17;
 			_buttons[x, y, z].Margin = new Thickness(_buttons[x, y, z].Margin.Left - 1, _buttons[x, y, z].Margin.Top - 1, 0, 0);
 			_selectedButton = _buttons[x, y, z];
 		}
@@ -153,8 +155,8 @@ namespace Aufit {
 			if (_selectedButton != null) {
 				_selectedButton.BorderThickness = thinButtonBorder;
 				_selectedButton.BorderBrush = Brushes.Black;
-				_selectedButton.Width = 13;
-				_selectedButton.Height = 13;
+				_selectedButton.Width = 15;
+				_selectedButton.Height = 15;
 				_selectedButton.Margin = new Thickness(_selectedButton.Margin.Left + 1, _selectedButton.Margin.Top + 1, 0, 0);
 				_selectedButton = null;
 			}

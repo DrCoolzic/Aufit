@@ -145,7 +145,7 @@ namespace PastiPackage {
 			if (_infoBox != null) _infoBox.Clear();
 			if (_infoBox != null) _infoBox.ScrollToHome();
 			if (_infoBox != null) _infoBox.FontFamily = new FontFamily("Consolas");
-			if (_infoBox != null) _infoBox.FontSize = 14;
+			if (_infoBox != null) _infoBox.FontSize = 12;
 			if (_infoBox != null) _infoBox.AppendText(fd.ToString());
 			if (_infoBox != null) _infoBox.AppendText(String.Format(" - ({0}-{1})\n", start, buffer.Count-1));
 						
