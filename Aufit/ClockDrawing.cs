@@ -206,6 +206,10 @@ class ClockDrawing {
 		if (rev == 0) fluxXmax = 200 * Global.Disk[track, side].revData.Count();
 		_clockMin = Global.Disk[track, side].decodeData.minClockPeriod;
 		_clockMax = Global.Disk[track, side].decodeData.maxClockPeriod;
+		if (_clockMin == _clockMax) {
+			_clockMin -= _clockMin / 100;
+			_clockMax += _clockMax / 100;
+		}	// do not want infinity scale
 		_clockChartLayout.setViewport(fluxXmin, fluxXmax, _clockMin, _clockMax);
 	}
 

@@ -178,7 +178,8 @@ namespace Aufit {
 			}
 			else if (Global.Disk[track, side].fluxData != null) {
 				double entropy = td.histoData.entropy;
-				color = (entropy < 2000) ? (entropy < 0) ? Brushes.LightGray : Brushes.Yellow : Brushes.Lime;
+				//color = (entropy < 2000) ? (entropy < 0) ? Brushes.LightGray : Brushes.Yellow : Brushes.Lime;
+				color = (entropy > Global.unformattedEntropy) ? Brushes.LightGray : Brushes.Lime;
 			}
 			else
 				color = Brushes.White;

@@ -1,3 +1,21 @@
+* V0.4a February 23, 2014 New Entropy, Double sided Disk layout, FDC more robust, SCP more robust
+- New Shannon entropy computation (following exact definition). unformatted limit defined in Global set to 6.5
+- usage of new entropy in different modules
+- ClockDrawing can now correctly handle clock min = max
+- DiskWindow: now the two sides of Disk is drawn for Layout and Data. Size set as const in one place (easier to modif)
+  Reference line in code, finer line (fine/heavy is now const for easy modif). Reference is now horizontal (pi/2 before)
+- FDC more robust: when reference not found call recursively (still need to investigate).
+  Fix wrong ID CRC when SWS
+- Flux drawing: dot radius fixed, color based on cbLimitFlux
+- Main: clear infoBox before call to  ReadSCP (so we keep info), fixed call layout double side
+- ReadSCP: skip invalid short track. Compute min max after firstFlux correction
+
+* V0.3b February 20, 2014
+- button matrix changed from 15 to 15
+- fix bug in fluxDrawing: position of black line (first index not converted to timing!)
+- removed debug info for Pasti write
+- added code for NFA over index in SCP (work around)
+
 * V0.3a February 19, 2014
 - modified displayed information read updated documentation)
 - NFA should now be displayed correctly when NFA over index (KryoFlux only)

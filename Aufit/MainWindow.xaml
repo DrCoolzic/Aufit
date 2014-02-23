@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Aufit.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="AUFIT Analyzer V0.3b" Height="750" Width="1200" Closing="mainWinClosing">
+        Title="AUFIT Analyzer V0.4a" Height="750" Width="1200" Closing="mainWinClosing">
     <Grid KeyDown="keyDown">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>

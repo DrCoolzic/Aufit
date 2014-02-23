@@ -124,6 +124,7 @@ public class Global {
 	private static DiskTrack[,] _diskInfo = new DiskTrack[85, 2];
 	private static double _sampleClock = 0;
 	private static bool _incompleteData = false;
+	public const double unformattedEntropy = 6.5;
 
 	/// <summary>Contains information about one track</summary>
 	public struct DiskTrack {
@@ -417,16 +418,19 @@ public class Global {
 		double entropy = 0;
 		for (int i = 0; i < histoSize; i++)
 			if (Global.Disk[track, side].histoData.histogram[i] > 0) {
-				double p = (double)Global.Disk[track, side].histoData.histogram[i] / (double)notNullEntries;
+				//double p = (double)Global.Disk[track, side].histoData.histogram[i] / (double)notNullEntries;
+				double p = (double)Global.Disk[track, side].histoData.histogram[i] / (double)(last - first); 
 				entropy += p * Math.Log(p, 2);
 			}
+		entropy = -entropy;
 
 		Global.Disk[track, side].histoData.entropy = entropy;
 		//if (entropy < 0) Global.Disk[track, side].histoData.bands.Clear();
 
 		text.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev));
-		text.AppendText(String.Format(" * {0} * (Ent {1:F0})",
-			(entropy < 2000) ? (entropy < 0) ? "Unformatted track" : "Unformatted area" : "Normal track", entropy));
+		text.AppendText(String.Format(" * {0} * (Ent {1:F2})",
+			//(entropy < 2000) ? (entropy < 0) ? "Unformatted track" : "Unformatted area" : "Normal track", entropy));
+			(entropy > unformattedEntropy) ? "Unformatted track" : "Normal track", entropy));
 		text.AppendText(String.Format(" - Fluxes {0}", last - first));
 		text.AppendText(String.Format(" - Histo size {0} ({1} ns)\n",
 			histoSize, Global.sampleToTiming(histoSize - 1)));

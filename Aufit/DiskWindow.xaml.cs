@@ -47,6 +47,12 @@ namespace Aufit {
 /// Interaction logic for DiskWindow.xaml
 /// </summary>
 public partial class DiskWindow : Window {
+	TextBox _tb;
+	Grid _gd;
+	const int wsize = 300;
+	const double fineLine = 1.8;
+	const double heavyLine = 2.0;
+
 	/// <summary>
 	/// Create a window and call the draw disk function
 	/// </summary>
@@ -59,14 +65,29 @@ public partial class DiskWindow : Window {
 	/// </summary>
 	/// <param name="side">Side of the FD</param>
 	/// <param name="message">Message to display at end of drawing</param>
-	public async void drawDiskLayout(int side, string message) {
+	public async void drawDiskLayout(string message) {
+		int side = 0;
+		_tb = tbDisk0;
+		_gd = cvDisk0;
 		for (int track = 0; track < 84; track++) {
 			if (Global.Disk[track, side].fluxData == null) continue;
 			await decodeAndReadAsync(track, side, 1);
 			drawDiskTrackLayout(track, side);
 			ButtonMatrix.setButtonBG(track, side);
 		}
-		tbDisk.Text = message;
+		message += " Side 0";
+		_tb.Text = message;
+		side = 1;
+		_tb = tbDisk1;
+		_gd = cvDisk1;
+		for (int track = 0; track < 84; track++) {
+			if (Global.Disk[track, side].fluxData == null) continue;
+			await decodeAndReadAsync(track, side, 1);
+			drawDiskTrackLayout(track, side);
+			ButtonMatrix.setButtonBG(track, side);
+		}
+		message += " Side 1";
+		_tb.Text = message;
 	}
 
 
@@ -75,14 +96,30 @@ public partial class DiskWindow : Window {
 	/// </summary>
 	/// <param name="side">Side of the FD</param>
 	/// <param name="message">Message to display at end of drawing</param>
-	public async void drawDiskData(int side, string message) {
+	public async void drawDiskData(string message) {
+		int side = 0;
+		_tb = tbDisk0;
+		_gd = cvDisk0;
 		for (int track = 0; track < 84; track++) {
 			if (Global.Disk[track, side].fluxData == null) continue;
 			await decodeAndReadAsync(track, side, 1);
 			drawDiskTrackData(track, side);
 			ButtonMatrix.setButtonBG(track, side);
 		}
-		tbDisk.Text = message;
+		message += " Side 0";
+		_tb.Text = message;
+		side = 1;
+		_tb = tbDisk1;
+		_gd = cvDisk1;
+		for (int track = 0; track < 84; track++) {
+			if (Global.Disk[track, side].fluxData == null) continue;
+			await decodeAndReadAsync(track, side, 1);
+			drawDiskTrackData(track, side);
+			ButtonMatrix.setButtonBG(track, side);
+		} 
+		message += " Side 1";
+		_tb.Text = message;
+
 	}
 
 
@@ -126,12 +163,21 @@ public partial class DiskWindow : Window {
 	/// <param name="side">The side of the FD</param>
 	public void drawDiskTrackLayout(int track, int side) {
 		TrackContent tc = Global.Disk[track, side].trackContent;
-		Point center = new Point(450, 450);
-		double rad_max = 420;
-		double rad_start = 80;
-		double rad_inc = (rad_max - rad_start) / 85;
+		Point center = new Point(wsize, wsize);
+		double rad_max = wsize - wsize * 0.03;
+		double rad_start = wsize / 6;
+		double rad_inc = (rad_max - rad_start) / 84;
 		double radius = rad_max - track * rad_inc;
-		tbDisk.Text = String.Format("Processing track {0}", track);
+		_tb.Text = String.Format("Processing track {0}", track);
+		Line zeroLine = new Line();
+		zeroLine.Stroke = Brushes.White;
+		zeroLine.StrokeThickness = 1;
+		zeroLine.StrokeDashArray = new DoubleCollection(new double[2] { 10, 5 });
+		zeroLine.X1 = wsize;
+		zeroLine.Y1 = wsize;
+		zeroLine.X2 = 2*wsize;
+		zeroLine.Y2 = wsize;
+		_gd.Children.Add(zeroLine);
 
 		if (tc.sectors.Count > 1) {
 			for (int i = 0; i < tc.sectors.Count; i++) {
@@ -149,7 +195,7 @@ public partial class DiskWindow : Window {
 				for (byte p = 0; p < 4; p++) {
 					if (sector.phases[p].byteCount > 0) {
 						Path path = new Path();
-						path.StrokeThickness = 3;
+						path.StrokeThickness = fineLine;
 						PathGeometry pg = new PathGeometry();
 						startAngle = timeAngle((double)sector.phases[p].startTime);
 						stopAngle = timeAngle((double)(sector.phases[p].startTime + sector.phases[p].timeLength));
@@ -177,7 +223,7 @@ public partial class DiskWindow : Window {
 									path.Stroke = Brushes.BlueViolet;
 
 								if ((i > 0) && (s != null) && ((s.dataBlock.crc != 0) || (s.fuzzyMask != null))) {
-									path.StrokeThickness = 5;
+									path.StrokeThickness = heavyLine;
 									path.Stroke = Brushes.Red;
 									//Path patherr = new Path();
 									//patherr.StrokeThickness = 5;
@@ -209,7 +255,7 @@ public partial class DiskWindow : Window {
 								break;
 						}
 						path.Data = pg;
-						cvDisk.Children.Add(path);
+						_gd.Children.Add(path);
 					}	// non null phase
 				}	// all phases
 			}	// all sectors
@@ -218,12 +264,12 @@ public partial class DiskWindow : Window {
 			double startAngle = 0;
 			double stopAngle = Math.PI *2 - 0.0001;
 			Path path = new Path();
-			path.StrokeThickness = 3;
+			path.StrokeThickness = heavyLine;
 			PathGeometry pg = new PathGeometry();
 			path.Stroke = Brushes.DarkSlateGray;
 			addArc(pg, startAngle, stopAngle, center, radius);
 			path.Data = pg;
-			cvDisk.Children.Add(path);
+			_gd.Children.Add(path);
 		}	// no sector
 
 		//// display sync
@@ -247,21 +293,21 @@ public partial class DiskWindow : Window {
 			double stopAngle = byteAngle(i, tc.byteCount);
 			if (tc.buffer.Bytes[i].mfmWord == 0x4489) {
 				Path path = new Path();
-				path.StrokeThickness = 3;
+				path.StrokeThickness = heavyLine;
 				PathGeometry pg = new PathGeometry();
 				path.Stroke = Brushes.Red;
 				addArc(pg, startAngle, stopAngle, center, radius);
 				path.Data = pg;
-				cvDisk.Children.Add(path);
+				_gd.Children.Add(path);
 			}
 			else if (tc.buffer.Bytes[i].mfmWord == 0) {
 				Path path = new Path();
-				path.StrokeThickness = 3;
+				path.StrokeThickness = heavyLine;
 				PathGeometry pg = new PathGeometry();
 				path.Stroke = Brushes.Yellow;
 				addArc(pg, startAngle, stopAngle, center, radius);
 				path.Data = pg;
-				cvDisk.Children.Add(path);
+				_gd.Children.Add(path);
 			}
 		}
 
@@ -274,12 +320,21 @@ public partial class DiskWindow : Window {
 	/// <param name="track">The track to display</param>
 	/// <param name="side">The side of the FD</param>
 	public void drawDiskTrackData(int track, int side) {
-		Point center = new Point(450, 450);
-		double rad_max = 420;
-		double rad_start = 80;
-		double rad_inc = (rad_max - rad_start) / 85;
+		Point center = new Point(wsize, wsize);
+		double rad_max = wsize - wsize * 0.03;
+		double rad_start = wsize / 6;
+		double rad_inc = (rad_max - rad_start) / 84;
 		double radius = rad_max - track * rad_inc;
-		tbDisk.Text = String.Format("Processing track {0}", track);
+		_tb.Text = String.Format("Processing track {0}", track);
+		Line zeroLine = new Line();
+		zeroLine.Stroke = Brushes.White;
+		zeroLine.StrokeThickness = 1;
+		zeroLine.StrokeDashArray = new DoubleCollection(new double[2] { 10, 5 });
+		zeroLine.X1 = wsize;
+		zeroLine.Y1 = wsize;
+		zeroLine.X2 = wsize * 2;
+		zeroLine.Y2 = wsize;
+		_gd.Children.Add(zeroLine);
 
 		TrackContent tc = Global.Disk[track, side].trackContent;
 		double startAngle = byteAngle(0, tc.byteCount);
@@ -303,26 +358,26 @@ public partial class DiskWindow : Window {
 			byte data = lastByte.dataByte;
 
 			if (tc.buffer.Bytes[i].mfmWord == 0x4489) {
-				path.StrokeThickness = 5;				
+				path.StrokeThickness = heavyLine;				
 				b.Color = Color.FromRgb(255, 0, 0);
 				//Canvas.SetZIndex(path, 99);
 			}	// sync in red
 			else if (tc.buffer.Bytes[i].mfmWord == 0) {
-				path.StrokeThickness = 5;
+				path.StrokeThickness = heavyLine;
 				b.Color = Color.FromRgb(255, 255, 0);
 				//Canvas.SetZIndex(path, 99);
 			}
 			else if (tc.buffer.Bytes[i].phase == Phases.p_id) {
 				b.Color = Color.FromRgb(0, 0, 255);
-				path.StrokeThickness = 3;
+				path.StrokeThickness = fineLine;
 			}	// id in blue
 			else if (tc.buffer.Bytes[i].phase == Phases.p_data) {
 				b.Color = Color.FromRgb(0, data, data);
-				path.StrokeThickness = 3;
+				path.StrokeThickness = fineLine;
 			}
 			else {
 				b.Color = Color.FromRgb(data, data, data);
-				path.StrokeThickness = 3;
+				path.StrokeThickness = fineLine;
 			}
 
 			PathGeometry pg = new PathGeometry();
@@ -330,7 +385,7 @@ public partial class DiskWindow : Window {
 			addArc(pg, startAngle, stopAngle, center, radius);
 			pg.Freeze();
 			path.Data = pg;
-			cvDisk.Children.Add(path);
+			_gd.Children.Add(path);
 
 			lastByte = tc.buffer.Bytes[i];
 			startAngle = stopAngle;
@@ -369,13 +424,15 @@ public partial class DiskWindow : Window {
 	/// <param name="time"></param>
 	/// <returns></returns>
 	private double timeAngle(double time) {
-		double angle = Math.PI / 2 + Math.PI * time / 100000000.0;
+		//double angle = Math.PI / 2 + Math.PI * time / 100000000.0;
+		double angle = Math.PI * time / 100000000.0;
 		//while (angle > 2 * Math.PI) angle -= 2 * Math.PI;
 		return angle;
 	}
 
 	private double byteAngle(int pos, int count) {
-		double angle = Math.PI / 2 + 2 * Math.PI * (double)pos / (double)count;
+		//double angle = Math.PI / 2 + 2 * Math.PI * (double)pos / (double)count;
+		double angle = 2 * Math.PI * (double)pos / (double)count;
 		return angle;
 	}
 

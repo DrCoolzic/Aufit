@@ -271,7 +271,8 @@ namespace Aufit {
 			if (Global.Disk[track, side].decodeData == null)
 				Global.mfmDecode(track, side);
 
-			cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) > 0);
+			// cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) > 0);
+			cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) < Global.unformattedEntropy);
 			_histoDrawing.drawHisto(track, side, rev);
 
 			_fluxDrawing.setFluxDefault(track, side, rev);
@@ -336,13 +337,13 @@ namespace Aufit {
 			tabCtrl.Width = matrixGrid.ActualWidth - 370;
 			Grid.SetColumn(tabCtrl, 2);
 			Grid.SetColumnSpan(tabCtrl, 1);
+				infoBox.Clear();
+				infoBox.FontSize = 11;
 
 			_fileName = System.IO.Path.GetFileNameWithoutExtension(fileName);
 			bool ok = await SCPReader.readScpAsync(fileName, infoBox);
 			if (ok) {
 				selectAndCheck(0, 0);
-				infoBox.Clear();
-				infoBox.FontSize = 11;
 				drawAllCharts();
 			}
 
@@ -617,9 +618,9 @@ namespace Aufit {
 			if (_diskWindowIsOpen)
 				_diskWindow.Close();
 
-			string message = String.Format("Disk {0} (Side {1})", _fileName, Side);
+			string message = String.Format("Disk {0}", _fileName, Side);
 			_diskWindow = new DiskWindow();
-			_diskWindow.drawDiskLayout(Side, message);
+			_diskWindow.drawDiskLayout(message);
 			_diskWindow.Closed += new EventHandler(diskWindowClosed);
 			_diskWindowIsOpen = true;
 			_diskWindow.Show();
@@ -650,9 +651,9 @@ namespace Aufit {
 			if (_diskWindowIsOpen)
 				_diskWindow.Close();
 
-			string message = String.Format("Disk {0} (Side {1})", _fileName, Side);
+			string message = String.Format("Disk {0}", _fileName, Side);
 			_diskWindow = new DiskWindow();
-			_diskWindow.drawDiskData(Side, message);
+			_diskWindow.drawDiskData(message);
 			_diskWindow.Closed += new EventHandler(diskWindowClosed);
 			_diskWindowIsOpen = true;
 			_diskWindow.Show();

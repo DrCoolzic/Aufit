@@ -1,13 +1,19 @@
 ﻿<Window x:Class="Aufit.DiskWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="DiskWindow" Height="900" Width="900">
+        Title="DiskWindow" Height="600" Width="1200">
     <Grid Margin="0" Background="#FFA0A4B8">
-        <TextBox Name="tbDisk" Width="250" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <Viewbox Stretch="Uniform">
-            <Grid Name="cvDisk" Margin="0" >
-                <Line Stroke="White" X1="450" Y1="450" X2="450" Y2="900" />
-            </Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <TextBox Grid.Column="0" Name="tbDisk0" Width="auto" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+        <Viewbox Grid.Column="0" Stretch="Uniform">
+            <Grid Name="cvDisk0" Margin="0" />
+        </Viewbox>
+        <TextBox Grid.Column="1" Name="tbDisk1" Width="auto" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+        <Viewbox Grid.Column="1" Stretch="Uniform">
+            <Grid Name="cvDisk1" Margin="0" />
         </Viewbox>
     </Grid>
 </Window>

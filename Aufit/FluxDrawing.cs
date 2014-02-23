@@ -241,15 +241,17 @@ class FluxDrawing {
 			double r = (zoom > 1) ? (zoom > 25) ? (zoom > 50) ? 2 : 1.6 : 1.2 : 0.7;
 			fluxPoints[pointsInViewport].colorIndex = 0;
 
-			if (td.histoData.entropy > 0) {
+			//if (td.histoData.entropy > 0) {
+			//if (td.histoData.entropy < Global.unformattedEntropy) {
+			if (_win.cbLimitFlux.IsChecked.Value) {
 				// border flux
 				if (((flux > 4900) && (flux < 5100)) || ((flux > 6900) && (flux < 7100))) {
-					r *= 2;
+					//r *= 2;
 					fluxPoints[pointsInViewport].colorIndex = 2;
 				}
 				// invalid flux
 				if ((flux < 3500) || (flux > 8500)) {
-					r = 2.5 * r;
+					//r = 2.5 * r;
 					fluxPoints[pointsInViewport].colorIndex = 4;
 				}
 				// odd even

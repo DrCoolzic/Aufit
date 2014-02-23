@@ -76,6 +76,7 @@ class HistoDrawing {
 
 		if (Global.Disk[track , side].fluxData == null) return;
 		if (Global.Disk[track, side].histoData.histogram == null) return;
+		if (Global.Disk[track, side].histoData.histogram.Length == 0) return;
 
 		if (_win.cbHistoLog.IsChecked.Value) _histoChartLayout.HasYGrid = false;
 		else _histoChartLayout.HasYGrid = true;
@@ -142,7 +143,8 @@ class HistoDrawing {
 		_histoChartLayout.GraphicCanvas.Children.Add(pg);
 
 		// compute control pointsInViewport for Bezier curve if formatted
-		if (Global.Disk[track, side].histoData.entropy > 0) {			
+		//if (Global.Disk[track, side].histoData.entropy > 0) {			
+		if (Global.Disk[track, side].histoData.entropy < Global.unformattedEntropy) {			
 			Point[] cp1, cp2;
 			ovp.BezierSpline.GetCurveControlPoints(points, out cp1, out cp2);
 			PathSegmentCollection lines = new PathSegmentCollection();

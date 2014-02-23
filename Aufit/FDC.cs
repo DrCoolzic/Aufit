@@ -820,8 +820,11 @@ namespace WD1772Package {
 				return sref;
 
 			// sanity check in compare mode the reference should already be there
-			Debug.Assert(!(compare && (sref == null)), "Read Sector: Reference sector not found in compare mode",
-				String.Format("Track {0:D2}.{1} Rev {2} Sector {3} at {4}", track, side, rev, sectToRead, position));
+			if (compare && (sref == null)) {
+				sref = readSector(track, side, rev, sectToRead, position, false);
+				//Debug.Assert(!(compare && (sref == null)), "Read Sector: Reference sector not found in compare mode",
+				//	String.Format("Track {0:D2}.{1} Rev {2} Sector {3} at {4}", track, side, rev, sectToRead, position));
+			};
 
 			// if not there or we are in compare mode create a new sectorContent
 			SectorContent sc = new SectorContent();
@@ -1029,12 +1032,12 @@ namespace WD1772Package {
 			}	// For all transitions
 
 			if (phase == Phases.p_id) {
-				sc.idBlock.crc = crc;
+				//sc.idBlock.crc = crc;
 				sc.idBlock.byteCount = byteCount - sc.idBlock.startByte;
 				sc.idBlock.timeLength = prevBlockEndTime - sc.idBlock.startTime;
 			}
 			else if (phase == Phases.p_data) {
-				sc.dataBlock.crc = crc;
+				//sc.dataBlock.crc = crc;
 				sc.dataBlock.byteCount = byteCount - sc.dataBlock.startByte;
 				sc.dataBlock.timeLength = prevBlockEndTime - sc.dataBlock.startTime;
 			}

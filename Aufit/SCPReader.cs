@@ -285,7 +285,7 @@ namespace SCPReaderPackage {
 			ti.identifier += readChar(buffer, ref idx).ToString();	// 0x02
 			if (ti.identifier != "TRK")
 				return SCPStatus.stsInvalidTrack;
-			ti.trackSide = readByte(buffer, ref idx);				// 0x03
+			ti.trackSide = readByte(buffer, ref idx);				// 0x03 trackSide
 
 			// check track number
 			//if (ti.trackSide != trackSide)
@@ -302,6 +302,10 @@ namespace SCPReaderPackage {
 				ti.revInfo[i].fluxOffset = readInt32(buffer, ref idx);
 				//ti.revInfo[i].indexTimePosition = 0;	// not provided currently
 			}
+
+			// sometimes SCP seesm to generate invalid short track
+			if (fluxSize < 1000)
+				return SCPStatus.stsOK;
 
 			// create buffer for all flux transitions
 			// note this buffer might be bigger that what is needed because of null entries (NFA)
@@ -329,8 +333,8 @@ namespace SCPReaderPackage {
 					}	// overflow (probably NFA)
 					else {
 						ti.fluxValues[p] += val;
-						if (ti.fluxValues[p] > _fluxMax) _fluxMax = ti.fluxValues[p];
-						if (ti.fluxValues[p] < _fluxMin) _fluxMin = ti.fluxValues[p];
+						//if (ti.fluxValues[p] > _fluxMax) _fluxMax = ti.fluxValues[p];
+						//if (ti.fluxValues[p] < _fluxMin) _fluxMin = ti.fluxValues[p];
 						fluxSum += ti.fluxValues[p];
 						p++;
 					}	// normal
@@ -352,8 +356,13 @@ namespace SCPReaderPackage {
 			// now we transfer to our Global Disk structure
 			MainWindow.Rev = 1;
 			Global.Disk[track, side].fluxData = new FluxData();
-			Global.Disk[track, side].fluxData.fluxValue = ti.fluxValues;
 			Global.Disk[track, side].fluxData.fluxCount = ti.fluxValues.Count();
+			Global.Disk[track, side].fluxData.fluxValue = new int[ti.fluxValues.Count()];
+			for (int i = 0; i < ti.fluxValues.Count(); i++) {
+				Global.Disk[track, side].fluxData.fluxValue[i] = ti.fluxValues[i];
+				if (ti.fluxValues[i] > _fluxMax) _fluxMax = ti.fluxValues[i];
+				if (ti.fluxValues[i] < _fluxMin) _fluxMin = ti.fluxValues[i];
+			}
 
 			Global.SampleClock = SampleClock;
 			Global.Disk[track, side].fluxData.fluxMax = _fluxMax;
