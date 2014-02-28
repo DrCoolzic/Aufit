@@ -114,6 +114,7 @@ public struct HistoData {
 	///// <summary>List of maximums in the histogram</summary>
 	///// <remarks>This value is set by computeHisto()</remarks>
 	//public List<int> bands;
+	public bool hasData;
 }
 
 
@@ -415,16 +416,22 @@ public class Global {
 		//	last = current;
 		}
 
+		bool hasData = false;
 		double entropy = 0;
 		for (int i = 0; i < histoSize; i++)
 			if (Global.Disk[track, side].histoData.histogram[i] > 0) {
 				//double p = (double)Global.Disk[track, side].histoData.histogram[i] / (double)notNullEntries;
+				if (Global.Disk[track, side].histoData.histogram[i] > 300) {
+					if ((i > timingToSample(3400)) && i < timingToSample(8600))
+						hasData = true;
+				}
 				double p = (double)Global.Disk[track, side].histoData.histogram[i] / (double)(last - first); 
 				entropy += p * Math.Log(p, 2);
 			}
 		entropy = -entropy;
 
 		Global.Disk[track, side].histoData.entropy = entropy;
+		Global.Disk[track, side].histoData.hasData = hasData;
 		//if (entropy < 0) Global.Disk[track, side].histoData.bands.Clear();
 
 		text.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev));

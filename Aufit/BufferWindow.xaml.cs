@@ -240,8 +240,6 @@ namespace Aufit {
 					});
 				displayBuffer.Inlines.Add(String.Format("{0:D6}  ", buffer.Bytes[i].startTime / 1000));
 
-				// TODO if phase==p_inner or p_outer and data in range 245-247 display red/yellow
-
 				string ascii = "  ";
 				for (int j = 0; j < 16; j++) {
 					if ((i + j) < buffer.Bytes.Count) {
@@ -252,7 +250,7 @@ namespace Aufit {
 								String.Format("{0:X2} ", buffer.Bytes[i + j].dataByte)) {
 									Background =
 										((buffer.Bytes[i + j].dataByte >= 0xF5) && (buffer.Bytes[i + j].dataByte <= 0xF7) && 
-										 ((buffer.Bytes[i + j].phase == Phases.p_inner) || (buffer.Bytes[i + j].phase == Phases.p_outer))) ? Brushes.Red :
+										 ((buffer.Bytes[i + j].phase == Phases.p_inner) || (buffer.Bytes[i + j].phase == Phases.p_outer))) ? Brushes.LightBlue :
 										(buffer.Bytes[i + j].mfmWord == 0x00) ? Brushes.Coral :
 										(((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ||
 										 ((buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224))) ? Brushes.Yellow :

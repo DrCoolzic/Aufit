@@ -1,3 +1,12 @@
+* V0.4b March 1, 2014 Color changed, improve disk data, fix pre sync data pb, fix fuzzy detection
+- IDG now in ligh blue
+- button background changed
+- Disk data selection of displayed char drastically changed (more perf / accurate)
+- DSR.cs now have a preSyn
+- FDC usage of preSync in readTrack. Assert back in readSector compare mode. findSector now allow 32000 slack in position
+- Global hasData (more than 300 in histo) added
+- Main checkboc recover -> Force DS. When reading KF dir name of dir used for disk layout
+- WritePasti added a ForceDS flag
 * V0.4a February 23, 2014 New Entropy, Double sided Disk layout, FDC more robust, SCP more robust
 - New Shannon entropy computation (following exact definition). unformatted limit defined in Global set to 6.5
 - usage of new entropy in different modules

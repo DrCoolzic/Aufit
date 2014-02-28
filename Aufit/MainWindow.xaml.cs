@@ -382,7 +382,7 @@ namespace Aufit {
 					string path = fi[0].DirectoryName;
 					string root = file.Remove(file.Length - 8, 8);
 					tbFileName.Text = selectedDir;
-					_fileName = root;
+					_fileName = di.Name;
 					Global.resetDisk();
 
 					if (_readKFAsync)
@@ -613,12 +613,11 @@ namespace Aufit {
 
 
 		private void btDiskLayoutClick(object sender, RoutedEventArgs e) {
-			// TODO if (_trackInfo.TrackInfo == null) return;
 			if (BM1.Visibility == Visibility.Hidden) return;
 			if (_diskWindowIsOpen)
 				_diskWindow.Close();
 
-			string message = String.Format("Disk {0}", _fileName, Side);
+			string message = String.Format("{0}", _fileName);
 			_diskWindow = new DiskWindow();
 			_diskWindow.drawDiskLayout(message);
 			_diskWindow.Closed += new EventHandler(diskWindowClosed);
@@ -646,12 +645,11 @@ namespace Aufit {
 		}
 
 		private void btDiskDataClick(object sender, RoutedEventArgs e) {
-			// TODO if (_trackInfo.TrackInfo == null) return;
 			if (BM1.Visibility == Visibility.Hidden) return;
 			if (_diskWindowIsOpen)
 				_diskWindow.Close();
 
-			string message = String.Format("Disk {0}", _fileName, Side);
+			string message = String.Format("{0}", _fileName);
 			_diskWindow = new DiskWindow();
 			_diskWindow.drawDiskData(message);
 			_diskWindow.Closed += new EventHandler(diskWindowClosed);
@@ -679,7 +677,7 @@ namespace Aufit {
 				}	// incomplete
 				//PastiWriter pasti = new PastiWriter(infoBox);
 				PastiWriter pasti = new PastiWriter();
-				pasti.writePasti(sfd.FileName);
+				pasti.writePasti(sfd.FileName, cbForceDS.IsChecked.Value);
 			}
 
 		}

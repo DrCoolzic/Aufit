@@ -208,7 +208,7 @@ class FluxDrawing {
 			int clk = td.decodeData.clockPeriod[i];
 			dsr.shiftBitsIn(nbWin);	// push data in register
 			while (dsr.byteReady()) {
-				int bitShift = dsr.searchSynch();	// search sync
+				int bitShift = dsr.searchSync();	// search sync
 				dsr.extract();						// get one mfm
 				if (dsr.SyncFound) {
 					syncCount++;

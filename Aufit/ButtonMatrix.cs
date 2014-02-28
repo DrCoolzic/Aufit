@@ -171,9 +171,22 @@ namespace Aufit {
 			Brush color = Brushes.LimeGreen;
 			Global.DiskTrack td = Global.Disk[track, side];
 			TrackContent tc = td.trackContent;
-			// track not processed
+			// track processed
 			if (tc != null) {
-				if (tc.sectors.Count == 1) color = Brushes.SlateGray;
+				if (tc.sectors.Count < 3) {
+					if ((td.histoData.hasData) && (td.histoData.entropy < Global.unformattedEntropy)) {
+						bool multiSync = false;
+						for (int i = 0; i < tc.syncs.Count; i++)
+							if ((tc.syncs[i].value == 0xA1) && (tc.syncs[i].syncInSeq > 2))
+								multiSync = true;
+						if (multiSync)
+							color = Brushes.Blue;
+						else
+							color = Brushes.Yellow;
+					}	// data bits found
+					else
+						color = Brushes.SlateGray;
+				}
 				else if (tc.hasProtection) color = Brushes.Orange;
 			}
 			else if (Global.Disk[track, side].fluxData != null) {

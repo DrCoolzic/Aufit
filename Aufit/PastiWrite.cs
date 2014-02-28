@@ -79,12 +79,12 @@ namespace PastiPackage {
 		/// </summary>
 		/// <param name="fileName">Name of the Pasti file to read</param>
 		/// <returns>The status</returns>
-		public FileStatus writePasti(string fileName) {
+		public FileStatus writePasti(string fileName, bool forceDs) {
 			FileStream fs;
 
 			// encode file into buffer
 			List<byte> sbuf = new List<byte>();
-			FileStatus status = encodePasti(sbuf);
+			FileStatus status = encodePasti(sbuf, forceDs);
 
 			try {
 				fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.Read);
@@ -106,17 +106,20 @@ namespace PastiPackage {
 		/// <param name="buffer">Contains the data read from Pasti file</param>
 		/// <param name="floppy">The Floppy structure to fill</param>
 		/// <returns>The read status</returns>
-		private FileStatus encodePasti(List<byte> buffer) {
+		private FileStatus encodePasti(List<byte> buffer, bool forceDs) {
 			int start = 0;
 			byte trackCount = 0;
 			int sideCount = 1;	// single sided
 
 			// check for double sided - we check that we have some sectors on side 1
-			for (int track = 0; track < 84; track++)
-				if ((Global.Disk[track, 1].trackContent != null) && (Global.Disk[track, 1].sectorsContent != null) && (Global.Disk[track, 1].sectorsContent.Count != 0)) {
-					sideCount = 2;	// found at least one sector
-					break;
-				}
+			if (forceDs) sideCount = 2;
+			else {
+				for (int track = 0; track < 84; track++)
+					if ((Global.Disk[track, 1].trackContent != null) && (Global.Disk[track, 1].sectorsContent != null) && (Global.Disk[track, 1].sectorsContent.Count != 0)) {
+						sideCount = 2;	// found at least one sector
+						break;
+					}
+			}
 
 			// number of track descriptor
 			for (int side = 0; side < sideCount; side++)

@@ -50,8 +50,10 @@ public partial class DiskWindow : Window {
 	TextBox _tb;
 	Grid _gd;
 	const int wsize = 300;
-	const double fineLine = 1.8;
+	const double fineLine = 1.6;
 	const double heavyLine = 2.0;
+	const double gridThickness = 0.4;
+	DoubleCollection gridDash = new DoubleCollection(new double[2] { 10, 5 });
 
 	/// <summary>
 	/// Create a window and call the draw disk function
@@ -171,8 +173,8 @@ public partial class DiskWindow : Window {
 		_tb.Text = String.Format("Processing track {0}", track);
 		Line zeroLine = new Line();
 		zeroLine.Stroke = Brushes.White;
-		zeroLine.StrokeThickness = 1;
-		zeroLine.StrokeDashArray = new DoubleCollection(new double[2] { 10, 5 });
+		zeroLine.StrokeThickness = gridThickness;
+		zeroLine.StrokeDashArray = gridDash;
 		zeroLine.X1 = wsize;
 		zeroLine.Y1 = wsize;
 		zeroLine.X2 = 2*wsize;
@@ -313,6 +315,9 @@ public partial class DiskWindow : Window {
 
 	}	// End of drawDisk()
 
+	enum Segment { 
+		sync, nfa, data, id, gap 
+	}
 
 	/// <summary>
 	/// Draw data of one track of the FD
@@ -328,8 +333,8 @@ public partial class DiskWindow : Window {
 		_tb.Text = String.Format("Processing track {0}", track);
 		Line zeroLine = new Line();
 		zeroLine.Stroke = Brushes.White;
-		zeroLine.StrokeThickness = 1;
-		zeroLine.StrokeDashArray = new DoubleCollection(new double[2] { 10, 5 });
+		zeroLine.StrokeThickness = gridThickness;
+		zeroLine.StrokeDashArray = gridDash;
 		zeroLine.X1 = wsize;
 		zeroLine.Y1 = wsize;
 		zeroLine.X2 = wsize * 2;
@@ -338,59 +343,69 @@ public partial class DiskWindow : Window {
 
 		TrackContent tc = Global.Disk[track, side].trackContent;
 		double startAngle = byteAngle(0, tc.byteCount);
-		TrackBuffer.TrackByte lastByte = new TrackBuffer.TrackByte();
-		lastByte = tc.buffer.Bytes[0];
-		int count = 0;	
-	
+		TrackBuffer.TrackByte lastByte = tc.buffer.Bytes[tc.byteCount - 1];
+		Segment lastSegment = getSegment(tc, tc.byteCount - 1);
+		int count = 0;
+
 		for (int i = 0; i < tc.byteCount; i++) {
 			count++;
-			if (((tc.buffer.Bytes[i].dataByte == lastByte.dataByte) || (count < 6)) &&
-				 (tc.buffer.Bytes[i].phase == lastByte.phase) &&
-				 (tc.buffer.Bytes[i].mfmWord != 0) &&
-				 (tc.buffer.Bytes[i].mfmWord != 0x4489) &&
-				 (i != tc.byteCount - 1)) continue;
-			//if ((i % 3) != 0) continue;
+			Segment segment = getSegment(tc, i);
+			// print from start to stop if different segment or more than n char in gap/id/data or last char of track
+			if ((segment != lastSegment) || 
+				((segment != Segment.nfa) && (segment != Segment.sync) && (count > 8) && (tc.buffer.Bytes[i].dataByte != lastByte.dataByte)) || 
+				(i == tc.byteCount - 1)) {
 
-			double stopAngle = byteAngle(i, tc.byteCount);
-			count = 0;
-			SolidColorBrush b = new SolidColorBrush();
-			Path path = new Path();
-			byte data = lastByte.dataByte;
+				double stopAngle = byteAngle(i - 1, tc.byteCount);
+				count = 0;
+				SolidColorBrush b = new SolidColorBrush();
+				Path path = new Path();
+				byte data = lastByte.dataByte;
 
-			if (tc.buffer.Bytes[i].mfmWord == 0x4489) {
-				path.StrokeThickness = heavyLine;				
-				b.Color = Color.FromRgb(255, 0, 0);
-				//Canvas.SetZIndex(path, 99);
-			}	// sync in red
-			else if (tc.buffer.Bytes[i].mfmWord == 0) {
-				path.StrokeThickness = heavyLine;
-				b.Color = Color.FromRgb(255, 255, 0);
-				//Canvas.SetZIndex(path, 99);
+				if (lastByte.mfmWord == 0x4489) {
+					path.StrokeThickness = heavyLine;
+					b.Color = Color.FromRgb(255, 0, 0);
+				}	// sync in red
+				else if (lastByte.mfmWord == 0) {
+					path.StrokeThickness = heavyLine;
+					b.Color = Color.FromRgb(255, 255, 0);
+				}	// NFA in yellow
+				else if (lastByte.phase == Phases.p_id) {
+					b.Color = Color.FromRgb(0, 0, 255);
+					path.StrokeThickness = fineLine;
+				}	// id in blue
+				else if (lastByte.phase == Phases.p_data) {
+					b.Color = Color.FromRgb(data, data, data);
+					path.StrokeThickness = fineLine;
+				}	// data in grey
+				else {
+					b.Color = Color.FromRgb(0, data, 0);
+					path.StrokeThickness = fineLine;
+				}	// gap in green
+
+				PathGeometry pg = new PathGeometry();
+				path.Stroke = b;
+				addArc(pg, startAngle, stopAngle, center, radius);
+				pg.Freeze();
+				path.Data = pg;
+				_gd.Children.Add(path);
+
+				lastByte = tc.buffer.Bytes[i];
+				lastSegment = segment;
+				startAngle = byteAngle(i, tc.byteCount);
 			}
-			else if (tc.buffer.Bytes[i].phase == Phases.p_id) {
-				b.Color = Color.FromRgb(0, 0, 255);
-				path.StrokeThickness = fineLine;
-			}	// id in blue
-			else if (tc.buffer.Bytes[i].phase == Phases.p_data) {
-				b.Color = Color.FromRgb(0, data, data);
-				path.StrokeThickness = fineLine;
-			}
-			else {
-				b.Color = Color.FromRgb(data, data, data);
-				path.StrokeThickness = fineLine;
-			}
-
-			PathGeometry pg = new PathGeometry();
-			path.Stroke = b;
-			addArc(pg, startAngle, stopAngle, center, radius);
-			pg.Freeze();
-			path.Data = pg;
-			_gd.Children.Add(path);
-
-			lastByte = tc.buffer.Bytes[i];
-			startAngle = stopAngle;
 		}	// all bytes
 	}	// End of drawDiskTrackData()
+
+
+	private static Segment getSegment(TrackContent tc, int i) {
+		Segment segment;
+		segment = (tc.buffer.Bytes[i].mfmWord == 0) ? Segment.nfa :
+			(tc.buffer.Bytes[i].mfmWord == 0x4489) ? Segment.sync :
+			(tc.buffer.Bytes[i].phase == Phases.p_data) ? Segment.data :
+			(tc.buffer.Bytes[i].phase == Phases.p_id) ? Segment.id :
+			Segment.gap;
+		return segment;
+	}
 
 
 	/// <summary>
@@ -408,7 +423,7 @@ public partial class DiskWindow : Window {
 		bool isLargeArc = false;
 
 		if ((stop - start) > Math.PI) isLargeArc = true;
-		if (stop < start) isLargeArc = false;
+		//if (stop > start) isLargeArc = false;
 		ArcSegment aseg = new ArcSegment(stopPoint, new Size(radius, radius), 0, isLargeArc, direction, true);
 		PathFigure pf = new PathFigure();
 		pf.IsClosed = false;

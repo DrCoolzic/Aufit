@@ -287,6 +287,7 @@ namespace WD1772Package {
 			int gapPosition = 0;		// position of byte inside gap
 			int lastTrackByte = 0;		// used to store last byte for shifted track
 			int lastTrackTime = 0;		// used to store the track time for shifted track
+			bool preSynced = false;
 
 			tc.idOverIdx = false;
 			tc.dataOverIdx = false;
@@ -355,6 +356,9 @@ namespace WD1772Package {
 						tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].splice++;
 				}	// timing violation
 
+				if ((tc.syncs.Count == 0) && dsr.byteReady() && !(preSynced))
+					if (dsr.preSync()) preSynced = true;
+
 				// check if we have accumulated enough bytes
 				while (dsr.byteReady()) {
 					tc.byteCount++;
@@ -376,7 +380,7 @@ namespace WD1772Package {
 					}	// below normal
 
 					// search sync byte and correct currentBit value accordingly
-					currentBit -= dsr.searchSynch();
+					currentBit -= dsr.searchSync();
 					dsr.extract();
 
 					if (dsr.SyncFound) {
@@ -538,7 +542,7 @@ namespace WD1772Package {
 						}	// DATA Segment
 
 						// we look for sync inside ID or DATA segment.
-						dsr.searchSynch();
+						dsr.searchSync();
 						if (dsr.SyncFound)
 							// was not very useful but now critical to optimize Pasti Write
 							tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].badSync++;
@@ -695,7 +699,7 @@ namespace WD1772Package {
 
 					// we only search for sync if not in p_id
 					if (phase != Phases.p_id) 
-						currentBit -= dsr.searchSynch();
+						currentBit -= dsr.searchSync();
 					else
 						dsr.resetSync();
 
@@ -822,8 +826,8 @@ namespace WD1772Package {
 			// sanity check in compare mode the reference should already be there
 			if (compare && (sref == null)) {
 				sref = readSector(track, side, rev, sectToRead, position, false);
-				//Debug.Assert(!(compare && (sref == null)), "Read Sector: Reference sector not found in compare mode",
-				//	String.Format("Track {0:D2}.{1} Rev {2} Sector {3} at {4}", track, side, rev, sectToRead, position));
+				Debug.Assert(!(compare && (sref == null)), "Read Sector: Reference sector not found in compare mode",
+					String.Format("Track {0:D2}.{1} Rev {2} Sector {3} at {4}", track, side, rev, sectToRead, position));
 			};
 
 			// if not there or we are in compare mode create a new sectorContent
@@ -896,7 +900,7 @@ namespace WD1772Package {
 					}	// only one time
 
 					if ((phase != Phases.p_id) && (phase != Phases.p_data))
-						currentBit -= dsr.searchSynch();
+						currentBit -= dsr.searchSync();
 					else
 						dsr.resetSync();
 					dsr.extract();
@@ -1169,7 +1173,8 @@ namespace WD1772Package {
 		public static SectorContent findSectorContent(int track, int side, byte num, int position) {
 			List<SectorContent> sectors = Global.Disk[track, side].sectorsContent;
 			foreach(SectorContent sector in sectors)
-				if ((sector.id.number == num) && (sector.idBlock.startTime >= position))
+				// we need to allow a certain slack for the position ?
+				if ((sector.id.number == num) && (sector.idBlock.startTime >= (position - 32000)))
 					return sector;
 			return null;
 		}

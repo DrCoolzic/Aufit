@@ -183,7 +183,7 @@ public class DSR {
 	/// necessary information so that extract() will do the right thing. It is possible to know that a
 	/// sync character has been found by calling the sync() function. As mentioned the return value is
 	/// only meaningful if a sync char has been found. 
-	public int searchSynch() {
+	public int searchSync() {
 		int i;
 		_syncFound = false;
 
@@ -201,6 +201,30 @@ public class DSR {
 		return _shiftToSync;
 	}
 
+	/// <summary>Pre-synchronization of track start</summary>
+	/// <returns>True if synchronization</returns>
+	/// <remarks>Before the first synchronization the characters can be decoded any place.
+	/// This function forces the chance of detecting either 00 or 4E.
+	/// The char 4E is used in GAP and therefore will be found in most cases unless we have 
+	/// a shifted track. The char 00 resulting of 0x8888 or 0x2222 is used to privilege 00
+	/// over 55 (0x1111) or AA (0x4444) as it is sometimes used for protection</remarks>
+	public bool preSync() {
+		int i;
+		bool syncFound = false;
+
+		for (i = 0; i < _bitsInDSR; i++) {
+			// preSync if 00 (8888) - 00 (2222) - 4E (9254)
+			if ((((_content >> i) & 0xFFFF) == 0x8888) ||
+				(((_content >> i) & 0xFFFF) == 0x2222) ||
+				(((_content >> i) & 0xFFFF) == 0x9254)) {
+				syncFound = true;
+				break;
+			} // 00 00 4E
+		} // we search all bits in DSR for sync byte
+		if (syncFound)
+			_bitsInDSR = i;
+		return syncFound;
+	}
 
 	/// @brief Find if a byte has been assembled in the DSR
 	/// @return true when one or several bytes are in the DSR
