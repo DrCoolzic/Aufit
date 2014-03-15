@@ -49,7 +49,7 @@ namespace Aufit {
 public partial class DiskWindow : Window {
 	TextBox _tb;
 	Grid _gd;
-	const int wsize = 300;
+	const int halfWindowSize = 300;
 	const double fineLine = 1.6;
 	const double heavyLine = 2.0;
 	const double gridThickness = 0.4;
@@ -61,6 +61,7 @@ public partial class DiskWindow : Window {
 	public DiskWindow() {
 		InitializeComponent();
 	}
+
 
 	/// <summary>
 	/// Display the layout of a FD
@@ -165,9 +166,9 @@ public partial class DiskWindow : Window {
 	/// <param name="side">The side of the FD</param>
 	public void drawDiskTrackLayout(int track, int side) {
 		TrackContent tc = Global.Disk[track, side].trackContent;
-		Point center = new Point(wsize, wsize);
-		double rad_max = wsize - wsize * 0.03;
-		double rad_start = wsize / 6;
+		Point center = new Point(halfWindowSize, halfWindowSize);
+		double rad_max = halfWindowSize - halfWindowSize * 0.03;
+		double rad_start = halfWindowSize / 6;
 		double rad_inc = (rad_max - rad_start) / 84;
 		double radius = rad_max - track * rad_inc;
 		_tb.Text = String.Format("Processing track {0}", track);
@@ -175,10 +176,10 @@ public partial class DiskWindow : Window {
 		zeroLine.Stroke = Brushes.White;
 		zeroLine.StrokeThickness = gridThickness;
 		zeroLine.StrokeDashArray = gridDash;
-		zeroLine.X1 = wsize;
-		zeroLine.Y1 = wsize;
-		zeroLine.X2 = 2*wsize;
-		zeroLine.Y2 = wsize;
+		zeroLine.X1 = halfWindowSize;
+		zeroLine.Y1 = halfWindowSize;
+		zeroLine.X2 = 2*halfWindowSize;
+		zeroLine.Y2 = halfWindowSize;
 		_gd.Children.Add(zeroLine);
 
 		if (tc.sectors.Count > 1) {
@@ -325,9 +326,9 @@ public partial class DiskWindow : Window {
 	/// <param name="track">The track to display</param>
 	/// <param name="side">The side of the FD</param>
 	public void drawDiskTrackData(int track, int side) {
-		Point center = new Point(wsize, wsize);
-		double rad_max = wsize - wsize * 0.03;
-		double rad_start = wsize / 6;
+		Point center = new Point(halfWindowSize, halfWindowSize);
+		double rad_max = halfWindowSize - halfWindowSize * 0.03;
+		double rad_start = halfWindowSize / 6;
 		double rad_inc = (rad_max - rad_start) / 84;
 		double radius = rad_max - track * rad_inc;
 		_tb.Text = String.Format("Processing track {0}", track);
@@ -335,10 +336,10 @@ public partial class DiskWindow : Window {
 		zeroLine.Stroke = Brushes.White;
 		zeroLine.StrokeThickness = gridThickness;
 		zeroLine.StrokeDashArray = gridDash;
-		zeroLine.X1 = wsize;
-		zeroLine.Y1 = wsize;
-		zeroLine.X2 = wsize * 2;
-		zeroLine.Y2 = wsize;
+		zeroLine.X1 = halfWindowSize;
+		zeroLine.Y1 = halfWindowSize;
+		zeroLine.X2 = halfWindowSize * 2;
+		zeroLine.Y2 = halfWindowSize;
 		_gd.Children.Add(zeroLine);
 
 		TrackContent tc = Global.Disk[track, side].trackContent;
@@ -391,7 +392,11 @@ public partial class DiskWindow : Window {
 
 				lastByte = tc.buffer.Bytes[i];
 				lastSegment = segment;
-				startAngle = byteAngle(i, tc.byteCount);
+				// sync line are too small so we add up 3 bytes width
+				if (segment == Segment.sync)
+					startAngle = byteAngle(i-4, tc.byteCount);
+				else
+					startAngle = byteAngle(i, tc.byteCount);
 			}
 		}	// all bytes
 	}	// End of drawDiskTrackData()
@@ -450,7 +455,6 @@ public partial class DiskWindow : Window {
 		double angle = 2 * Math.PI * (double)pos / (double)count;
 		return angle;
 	}
-
 
 	//// TESTS BELOW - does not seems faster
 	//public void drawDiskTrackData2(int track, int side) {

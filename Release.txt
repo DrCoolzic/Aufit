@@ -1,3 +1,15 @@
+* V0.4c March 15, 2014 Better sync display, Fix bug Starglider 2 & PoliceQuest 2, Grid splitter clock/flux
+
+- BufferWindow: ready to display clock and MFM data (flags)
+- ClockDrawing: back to avearge of 50 fluxes
+- DrawDiskTrack: sync char too small => increase by 3
+- DSR experiment lastByte sync detection ??? need work
+- Global: sectSize returns computed size based on 3 last digits. Fix invalid id containing F7 (starglider 2)
+http://www.atari-forum.com/viewtopic.php?f=102&t=25854&start=350#p248533
+- Added Grid Splitter between clock and flux
+- SCPReader: added verification that indexTimePosition is positive (resultedt in negative flux in PoliceQuest 2)
+http://www.atari-forum.com/viewtopic.php?f=102&t=25906&p=249564#p249564
+
 * V0.4b March 1, 2014 Color changed, improve disk data, fix pre sync data pb, fix fuzzy detection
 - IDG now in ligh blue
 - button background changed
@@ -7,6 +19,7 @@
 - Global hasData (more than 300 in histo) added
 - Main checkboc recover -> Force DS. When reading KF dir name of dir used for disk layout
 - WritePasti added a ForceDS flag
+
 * V0.4a February 23, 2014 New Entropy, Double sided Disk layout, FDC more robust, SCP more robust
 - New Shannon entropy computation (following exact definition). unformatted limit defined in Global set to 6.5
 - usage of new entropy in different modules

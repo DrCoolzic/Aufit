@@ -35,6 +35,7 @@ using System.Threading.Tasks;
 using KFReaderPackage;
 using WD1772Package;
 using System.Windows.Controls;
+using System.Diagnostics;
 
 namespace GlobalPackage {
 
@@ -373,8 +374,10 @@ public class Global {
 
 		int sizeBeforeTrim = Global.Disk[track, side].fluxData.fluxValue.Max() + 1;
 		tmpHisto = new int[sizeBeforeTrim];
-		for (int i = first; i < last; i++)
-			tmpHisto[Global.Disk[track, side].fluxData.fluxValue[i]]++;
+		for (int i = first; i < last; i++) {
+			int flux = Global.Disk[track, side].fluxData.fluxValue[i];
+			tmpHisto[flux]++;
+		}
 
 		// we trim the array size to keep only significant entries. This is useful as
 		// we may end up with a huge array if track has Non Flux areas. Computations for
@@ -471,10 +474,10 @@ public class Global {
 	/// value" of 512.
 	public static int sectSize(byte size) {
 		int s;
-		if (size < 4)
-			s = 128 << (size & 0x03);
-		else
-			s = 512;
+		//if (size < 4)
+		s = 128 << (size & 0x03);
+		//else
+		//	s = 512;
 		return s;
 	}
 

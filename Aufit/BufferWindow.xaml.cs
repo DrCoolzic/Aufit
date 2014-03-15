@@ -222,6 +222,10 @@ namespace Aufit {
 		/// <param name="buffer">The buffer to display</param>
 		/// <param name="message">an optional message to display before the buffer</param>
 		public void drawBuffer(TrackBuffer buffer, string message = null) {
+			// get ready to display MFM and clock
+			bool displayMFM = false;
+			bool displayClock = false;
+
 			displayBuffer.FontFamily = new FontFamily("Consolas");
 			displayBuffer.FontSize = 16;
 			displayBuffer.FontStyle = FontStyles.Normal;
@@ -281,6 +285,32 @@ namespace Aufit {
 				}	// one more line
 				displayBuffer.Inlines.Add(ascii);
 				displayBuffer.Inlines.Add(String.Format("\n"));
+
+
+				if (displayClock) {
+					ascii = "  ";
+					displayBuffer.Inlines.Add("                    ");
+					for (int j = 0; j < 16; j++) {
+						if ((i + j) < buffer.Bytes.Count) {
+							displayBuffer.Inlines.Add(String.Format("{0:X2} ", buffer.Bytes[i + j].clockByte));
+							char ch = Convert.ToChar(buffer.Bytes[i + j].clockByte);
+							ascii += Char.IsControl(ch) ? "." : ch.ToString();
+						}
+						else displayBuffer.Inlines.Add("   ");
+					}
+					displayBuffer.Inlines.Add(ascii);
+					displayBuffer.Inlines.Add(String.Format("\n"));
+				}
+
+				if (displayMFM) {
+					displayBuffer.Inlines.Add("       ");
+					for (int j = 0; j < 16; j++) {
+						if ((i + j) < buffer.Bytes.Count)
+							displayBuffer.Inlines.Add(String.Format("{0:X4} ", buffer.Bytes[i + j].mfmWord));
+					}
+					displayBuffer.Inlines.Add("\n");
+				}
+
 			}	// all lines
 
 			//displayBuffer.Inlines.Add(String.Format("first clock {0}", _buffer.Bytes[0].density));

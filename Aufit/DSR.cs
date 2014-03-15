@@ -48,14 +48,9 @@ public class DSR {
 	private bool _syncFound;
 	/// <summary>indicates number of bits to shift when sync found</summary> 
 	private int _shiftToSync;
-	/// <summary>
-	/// 0xA1 Sync
-	/// </summary>
-	readonly private static int SYNC1 = 0x4489;
-	/// <summary>
-	/// 0xC2 Sync
-	/// </summary>
-	readonly private static int SYNC2 = 0x5224;
+	private enum ByteType { a1, c2, data };
+	private ByteType _lastByteType;
+	private ByteType _beforeLast;
 
 
 	/// <summary>Returned the decoded clock byte from the mfm data. Call extract() before</summary>
@@ -97,6 +92,8 @@ public class DSR {
 		_decodedData = 0;
 		_mfmData = 0;
 		_syncFound = false;
+		_lastByteType = ByteType.data;
+		_beforeLast = ByteType.data;
 	}
 
 	/// <summary>
@@ -165,7 +162,11 @@ public class DSR {
 		else
 			local = (_content >> (int)_bitsInDSR) & 0xFFFF;
 
-		_mfmData = (ushort)local; // store combined value
+		_mfmData = (ushort)local;
+		_beforeLast = _lastByteType;
+		_lastByteType = (_mfmData == 0x4489) ? ByteType.a1 :
+						(_mfmData == 0x5224) ? ByteType.c2 : 
+						ByteType.data;
 
 		// extract clock and data
 		for (int i = 0; i < 8; i++) {
@@ -184,12 +185,15 @@ public class DSR {
 	/// sync character has been found by calling the sync() function. As mentioned the return value is
 	/// only meaningful if a sync char has been found. 
 	public int searchSync() {
+	int SYNC1 = 0x4489;
+	int SYNC2 = 0x5224;
+
 		int i;
 		_syncFound = false;
 
 		for (i = 0; i < _bitsInDSR; i++) {
-			if ((((_content >> i) & 0xFFFF) == SYNC1) || 
-				(((_content >> i) & 0xFFFF) == SYNC2)) {
+			if (((((_content >> i) & 0xFFFF) == SYNC1) && (_lastByteType != ByteType.c2) /* && (_beforeLast != ByteType.c2) */ ) || 
+				 (((_content >> i) & 0xFFFF) == SYNC2)) {
 					_syncFound = true;
 					break;
 			}

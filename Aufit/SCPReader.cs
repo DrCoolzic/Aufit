@@ -303,7 +303,7 @@ namespace SCPReaderPackage {
 				//ti.revInfo[i].indexTimePosition = 0;	// not provided currently
 			}
 
-			// sometimes SCP seesm to generate invalid short track
+			// sometimes SCP seems to generate invalid short track
 			if (fluxSize < 1000)
 				return SCPStatus.stsOK;
 
@@ -346,7 +346,10 @@ namespace SCPReaderPackage {
 
 				// SCP does not provide the indexTime Position so we have to compute it
 				if (i == 0) {
-					ti.revInfo[0].indexTimePosition = ti.revInfo[0].indexTime - fluxSum;
+					int indexTimePosition = ti.revInfo[0].indexTime - fluxSum;
+					if (indexTimePosition < 0)
+						indexTimePosition = 0;
+					ti.revInfo[0].indexTimePosition = indexTimePosition;
 					ti.fluxValues[0] += ti.revInfo[0].indexTimePosition;
 				}
 				else
@@ -359,6 +362,7 @@ namespace SCPReaderPackage {
 			Global.Disk[track, side].fluxData.fluxCount = ti.fluxValues.Count();
 			Global.Disk[track, side].fluxData.fluxValue = new int[ti.fluxValues.Count()];
 			for (int i = 0; i < ti.fluxValues.Count(); i++) {
+				Debug.Assert(ti.fluxValues[i] > -1, "Invalid negative flux read");
 				Global.Disk[track, side].fluxData.fluxValue[i] = ti.fluxValues[i];
 				if (ti.fluxValues[i] > _fluxMax) _fluxMax = ti.fluxValues[i];
 				if (ti.fluxValues[i] < _fluxMin) _fluxMin = ti.fluxValues[i];
