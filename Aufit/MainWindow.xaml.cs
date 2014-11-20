@@ -92,6 +92,7 @@ namespace Aufit {
 		public MainWindow() {
 			InitializeComponent();
 
+
 			_fluxDrawing = new FluxDrawing(fluxGrid, cvTextFlux, cvGraphicFlux, this);
 			_fluxDrawing.SlowDraw = cbSlow.IsChecked.Value;
 			//_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
@@ -108,6 +109,7 @@ namespace Aufit {
 			_dataDrawing.Chart.FixOffset = true;
 
 			// this.DataContext = this;	// needed for property changed event
+			// TODO string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 		}
 
 

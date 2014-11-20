@@ -48,7 +48,7 @@ public class DSR {
 	private bool _syncFound;
 	/// <summary>indicates number of bits to shift when sync found</summary> 
 	private int _shiftToSync;
-	private enum ByteType { a1, c2, data };
+	private enum ByteType { a1_sync, c2_sync, data };
 	private ByteType _lastByteType;
 	private ByteType _beforeLast;
 
@@ -164,8 +164,8 @@ public class DSR {
 
 		_mfmData = (ushort)local;
 		_beforeLast = _lastByteType;
-		_lastByteType = (_mfmData == 0x4489) ? ByteType.a1 :
-						(_mfmData == 0x5224) ? ByteType.c2 : 
+		_lastByteType = (_mfmData == 0x4489) ? ByteType.a1_sync :
+						(_mfmData == 0x5224) ? ByteType.c2_sync : 
 						ByteType.data;
 
 		// extract clock and data
@@ -192,7 +192,7 @@ public class DSR {
 		_syncFound = false;
 
 		for (i = 0; i < _bitsInDSR; i++) {
-			if (((((_content >> i) & 0xFFFF) == SYNC1) && (_lastByteType != ByteType.c2) /* && (_beforeLast != ByteType.c2) */ ) || 
+			if (((((_content >> i) & 0xFFFF) == SYNC1) /* && (_lastByteType != ByteType.c2) && (_beforeLast != ByteType.c2) */ ) || 
 				 (((_content >> i) & 0xFFFF) == SYNC2)) {
 					_syncFound = true;
 					break;

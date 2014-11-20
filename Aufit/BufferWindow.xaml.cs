@@ -156,7 +156,7 @@ namespace Aufit {
 					displayBuffer.Inlines.Add(String.Format("                   |"));
 					displayBuffer.Inlines.Add(String.Format("           |"));
 					// DATA
-					if (tc.sectors[i].phases[(byte)Phases.p_data].byteCount > 0) {
+					if ((tc.sectors[i].phases[(byte)Phases.p_data].byteCount > 0) && (ac.ids.Count > 0))  {
 						// this should be the data from last id ?
 						SectorContent sc = FDC.findSectorContent(track, side, ac.ids[tc.sectors.Count - 2].number, ac.blocs[tc.sectors.Count - 2].startTime);
 						if (sc != null)

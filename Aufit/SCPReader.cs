@@ -231,7 +231,7 @@ namespace SCPReaderPackage {
 
 			ButtonMatrix.clearButtons();
 			file.TrackHeader = new int[166];
-			for (int trackAndSide = 0; trackAndSide < 165; trackAndSide++) {
+			for (int trackAndSide = 0; trackAndSide < 166; trackAndSide++) {
 				file.TrackHeader[trackAndSide] = readInt32(buffer, ref idx);
 				if (file.TrackHeader[trackAndSide] != 0) {
 					status = await readSCPTrackAsync(buffer, trackAndSide, file.TrackHeader[trackAndSide], file.revCount);

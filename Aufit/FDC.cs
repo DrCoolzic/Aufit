@@ -403,8 +403,7 @@ namespace WD1772Package {
 						}	// bad sync sequence
 
 						// we reset the running CRC on first A1
-						// since we moved to detection of AM with only 2 sync the crc init has been moved
-						//if ((syncInSeq == 1) && (dsr.Data == 0xA1)) crc = 0xFFFF;
+						if ((syncInSeq == 1) && (dsr.Data == 0xA1)) crc = 0xFFFF;
 
 						// check long sync sequence - we only count one
 						if (syncInSeq == 4) {
@@ -415,8 +414,8 @@ namespace WD1772Package {
 					}	// sync byte
 
 					// check short sync sequence
-					//if ((syncInSeq > 0) && (syncInSeq < 3) && !dsr.SyncFound) {
-					if ((syncInSeq == 1) && !dsr.SyncFound) {
+					if ((syncInSeq > 0) && (syncInSeq < 3) && !dsr.SyncFound) {
+					//if ((syncInSeq == 1) && !dsr.SyncFound) {
 						syncInSeq = 0;
 						tc.syncs[tc.syncs.Count - 1].badSync = true;
 						tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].badSync++;
@@ -428,19 +427,18 @@ namespace WD1772Package {
 							tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].invDataGap++;
 						} // invalid data in GAP
 
-						if ((syncInSeq > 1) && !dsr.SyncFound) {
+						if ((syncInSeq > 2) && !dsr.SyncFound) {
 							// 3+ sync & data not sync => should be an AM
 							syncInSeq = 0;	// reset sync count
 							// since we now look for AM with only two sync detected we initialize the
 							// crc here with value = crc for 3 sync
-							crc = 0xCDB4;
+							//crc = 0xCDB4;
 							switch (dsr.Data) {
-								case 0xFC:	// IAM - IBM 34 Format - ignore
+								case 0xFC:	// IAM - IBM 34 Format - the WD1772 treats it as an IDAM
 								case 0xFD:
-									break;
-
 								case 0xFE:	// IDAM - start of an ID block
-									//case 0xFF:
+								case 0xFF:
+								
 									// if (phase == Phases.p_inner) TODO ID no DATA ?
 									UpdateTrackInfo(tc, phase, ref blockStartByte, ref blockStartTime, prevBlockEndTime);
 									tc.sectors[tc.sectors.Count - 1].endTime = prevBlockEndTime;
@@ -458,10 +456,10 @@ namespace WD1772Package {
 									}	// normal case
 									break;
 
-								case 0xFB:	// DAM - Start of a DATA block
 								case 0xF8:	// DDAM
-									//case 0xFA:
-									//case 0xF9:
+								case 0xF9:
+								case 0xFA:
+								case 0xFB:	// DAM - Start of a DATA block
 									UpdateTrackInfo(tc, phase, ref blockStartByte, ref blockStartTime, prevBlockEndTime);
 
 									// check DATA before found a sector ID
@@ -712,24 +710,26 @@ namespace WD1772Package {
 							syncInSeq = 1;
 
 						// reset CRC on first A1 moved
-						// if ((syncInSeq == 1) && (dsr.Data == 0xA1)) crc = 0xFFFF;
+						if ((syncInSeq == 1) && (dsr.Data == 0xA1)) crc = 0xFFFF;
 
 						lastSync = dsr.Data;
 					}	// sync byte
 
 					// check short sync sequence
-					//if ((syncInSeq > 0) && (syncInSeq < 3) && !dsr.SyncFound)
-					if ((syncInSeq == 1) && !dsr.SyncFound)
+					if ((syncInSeq > 0) && (syncInSeq < 3) && !dsr.SyncFound)
+					//if ((syncInSeq == 1) && !dsr.SyncFound)
 						syncInSeq = 0;
 
 					if (phase != Phases.p_id) {	// not in ID
-						if ((syncInSeq > 1) && !dsr.SyncFound) {
-							// 2+ sync & not sync => should be an AM
+						if ((syncInSeq > 2) && !dsr.SyncFound) {
+							// 3+ sync & not sync => should be an AM
 							syncInSeq = 0;		// reset sync count
-							crc = 0xCDB4;		// initialize CRC
+							//crc = 0xCDB4;		// initialize CRC
 							switch (dsr.Data) {
+								case 0xFC:	// IBM IAM
+								case 0xFD:
 								case 0xFE:	// IDAM - start of an ID block
-								//case 0xFF:
+								case 0xFF:
 									ac.ids.Add(new IDField());
 
 									IDField id = ac.ids[ac.ids.Count - 1];
@@ -910,22 +910,25 @@ namespace WD1772Package {
 						// check bad sequence
 						if ((syncInSeq > 1) && (dsr.Data != lastSync)) syncInSeq = 1;
 						// reset CRC on first A1 - moved below
-						// if ((syncInSeq == 1) && (dsr.Data == 0xA1)) crc = 0xFFFF;
+						if ((syncInSeq == 1) && (dsr.Data == 0xA1)) crc = 0xFFFF;
 						lastSync = dsr.Data;
 					}	// sync byte
 
 					// check short sync sequence
-					//if ((syncInSeq > 0) && (syncInSeq < 3) && !dsr.SyncFound) 
-					if ((syncInSeq == 1) && !dsr.SyncFound) syncInSeq = 0;
+					if ((syncInSeq > 0) && (syncInSeq < 3) && !dsr.SyncFound) 
+					//if ((syncInSeq == 1) && !dsr.SyncFound) 
+						syncInSeq = 0;
 
 					if ((phase != Phases.p_id) && (phase != Phases.p_data)) { // We are in a GAP
-						if ((syncInSeq > 1) && !dsr.SyncFound) {
-							// 2+ sync & not sync => should be an AM
+						if ((syncInSeq > 2) && !dsr.SyncFound) {
+							// 3+ sync & not sync => should be an AM
 							syncInSeq = 0;	// reset sync count
-							crc = 0xCDB4;
+							//crc = 0xCDB4;
 							switch (dsr.Data) {
+								case 0xFC:	// IMB IAM => same as IDAM
+								case 0xFD:
 								case 0xFE:	// IDAM - start of an ID block
-								//case 0xFF:
+								case 0xFF:
 									// if we have already found the requested ID and we find another ID
 									// this means that no DATA block were found before this ID
 									// therefore we should break
@@ -950,10 +953,10 @@ namespace WD1772Package {
 									phase = Phases.p_id;
 									break;
 
-								case 0xFB:	// DAM - Start of a DATA block
 								case 0xF8:	// DDAM
-									//case 0xFA:
-									//case 0xF9:
+								case 0xF9:
+								case 0xFA:
+								case 0xFB:	// DAM - Start of a DATA block
 									// we check that this DATA block is for the ID we are looking for
 									// and that the DATA block is less than 43 bytes apart
 									if (idFound && ((byteCount - sc.idBlock.startByte - 7) <= 43)) {

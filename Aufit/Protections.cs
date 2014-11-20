@@ -93,6 +93,7 @@ namespace Aufit {
 				writeInfo(info, "has data beyond index");
 			if (tc.idOverIdx)
 				writeInfo(info, "has ID field over index");
+
 			//////////////////////
 			// Sector Protections
 			//////////////////////
