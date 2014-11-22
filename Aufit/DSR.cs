@@ -1,250 +1,236 @@
-/*!
-@file dsr.cs
- * 
-<summary>DSR Class: implements a shift register equivalent to the one used in the WD1772 FDC</summary>
-
-<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
-This file is part of the Atari Universal FD Image Tool project.\n\n
-The Atari Universal FD Image Tool project may be used and distributed without restriction provided
-that this copyright statement is not removed from the file and that any
-derivative work contains the original copyright notice and the associated
-disclaimer.\n\n
-The Atari Universal FD Image Tool project is free software; you can redistribute it
-and/or modify  it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 3
-of the License, or (at your option) any later version.\n\n
-The Atari Universal FD Image Tool project is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n
-See the GNU General Public License for more details.\n\n
-You should have received a copy of the GNU General Public License
-along with the Atari Universal FD Image Tool project; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</div>
-
-@author Jean Louis-Guerin
-*/
-
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace WD1772Package {
+	public class DSR {
+		const int BIT_0 = 0x0001;
+		const int BIT_1 = 0x0002;
+		const int BIT_2 = 0x0004;
+		const int BIT_3 = 0x0008;
+		const int BIT_4 = 0x0010;
+		const int BIT_5 = 0x0020;
+		const int BIT_6 = 0x0040;
+		const int BIT_7 = 0x0080;
+		const int BIT_8 = 0x0100;
 
-/// <summary>Implement a DSR (Data Shift Register of 32 bits) to store incoming bits</summary>
-///
-/// <remarks>Something special about this DSR is that it can store a large number of null bits.
-/// This is necessary for the long long spacing protection that convert to a large
-/// number of bytes without data and clock bits!</remarks>
-public class DSR {
-	/// <summary>content of the 32 bits data shift register (clock+data)</summary>
-	private int _content;
-	/// <summary>number of accumulated bits in the DSR</summary>
-	private int _bitsInDSR;
-	/// <summary>decoded data (8 bits) after call to extract()</summary>
-	private byte _decodedData;
-	/// <summary>decoded clock (8 bits) after call to extract()</summary>
-	private byte _decodedClock;
-	/// <summary>Combined clock & data after call to extract()</summary>
-	private ushort _mfmData;
-	/// <summary>True when synchronization found in DSR</summary>
-	private bool _syncFound;
-	/// <summary>indicates number of bits to shift when sync found</summary> 
-	private int _shiftToSync;
-	private enum ByteType { a1_sync, c2_sync, data };
-	private ByteType _lastByteType;
-	private ByteType _beforeLast;
+		/// <summary>Byte Type</summary>
+		enum ByteType { NotSync, A1Sync, C2Sync }
 
+		/// <summary>
+		/// Bit used in the _decoderFlags to indicate that the Sync Address Mark detector is enabled
+		/// </summary>
+		const int SYNC_DETECTOR_ENABLED =	BIT_0;
 
-	/// <summary>Returned the decoded clock byte from the mfm data. Call extract() before</summary>
-	public byte Clock {
-		get { return _decodedClock; }
-	}
+		/// <summary>Bit used in the _decoderFlags to indicates that data have been assembled</summary>
+		const int DATA_READY =	BIT_1;
 
-	/// <summary>
-	/// Returned the decoded data byte from the mfm data. Call extract() before.
-	/// </summary>
-	public byte Data {
-		get { return _decodedData; }
-	}
+		/// <summary>Found the pattern 0x4489 in the AM detector</summary>
+		const int A1_FOUND = BIT_2;
 
-	/// <summary>
-	/// Return the MFM data. Call extract() before.
-	/// </summary>
-	public ushort MFM {
-		get { return _mfmData; }
-	}
+		/// <summary>Found the pattern 0x5224 in the AM detector</summary>
+		const int C2_FOUND = BIT_3;
 
-	/// <summary>Sync has been found </summary>
-	/// <remarks>This property is set to true after calling searchSynch() if a sync byte has been found.
-	/// It is also possible to force the flag to false if you do not want the shifting to be
-	/// done by extract() ...</remarks>
-	///
-	public bool SyncFound {
-		get { return _syncFound; }
-		// set { _syncFound = value; }
-	}
+		/// <summary>AM Shift Detector</summary>
+		/// <remarks>A 16 bits wide shift register that accumulates directly 
+		/// all the decoded bits from the data separator (the DPLL).
+		/// The bits are entered in the register through the dsrShiftBitIn() function. 
+		/// This register is directly used to detect the A1 (0x4489) and C2 (0x5224) Sync marks. 
+		/// it is also used as the source to shift the data bits the DSR and to compute the CRC</remarks>
+		int _amShitfRegister;
 
+		/// <summary>Data Shift register</summary>
+		/// <remarks>The Data shift register is 8 bits wide and accumulates the decoded DATA bits.
+		/// This register should be read when a byte has been assembled (this is indicated by 
+		/// the DATA_READY property</remarks>
+		int _dsr;
 
-	/// <summary>The DSR Class Constructor</summary>
-	/// We just reset variables
-	public DSR() {
-		_bitsInDSR = 0;
-		_content = 0;
-		_decodedClock = 0;
-		_decodedData = 0;
-		_mfmData = 0;
-		_syncFound = false;
-		_lastByteType = ByteType.data;
-		_beforeLast = ByteType.data;
-	}
+		/// <summary>Stores the various decoder Flags</summary>
+		int _decoderFlags;
 
-	/// <summary>
-	/// Reset the sync flag of the DSR
-	/// </summary>
-	public void resetSync() {
-		_syncFound = false;
-	}
+		/// <summary>Indicates the distance of the next data bit</summary>
+		/// <remarks>A value of 0 indicates we just read a clock bit in the _amShitfRegister and that
+		/// we are ready to transfer the previous data bits in the DSR</remarks>
+		int _dataDelay;
 
-	/// <summary>Shift by n bits the DSR</summary>
-	/// <param name="nbits">the number of bits to shift in</param>
-	///
-	/// This procedure shift by n bits the content of the DSR then puts a logical one at the last position
-	/// Internally it also increments the number of bits in the DSR.\n
-	/// Due to huge flux transition (e.g. several ms! in Turrican) the number of bits to shift-in can be 
-	/// larger than 16 bits. 
-	public void shiftBitsIn(int nbits) {
-		if (nbits > 16)
-			// if n bits over 16 we complete with 0 the DSR
-			_content = _content << (16 - _bitsInDSR);
-		else
-			// we shift by nbits and set the lsb
-			_content = (_content << nbits) | 1;
+		/// <summary>Skip invalid data in DSR</summary>
+		/// <remarks>A non null value indicates an invalid DSR content</remarks>
+		int _dsrInvalid;
 
-		_bitsInDSR += nbits;
-	}
+		/// <summary>Number of overlapping bits from last Sync</summary>
+		/// <remarks>A non null value indicates that we are still overlapping with the previous
+		/// Address Mark</remarks>
+		int _syncOverlapCount;
 
-	/// <summary>Shift one byte (8 bits) in the DSR</summary>
-	/// <param name="val">byte to shift in</param>
-	///
-	/// This procedure shift by 8 bits the content of the DSR ored with the provided byte
-	/// Internally it also increments the number of bits in the DSR by 8.
-	public void shiftByteIn(byte val)
-	{
-		_content <<= 8;
-		_content += val;
-		_bitsInDSR += 8;
-	}
+		/// <summary>Store the type of the last sync found</summary>
+		ByteType _lastSyncFound;
 
+		/// <summary>Number of bits assembled in the DSR</summary>
+		int _dsrBitCount;
 
-	/// <summary>Extract the content of the DSR</summary>
-	///
-	/// This function should be called after searchSynch() function (if used) and before getting Data or
-	/// Clock. The function takes care of shifting out by the right amount if a sync character has been found.
-	/// If no sync character has been found then the leading 16 bits are used.\n
-	/// As explained in shiftBitsIn() many "null bytes" can be pseudo shifted in the DSR. In this case each call
-	/// return a null data byte ...
-	public void extract() {
-		int local;
-
-		if (_syncFound)
-			_bitsInDSR = _shiftToSync;
-		else
-			_bitsInDSR -= 16;
-
-		if (_bitsInDSR > 16) {
-			// n_bits > 16 we extract only the last 16 bits
-			local = (_content >> 16) & 0xFFFF;
-			if (_bitsInDSR > 32)
-				// n_bits over 32 we set value to 0
-				_content = 0;
-			else
-				// n_ bit between 16 & 32 set last bit
-				_content = 1;
-		}	// more than 16 bits
-		else
-			local = (_content >> (int)_bitsInDSR) & 0xFFFF;
-
-		_mfmData = (ushort)local;
-		_beforeLast = _lastByteType;
-		_lastByteType = (_mfmData == 0x4489) ? ByteType.a1_sync :
-						(_mfmData == 0x5224) ? ByteType.c2_sync : 
-						ByteType.data;
-
-		// extract clock and data
-		for (int i = 0; i < 8; i++) {
-			_decodedClock = (byte)((_decodedClock << 1) | (((local & 0x8000) != 0) ? 1 : 0));
-			local = (local << 1);
-			_decodedData = (byte)((_decodedData << 1) | (((local & 0x8000) != 0) ? 1 : 0));
-			local = (local << 1);
+		#region flag_helper_functions
+		/// <summary>Set the specified bit(s) in the flag</summary>
+		/// <param name="flag">The flag to update</param>
+		/// <param name="bits">An array of bits to set in the flag</param>
+		void setBits(ref int flag, params int[] bits) {
+			for (int i = 0; i < bits.Length; i++)
+				flag |= bits[i];
 		}
-	}
 
-	/// <summary>Search for a sync character in the DSR</summary>
-	/// <returns>The number of bit to shift if a sync character has been found; otherwise return 0</returns>
-	/// 
-	/// Look in the DSR for a sync character (0x4489 or 0x5224). If a sync char is found it stores the
-	/// necessary information so that extract() will do the right thing. It is possible to know that a
-	/// sync character has been found by calling the sync() function. As mentioned the return value is
-	/// only meaningful if a sync char has been found. 
-	public int searchSync() {
-	int SYNC1 = 0x4489;
-	int SYNC2 = 0x5224;
+		/// <summary>Reset the specified bit(s) in the flag</summary>
+		/// <param name="flag">The flag to update</param>
+		/// <param name="bits">An array of bits to reset in the flag</param>		
+		void resetBits(ref int flag, params int[] bits) {
+			for (int i = 0; i < bits.Length; i++)
+				flag &= ~bits[i];
+		}
 
-		int i;
-		_syncFound = false;
+		/// <summary>Test the specified bit(s) in the flag</summary>
+		/// <param name="flag">The flag to test</param>
+		/// <param name="bits">An array of bits to test in the flag</param>
+		/// <returns>True if any of the tested bits is set</returns>
+		bool testBits(int flag, params int[] bits) {
+			bool result = false;
+			for (int i = 0; i < bits.Length; i++)
+				result |= ((flag & bits[i]) != 0);
+			return result;
+		}
+		#endregion flag_helper_functions
 
-		for (i = 0; i < _bitsInDSR; i++) {
-			if (((((_content >> i) & 0xFFFF) == SYNC1) /* && (_lastByteType != ByteType.c2) && (_beforeLast != ByteType.c2) */ ) || 
-				 (((_content >> i) & 0xFFFF) == SYNC2)) {
-					_syncFound = true;
-					break;
+
+		#region properties
+		/// <summary>This property indicates if the Sync detection is enabled (true) or disabled (false)</summary>
+		public bool SyncDetectEnable {
+			get { return testBits(_decoderFlags, SYNC_DETECTOR_ENABLED); }
+			set {
+				if (value) setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
+				else resetBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
 			}
-		} // we search all bits in DSR for sync byte
-		if (_syncFound)
-			_shiftToSync = i;
-		else
-			_shiftToSync = 0;
-		return _shiftToSync;
+		}
+
+		/// <summary>This property is set to true if the last decoded character is an AM (A1 or C2)</summary>
+		public bool SyncFound {
+			get { return testBits(_decoderFlags, A1_FOUND, C2_FOUND); }
+		}
+
+		/// <summary>The last decoded byte is an A1 Sync </summary>
+		public bool A1Found {
+			get { return testBits(_decoderFlags, A1_FOUND); }
+		}
+
+		/// <summary>The last decoded byte is an C2 Sync </summary>
+		public bool C2Found {
+			get { return testBits(_decoderFlags, C2_FOUND); }
+		}
+
+		/// <summary>
+		/// This property is true when a character is ready to be read from the DSR
+		/// </summary>
+		public bool DataReady {
+			get { return testBits(_decoderFlags, DATA_READY); }
+		}
+
+		/// <summary>When DataReady is true this property returns the decoded Data</summary>
+		public byte Data {
+			get { return (byte)_dsr; }
+		}
+
+		/// <summary>Content of the AM decoder register</summary>
+		public ushort MFM {
+			get { return (ushort)(_amShitfRegister >> 1); }
+		}
+
+		#endregion properties
+
+		/// <summary>Initialize the DSR class</summary>
+		public DSR() {
+			_amShitfRegister = 0;
+			_dsr = 0;
+			_syncOverlapCount = 0;
+			_decoderFlags = 0;
+			_lastSyncFound = ByteType.NotSync;
+			_dataDelay = 0;
+			_dsrInvalid = 0;
+			_dsrBitCount = 0;
+		}
+
+
+		public void shiftBitsIn(int bit) {
+			// shift the provided bit in AM Detector LSB
+			_amShitfRegister = (_amShitfRegister << 1) | bit;
+
+			// decrement AM overlap count
+			if (_syncOverlapCount != 0) _syncOverlapCount--;
+
+			resetBits(ref _decoderFlags, DATA_READY);
+			//if (_dataDelay == 1)
+				resetBits(ref _decoderFlags, A1_FOUND, C2_FOUND);
+			
+			// Check for Sync only if detection enabled
+			if (SyncDetectEnable) {
+				ByteType bitsInDetector = ByteType.NotSync;
+				// Check if am detector content is a sync
+				switch (_amShitfRegister & 0xFFFF) {
+					case 0x4489:
+						// detect A1 only if it does not overlap with a previous A1
+						if ((_syncOverlapCount == 0) || (_lastSyncFound != ByteType.A1Sync)) {
+							bitsInDetector = ByteType.A1Sync;
+							setBits(ref _decoderFlags, A1_FOUND);
+						}
+						break;
+					case 0x5224:
+						bitsInDetector = ByteType.C2Sync;
+						setBits(ref _decoderFlags, C2_FOUND);
+						break;
+				}	// detect AM
+
+				// process Sync if detected
+				if (bitsInDetector != ByteType.NotSync) {
+					_dataDelay = 1;	// we have just read the last data bit of a sync
+
+					// if Sync overlap with different Sync type
+					if ((_syncOverlapCount != 0) && (_lastSyncFound != bitsInDetector)) {
+						_dsrInvalid++;		// DSR value is invalid
+						_dataDelay += 2;	// delay by one additional data bit (data & clock)
+						Debug.Assert(_lastSyncFound != ByteType.A1Sync, "Overlapping A1 Sync is not possible");
+					}	// overlap
+
+					// if DSR is empty it should not be flushed
+					if (_dsrBitCount == 0) 
+						_dsrInvalid++;
+
+					_dsrBitCount = 7;		// force DSR to flush
+					_syncOverlapCount = 16;	// 16 bits (8 clock + 8 data) must be read before next AM
+					_lastSyncFound = bitsInDetector;
+				}	// Sync found
+			}	// Sync detection enabled
+
+			// wait for the data clock cycle plus the bit cell delay
+			if (_dataDelay == 0) {
+				_dataDelay = 1;
+
+				// shift data bit into the DSR, we are at clock bit
+				_dsr = ((_dsr << 1) | ((_amShitfRegister >> 1) & 1)) & 0xFF;
+
+				// if 8 bits in DSR process
+				if (++_dsrBitCount == 8) {
+					_dsrBitCount = 0;	// reset count
+					// set DATA_READY flag if valid data
+					if (_dsrInvalid == 0)
+						setBits(ref _decoderFlags, DATA_READY);
+					else
+						_dsrInvalid--;
+				}	// one more byte
+			}	// data bit
+			else
+				_dataDelay--;
+
+		}	// end of dsrShiftBitIn()
+
+        public bool byteReady() { return DataReady; }
+
 	}
-
-	/// <summary>Pre-synchronization of track start</summary>
-	/// <returns>True if synchronization</returns>
-	/// <remarks>Before the first synchronization the characters can be decoded any place.
-	/// This function forces the chance of detecting either 00 or 4E.
-	/// The char 4E is used in GAP and therefore will be found in most cases unless we have 
-	/// a shifted track. The char 00 resulting of 0x8888 or 0x2222 is used to privilege 00
-	/// over 55 (0x1111) or AA (0x4444) as it is sometimes used for protection</remarks>
-	public bool preSync() {
-		int i;
-		bool syncFound = false;
-
-		for (i = 0; i < _bitsInDSR; i++) {
-			// preSync if 00 (8888) - 00 (2222) - 4E (9254)
-			if ((((_content >> i) & 0xFFFF) == 0x8888) ||
-				(((_content >> i) & 0xFFFF) == 0x2222) ||
-				(((_content >> i) & 0xFFFF) == 0x9254)) {
-				syncFound = true;
-				break;
-			} // 00 00 4E
-		} // we search all bits in DSR for sync byte
-		if (syncFound)
-			_bitsInDSR = i;
-		return syncFound;
-	}
-
-	/// @brief Find if a byte has been assembled in the DSR
-	/// @return true when one or several bytes are in the DSR
-	///
-	/// This call can be done after the shiftBitsIn() call to check if one or more bytes have been
-	/// assembled in the DSR. It must be done before the searchSynch() and/or extract(). Due
-	/// to huge flux transition it is possible that many <b>bytes</b> are in the DSR. To get them
-	/// all you must use this call in a loop
-	public bool byteReady() {
-		return (_bitsInDSR >= 16);
-	}
-
-
-
-
-	/// @}
 }
-}
-
