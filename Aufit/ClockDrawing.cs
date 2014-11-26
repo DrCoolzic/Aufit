@@ -100,45 +100,49 @@ class ClockDrawing {
 
 		if (Global.Disk[track, side].fluxData == null) return;
 		Global.DiskTrack td = Global.Disk[track, side];
-		if (td.decodeData == null) return;
+		if (td.packedFluxData == null) return;
 
 		_clockChartLayout.drawChartGrids();
 		int speedUp = FluxDrawing.SpeedUp;
 
-		int start = Global.firstIndex(track, side, rev);
-		int stop = Global.lastIndex(track, side, rev);
-		int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
+		//int start = Global.firstIndex(track, side, rev);
+		//int stop = Global.lastIndex(track, side, rev);
+		//int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
+		int startBit = Global.Disk[track, side].packedFluxDataRev[rev - 1].firstFluxBit;
+		int stopBit = startBit + Global.Disk[track, side].packedFluxDataRev[rev - 1].bitCount;
 
 		int currentTime = 0;
 		Polyline clockLine = new Polyline();
 		clockLine.Stroke = Brushes.Black;
 		clockLine.StrokeThickness = 1;
 
-		int lastRev = Global.Disk[track, side].revData.Count() - 1;
-		int lastFlux = Global.Disk[track, side].revData[lastRev].fluxIndex + Global.Disk[track, side].revData[lastRev].fluxCount - 1;
+		int lastRev = Global.Disk[track, side].fluxDataRev.Count() - 1;
+		int lastFlux = Global.Disk[track, side].fluxDataRev[lastRev].firstFluxIndex + Global.Disk[track, side].fluxDataRev[lastRev].fluxCount - 1;
 
 		// populate
-		for (int i = start; i < stop; i++) {
-			int flux = Global.CorrectedSampleToTiming(td.fluxData.fluxValue[i], track, side, rev);
-			if (i == start)
-				flux -= Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
-			else if (i == (stop - 1))
-				flux += Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
+		for (int bitPosition = startBit; bitPosition < stopBit; bitPosition++) {
+			int currentByte = bitPosition / 8;
+			int currentBitInByte = bitPosition % 8;
+			byte bits = Global.Disk[track, side].packedFluxData.packBits[currentByte];
+			int bit = (bits >> currentBitInByte) & 0x1;
+			if (bit == 0) continue;
+
+			int flux = Global.fluxValue(bitPosition, track, side);
 			currentTime += flux;
 
-			int clk = td.decodeData.clockPeriod[i];
+			int clk = td.packedFluxData.bitWidth[currentByte];
 			int avgClock = 0;
 			int avgCount = 0;
 			for (int j = 0; j < CLK_AVG_COUNT; j++) {
-				int index = i - CLK_AVG_COUNT/2 + j;
-				if ((index >= 0) && (index <= lastFlux)) {
-					avgClock += td.decodeData.clockPeriod[index];
+				int index = currentByte - CLK_AVG_COUNT / 2 + j;
+				if ((index >= 0) && (index <= (stopBit/8))) {
+					avgClock += td.packedFluxData.bitWidth[index];
 					avgCount++;
 				}
 			}
 			if (avgCount > 0) clk = avgClock / avgCount;
 
-			if (i % speedUp != 0) continue;
+			if (bitPosition % speedUp != 0) continue;
 			if (!_clockChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)clk)) continue;
 			clockLine.Points.Add(_clockChartLayout.NormPoint((double)currentTime / 1000000.0, clk));
 		}
@@ -146,38 +150,38 @@ class ClockDrawing {
 
 		// Bezier Spline
 		//int nbpoints = 0;
-		//currentTime = 0;
-		//for (int i = start; i < stop; i++) {
-		//	int flux = StreamProcess.sampleToTiming(track.flux[i]);
-		//	if (i == start) flux -= indexFirstFluxCorrection;
-		//	currentTime += flux;
+		//currentPosition = 0;
+		//for (int indexStart = start; indexStart < stop; indexStart++) {
+		//	int flux = StreamProcess.sampleToTiming(track.flux[indexStart]);
+		//	if (indexStart == start) flux -= indexFirstFluxCorrection;
+		//	currentPosition += flux;
 
-		//	int clk = track.clock[i];
-		//	if (i % speedUp != 0) continue;
-		//	if (!_clockChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)clk)) continue;
+		//	int clk = track.clock[indexStart];
+		//	if (indexStart % speedUp != 0) continue;
+		//	if (!_clockChartLayout.inExtendedViewport((double)currentPosition / 1000000.0, (double)clk)) continue;
 		//	nbpoints++;
 		//}
 		//Point[] points = new Point[nbpoints+3];
 
 		//nbpoints = 0;
-		//currentTime = 0;
+		//currentPosition = 0;
 		////points[nbpoints++] = _clockChartLayout.NormPoint(start, 2000);
-		//for (int i = start; i < stop; i++) {
-		//	int flux = StreamProcess.sampleToTiming(track.flux[i]);
-		//	if (i == start) flux -= indexFirstFluxCorrection;
-		//	currentTime += flux;
-		//	int clk = track.clock[i];
-		//	if (i % speedUp != 0) continue;
-		//	if (!_clockChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)clk)) continue;
-		//	points[nbpoints++] = _clockChartLayout.NormPoint((double)currentTime / 1000000.0, clk);
+		//for (int indexStart = start; indexStart < stop; indexStart++) {
+		//	int flux = StreamProcess.sampleToTiming(track.flux[indexStart]);
+		//	if (indexStart == start) flux -= indexFirstFluxCorrection;
+		//	currentPosition += flux;
+		//	int clk = track.clock[indexStart];
+		//	if (indexStart % speedUp != 0) continue;
+		//	if (!_clockChartLayout.inExtendedViewport((double)currentPosition / 1000000.0, (double)clk)) continue;
+		//	points[nbpoints++] = _clockChartLayout.NormPoint((double)currentPosition / 1000000.0, clk);
 		//}
 		////points[nbpoints++] = _clockChartLayout.NormPoint(stop, 2200);
 
 		//Point[] cp1, cp2;
 		//ovp.BezierSpline.GetCurveControlPoints(points, out cp1, out cp2);
 		//PathSegmentCollection lines = new PathSegmentCollection();
-		//for (int i = 0; i < cp1.Length; ++i) {
-		//	lines.Add(new BezierSegment(cp1[i], cp2[i], points[i + 1], true));
+		//for (int indexStart = 0; indexStart < cp1.Length; ++indexStart) {
+		//	lines.Add(new BezierSegment(cp1[indexStart], cp2[indexStart], points[indexStart + 1], true));
 		//}
 		//PathFigure f = new PathFigure(points[0], lines, false);
 		//PathGeometry g = new PathGeometry(new PathFigure[] { f });
@@ -199,13 +203,14 @@ class ClockDrawing {
 		else _side = side;
 		if (rev == -1) rev = _rev;
 		else _rev = rev;
-		if (Global.Disk[track, side].fluxData == null) return;
+		if (Global.Disk[track, side].packedFluxData == null) return;
 
 		int fluxXmin = 0;
 		int fluxXmax = 200;
-		if (rev == 0) fluxXmax = 200 * Global.Disk[track, side].revData.Count();
-		_clockMin = Global.Disk[track, side].decodeData.minClockPeriod;
-		_clockMax = Global.Disk[track, side].decodeData.maxClockPeriod;
+		if (rev == 0) fluxXmax = 200 * Global.Disk[track, side].fluxDataRev.Count();
+
+		_clockMin = Global.Disk[track, side].packedFluxData.minBitWidth;
+		_clockMax = Global.Disk[track, side].packedFluxData.maxBitWidth;
 		if (_clockMin == _clockMax) {
 			_clockMin -= _clockMin / 100;
 			_clockMax += _clockMax / 100;

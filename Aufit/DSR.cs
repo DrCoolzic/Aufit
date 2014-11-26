@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace WD1772Package {
 	public class DSR {
@@ -17,42 +12,37 @@ namespace WD1772Package {
 		const int BIT_7 = 0x0080;
 		const int BIT_8 = 0x0100;
 
-		/// <summary>Byte Type</summary>
-		enum ByteType { NotSync, A1Sync, C2Sync }
+		enum SyncType { No, A1, C2 }
 
-		/// <summary>
-		/// Bit used in the _decoderFlags to indicate that the Sync Address Mark detector is enabled
-		/// </summary>
-		const int SYNC_DETECTOR_ENABLED =	BIT_0;
-
-		/// <summary>Bit used in the _decoderFlags to indicates that data have been assembled</summary>
-		const int DATA_READY =	BIT_1;
-
-		/// <summary>Found the pattern 0x4489 in the AM detector</summary>
+		/// <summary>Bit used in the _decoderFlags for the Address Mark detector enabled</summary>
+		const int SYNC_DETECTOR_ENABLED = BIT_0;
+		/// <summary>Bit used in the _decoderFlags to indicates that DSR data are available</summary>
+		const int DATA_READY = BIT_1;
 		const int A1_FOUND = BIT_2;
-
-		/// <summary>Found the pattern 0x5224 in the AM detector</summary>
 		const int C2_FOUND = BIT_3;
+		const int CRC_ENABLED = BIT_4;
+		const int CRC_ACTIVE = BIT_5;
+		const int IAM_POSITION = BIT_6;
 
-		/// <summary>AM Shift Detector</summary>
-		/// <remarks>A 16 bits wide shift register that accumulates directly 
+		/// <summary>AM Detector</summary>
+		/// <remarks>The _syncDetector is a 16 bits wide shift register that accumulates directly 
 		/// all the decoded bits from the data separator (the DPLL).
 		/// The bits are entered in the register through the dsrShiftBitIn() function. 
-		/// This register is directly used to detect the A1 (0x4489) and C2 (0x5224) Sync marks. 
+		/// This register is directly used to detect the A1 (0x4489) and C2 (0x5224) Address Marks. 
 		/// it is also used as the source to shift the data bits the DSR and to compute the CRC</remarks>
-		int _amShitfRegister;
+		int _syncDetector;
 
 		/// <summary>Data Shift register</summary>
 		/// <remarks>The Data shift register is 8 bits wide and accumulates the decoded DATA bits.
 		/// This register should be read when a byte has been assembled (this is indicated by 
-		/// the DATA_READY property</remarks>
+		/// the DATA_AVAILABLE property</remarks>
 		int _dsr;
 
 		/// <summary>Stores the various decoder Flags</summary>
 		int _decoderFlags;
 
 		/// <summary>Indicates the distance of the next data bit</summary>
-		/// <remarks>A value of 0 indicates we just read a clock bit in the _amShitfRegister and that
+		/// <remarks>A value of 0 indicates we just read a clock bit in the _amDetector and that
 		/// we are ready to transfer the previous data bits in the DSR</remarks>
 		int _dataDelay;
 
@@ -60,16 +50,21 @@ namespace WD1772Package {
 		/// <remarks>A non null value indicates an invalid DSR content</remarks>
 		int _dsrInvalid;
 
-		/// <summary>Number of overlapping bits from last Sync</summary>
+		/// <summary>Number of overlapping bits from last AM</summary>
 		/// <remarks>A non null value indicates that we are still overlapping with the previous
 		/// Address Mark</remarks>
 		int _syncOverlapCount;
 
-		/// <summary>Store the type of the last sync found</summary>
-		ByteType _lastSyncFound;
+		/// <summary>Store the last AM detected</summary>
+		SyncType _lastSyncFound;
 
 		/// <summary>Number of bits assembled in the DSR</summary>
 		int _dsrBitCount;
+
+		int _syncSeq;
+
+		ushort _crc;
+		int _crcCount;
 
 		#region flag_helper_functions
 		/// <summary>Set the specified bit(s) in the flag</summary>
@@ -102,7 +97,7 @@ namespace WD1772Package {
 
 
 		#region properties
-		/// <summary>This property indicates if the Sync detection is enabled (true) or disabled (false)</summary>
+		/// <summary>This property indicates if the AM detection is enabled (true) or disabled (false)</summary>
 		public bool SyncDetectEnable {
 			get { return testBits(_decoderFlags, SYNC_DETECTOR_ENABLED); }
 			set {
@@ -111,9 +106,12 @@ namespace WD1772Package {
 			}
 		}
 
-		/// <summary>This property is set to true if the last decoded character is an AM (A1 or C2)</summary>
+		/// <summary>
+		/// This property is set to true if the last decoded character is an AM (A1 or C2)
+		/// </summary>
 		public bool SyncFound {
 			get { return testBits(_decoderFlags, A1_FOUND, C2_FOUND); }
+			// get { return (DataReady && ( ((MFM == 0x4489) && (Data == 0xA1)) || ((MFM == 0x5224)))); }
 		}
 
 		/// <summary>The last decoded byte is an A1 Sync </summary>
@@ -127,79 +125,105 @@ namespace WD1772Package {
 		}
 
 		/// <summary>
-		/// This property is true when a character is ready to be read from the DSR
+		/// This property indicates if a character is ready to be read from the DSR using the Data property
 		/// </summary>
 		public bool DataReady {
 			get { return testBits(_decoderFlags, DATA_READY); }
 		}
 
-		/// <summary>When DataReady is true this property returns the decoded Data</summary>
+		/// <summary>
+		/// When DsrReady is true this property is set to the decoded Data
+		/// </summary>
 		public byte Data {
 			get { return (byte)_dsr; }
 		}
 
-		/// <summary>Content of the AM decoder register</summary>
+		/// <summary>
+		/// Content of the AM shift register when the AM was detected
+		/// </summary>
 		public ushort MFM {
-			get { return (ushort)(_amShitfRegister >> 1); }
+			get { return (ushort)(_syncDetector >> 1); }
 		}
 
+		public ushort CRC {
+			get { return _crc; }
+		}
+
+		public bool IAM {
+			get {
+				return testBits(_decoderFlags, IAM_POSITION);
+			}
+		}
 		#endregion properties
 
 		/// <summary>Initialize the DSR class</summary>
 		public DSR() {
-			_amShitfRegister = 0;
+			_syncDetector = 0;
 			_dsr = 0;
 			_syncOverlapCount = 0;
 			_decoderFlags = 0;
-			_lastSyncFound = ByteType.NotSync;
+			_lastSyncFound = SyncType.No;
 			_dataDelay = 0;
 			_dsrInvalid = 0;
 			_dsrBitCount = 0;
+			_syncSeq = 0;
+			_crc = 0;
+			_crcCount = 0;
 		}
 
 
 		public void shiftBitsIn(int bit) {
 			// shift the provided bit in AM Detector LSB
-			_amShitfRegister = (_amShitfRegister << 1) | bit;
+			_syncDetector = (_syncDetector << 1) | bit;
 
 			// decrement AM overlap count
 			if (_syncOverlapCount != 0) _syncOverlapCount--;
 
-			resetBits(ref _decoderFlags, DATA_READY);
-			//if (_dataDelay == 1)
+			if (DataReady)
 				resetBits(ref _decoderFlags, A1_FOUND, C2_FOUND);
-			
-			// Check for Sync only if detection enabled
+			resetBits(ref _decoderFlags, DATA_READY);
+
+			// Check for Address Mark only if detection enabled
 			if (SyncDetectEnable) {
-				ByteType bitsInDetector = ByteType.NotSync;
-				// Check if am detector content is a sync
-				switch (_amShitfRegister & 0xFFFF) {
+				SyncType bitsInDetector = SyncType.No;
+				// Check if AM detector content is an Address Mark
+				switch (_syncDetector & 0xFFFF) {
 					case 0x4489:
-						// detect A1 only if it does not overlap with a previous A1
-						if ((_syncOverlapCount == 0) || (_lastSyncFound != ByteType.A1Sync)) {
-							bitsInDetector = ByteType.A1Sync;
+						// detect A1 only if it does not overlap with a previous A1 AM
+						if ((_syncOverlapCount == 0) || (_lastSyncFound != SyncType.A1)) {
+							bitsInDetector = SyncType.A1;
 							setBits(ref _decoderFlags, A1_FOUND);
+							if (testBits(_decoderFlags, CRC_ENABLED)) {
+								// if CRC not yet active - activate
+								if (!testBits(_decoderFlags, CRC_ACTIVE)) {
+									setBits(ref _decoderFlags, CRC_ACTIVE);
+									_crc = 0xFFFF;		// reset CRC
+									_crcCount = 16;
+								}	// start CRC computation on first A1
+							}	// CRC enabled
 						}
 						break;
 					case 0x5224:
-						bitsInDetector = ByteType.C2Sync;
+						bitsInDetector = SyncType.C2;
 						setBits(ref _decoderFlags, C2_FOUND);
 						break;
 				}	// detect AM
 
 				// process Sync if detected
-				if (bitsInDetector != ByteType.NotSync) {
-					_dataDelay = 1;	// we have just read the last data bit of a sync
+				if (bitsInDetector != SyncType.No) {
+					_dataDelay = 1;	// we have just read the last data bit of an AM
+					_syncSeq++;
+					if (_lastSyncFound != bitsInDetector)
+						_syncSeq = 1;
 
-					// if Sync overlap with different Sync type
+					// if AM overlap with different AM type
 					if ((_syncOverlapCount != 0) && (_lastSyncFound != bitsInDetector)) {
 						_dsrInvalid++;		// DSR value is invalid
 						_dataDelay += 2;	// delay by one additional data bit (data & clock)
-						Debug.Assert(_lastSyncFound != ByteType.A1Sync, "Overlapping A1 Sync is not possible");
 					}	// overlap
 
-					// if DSR is empty it should not be flushed
-					if (_dsrBitCount == 0) 
+					// if DSR is empty it should not be flushed => DSR invalid
+					if (_dsrBitCount == 0)
 						_dsrInvalid++;
 
 					_dsrBitCount = 7;		// force DSR to flush
@@ -208,19 +232,57 @@ namespace WD1772Package {
 				}	// Sync found
 			}	// Sync detection enabled
 
+			// Process CRC if activated
+			if (testBits(_decoderFlags, CRC_ACTIVE)) {
+				// process every 16 bits
+				if ((_crcCount & 0xF) == 0) {
+					if ((_crcCount > 48) || testBits(_decoderFlags, A1_FOUND)) {
+						if (_crcCount == 48) {
+							// TODO A1 is already active? do we need
+							setBits(ref _decoderFlags);
+							resetBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
+						}
+
+						// select data bits for CRC source byte value; needed without separate clock and data shifters
+						byte value = 0;
+						for (int mask = 0x4000; mask != 0; mask >>= 2) {
+							value <<= 1;
+							if ((_syncDetector & mask) != 0)
+								value |= 1;
+						}
+
+						// update CRC
+						_crc = updateCRC(value, _crc);
+
+					}	// A1 or following bytes
+					else
+						// reset CRC process if less than 3 consecutive A1 detected
+						resetBits(ref _decoderFlags, CRC_ACTIVE);
+				}	// every 16 bits
+
+				_crcCount++;
+			}	// CRC active
+
 			// wait for the data clock cycle plus the bit cell delay
 			if (_dataDelay == 0) {
 				_dataDelay = 1;
 
 				// shift data bit into the DSR, we are at clock bit
-				_dsr = ((_dsr << 1) | ((_amShitfRegister >> 1) & 1)) & 0xFF;
+				_dsr = ((_dsr << 1) | ((_syncDetector >> 1) & 1)) & 0xFF;
 
 				// if 8 bits in DSR process
 				if (++_dsrBitCount == 8) {
 					_dsrBitCount = 0;	// reset count
-					// set DATA_READY flag if valid data
-					if (_dsrInvalid == 0)
+					// set DSR flag if valid data
+					if (_dsrInvalid == 0) {
 						setBits(ref _decoderFlags, DATA_READY);
+						if ((_syncSeq == 3) && (!SyncFound)) {
+							_syncSeq = 0;
+							setBits(ref _decoderFlags, IAM_POSITION);
+						}
+						else
+							resetBits(ref _decoderFlags, IAM_POSITION);
+					}
 					else
 						_dsrInvalid--;
 				}	// one more byte
@@ -230,7 +292,27 @@ namespace WD1772Package {
 
 		}	// end of dsrShiftBitIn()
 
-        public bool byteReady() { return DataReady; }
+		public void trackMode() {
+			setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
+			resetBits(ref _decoderFlags, CRC_ENABLED);
+		}
+
+		public void sectorMode() {
+			setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED, CRC_ENABLED);
+		}
+
+		/// <summary>
+		/// Update the CRC with the character provided
+		/// </summary>
+		/// <param name="c">Character used to update CRC</param>
+		/// <param name="crc">Current CRC value</param>
+		/// <returns>Updated CRC</returns>
+		public static ushort updateCRC(byte c, ushort crc) {
+			for (int i = 0; i < 8; i++)
+				crc = (ushort)((crc << 1) ^ (((((crc >> 8) ^ (c << i)) & 0x0080) != 0) ? 0x1021 : 0));
+			return crc;
+		} // end of update_crc
+
 
 	}
 }

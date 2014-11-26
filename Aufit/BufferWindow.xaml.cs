@@ -224,7 +224,8 @@ namespace Aufit {
 		public void drawBuffer(TrackBuffer buffer, string message = null) {
 			// get ready to display MFM and clock
 			bool displayMFM = false;
-			bool displayClock = false;
+			// TODO clean 
+			// bool displayClock = false;
 
 			displayBuffer.FontFamily = new FontFamily("Consolas");
 			displayBuffer.FontSize = 16;
@@ -287,20 +288,21 @@ namespace Aufit {
 				displayBuffer.Inlines.Add(String.Format("\n"));
 
 
-				if (displayClock) {
-					ascii = "  ";
-					displayBuffer.Inlines.Add("                    ");
-					for (int j = 0; j < 16; j++) {
-						if ((i + j) < buffer.Bytes.Count) {
-							displayBuffer.Inlines.Add(String.Format("{0:X2} ", buffer.Bytes[i + j].clockByte));
-							char ch = Convert.ToChar(buffer.Bytes[i + j].clockByte);
-							ascii += Char.IsControl(ch) ? "." : ch.ToString();
-						}
-						else displayBuffer.Inlines.Add("   ");
-					}
-					displayBuffer.Inlines.Add(ascii);
-					displayBuffer.Inlines.Add(String.Format("\n"));
-				}
+				// TODO
+				//if (displayClock) {
+				//	ascii = "  ";
+				//	displayBuffer.Inlines.Add("                    ");
+				//	for (int j = 0; j < 16; j++) {
+				//		if ((indexStart + j) < buffer.Bytes.Count) {
+				//			displayBuffer.Inlines.Add(String.Format("{0:X2} ", buffer.Bytes[indexStart + j].clockByte));
+				//			char ch = Convert.ToChar(buffer.Bytes[indexStart + j].clockByte);
+				//			ascii += Char.IsControl(ch) ? "." : ch.ToString();
+				//		}
+				//		else displayBuffer.Inlines.Add("   ");
+				//	}
+				//	displayBuffer.Inlines.Add(ascii);
+				//	displayBuffer.Inlines.Add(String.Format("\n"));
+				//}
 
 				if (displayMFM) {
 					displayBuffer.Inlines.Add("       ");

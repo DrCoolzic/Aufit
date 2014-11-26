@@ -174,7 +174,7 @@ namespace Aufit {
 			// track processed
 			if (tc != null) {
 				if (tc.sectors.Count < 3) {
-					if ((td.histoData.hasData) && (td.histoData.entropy < Global.unformattedEntropy)) {
+					if ((td.histoData.hasData) && (td.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
 						bool multiSync = false;
 						for (int i = 0; i < tc.syncs.Count; i++)
 							if ((tc.syncs[i].value == 0xA1) && (tc.syncs[i].syncInSeq > 2))
@@ -192,7 +192,7 @@ namespace Aufit {
 			else if (Global.Disk[track, side].fluxData != null) {
 				double entropy = td.histoData.entropy;
 				//color = (entropy < 2000) ? (entropy < 0) ? Brushes.LightGray : Brushes.Yellow : Brushes.Lime;
-				color = (entropy > Global.unformattedEntropy) ? Brushes.LightGray : Brushes.Lime;
+				color = (entropy > Global.UNFORMATED_ENTROPY) ? Brushes.LightGray : Brushes.Lime;
 			}
 			else
 				color = Brushes.White;

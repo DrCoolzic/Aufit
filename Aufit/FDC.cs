@@ -36,6 +36,8 @@ using GlobalPackage;
 using Aufit;
 
 namespace WD1772Package {
+	enum Sync { No, A1, C2 }
+
 	/// <summary>
 	/// Different phases inside a sector: ID, Inner Gap, Data, Outer Gap
 	/// </summary>
@@ -130,7 +132,7 @@ namespace WD1772Package {
 		/// <summary>count the number of Sync in sequence</summary>
 		public int syncInSeq;
 		/// <summary>Sync value</summary>
-		public byte value;
+		public ushort value;
 		/// <summary>Bad Sync sequence = part of a bad sequence</summary>
 		public bool badSync = false;
 	}
@@ -262,8 +264,13 @@ namespace WD1772Package {
 
 			Global.DiskTrack dt = Global.Disk[track, side];
 			int start = Global.firstIndex(track, side, rev);
+			//int startBit = Global.Disk[track, side].decodeData.bitPosition[start];
 			int stop = Global.lastIndex(track, side, rev);
+			//int stopBit = Global.Disk[track, side].decodeData.bitPosition[stop];
 			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
+			// TODO !!!!!!!!!!!!!!!!!!
+			int startBit = 0;
+			int stopBit = 0;
 
 			// add dummy sector[0] to store GAP and potentially DATA segment information
 			tc.sectors.Add(new SectorInfo());
@@ -271,7 +278,7 @@ namespace WD1772Package {
 			Phases phase = Phases.p_outer;
 			DSR dsr = new DSR();
 			int syncInSeq = 0;			// number of sync found
-			byte lastSync = 0;			// last sync value found
+			ushort lastSync = 0;			// last sync value found
 			int byteLeftInBlock = 0;	// byte to go in p_id and p_data
 			int blockStartByte = 0;		// first byte of the block
 			int blockStartTime = 0;		// position of start of the block in nanosecond
@@ -281,13 +288,13 @@ namespace WD1772Package {
 			ushort crc = 0;				// running CRC
 			int currentBit = 0;			// running bit position
 			int clock;					// value of decoded clock
-			int nbWin;					// number of inspection window
+			//int bitSpacing;					// number of inspection window
 			int clockCount = 0;			// number of clock accumulated for avg
 			int clockAvg = 0;			// average clock value of assembled bits
 			int gapPosition = 0;		// position of byte inside gap
 			int lastTrackByte = 0;		// used to store last byte for shifted track
 			int lastTrackTime = 0;		// used to store the track time for shifted track
-			bool preSynced = false;
+			//bool preSynced = false;
 
 			tc.idOverIdx = false;
 			tc.dataOverIdx = false;
@@ -298,10 +305,14 @@ namespace WD1772Package {
 			// we have a shifted track. I have also added continuation on syncCount 
 			// because we may have just the start of the sync of ID are very end !!!
 			// Good example is ComputerHitsVolume2 Disk 2 track 78
-			for (int i = start; (i < stop) || (phase != Phases.p_outer) || (syncInSeq > 0) || (ac != null) && (ac.ids.Count > (tc.sectors.Count - 1)); i++) {
+//			for (int indexStart = start; (indexStart < stop) || (phase != Phases.p_outer) || (syncInSeq > 0) || (ac != null) && (ac.ids.Count > (tc.sectors.Count - 1)); indexStart++) {
+
+			for (int i = startBit; (i < stopBit) || (phase != Phases.p_outer) || (syncInSeq > 0) || (ac != null) && (ac.ids.Count > (tc.sectors.Count - 1)); i++) {
+
 				// here we are in a shifted track - we store the real end of the track
 				// and sets indicators.
-				if (i == stop) {
+				//if (indexStart == stop) {
+				if (i == stopBit) {
 					switch (phase) {
 						case Phases.p_id: tc.idOverIdx = true; break;
 						case Phases.p_inner: tc.dataBeyondIdx = true; break;
@@ -316,51 +327,67 @@ namespace WD1772Package {
 				// we cannot go beyond last flux so we always abort. 
 				// This imply that last revolution might no be detected correctly
 				// and that if we have only one revolution the data are incomplete
-				if (i >= dt.fluxData.fluxCount) {
-					if (Global.Disk[track, side].revData.Count() == 1)
-						Global.DataIncomplete = true;
-					tc.incompleteTrack = true;
-					break;
-				}
+				// TODO NEED TOBE FIXED
+				//if (indexStart >= dt.fluxData.fluxCount) {
+				//	if (Global.Disk[track, side].revData.Count() == 1)
+				//		Global.DataIncomplete = true;
+				//	tc.incompleteTrack = true;
+				//	break;
+				//}
 
-				int flux = Global.CorrectedSampleToTiming(dt.fluxData.fluxValue[i], track, side, rev);
-				nbWin = dt.decodeData.fluxInWindow[i];
+				//int flux = Global.CorrectedSampleToTiming(dt.fluxData.fluxValue[indexStart], track, side, rev);
+				//bitSpacing = dt.DecodeData.bitSpacing[indexStart];
 
-				if (flux > 150000) {
-					tc.NFA = currentTime;
-				}	// NFA
+				// TODO
+				//if (flux > 150000) {
+				//	tc.NFA = currentPosition;
+				//}	// NFA
 
-				if (i == start) {
-					int iff = Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
-					flux -= iff;
-					nbWin -= iff / 2000;
-				}
+				// TODO
+				//if (indexStart == start) {
+				//	int iff = Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
+				//	flux -= iff;
+				//	bitSpacing -= iff / 2000;
+				//}
 
-				currentTime += flux;				
-				currentBit += nbWin;
+				//currentPosition += flux;				
+				//currentBit += bitSpacing;
+				
+				// TODO => now indexStart is the currentBit
+				currentBit = i;
+				int currentByte = i / 8;
+				int currentBitInByte = i % 8;
+				byte bits = Global.Disk[track, side].packedFluxData.packBits[currentByte];
+				int bit = (bits >> currentBitInByte) & 0x1;
 
-				dsr.shiftBitsIn(nbWin);	// push data in register
-				clock = dt.decodeData.clockPeriod[i];
+				//dsr.shiftBitsIn(bitSpacing);	// push data in register
+				dsr.shiftBitsIn(bit);
+
+				// clock = dt.DecodeData.clock[indexStart];
+				clock = Global.Disk[track, side].packedFluxData.bitWidth[currentByte];
 				clockAvg += clock;
 				clockCount++;
 
+				// TODO
 				// check timing violation and write splice
-				if ((nbWin < 2) || nbWin > 4) {
-					tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].timingViolation++;
-					// here we check if the timing violation result from a write splice. Write splice
-					// can result from "track write splice" (nothing we can guess here) but the can also
-					// result from "sector write splice". In that case they are located in position 20-22
-					// in intra-gap (beginning of sect) or 0-2 in inter-gap (end of sect).
-					if (((phase == Phases.p_inner) && (gapPosition > 19) && (gapPosition < 23)) ||
-						 ((phase == Phases.p_outer) && (gapPosition < 2)))
-						tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].splice++;
-				}	// timing violation
+				//if ((bitSpacing < 2) || bitSpacing > 4) {
+				//	tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].timingViolation++;
+				//	// here we check if the timing violation result from a write splice. Write splice
+				//	// can result from "track write splice" (nothing we can guess here) but the can also
+				//	// result from "sector write splice". In that case they are located in position 20-22
+				//	// in intra-gap (beginning of sect) or 0-2 in inter-gap (end of sect).
+				//	if (((phase == Phases.p_inner) && (gapPosition > 19) && (gapPosition < 23)) ||
+				//		 ((phase == Phases.p_outer) && (gapPosition < 2)))
+				//		tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].splice++;
+				//}	// timing violation
 
-				if ((tc.syncs.Count == 0) && dsr.byteReady() && !(preSynced))
-					if (dsr.preSync()) preSynced = true;
+				// TODO
+				//if ((tc.syncs.Count == 0) && dsr.byteReady() && !(preSynced))
+				//	if (dsr.preSync()) preSynced = true;
 
 				// check if we have accumulated enough bytes
-				while (dsr.byteReady()) {
+				// TODO while should be replace by if
+				if (dsr.DataReady) {
 					tc.byteCount++;
 					gapPosition++;
 
@@ -380,37 +407,41 @@ namespace WD1772Package {
 					}	// below normal
 
 					// search sync byte and correct currentBit value accordingly
-					currentBit -= dsr.searchSync();
-					dsr.extract();
+					// TODO
+					//currentBit -= dsr.searchSync();
+					//dsr.extract();
 
 					if (dsr.SyncFound) {
 						syncInSeq++;
 						tc.syncs.Add(new SyncInfo());
-						tc.syncs[tc.syncs.Count - 1].value = dsr.Data;
+						//tc.syncs[tc.syncs.Count - 1].value = dsr.Data;
+						tc.syncs[tc.syncs.Count - 1].value = dsr.MFM;
 						tc.syncs[tc.syncs.Count - 1].startTime = currentTime;
 						tc.syncs[tc.syncs.Count - 1].startByte = tc.byteCount;
 						tc.syncs[tc.syncs.Count - 1].syncInSeq = syncInSeq;
 						tc.syncs[tc.syncs.Count - 1].badSync = false;
 
 						// check bad sequence
-						if ((syncInSeq > 1) && (dsr.Data != lastSync)) {
+						if ((syncInSeq > 1) && (dsr.MFM != lastSync)) {
 							syncInSeq = 1;	// restart
 							// We do not report 0xC2 followed by 0xA1 as an error because this happen often during re-sync
-							if (lastSync != 0xC2) {
+							//if (lastSync != 0xC2) {
+							if (lastSync !=  0x5224) {
 								tc.syncs[tc.syncs.Count - 1].badSync = true;
 								tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].badSync++;
 							}
 						}	// bad sync sequence
 
 						// we reset the running CRC on first A1
-						if ((syncInSeq == 1) && (dsr.Data == 0xA1)) crc = 0xFFFF;
+						//if ((syncInSeq == 1) && (dsr.Data == 0xA1)) crc = 0xFFFF;
+						if ((syncInSeq == 1) && (dsr.MFM == 0x4489)) crc = 0xFFFF;
 
 						// check long sync sequence - we only count one
 						if (syncInSeq == 4) {
 							tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].badSync++;
 							tc.syncs[tc.syncs.Count - 1].badSync = true;
 						}
-						lastSync = dsr.Data;
+						lastSync = dsr.MFM;
 					}	// sync byte
 
 					// check short sync sequence
@@ -504,7 +535,7 @@ namespace WD1772Package {
 						else {	// DATA Segment 
 							// 3+ sync followed by IDAM => SWS
 							// note: we also check that sync is A1 as we may detect C2 in data block
-							// we do not look for sws if i > stop
+							// we do not look for sws if indexStart > stop
 							if ((syncInSeq > 2) && (lastSync == 0xA1) && !dsr.SyncFound && (dsr.Data == 0xFE) && (i < stop)) {
 								sws = true;
 								syncInSeq = 0;
@@ -540,13 +571,15 @@ namespace WD1772Package {
 						}	// DATA Segment
 
 						// we look for sync inside ID or DATA segment.
-						dsr.searchSync();
+						// TODO check ???
+						//dsr.searchSync();
 						if (dsr.SyncFound)
 							// was not very useful but now critical to optimize Pasti Write
 							tc.sectors[tc.sectors.Count - 1].phases[(byte)phase].badSync++;
 					} // ID or DATA
 
-					tc.buffer.addByte(dsr.Data, dsr.Clock, dsr.MFM, phase, (ushort)clock, prevBlockEndTime);
+					// tc.buffer.addByte(dsr.Data, dsr.Clock, dsr.MFM, phase, (ushort)clock, prevBlockEndTime);
+					tc.buffer.addByte(dsr.Data, dsr.MFM, phase, (ushort)clock, prevBlockEndTime);
 					crc = Global.updateCRC(dsr.Data, crc);
 					prevBlockEndTime += 32000;	// we need this for NFA
 				}	// while bytes in the DSR
@@ -626,6 +659,7 @@ namespace WD1772Package {
 		/// </summary>
 		/// <returns>The structure that contains all the address info for a track</returns>
 		public static AddrContent readAddr(int track, int side, int rev) {
+
 			AddrContent ac = Global.Disk[track, side].addrContent;
 			if (ac != null)
 				return ac;
@@ -636,56 +670,107 @@ namespace WD1772Package {
 			Global.DiskTrack dt = Global.Disk[track, side];
 			int start =  Global.firstIndex(track, side, rev);
 			int stop = Global.lastIndex(track, side, rev);
+			//int startBit = Global.Disk[track, side].decodeData.bitPosition[start];
+			//int stopBit = Global.Disk[track, side].decodeData.bitPosition[stop];
+			// TODO !!!!
+			int startBit = 0;
+			int stopBit = 0;
 			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
-
-			Phases phase = Phases.p_outer;
-			DSR dsr = new DSR();
-			int syncInSeq = 0;
-			byte lastSync = 0;
 			int byteLeftInBlock = 0;
 			int currentTime = 0;
 			int prevBlockEndTime = 0;
 			ushort crc = 0;
-			int currentBit = 0;
-			int nbWin;
 			int clockCount = 0;			// number of clock accumulated for avg
 			int clockAvg = 0;			// average clock value of assembled bits
 			int byteCount = 0;
 			int trackLength = 0;
 
+			Phases phase = Phases.p_outer;
+			DSR dsr = new DSR();
+			dsr.sectorMode();
+
 			// We read from start to stop for current revolution. However if we are in the middle of an
-			// ID field we continue to get the complete ID. We also check if in middle of sync seq
-			for (int i = start; (i < stop) || (phase == Phases.p_id) || (syncInSeq > 0); i++) {
+			// ID field we continue to get the complete ID. We also continue if in middle of sync seq
 
+			//for (int index = start; (index < stop) || (phase == Phases.p_id) || (syncInSeq > 0); index++) {
+			// TODO replace the syncInSeq
+			//for (int currentBit = startBit; (currentBit < stopBit) || (phase == Phases.p_id) || (syncInSeq > 0); currentBit++) {
+			for (int currentBit = startBit; (currentBit < stopBit) || (phase == Phases.p_id); currentBit++) {
 				// if we reach end of input buffer we need to stop
-				if (i >= dt.fluxData.fluxCount) {
-					if (Global.Disk[track, side].revData.Count() == 1)
-						Global.DataIncomplete = true;
-					break;
-				}
+				// TODO
+				//if (index >= dt.fluxData.fluxCount) {
+				//	if (Global.Disk[track, side].revData.Count() == 1)
+				//		Global.DataIncomplete = true;
+				//	break;
+				//}
 
-				//int flux = Global.sampleToTiming(dt.fluxData.fluxValue[i]);
-				int flux = Global.CorrectedSampleToTiming(dt.fluxData.fluxValue[i], track, side, rev);
-				nbWin = dt.decodeData.fluxInWindow[i];
+				////int flux = Global.sampleToTiming(dt.fluxData.fluxValue[index]);
+				//int flux = Global.CorrectedSampleToTiming(dt.fluxData.fluxValue[index], track, side, rev);
+				//bitSpacing = dt.DecodeData.bitSpacing[index];
 
-				if (i == start) {
-					int iff = Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
-					flux -= iff;
-					nbWin -= iff / 2000;
-				}
+				// TODO
+				//if (index == start) {
+				//	int iff = Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
+				//	flux -= iff;
+				//	bitSpacing -= iff / 2000;
+				//}
 					
-				currentTime += flux;
-				currentBit += nbWin;
 
-				if (i == stop)
+
+				//currentPosition += flux;
+				//currentBit += bitSpacing;
+
+				if (currentBit == stopBit)
 					trackLength = currentTime + Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
 
-				dsr.shiftBitsIn(nbWin);	// push data in shift register
-				int clock = dt.decodeData.clockPeriod[i];
+				//dsr.shiftBitsIn(bitSpacing);	// push data in shift register
+
+				// TODO check
+				//currentBit = index;
+				int currentByte = currentBit / 8;
+				int currentBitInByte = currentBit % 8;
+				byte bits = Global.Disk[track, side].packedFluxData.packBits[currentByte];
+				int bit = (bits >> currentBitInByte) & 0x1;
+
+				// TODO check
+				// we only search for sync if not in p_id
+				//if (phase != Phases.p_id)
+				//	dsr.SyncDetectEnable = true;
+				//else
+				//	dsr.SyncDetectEnable = false;
+
+				dsr.shiftBitsIn(bit);
+
+				//if (dsr.SyncFound) {
+				//	syncInSeq++;
+				//	currentSync = dsr.A1Found ? Sync.A1 : Sync.C2;
+
+				//	// check bad sync sequence
+				//	if ((syncInSeq > 1) && (currentSync != lastSync))
+				//		syncInSeq = 1;
+
+				//	// reset CRC on first A1 moved
+				//	if ((syncInSeq == 1) && (dsr.A1Found)) crc = 0xFFFF;
+
+				//	// check short sync sequence
+				//	if ((syncInSeq > 0) && (syncInSeq < 3) && currentSync == Sync.No)
+				//		//if ((syncInSeq == 1) && !dsr.SyncFound)
+				//		syncInSeq = 0;
+
+				//	lastSync = currentSync;
+					
+				//}	// sync byte
+				//else
+				//	currentSync = Sync.No;
+
+				// TODO
+				//int clock = dt.DecodeData.clock[index];
+				int clock = dt.packedFluxData.bitWidth[currentByte];
 				clockAvg += clock;
 				clockCount++;
 
-				while (dsr.byteReady()) {
+				// TODO while if
+				if (dsr.DataReady) {
 					byteCount++;
 
 					// take the average clock value for all bits
@@ -695,36 +780,23 @@ namespace WD1772Package {
 						clockCount = 0;
 					}	// only one time
 
-					// we only search for sync if not in p_id
-					if (phase != Phases.p_id) 
-						currentBit -= dsr.searchSync();
-					else
-						dsr.resetSync();
+					//// we only search for sync if not in p_id
+					//if (phase != Phases.p_id) 
+					//	currentBit -= dsr.searchSync();
+					//else
+					//	dsr.resetSync();
 
-					dsr.extract();
-					if (dsr.SyncFound) {
-						syncInSeq++;
-
-						// check bad sync sequence
-						if ((syncInSeq > 1) && (dsr.Data != lastSync)) 
-							syncInSeq = 1;
-
-						// reset CRC on first A1 moved
-						if ((syncInSeq == 1) && (dsr.Data == 0xA1)) crc = 0xFFFF;
-
-						lastSync = dsr.Data;
-					}	// sync byte
-
-					// check short sync sequence
-					if ((syncInSeq > 0) && (syncInSeq < 3) && !dsr.SyncFound)
-					//if ((syncInSeq == 1) && !dsr.SyncFound)
-						syncInSeq = 0;
+					//dsr.extract();
 
 					if (phase != Phases.p_id) {	// not in ID
-						if ((syncInSeq > 2) && !dsr.SyncFound) {
+						// TODO wrong
+						//if ((syncInSeq > 2) && !dsr.SyncFound) {
+						// if ((syncInSeq > 2) && (lastSync == Sync.No)) {
 							// 3+ sync & not sync => should be an AM
-							syncInSeq = 0;		// reset sync count
+							//syncInSeq = 0;		// reset sync count
 							//crc = 0xCDB4;		// initialize CRC
+						
+						if (dsr.IAM) {
 							switch (dsr.Data) {
 								case 0xFC:	// IBM IAM
 								case 0xFD:
@@ -768,11 +840,12 @@ namespace WD1772Package {
 								block.timeLength = prevBlockEndTime - block.startTime;
 								ac.blocs[ac.blocs.Count - 1] = block;
 								phase = Phases.p_outer;
+								dsr.sectorMode();	// we re-anable sync
 								break;
 						}
 						ac.ids[ac.ids.Count - 1] = id;
 					} // we are in ID
-					crc = Global.updateCRC(dsr.Data, crc);
+					crc = dsr.CRC;
 					prevBlockEndTime += 32000;	// for NFA
 				}	// more byte to process
 				prevBlockEndTime = currentTime;
@@ -781,7 +854,7 @@ namespace WD1772Package {
 			if (phase == Phases.p_id) {
 				BlockInfo block = ac.blocs[ac.blocs.Count - 1];
 				block.byteCount = byteCount - block.startByte;
-				block.crc = crc;
+				block.crc = dsr.CRC;
 				block.timeLength = prevBlockEndTime - block.startTime;
 				ac.blocs[ac.blocs.Count - 1] = block;
 			}	// we have stoped in p_id - probably eof need to update block info
@@ -807,7 +880,7 @@ namespace WD1772Package {
 		/// <param name="compare">If set to true we are in compare mode, else we are in read mode</param>
 		/// <returns>a ReadSectInfo block</returns>
 		/// <remarks>The position parameter is necessary to read the data of a sector multiply  defined 
-		/// (i.e. we have several sectors with same number). Otherwise the data for the first encountered
+		/// (index.e. we have several sectors with same number). Otherwise the data for the first encountered
 		/// sector would always be returned (equivalent to position==0).
 		/// When compare is false we are reading the sector normally and we fill the SectorContent structure. 
 		/// But if compare==true we are in "compare" mode. In that case we read the sector using the rev parameter 
@@ -838,6 +911,11 @@ namespace WD1772Package {
 			int start = Global.firstIndex(track, side, rev);
 			int stop = Global.lastIndex(track, side, rev);
 			int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
+			//int startBit = Global.Disk[track, side].decodeData.bitPosition[start];
+			//int stopBit = Global.Disk[track, side].decodeData.bitPosition[stop];
+			// TODO !!!!!
+			int startBit = 0;
+			int stopBit = 0;
 
 			Phases phase = Phases.p_outer;
 			DSR dsr = new DSR();
@@ -848,7 +926,7 @@ namespace WD1772Package {
 			int prevBlockEndTime = 0;
 			ushort crc = 0;
 			int currentBit = 0;
-			int nbWin;
+			// int bitSpacing;
 			int byteCount = 0;
 			int clock;
 			int clockAvg = 0;
@@ -859,37 +937,59 @@ namespace WD1772Package {
 
 			// we normally loop from start to stop for the specified revolution.
 			// However we continue if we are in the middle of ID, Inner GAP, or DATA field
-			for (int i = start; (i < stop) || (phase != Phases.p_outer) || (syncInSeq > 0); i++) {
+			for (int i = startBit; (i < stopBit) || (phase != Phases.p_outer) || (syncInSeq > 0); i++) {
 				if (breakLoop) break;
 
-				// we cannot access beyond buffer. If this happen with only one revolution it
-				// indicates that we do not have enough data. If this happen in the last revolution
-				// the data for this revolution will be recovered incorrectly.
-				if (i >= dt.fluxData.fluxCount) {
-					if (Global.Disk[track, side].revData.Count() == 1)
-						Global.DataIncomplete = true;
-					break;
-				}
+				// TODO
+				//// we cannot access beyond buffer. If this happen with only one revolution it
+				//// indicates that we do not have enough data. If this happen in the last revolution
+				//// the data for this revolution will be recovered incorrectly.
+				//if (index >= dt.fluxData.fluxCount) {
+				//	if (Global.Disk[track, side].revData.Count() == 1)
+				//		Global.DataIncomplete = true;
+				//	break;
+				//}
 
-				//int flux = Global.sampleToTiming(dt.fluxData.fluxValue[i]);
-				int flux = Global.CorrectedSampleToTiming(dt.fluxData.fluxValue[i], track, side, rev);
-				nbWin = dt.decodeData.fluxInWindow[i];
+				//int flux = Global.sampleToTiming(dt.fluxData.fluxValue[index]);
+				//int flux = Global.CorrectedSampleToTiming(dt.fluxData.fluxValue[index], track, side, rev);
+				//bitSpacing = dt.DecodeData.bitSpacing[index];
 
-				if (i == start) {
-					int iff = Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
-					flux -= -iff;
-					nbWin -= iff / 2000;
-				}
+				// TODO
+				//if (index == start) {
+				//	int iff = Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
+				//	flux -= -iff;
+				//	bitSpacing -= iff / 2000;
+				//}
 
-				currentTime += flux;
-				currentBit += nbWin;
+				//currentPosition += flux;
+				//currentBit += bitSpacing;
 
-				dsr.shiftBitsIn(nbWin);	// push data in register
-				clock = dt.decodeData.clockPeriod[i];
+				// TODO check
+				currentBit = i;
+				int currentByte = i / 8;
+				int currentBitInByte = i % 8;
+				byte bits = Global.Disk[track, side].packedFluxData.packBits[currentByte];
+				int bit = (bits >> currentBitInByte) & 0x1;
+
+				// TODO check
+				// we only search for sync if not in p_id or not in p_data
+				if ((phase != Phases.p_id) && (phase != Phases.p_data))
+					dsr.SyncDetectEnable = true;
+				else
+					dsr.SyncDetectEnable = false;
+
+				dsr.shiftBitsIn(bit);
+
+				// dsr.shiftBitsIn(bitSpacing);	// push data in register
+
+				// TODO !!!!!! removed below !!!!!
+				//clock = dt.decodeData.clock[i];
+				clock = 0;
 				clockAvg += clock;
 				clockCount++;
 
-				while (dsr.byteReady()) {
+				// TODO if
+				if (dsr.DataReady) {
 					byteCount++;
 
 					// take the average clock for all bits
@@ -899,11 +999,11 @@ namespace WD1772Package {
 						clockCount = 0;
 					}	// only one time
 
-					if ((phase != Phases.p_id) && (phase != Phases.p_data))
-						currentBit -= dsr.searchSync();
-					else
-						dsr.resetSync();
-					dsr.extract();
+					//if ((phase != Phases.p_id) && (phase != Phases.p_data))
+					//	currentBit -= dsr.searchSync();
+					//else
+					//	dsr.resetSync();
+					//dsr.extract();
 
 					if (dsr.SyncFound) {
 						syncInSeq++;
@@ -1025,7 +1125,8 @@ namespace WD1772Package {
 					} // ID or DATA
 
 					if (phase == Phases.p_data) {
-						sc.data.addByte(dsr.Data, dsr.Clock, dsr.MFM, phase, (ushort)clock, prevBlockEndTime);
+						//sc.data.addByte(dsr.Data, dsr.Clock, dsr.MFM, phase, (ushort)clock, prevBlockEndTime);
+						sc.data.addByte(dsr.Data, dsr.MFM, phase, (ushort)clock, prevBlockEndTime);
 						// check clock above or below normal
 						if (clock > upperClock)
 							sc.dataBlock.overClock++;
@@ -1069,7 +1170,7 @@ namespace WD1772Package {
 				if (sref.data.Bytes.Count != sc.data.Bytes.Count) {
 					// we have incomplete sector data if revCount is less than 3 we
 					// are in trouble (2 incomplete non OK)
-					if (Global.Disk[track, side].revData.Count() < 3)
+					if (Global.Disk[track, side].fluxDataRev.Count() < 3)
 						Global.DataIncomplete = true;
 				}
 
@@ -1089,7 +1190,7 @@ namespace WD1772Package {
 							fuzzyFound = true;
 							TrackBuffer.TrackByte tb = fuzzyMask.Bytes[i];
 							tb.dataByte = (byte)xor;
-							tb.clockByte = sref.data.Bytes[i].clockByte;
+							// tb.clockByte = sref.data.Bytes[index].clockByte;
 							tb.mfmWord = sref.data.Bytes[i].mfmWord;
 							tb.density = sref.data.Bytes[i].density;
 							tb.startTime = sref.data.Bytes[i].startTime;
@@ -1106,7 +1207,7 @@ namespace WD1772Package {
 							fuzzyFound = true;
 						TrackBuffer.TrackByte tb = new TrackBuffer.TrackByte();
 						tb.dataByte = xor;
-						tb.clockByte = sref.data.Bytes[i].clockByte;
+						// tb.clockByte = sref.data.Bytes[index].clockByte;
 						tb.mfmWord = sref.data.Bytes[i].mfmWord;
 						tb.density = sref.data.Bytes[i].density;
 						tb.startTime = sref.data.Bytes[i].startTime;
@@ -1139,7 +1240,7 @@ namespace WD1772Package {
 				if (sc == null) 
 					continue;
 				// now multiple readSector() for fuzzy bits
-				for (int j = 1; j < Global.Disk[track, side].revData.Count() + 1; j++) {
+				for (int j = 1; j < Global.Disk[track, side].fluxDataRev.Count() + 1; j++) {
 					if (j == rev) continue;
 					readSector(track, side, j, ac.ids[i].number, ac.blocs[i].startTime, true);
 				}

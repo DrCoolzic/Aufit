@@ -44,7 +44,7 @@ namespace Aufit {
 			/// <summary>The Data Byte</summary>
 			public byte dataByte;
 			/// <summary>The Clock Byte</summary>
-			public byte clockByte;
+			//public byte clockByte;
 			/// <summary>The complete MFM word (two bytes)</summary>
 			public ushort mfmWord;
 			/// <summary>Current clock value</summary>
@@ -81,10 +81,10 @@ namespace Aufit {
 		/// <param name="phase">Current Phase</param>
 		/// <param name="density">Current Clock value</param>
 		/// <param name="startTime">Byte start time</param>
-		public void addByte(byte data, byte clock, ushort mfm, Phases phase, ushort density, int startTime) {
+		public void addByte(byte data, ushort mfm, Phases phase, ushort density, int startTime) {
 			TrackByte b = new TrackByte();
 			b.dataByte = data;
-			b.clockByte = clock;
+			//b.clockByte = clock;
 			b.mfmWord = mfm;
 			b.density = density;
 			b.startTime = startTime;

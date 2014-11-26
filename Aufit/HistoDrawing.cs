@@ -97,8 +97,10 @@ class HistoDrawing {
 		}
 
 
-		xmin = Global.sampleToTiming(xmin);
-		xmax = Global.sampleToTiming(xmax);
+		//xmin = Global.sampleToTiming(xmin);
+		//xmax = Global.sampleToTiming(xmax);
+		xmin *= Global.HISTO_SCALE;
+		xmax *= Global.HISTO_SCALE;
 		if (fixedValue) {
 			xmin = 2000;	// fixed value
 			if (xmax < 10000) xmax = 10000; // fixed value
@@ -128,14 +130,15 @@ class HistoDrawing {
 				value = Global.Disk[track, side].histoData.histogram[i];
 			}
 
-			//timing = (double)Global.sampleToTiming(i) / 1000.0;
-			timing = Global.CorrectedSampleToTiming(i, track, side, rev) / 1000.0;
-
+			//timing = (double)Global.sampleToTiming(indexStart) / 1000.0;
+			//timing = Global.CorrectedSampleToTiming(bitPosition, track, side, rev) / 1000.0;
+			timing = ((double)i * (double)Global.HISTO_SCALE) / 1000.0;
 			pg.Points.Add(_histoChartLayout.NormPoint(timing, value));
 			points[i] = _histoChartLayout.NormPoint(timing, value);
 		}
 		// force last point to zero
-		timing = Global.CorrectedSampleToTiming(Global.Disk[track, side].histoData.histogram.Length - 1, track, side, rev) / 1000.0;
+		//timing = Global.CorrectedSampleToTiming(Global.Disk[track, side].histoData.histogram.Length - 1, track, side, rev) / 1000.0;
+		timing = ((Global.Disk[track, side].histoData.histogram.Length - 1) * (double)Global.HISTO_SCALE) / 1000.0;
 		pg.Points.Add(_histoChartLayout.NormPoint(timing, 0));
 		points[Global.Disk[track, side].histoData.histogram.Length - 1] = _histoChartLayout.NormPoint(timing, 0);
 
@@ -144,7 +147,7 @@ class HistoDrawing {
 
 		// compute control pointsInViewport for Bezier curve if formatted
 		//if (Global.Disk[track, side].histoData.entropy > 0) {			
-		if (Global.Disk[track, side].histoData.entropy < Global.unformattedEntropy) {			
+		if (Global.Disk[track, side].histoData.entropy < Global.UNFORMATED_ENTROPY) {			
 			Point[] cp1, cp2;
 			ovp.BezierSpline.GetCurveControlPoints(points, out cp1, out cp2);
 			PathSegmentCollection lines = new PathSegmentCollection();

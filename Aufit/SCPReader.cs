@@ -56,14 +56,14 @@ namespace SCPReaderPackage {
 		public int lastTrack;
 		/// <summary>These flags provides information on how the file was produced
 		/// The bits are defined as follow:
-		/// - Bit 0 - INDEX, cleared if the image did not use the index mark for queuing tracks
-        /// set is the image used the index mark to queue tracks.
+		/// - Bit 0 - INDEX, cleared if the image did not use the indexStart mark for queuing tracks
+        ///           set is the image used the indexStart mark to queue tracks.
 		/// - Bit 1 - TPI, cleared if the drive is a 48TPI drive set if the drive is a 96TPI drive
 		/// - Bit 2 - RPM, cleared if the drive is a 300 RPM drive set if the drive is a 360 RPM drive
 		/// - Bit 3 - TYPE, cleared if the image is a read-only type set if the image is read/write capable
 		/// </summary>
 		public int imageFlags;
-		/// <summary>Contains the width of the bit cell time.  Normally this is always 16 bits, but if the
+		/// <summary>Contains the value of the bit cell time.  Normally this is always 16 bits, but if the
 		/// value is non-zero, then it represents the number of bits for each bit cell entry.  For
 		/// example, if this byte was set to 8, then each bit cell entry would be 8 bits wide, not
 		/// the normal 16 bits.  This is for future expansion, and may never be actually used.</summary>
@@ -93,12 +93,12 @@ namespace SCPReaderPackage {
 	/// This structure contains information related to one revolution of the recorded data in an SCP file
 	/// </summary>
 	public class RevInfo {
-		/// <summary>Contains the index time for the 1st revolution.  This is the time from
-		/// index pulse to index pulse for the track data.  This will be either ~360RPMs or 
+		/// <summary>Contains the indexStart time for the 1st revolution.  This is the time from
+		/// indexStart pulse to indexStart pulse for the track data.  This will be either ~360RPMs or 
 		/// ~300 RPMs depending the drive.  It is important to have this exact time as it is 
-		/// necessary when writing an image back to a real disk.  The index time is a value 
+		/// necessary when writing an image back to a real disk.  The indexStart time is a value 
 		/// in nanoseconds/25ns for one revolution. </summary>
-		public int indexTime;
+		public int revolutionTime;
 		/// <summary>
 		/// Contains the number of flux transitions recorded for this track
 		/// </summary>
@@ -108,7 +108,7 @@ namespace SCPReaderPackage {
 		/// </summary>
 		public int fluxOffset;
 		/// <summary>
-		/// The position of the index inside the first flux. has to be computed in SCP file :(
+		/// The position of the indexStart inside the first flux. has to be computed in SCP file :(
 		/// </summary>
 		public int indexTimePosition;
 	}
@@ -145,6 +145,8 @@ namespace SCPReaderPackage {
 	public enum SCPStatus : int {
 		/// <summary>Status OK - The file was read and decoded successfully</summary>
 		stsOK = 0,
+		/// <summary>Could not open file</summary>
+		stsOpenFailed,
 		/// <summary>Invalid  File header</summary>
 		stsInvalidFile,
 		/// <summary>Invalid Track header</summary>
@@ -179,7 +181,8 @@ namespace SCPReaderPackage {
 		/// <returns>True to indicate that the file was read and parsed correctly, false otherwise</returns>
 		/// <see cref="SCPStatus"/>
 		/// <remarks></remarks>
-		public async static Task<bool> readScpAsync(string fileName, TextBox infobox) {
+		// public async static Task<bool> readScpAsync(string fileName, TextBox infobox, TextBox statusBox) {
+		public static bool readScpAsync(string fileName, TextBox infobox, TextBox statusBox) {
 			FileStream fs;
 			try {
 				fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -188,20 +191,23 @@ namespace SCPReaderPackage {
 				Console.WriteLine("Error: {0}", exc.Message);
 				return false;
 			}
+			statusBox.Text = String.Format("Processing SCP File {0}", fileName);
 
 			// read file into buffer
 			byte[] sbuf = new byte[fs.Length];
 			int bytes = fs.Read(sbuf, 0, (int)fs.Length);
-			Debug.Assert(bytes == fs.Length);	// should be same
+			Debug.Assert(bytes == fs.Length, "Error reading stream file", "Incorrect number of bytes read");	// should be same
 			fs.Close();
 
 			// we parse the file
-			SCPStatus status = await decodeScp(sbuf, infobox);
+			//SCPStatus status = await decodeScp(sbuf, infobox, statusBox);
+			SCPStatus status = decodeScp(sbuf, infobox, statusBox);
 			return (status == SCPStatus.stsOK) ? true : false;
 		}
 
 
-		private async static Task<SCPStatus> decodeScp(byte[] buffer, TextBox infoBox) {
+		//private async static Task<SCPStatus> decodeScp(byte[] buffer, TextBox infoBox, TextBox statusBox) {
+		private  static SCPStatus decodeScp(byte[] buffer, TextBox infoBox, TextBox statusBox) {
 			FileHeader file = new FileHeader();
 			int idx = 0;
 			SCPStatus status;
@@ -210,8 +216,10 @@ namespace SCPReaderPackage {
 			file.identifier += readChar(buffer, ref idx).ToString();	// 0x00
 			file.identifier += readChar(buffer, ref idx).ToString();	// 0x01
 			file.identifier += readChar(buffer, ref idx).ToString();	// 0x02
-			if (file.identifier != "SCP")
+			if (file.identifier != "SCP") {
+				statusBox.AppendText(String.Format(" - Error: file is not an SCP file"));
 				return SCPStatus.stsInvalidFile;
+			}
 			file.version = readByte(buffer, ref idx);					// 0x03
 			file.diskType = readByte(buffer, ref idx);					// 0x04
 			file.revCount = readByte(buffer, ref idx);					// 0x05
@@ -223,24 +231,33 @@ namespace SCPReaderPackage {
 			idx++;														// 0x0B reserved
 			file.checksum = readInt32(buffer, ref idx);					// 0x0C-0x0F
 
-			//int checksum = 0;
-			//for (int i = 0x10; i < buffer.Count(); i++)
-			//	checksum += buffer[i];
-			//if (checksum != file.checksum)
-			//	return SCPStatus.stsFileChecksum;
+			// TODO display file info
+
+			int checksum = 0;
+			for (int index = 0x10; index < buffer.Count(); index++)
+				checksum += buffer[index];
+			if (checksum != file.checksum) {
+				statusBox.AppendText(String.Format(" - Error: Checksum incorrect."));
+				return SCPStatus.stsFileChecksum;
+			}
 
 			ButtonMatrix.clearButtons();
 			file.TrackHeader = new int[166];
 			for (int trackAndSide = 0; trackAndSide < 166; trackAndSide++) {
 				file.TrackHeader[trackAndSide] = readInt32(buffer, ref idx);
 				if (file.TrackHeader[trackAndSide] != 0) {
-					status = await readSCPTrackAsync(buffer, trackAndSide, file.TrackHeader[trackAndSide], file.revCount);
+					//status = await readSCPTrackAsync(buffer, trackAndSide, file.TrackHeader[trackAndSide], file.revCount, statusBox);
+					status =  readSCPTrack(buffer, trackAndSide, file.TrackHeader[trackAndSide], file.revCount, statusBox);
 					if (status != SCPStatus.stsOK) 
 						return status;
-					if ((trackAndSide < file.firstTrack) || (trackAndSide > file.lastTrack))
+					if ((trackAndSide < file.firstTrack) || (trackAndSide > file.lastTrack)) {
+						statusBox.Text = String.Format(" SCP File Error: inconsistent number of tracks");
 						return SCPStatus.stsFileContent;
+					}
 					int track = trackAndSide / 2;
 					int side = trackAndSide % 2;
+					// we decode the track
+					Global.mfmDecode(track, side);
 					Global.computeHisto(track, side, 1, infoBox);
 					ButtonMatrix.setButtonBG(track, side);
 				}
@@ -258,8 +275,8 @@ namespace SCPReaderPackage {
 		/// <param name="trackHeaderPosition">Position of the header in the buffer</param>
 		/// <param name="revCount">Number of revision used</param>
 		/// <returns>The status</returns>
-		public static Task<SCPStatus> readSCPTrackAsync(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount) {
-			return Task<bool>.Run(() => readSCPTrack(buffer, trackSide, trackHeaderPosition, revCount));
+		public static Task<SCPStatus> readSCPTrackAsync(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount, TextBox statusBox) {
+			return Task<bool>.Run(() => readSCPTrack(buffer, trackSide, trackHeaderPosition, revCount, statusBox));
 		}
 
 
@@ -271,7 +288,7 @@ namespace SCPReaderPackage {
 		/// <param name="trackHeaderPosition"></param>
 		/// <param name="revCount">Number of revision imaged in the file</param>
 		/// <returns></returns>
-		private static SCPStatus readSCPTrack(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount) {
+		private static SCPStatus readSCPTrack(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount, TextBox statusBox) {
 			int track = trackSide / 2;
 			int side = trackSide % 2;
 			_fluxMin = Int32.MaxValue;
@@ -283,27 +300,31 @@ namespace SCPReaderPackage {
 			ti.identifier += readChar(buffer, ref idx).ToString();	// 0x00
 			ti.identifier += readChar(buffer, ref idx).ToString();	// 0x01
 			ti.identifier += readChar(buffer, ref idx).ToString();	// 0x02
-			if (ti.identifier != "TRK")
+			if (ti.identifier != "TRK") {
+				statusBox.AppendText(String.Format(" - Error: invalid track header"));
 				return SCPStatus.stsInvalidTrack;
+			}
 			ti.trackSide = readByte(buffer, ref idx);				// 0x03 trackSide
 
 			// check track number
-			//if (ti.trackSide != trackSide)
-			//	return SCPStatus.stsFileContent;
+			if (ti.trackSide != trackSide) {
+				statusBox.AppendText(String.Format(" - Error: inconsistent number of tracks"));
+				return SCPStatus.stsFileContent;
+			}
 
 			// read rev headers
 			ti.revInfo = new RevInfo[revCount];
 			int fluxSize = 0;	// sum all the flux transitions
 			for (int i = 0; i < revCount; i++) {
 				ti.revInfo[i] = new RevInfo();
-				ti.revInfo[i].indexTime = readInt32(buffer, ref idx);
+				ti.revInfo[i].revolutionTime = readInt32(buffer, ref idx);
 				ti.revInfo[i].fluxCount = readInt32(buffer, ref idx);
 				fluxSize += ti.revInfo[i].fluxCount;
 				ti.revInfo[i].fluxOffset = readInt32(buffer, ref idx);
-				//ti.revInfo[i].indexTimePosition = 0;	// not provided currently
 			}
 
-			// sometimes SCP seems to generate invalid short track
+			// sometimes SCP seems to generate invalid short track at end of disks
+			// we just ignore them
 			if (fluxSize < 1000)
 				return SCPStatus.stsOK;
 
@@ -313,6 +334,7 @@ namespace SCPReaderPackage {
 
 			int[] fluxOffset = new int[revCount];
 
+			int revSum = 0;
 			for (int i = 0; i < revCount; i++) {
 				int fluxSum = 0;
 				int overflowCount = 0;
@@ -333,28 +355,30 @@ namespace SCPReaderPackage {
 					}	// overflow (probably NFA)
 					else {
 						ti.fluxValues[p] += val;
-						//if (ti.fluxValues[p] > _fluxMax) _fluxMax = ti.fluxValues[p];
-						//if (ti.fluxValues[p] < _fluxMin) _fluxMin = ti.fluxValues[p];
-						fluxSum += ti.fluxValues[p];
-						p++;
+						fluxSum += ti.fluxValues[p++];
 					}	// normal
-				}
+				}	// all flux
 
 				// if we had overflow we must remove from number of fluxes
 				if (overflowCount > 0)
 					ti.revInfo[i].fluxCount = ti.revInfo[i].fluxCount - overflowCount;
 
-				// SCP does not provide the indexTime Position so we have to compute it
+				// SCP does not provide the revolutionTime Position so we have to compute it
 				if (i == 0) {
-					int indexTimePosition = ti.revInfo[0].indexTime - fluxSum;
+					int indexTimePosition = ti.revInfo[0].revolutionTime - fluxSum;
 					if (indexTimePosition < 0)
 						indexTimePosition = 0;
 					ti.revInfo[0].indexTimePosition = indexTimePosition;
 					ti.fluxValues[0] += ti.revInfo[0].indexTimePosition;
 				}
 				else
+					// same for all
 					ti.revInfo[i].indexTimePosition = ti.revInfo[0].indexTimePosition;
+				revSum += ti.revInfo[i].revolutionTime;
 			}	// for all revolutions
+
+			double correction = (double)(8000000 * revCount) / revSum;
+			double tick = 25.0 * correction;
 
 			// now we transfer to our Global Disk structure
 			MainWindow.Rev = 1;
@@ -363,22 +387,22 @@ namespace SCPReaderPackage {
 			Global.Disk[track, side].fluxData.fluxValue = new int[ti.fluxValues.Count()];
 			for (int i = 0; i < ti.fluxValues.Count(); i++) {
 				Debug.Assert(ti.fluxValues[i] > -1, "Invalid negative flux read");
-				Global.Disk[track, side].fluxData.fluxValue[i] = ti.fluxValues[i];
-				if (ti.fluxValues[i] > _fluxMax) _fluxMax = ti.fluxValues[i];
-				if (ti.fluxValues[i] < _fluxMin) _fluxMin = ti.fluxValues[i];
+				int flux = (int)((double)ti.fluxValues[i] * tick);
+				Global.Disk[track, side].fluxData.fluxValue[i] = flux;
+				if (flux > _fluxMax) _fluxMax = flux;
+				if (flux < _fluxMin) _fluxMin = flux;
 			}
 
 			Global.SampleClock = SampleClock;
-			Global.Disk[track, side].fluxData.fluxMax = _fluxMax;
-			Global.Disk[track, side].fluxData.fluxMin = _fluxMin;
+			Global.Disk[track, side].fluxData.maxFlux = _fluxMax;
+			Global.Disk[track, side].fluxData.minFlux = _fluxMin;
 
-			Global.Disk[track, side].revData = new RevData[revCount];
+			Global.Disk[track, side].fluxDataRev = new FluxDataRev[revCount];
 			for (int i = 0; i < revCount; i++) {
-				Global.Disk[track, side].revData[i].revolutionTime = ti.revInfo[i].indexTime;
-				Global.Disk[track, side].revData[i].fluxCount = ti.revInfo[i].fluxCount;
-				Global.Disk[track, side].revData[i].indexTimePosition = ti.revInfo[i].indexTimePosition;
-				//Global.Disk[track, side].revData[i].indexTimePosition = 0;
-				Global.Disk[track, side].revData[i].fluxIndex = fluxOffset[i];
+				Global.Disk[track, side].fluxDataRev[i].revolutionTime = (int)((double)ti.revInfo[i].revolutionTime * tick);
+				Global.Disk[track, side].fluxDataRev[i].fluxCount = ti.revInfo[i].fluxCount;
+				Global.Disk[track, side].fluxDataRev[i].timeToIndex = (int)((double)ti.revInfo[i].indexTimePosition * tick);
+				Global.Disk[track, side].fluxDataRev[i].firstFluxIndex = fluxOffset[i];
 			}
 			return SCPStatus.stsOK;
 		}

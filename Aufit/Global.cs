@@ -31,42 +31,85 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Controls;
+using System.Diagnostics;
 
 using KFReaderPackage;
 using WD1772Package;
-using System.Windows.Controls;
-using System.Diagnostics;
 
 namespace GlobalPackage {
 
 /// <summary>
-/// The RevData structure contains the information for all the revolutions of one track including 
-/// the pointers to the actual Flux Data.
+/// The FluxDataRev structure contains the information for one revolution of one track 
+/// This information is to be used with the FluxData class
 /// </summary>
-/// <remarks>The RevData are kept in an array with an entry for each revolution</remarks>
-public struct RevData {
+/// <remarks>
+/// The FluxDataRev are kept in an array with an entry for each revolution and contains 
+/// pointers to information in the FluxData class. This class is used when flux samples
+/// file is provided e.g. SCP or KF-RAW file.
+/// </remarks>
+public struct FluxDataRev {
 	/// <summary>
-	/// The time it takes to do a complete revolution. This time is given in number of 
-	/// sample clock. In other word this is the time between two index pulses.
+	/// The time it takes to complete a revolution in nanoseconds (time between two indexes). 
 	/// </summary>
 	public int revolutionTime;
 	/// <summary>
-	/// The time it takes to get to the index pulse inside the first transition for this revolution. 
-	/// The position is given as a number of sample clocks before the index signal. Note that in 
-	/// the case of no flux area at the beginning of the track this value can be huge.
+	/// The time it takes to get to the index-pulse in the first flux transition. 
 	/// </summary>
-	public int indexTimePosition;
+	/// <remarks>
+	/// The time is given in nanoseconds. This is the time from the beginning of the
+	/// first flux transition of a revolution and the index-pulse signal. Note that in 
+	/// case of a no flux area at the beginning of the track this value can be huge.
+	/// </remarks>
+	public int timeToIndex;
 	/// <summary>
-	/// Position (index) in the flux array of the first flux that contains the index signal
+	///  Position of the first flux for this revolution. The position is given as
+	///  an index in the FluxValue[] array of the FluxData class.
 	/// </summary>
-	public int fluxIndex;
-	/// <summary>The number of flux transitions for THIS specific revolution</summary>
+	public int firstFluxIndex;
+	/// <summary>
+	/// The number of flux transitions for this revolution.
+	/// </summary>
 	public int fluxCount;
 }
 
+
 /// <summary>
-/// The FluxData structure contains all the flux transition related information
+/// The PackedFluxDataRev structure contains the information for one revolution of one track 
+/// This information is to be used with PackedFluxData class
 /// </summary>
+/// <remarks>
+/// The PackedFluxDataRev are kept in an array with an entry for each revolution and contains 
+/// pointers to information in the PackedFluxData class. This class is used when data from
+/// device independent file is provided for example IPF or CTR files.
+/// </remarks>
+public struct PackedFluxDataRev {
+	/// <summary>
+	/// The time it takes to complete a revolution in nanoseconds (time between two indexes). 
+	/// </summary>
+	public int revolutionTime;
+	/// <summary>
+	///  Position of the first flux for this revolution. This position is given as the
+	///  absolute position inside the packBits[] array of PackedFluxData class
+	/// </summary>
+	public int firstFluxBit;
+	/// <summary>
+	/// The number of clock/data bits for this revolution.
+	/// </summary>
+	public int bitCount;
+	/// <summary>
+	/// The number of flux transitions for this revolution.
+	/// </summary>
+	public int fluxCount;
+}
+
+
+/// <summary>
+/// The FluxData structure contains the flux transition related information
+/// </summary>
+/// <remarks>
+/// This class is used when flux samples file is provided e.g. SCP or KF-RAW file.
+/// </remarks>
 public class FluxData {
 	/// <summary>Array of flux transitions recorded for this track (including all revolutions). 
 	/// The value is given in number of sample clock</summary>
@@ -75,30 +118,67 @@ public class FluxData {
 	public int fluxCount;
 	/// <summary>Value of the shortest flux transition recorded for this track in sample clock</summary>
 	/// <remarks>This value is filled by readStreamTrack() method</remarks>
-	public int fluxMin;
+	public int minFlux;
 	/// <summary>Value of the largest flux transition recorded for this track in sample clock</summary>
 	/// <remarks>This value is filled by readStreamTrack() method</remarks>
-	public int fluxMax;
+	public int maxFlux;
 }
 
-/// <summary>Contains the decoded data. These data are decoded by the DPLL from the flux transitions</summary>
-/// <remarks>Once decoded the information is kept so we do not call the decode function several times</remarks>
-public class decodeData {
-	/// <summary>The clock period computed by the DPLL for the corresponding flux transition</summary>
-	public ushort[] clockPeriod;
-	/// <summary>The number of inspection windows to get to the flux.</summary>
-	/// <remarks>This array is filled by mfmDecode() method. The array has the same size as the flux array.
-	/// nbWin is the number of inspection windows to the next flux transition (i.e. it is equal to the
-	/// number bit to shift in the DSR</remarks>
-	public ushort[] fluxInWindow;
-	/// <summary>Value minimum value of the clock period as computed by the DPLL</summary>
-	public int minClockPeriod;
-	/// <summary>Value maximum value of the clock period as computed by the DPLL</summary>
-	public int maxClockPeriod;
-	//public int clockAvg;
-	//public byte[] packedBits;
-	//public int[] packedClock;
-	//public int[] bitPosition;
+
+/// <summary>Contains the clock/data information for the revolution(s) of a track</summary>
+/// <remarks>
+/// The clock/data bits are stored packed in a byte array (8 clock+data).
+/// This class is used when data from /// device independent file is provided for example 
+/// IPF or CTR files.
+/// </remarks>
+public class PackedFluxData {
+	/// <summary>
+	/// Decoded clock + data bits packed in a byte
+	/// </summary>
+	public byte[] packBits;
+	/// <summary>
+	/// The average width of a bit (half cell) time  in nanoseconds for a packBits byte.
+	/// </summary>
+	/// <remarks>If null standard width assumed</remarks>
+	public int[] bitWidth;
+	/// <summary>
+	/// The timing of the first flux transition in nanoseconds.
+	/// </summary>
+	/// <remarks>
+	/// The timing of the first flux (first "1" bit in a packBits) in nanoseconds.
+	/// This reference is from the start of all samples which may or may not be the 
+	/// sampling of the first track of the first revolution.
+	/// </remarks>
+	public int[] firstFluxTiming;
+	/// <summary>
+	/// Index of the first transition in the flux transition array.
+	/// </summary>
+	/// <remarks>
+	/// When packed data are extracted from a flux transition array, this value is the index in the
+	/// flux transition array of the first flux (first "1" bit in a packBits). 
+	/// If packed data are not extracted from a flux transitions array its value is null.
+	/// </remarks>
+	public int[] firstFluxIndex;
+	/// <summary>
+	/// The maximum width in nanoseconds of a bit (half cell) for all samples
+	/// </summary>
+	/// <remarks>If null standard width assumed</remarks>
+	public int maxBitWidth;
+	/// <summary>
+	/// The minimum width in nanoseconds of a bit (half cell) for all samples
+	/// </summary>
+	/// <remarks>If null standard width assumed</remarks>
+	public int minBitWidth;
+	/// <summary>
+	/// The minimum flux transition in nanoseconds for all samples
+	/// </summary>
+	/// <remarks>If null standard width assumed</remarks>
+	public int minFlux;
+	/// <summary>
+	/// The maximum flux transition in nanoseconds for all samples
+	/// </summary>
+	/// <remarks>If null standard width assumed</remarks>
+	public int maxFlux;
 }
 
 
@@ -107,14 +187,12 @@ public class decodeData {
 /// </summary>
 public struct HistoData {
 	/// <summary>Histogram Array: Flux transition repartition</summary>
-	/// <remarks>This value is set by computeHisto()</remarks>
 	public int[] histogram;
-	/// <summary>Computed entropy for this track</summary>
-	/// <remarks>This value is set by computeHisto()</remarks>
+	/// <summary>Computed entropy for the track</summary>
 	public double entropy;
-	///// <summary>List of maximums in the histogram</summary>
-	///// <remarks>This value is set by computeHisto()</remarks>
-	//public List<int> bands;
+	/// <summary>
+	/// The track seems to have data
+	/// </summary>
 	public bool hasData;
 }
 
@@ -123,42 +201,72 @@ public struct HistoData {
 /// Contains all global parameters and functions for AUFIT
 /// </summary>
 public class Global {
-	private static DiskTrack[,] _diskInfo = new DiskTrack[85, 2];
-	private static double _sampleClock = 0;
-	private static bool _incompleteData = false;
-	public const double unformattedEntropy = 6.5;
+	/// <summary>
+	/// 
+	/// </summary>
+	public const double UNFORMATED_ENTROPY = 6.5;
+	public const int HISTO_SCALE = 50;
 
-	/// <summary>Contains information about one track</summary>
+	private static DiskTrack[,] _disk = new DiskTrack[85, 2];
+	private static bool _incompleteData = false;
+
+	// TODO remove
+	private static double _sampleClock = 0;
+
+	/// <summary>Contains information about a track of the floppy disk</summary>
 	public struct DiskTrack {
-		/// <summary> Array of RevData structure for this track. There is one entry for each revolution</summary>
-		public RevData[] revData;
-		/// <summary>Pointer to the flux data structure for this track</summary>
+		/// <summary> 
+		/// Array of FluxDataRev structure for this track. 
+		/// There is one entry for each revolution
+		/// </summary>
+		public FluxDataRev[] fluxDataRev;
+
+		/// <summary>
+		/// Pointer to the FluxData class for this track
+		/// </summary>
 		public FluxData fluxData;
-		/// <summary>Pointer to the data decoded by the DPLL</summary>
-		public decodeData decodeData;
-		/// <summary>Histogram / entropy data</summary>
+
+		/// <summary>
+		/// Pointer to the PackedFluxData class for this track
+		/// </summary>
+		public PackedFluxData packedFluxData;
+
+		/// <summary> 
+		/// Array of PackedFluxDataRev structure for this track. 
+		/// There is one entry for each revolution
+		/// </summary>
+		public PackedFluxDataRev[] packedFluxDataRev;
+
+		/// <summary>
+		/// Histogram / entropy data
+		/// </summary>
 		public HistoData histoData;
+
 
 		/// <summary>Information from a FDC read track command</summary>
 		/// <remarks>This value is set by readTrack()</remarks>
 		public TrackContent trackContent;
+
 		/// <summary>Information from a FDC read address command</summary>
 		/// <remarks>This value is set by readAddr()</remarks>
 		public AddrContent addrContent;
+
 		/// <summary>Information from a FDC read sector command</summary>
 		/// <remarks>This value is set by readSect()</remarks>
 		public List<SectorContent> sectorsContent;
 	}
 
+
 	/// <summary>
-	/// This function is used to re-initialized all disk/track structure. Should be called each time a new FD is read.
-	/// Hopefully should also free all memory from previous read.
+	/// This function is used to re-initialized all disk/track structure. Should be called 
+	/// each time a new FD is read. Hopefully should also free all memory from previous read.
 	/// </summary>
 	public static void resetDisk() {
-		_diskInfo = new DiskTrack[85, 2];
+		_disk = new DiskTrack[85, 2];
 		_sampleClock = 0;
 		_incompleteData = false;
 	}
+
 
 	/// <summary>Set to true if we do not have enough data</summary>
 	/// <remarks>This usually happen if we need more than one revolution to get all
@@ -170,36 +278,82 @@ public class Global {
 
 
 	/// <summary>
-	/// This function is used to get the index of the first flux of a track in the FluxValue buffer for a specific revolution
+	/// Return the flux value corresponding to a specific bit.
+	/// </summary>
+	/// <param name="bitPosition">position of the bit in the packed bit array</param>
+	/// <param name="track">The current track</param>
+	/// <param name="side">The current side</param>
+	/// <returns>The flux value in nanoseconds</returns>
+	public static int fluxValue(int bitPosition, int track, int side) {
+		DiskTrack dt = Global.Disk[track, side];
+		int packedIndex = bitPosition / 8;
+		int bit = bitPosition % 8;
+		int testBit = (0x1 << (bitPosition % 8)) >> 1;	
+		int value = 0;
+		int count = 0;
+	
+		// if flux exist use it other we compute
+		if (dt.fluxData != null) {
+			byte bits = dt.packedFluxData.packBits[packedIndex];		
+			for (int i = bit - 1; i >= 0; i--) {
+				if ((bits & testBit) != 0) count++;
+				testBit >>= 1;
+			}
+			value = dt.fluxData.fluxValue[dt.packedFluxData.firstFluxIndex[packedIndex] + count];
+		}
+		else {	
+			if (bit == 0) {
+				bit = 8;
+				packedIndex -= 1;
+			}
+			for (int pbi = packedIndex; pbi >= 0; pbi--) {
+				byte bits = dt.packedFluxData.packBits[pbi];
+				for (int i = bit - 1; i >= 0; i--) {
+					testBit = 0x1 << (i % 8);
+					if ((bits & testBit) != 0) goto done;
+					else count++;
+				}
+				bit = 8;
+			}
+		done:
+			value = (count + 1) * dt.packedFluxData.bitWidth[packedIndex];
+		}
+		return value;
+	}
+
+	// TODO remove
+	/// <summary>
+	/// This function is used to get the indexStart of the first flux of a track in the FluxValue buffer for a specific revolution
 	/// </summary>
 	/// <param name="track">The track we want to use</param>
 	/// <param name="side">The side we want to use.</param>
 	/// <param name="rev">The revolution we want to use</param>
-	/// <returns>The index of the first flux in the buffer</returns>
+	/// <returns>The indexStart of the first flux in the buffer</returns>
 	/// <remarks>The revision parameter should be in the range 1 to the number of revolutions recorded.
 	/// rev==0 has a special meaning: it indicates that we want to use the data from *all* revolutions</remarks>
 	public static int firstIndex(int track, int side, int rev) {
 		if (rev == 0) rev++;
-		return Disk[track, side].revData[rev - 1].fluxIndex;
+		return Disk[track, side].fluxDataRev[rev - 1].firstFluxIndex;
 	}
 
 
+	// TODO remove
 	/// <summary>
 	/// This function is used to get the position of the last flux of a track in the FluxValue buffer for a specific revolution
 	/// </summary>
 	/// <param name="track">The track we want to use</param>
 	/// <param name="side">The side we want to use.</param>
 	/// <param name="rev">The revolution we want to use</param>
-	/// <returns>The index of the last flux in the buffer</returns>
+	/// <returns>The indexStart of the last flux in the buffer</returns>
 	/// <remarks>The revision parameter should be in the range 1 to the number of revolutions recorded.
 	/// rev==0 has a special meaning: it indicates that we want to use the data from *all* revolutions</remarks>
 	public static int lastIndex(int track, int side, int rev) {
-		if (rev == 0) rev = Disk[track, side].revData.Count();
-		return (Disk[track, side].revData[rev - 1].fluxIndex + Disk[track, side].revData[rev - 1].fluxCount);
+		if (rev == 0) rev = Disk[track, side].fluxDataRev.Count();
+		return (Disk[track, side].fluxDataRev[rev - 1].firstFluxIndex + Disk[track, side].fluxDataRev[rev - 1].fluxCount);
 	}
 
-
-	/// <summary>This function is used to get the position of the index in the first flux</summary>
+	// TODO remove
+	/// <summary>This function is used to get the position of the indexStart in the first flux</summary>
 	/// <param name="track">The track we want to use</param>
 	/// <param name="side">The side we want to use.</param>
 	/// <param name="rev">The revolution we want to use</param>
@@ -207,11 +361,12 @@ public class Global {
 	/// <remarks>The revision parameter should be in the range 1 to the number of revolutions recorded.
 	public static int indexTimePosition(int track, int side, int rev) {
 		if (rev == 0) rev++;
-		return (Disk[track, side].revData[rev - 1].indexTimePosition);
+		return (Disk[track, side].fluxDataRev[rev - 1].timeToIndex);
 	}
 
 
-	/// <summary>Access the sample clock frequency in Hz (i.e. 1/sampling_period </summary>
+	// TODO remove
+	/// <summary>Access the sample clock frequency in Hz (indexStart.e. 1/sampling_period </summary>
 	public static double SampleClock {
 		get { return _sampleClock; }
 		set { _sampleClock = value; }
@@ -222,11 +377,12 @@ public class Global {
 	/// There are 85 Tracks * 2 Sides (170) TrackData structures.
 	/// </summary>
 	public static DiskTrack[,] Disk {
-		get { return _diskInfo; }
-		set { _diskInfo = value; }
+		get { return _disk; }
+		set { _disk = value; }
 	}
 
 
+	// TODO remove
 	/// <summary> This function takes a sample value and returns the corresponding 
 	/// timing in nanoseconds based on the sample clock.</summary>
 	/// <param name="sValue">The sample value</param>
@@ -237,6 +393,7 @@ public class Global {
 	}
 
 
+	// TODO remove
 	/// <summary>
 	/// This function convert a sample into a timing value in nanoseconds.
 	/// </summary>
@@ -252,12 +409,12 @@ public class Global {
 	public static int CorrectedSampleToTiming(int sValue, int track, int side, int rev) {
 		double correction = 1;
 		if (rev != 0)
-			correction = 200000000.0 / (double)sampleToTiming(Disk[track, side].revData[rev-1].revolutionTime);
+			correction = 200000000.0 / (double)sampleToTiming(Disk[track, side].fluxDataRev[rev-1].revolutionTime);
 		else {
-			int revCount = Disk[track, side].revData.Count();
+			int revCount = Disk[track, side].fluxDataRev.Count();
 			int totalRevTime = 0;
 			for (int i = 0; i < revCount; i++)
-				totalRevTime += Global.Disk[track, side].revData[i].revolutionTime;
+				totalRevTime += Global.Disk[track, side].fluxDataRev[i].revolutionTime;
 			correction = (double)revCount * 200000000.0 / (double)sampleToTiming(totalRevTime);
 		}
 		int time = (int)((double)sampleToTiming(sValue) * correction);
@@ -265,6 +422,7 @@ public class Global {
 	}
 
 
+	// TODO remove
 	/// <summary>
 	/// This function takes a timing value and convert it back to the corresponding integer sample value
 	/// </summary>
@@ -277,87 +435,105 @@ public class Global {
 
 
 	/// <summary>
-	/// decode Flux transition into bits in window and clocks using the DPLL. 
-	/// Also sets min max values</summary>
+	/// Decodes the MFM Flux transition into clock/data bits
+	/// </summary>
+	/// <remarks> Fill packed structure and store useful information
+	/// </remarks>
 	public static void mfmDecode(int track, int side) {
 		// if already there nothing to do
-		if (Global.Disk[track, side].decodeData != null) return;
+		if (Global.Disk[track, side].packedFluxData != null) return;
 
-		int minClock = Int32.MaxValue;
-		int maxClock = 0;
-		int curentTime = 0;
-		//int clockAvg = 0;
-		//int currentBit = 0;
+		int minBitWidth = Int32.MaxValue;
+		int maxBitWidth = 0;
+		int currentPosition = 0;
+		int widthSum = 0;
+		int currentBit = 0;
+		DiskTrack td = Global.Disk[track, side];
 
-		Global.DiskTrack td = Global.Disk[track, side];
-		Global.Disk[track, side].decodeData = new decodeData();
-		Global.Disk[track, side].decodeData.clockPeriod = new ushort[td.fluxData.fluxCount + 1];
-		Global.Disk[track, side].decodeData.fluxInWindow = new ushort[td.fluxData.fluxCount + 1];
+		int decodeCount = Global.Disk[track, side].fluxData.fluxCount + 1;
+		ushort[] decodeBitWidth = new ushort[decodeCount];
+		int[] decodeBitPosition = new int[decodeCount];
+		int[] decodeFluxPosition = new int[decodeCount];
 		
 		DPLL dpll = new DPLL();
-		int sizeBeforeTrim = Global.Disk[track, side].fluxData.fluxMax + 1;		
-		int[] tmpHisto = new int[sizeBeforeTrim];
+		for (int index = 0; index < Global.Disk[track, side].fluxData.fluxCount; index++) {
+			int flux = Global.Disk[track, side].fluxData.fluxValue[index];
+			currentPosition += flux;
+			int bitSpacing = dpll.bitSpacing(currentPosition);
+			currentBit += bitSpacing;
+			decodeBitPosition[index] = currentBit;
+			decodeFluxPosition[index] = currentPosition;
+			int bitWidth = dpll.bitWidth;
+			if (bitWidth > maxBitWidth) maxBitWidth = bitWidth;
+			if (bitWidth < minBitWidth) minBitWidth = bitWidth;
+			widthSum += bitWidth;
+			decodeBitWidth[index] = (ushort)bitWidth;
+		}	// decode MFM data from flux
 
+		Global.Disk[track, side].packedFluxData = new PackedFluxData();
+		int packedCount = (currentBit / 8) + 1;
+		Global.Disk[track, side].packedFluxData.packBits = new byte[packedCount];
+		Global.Disk[track, side].packedFluxData.bitWidth = new int[packedCount];
+		Global.Disk[track, side].packedFluxData.firstFluxTiming = new int[packedCount];
+		Global.Disk[track, side].packedFluxData.firstFluxIndex = new int[packedCount];
 
-		int lastRev = Global.Disk[track, side].revData.Count() - 1;
-		for (int i = Global.Disk[track, side].revData[0].fluxIndex;
-			i < (Global.Disk[track, side].revData[lastRev].fluxIndex + Global.Disk[track, side].revData[lastRev].fluxCount); i++) {
-			int flux = Global.sampleToTiming(td.fluxData.fluxValue[i]);
-			tmpHisto[td.fluxData.fluxValue[i]]++;
-			curentTime += flux;
-			int nbWin = dpll.fluxInWindow(curentTime);
-			//currentBit += nbWin;
-			Global.Disk[track, side].decodeData.fluxInWindow[i] = (ushort)nbWin;
+		int lastPackedBytePos = 0;
+		int lastIndex = 0;
+		widthSum = 0;
+		int widthCount = 0;
+		Global.Disk[track, side].packedFluxData.packBits[0] = 1;
 
-			int clk = dpll.ClockPeriod;
-			if (clk > maxClock) maxClock = clk;
-			if (clk < minClock) minClock = clk;
-			Global.Disk[track, side].decodeData.clockPeriod[i] = (ushort)clk;
-			//clockAvg += clk;
+		for (int fluxIndex = 0; fluxIndex < Global.Disk[track, side].fluxData.fluxCount; fluxIndex++) {
+			int bitPosition = decodeBitPosition[fluxIndex];
+			int bytePos = bitPosition / 8;
+			int setBit = 0x1 << (bitPosition % 8);
+			Global.Disk[track, side].packedFluxData.packBits[bytePos] |= (byte)setBit;
+			widthSum += decodeBitWidth[fluxIndex];
+			widthCount++;
+			if (bytePos > lastPackedBytePos) {
+				int avgClock = widthSum / widthCount;
+				while (bytePos > lastPackedBytePos) {
+					Global.Disk[track, side].packedFluxData.firstFluxTiming[lastPackedBytePos] = decodeFluxPosition[lastIndex];
+					Global.Disk[track, side].packedFluxData.bitWidth[lastPackedBytePos] = avgClock;
+					Global.Disk[track, side].packedFluxData.firstFluxIndex[lastPackedBytePos++] = lastIndex;
+				}
+				widthCount = 0;
+				widthSum = 0;
+				lastIndex = fluxIndex;
+			}	// new entry (could be multiple for NFA)
+		}	// fill packed data
+
+		Global.Disk[track, side].packedFluxData.minBitWidth = minBitWidth;
+		Global.Disk[track, side].packedFluxData.maxBitWidth = maxBitWidth;
+		Global.Disk[track, side].packedFluxData.minFlux = Global.Disk[track, side].fluxData.minFlux;
+		Global.Disk[track, side].packedFluxData.maxFlux = Global.Disk[track, side].fluxData.maxFlux;
+
+		int revCount = Global.Disk[track, side].fluxDataRev.Count();
+		Global.Disk[track, side].packedFluxDataRev = new PackedFluxDataRev[revCount];
+		for (int i = 0; i < revCount; i++) {
+			Global.Disk[track, side].packedFluxDataRev[i].revolutionTime = Global.Disk[track, side].fluxDataRev[i].revolutionTime;
+			int indexStart = Global.Disk[track, side].fluxDataRev[i].firstFluxIndex;
+			int bitWidth = decodeBitWidth[indexStart];
+			int indexPosition = Global.Disk[track, side].fluxDataRev[i].timeToIndex;
+			int correction = indexPosition / bitWidth;
+			int bitPosition = decodeBitPosition[indexStart];
+			bitPosition -= correction;
+			Global.Disk[track, side].packedFluxDataRev[i].firstFluxBit = bitPosition;
+			int indexEnd = indexStart + Global.Disk[track, side].fluxDataRev[i].fluxCount - 1;
+			int bitCount = decodeBitPosition[indexEnd] - decodeBitPosition[indexStart];
+			Global.Disk[track, side].packedFluxDataRev[i].bitCount = bitCount - correction;
+			Global.Disk[track, side].packedFluxDataRev[i].fluxCount = Global.Disk[track, side].fluxDataRev[i].fluxCount;
 		}
-
-		Global.Disk[track, side].decodeData.minClockPeriod = minClock;
-		Global.Disk[track, side].decodeData.maxClockPeriod = maxClock;
-		//Global.Disk[track, side].clockAvg = clockAvg / track.indexes[track.indexCount - 1].fluxPosition;
 	}
 
 
-//Global.currentTrack().packedBits = new byte[(currentBit / 8) + 1];
-//Global.currentTrack().packedClock = new int[(currentBit / 8) + 1];
-
-//int lastClockPos = 0;
-//int sigmaClocks = 0;
-//int nbClocks = 0;
-//for (int i = 0; i < track.indexes[track.indexCount - 1].fluxPosition; i++) {
-//	int bytePos = Global.currentTrack().bitPosition[i] / 8;
-//	int setBit = 0x1 << (Global.currentTrack().bitPosition[i] % 8);
-//	Global.currentTrack().packedBits[bytePos] |= (byte)setBit;
-
-//	if (Global.currentTrack().nbWin[i] < 100) {
-//		sigmaClocks += Global.currentTrack().clock[i];
-//		nbClocks++;
-//	}
-//	else {
-//		sigmaClocks = Global.currentTrack().clock[i];
-//		nbClocks = 1;
-//	}	// NFA
-//	if (bytePos > lastClockPos) {
-//		while (bytePos > lastClockPos)
-//			Global.currentTrack().packedClock[lastClockPos++] = sigmaClocks / nbClocks;
-//		nbClocks = 0;
-//		sigmaClocks = 0;			
-//	}
-
-//}
-
-
 	/// <summary>
-	/// This function fill the histogram _histo array compute the entropy and display debug information
+	/// This function fill the histogram _histo array compute the entropy and display information
 	/// </summary>
 	/// <param name="track">We compute the histogram for this track</param>
 	/// <param name="side">We compute the histogram for this side</param>
-	/// /// <param name="rev">We compute the histogram for this revolution</param>
-	/// <param name="text">The TextBox where the debug information are written</param>
+	/// <param name="rev">We compute the histogram for this revolution</param>
+	/// <param name="text">The TextBox where the information are written</param>
 	/// <returns>the computed entropy</returns>
 	public static double computeHisto(int track, int side, int rev, TextBox text) {
 		//if (Global.Disk[track, side].flux == null) return 0;
@@ -367,16 +543,23 @@ public class Global {
 		int[] tmpHisto;
 
 		if (rev == 0)
-			threshold *= Global.Disk[track, side].revData.Count();
+			threshold *= Global.Disk[track, side].fluxDataRev.Count();
 
-		int first = Global.firstIndex(track, side, rev);
-		int last = Global.lastIndex(track, side, rev);
-
-		int sizeBeforeTrim = Global.Disk[track, side].fluxData.fluxValue.Max() + 1;
+		int firstBit = Global.Disk[track, side].packedFluxDataRev[rev - 1].firstFluxBit;
+		int lastBit = firstBit + Global.Disk[track, side].packedFluxDataRev[rev - 1].bitCount;
+		
+		int sizeBeforeTrim = (Global.Disk[track, side].packedFluxData.maxFlux / HISTO_SCALE) + 2;
 		tmpHisto = new int[sizeBeforeTrim];
-		for (int i = first; i < last; i++) {
-			int flux = Global.Disk[track, side].fluxData.fluxValue[i];
-			tmpHisto[flux]++;
+		int fluxCount = 0;
+
+		for (int bitPosition = firstBit; bitPosition < lastBit; bitPosition++) {
+			int bytePos = bitPosition / 8;
+			int testBit = 0x1 << (bitPosition % 8);
+			if ((Global.Disk[track, side].packedFluxData.packBits[bytePos] & (byte)testBit) != 0) {
+				int flux = Global.fluxValue(bitPosition, track, side) / HISTO_SCALE;
+				tmpHisto[flux]++;
+				fluxCount++;
+			}
 		}
 
 		// we trim the array size to keep only significant entries. This is useful as
@@ -391,58 +574,26 @@ public class Global {
 		for (int i = 0; i < histoSize; i++)
 			Global.Disk[track, side].histoData.histogram[i] = tmpHisto[i];
 
-		//int maxFound = 0;
-		//bool searchMax = true;
-		//int last = 0;
-		//Global.Disk[track, side].histoData.bands = new List<int>();
-		int notNullEntries = 0;
-
-		//// find bands
-		for (int i = 0; i < histoSize; i++) {
-			int current = Global.Disk[track, side].histoData.histogram[i] = tmpHisto[i];
-			if (current > 0) notNullEntries++;
-		//	if (searchMax) {
-		//		// we have reached the maximum when we go down but at least 10
-		//		if (current < last - 20) {
-		//			// we ignore too small values
-		//			if (last > 40) {
-		//				maxFound++;
-		//				Global.Disk[track, side].histoData.bands.Add(current);
-		//			}
-		//			searchMax = false;
-		//		}	// max reached
-		//	}	// looking for max
-		//	else {
-		//		if (current > last)
-		//			searchMax = true;
-		//	}
-		//	last = current;
-		}
-
 		bool hasData = false;
 		double entropy = 0;
 		for (int i = 0; i < histoSize; i++)
 			if (Global.Disk[track, side].histoData.histogram[i] > 0) {
-				//double p = (double)Global.Disk[track, side].histoData.histogram[i] / (double)notNullEntries;
 				if (Global.Disk[track, side].histoData.histogram[i] > 300) {
-					if ((i > timingToSample(3400)) && i < timingToSample(8600))
-						hasData = true;
-				}
-				double p = (double)Global.Disk[track, side].histoData.histogram[i] / (double)(last - first); 
+					if ((i > (3400/HISTO_SCALE)) && (i < (8600/HISTO_SCALE))) hasData = true;
+				}	// large number of flux transitions
+				double p = (double)Global.Disk[track, side].histoData.histogram[i] / (double)(fluxCount); 
 				entropy += p * Math.Log(p, 2);
 			}
 		entropy = -entropy;
 
 		Global.Disk[track, side].histoData.entropy = entropy;
 		Global.Disk[track, side].histoData.hasData = hasData;
-		//if (entropy < 0) Global.Disk[track, side].histoData.bands.Clear();
 
 		text.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev));
-		text.AppendText(String.Format(" * {0} * (Ent {1:F2})",
-			//(entropy < 2000) ? (entropy < 0) ? "Unformatted track" : "Unformatted area" : "Normal track", entropy));
-			(entropy > unformattedEntropy) ? "Unformatted track" : "Normal track", entropy));
-		text.AppendText(String.Format(" - Fluxes {0}", last - first));
-		text.AppendText(String.Format(" - Histo size {0} ({1} ns)\n",
+		text.AppendText(String.Format(" * {0} * (Entropy {1:F2})",
+			(entropy > UNFORMATED_ENTROPY) ? "Unformatted track" : "Normal track", entropy));
+		text.AppendText(String.Format(" - Fluxes {0}", fluxCount));
+		text.AppendText(String.Format(" - Histogram size {0} ({1} ns)\n",
 			histoSize, Global.sampleToTiming(histoSize - 1)));
 		text.ScrollToEnd();
 		return entropy;

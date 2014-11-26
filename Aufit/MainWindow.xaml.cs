@@ -237,7 +237,7 @@ namespace Aufit {
 
 		private void minusRevClicked(object sender, RoutedEventArgs e) {
 			if (Rev == 0)
-				Rev = Global.Disk[Track, Side].revData.Count();
+				Rev = Global.Disk[Track, Side].fluxDataRev.Count();
 			else Rev--;
 
 			revolution.Text = Rev.ToString();
@@ -248,7 +248,7 @@ namespace Aufit {
 		}
 
 		private void plusRevClicked(object sender, RoutedEventArgs e) {
-			if (Rev == (Global.Disk[Track, Side].revData.Count()))
+			if (Rev == (Global.Disk[Track, Side].fluxDataRev.Count()))
 				Rev = 0;
 			else Rev++;
 
@@ -270,11 +270,11 @@ namespace Aufit {
 			int rev = Rev;
 
 			revolution.Text = rev.ToString();
-			if (Global.Disk[track, side].decodeData == null)
+			if (Global.Disk[track, side].packedFluxData == null)
 				Global.mfmDecode(track, side);
 
 			// cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) > 0);
-			cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) < Global.unformattedEntropy);
+			cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) < Global.UNFORMATED_ENTROPY);
 			_histoDrawing.drawHisto(track, side, rev);
 
 			_fluxDrawing.setFluxDefault(track, side, rev);
@@ -283,8 +283,8 @@ namespace Aufit {
 			_clockDrawing.setClockDefault(track, side, rev);
 			_clockDrawing.drawClock(track, side, rev);
 
-			_dataDrawing.Chart.setDefaultViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
-			_dataDrawing.drawTrackData(track, side, rev);
+			//_dataDrawing.Chart.setDefaultViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
+			//_dataDrawing.drawTrackData(track, side, rev);
 			ButtonMatrix.setButtonBG(track, side);
 		}
 
@@ -306,7 +306,8 @@ namespace Aufit {
 						readOK = readKFRawFile(ofd.FileName);
 						break;
 					case ".scp":
-						readOK = await readSPCFile(ofd.FileName);
+						//readOK = await readSPCFile(ofd.FileName);
+						readOK = readSPCFile(ofd.FileName);
 						break;
 				}
 			}
@@ -333,7 +334,8 @@ namespace Aufit {
 		}
 
 
-		private async Task<bool> readSPCFile(string fileName) {
+		//private async Task<bool> readSPCFile(string fileName) {
+		private bool readSPCFile(string fileName) {
 			BM1.Visibility = Visibility.Visible;
 			BM2.Visibility = Visibility.Visible;
 			tabCtrl.Width = matrixGrid.ActualWidth - 370;
@@ -343,7 +345,8 @@ namespace Aufit {
 				infoBox.FontSize = 11;
 
 			_fileName = System.IO.Path.GetFileNameWithoutExtension(fileName);
-			bool ok = await SCPReader.readScpAsync(fileName, infoBox);
+			//bool ok = await SCPReader.readScpAsync(fileName, infoBox, statusBox);
+			bool ok =  SCPReader.readScpAsync(fileName, infoBox, statusBox);
 			if (ok) {
 				selectAndCheck(0, 0);
 				drawAllCharts();
@@ -546,7 +549,7 @@ namespace Aufit {
 				byte index;
 				for (index = 0; index < Global.Disk[Track, Side].trackContent.sectors.Count; index++) {
 					if ((Global.Disk[Track, Side].trackContent.sectors[index].startTime < pos) && (Global.Disk[Track, Side].trackContent.sectors[index].endTime > pos)) {
-						// infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", _dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, index));
+						// infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", _dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, indexStart));
 						byte number = Global.Disk[Track, Side].trackContent.sectors[index].addr.number;
 						SectorContent sect = FDC.findSectorContent(Track, Side, number, Global.Disk[Track, Side].trackContent.sectors[index].startTime);
 						if (sect == null) return;	// TODO for now we return

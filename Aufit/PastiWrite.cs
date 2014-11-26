@@ -196,7 +196,7 @@ namespace PastiPackage {
 							for (int i = 0; i < Global.sectSize(tdata.sectorsContent[sect].id.size) + 3; i++) {
 								TrackBuffer.TrackByte tb = new TrackBuffer.TrackByte();
 								tb.dataByte = (byte)((i < 30) ? 0x00 : 0xFF);
-								tb.clockByte = 0;
+								// tb.clockByte = 0;
 								tb.mfmWord = 0;
 								tb.density = 0;
 								tb.startTime = 0;

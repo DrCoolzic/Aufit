@@ -11,6 +11,7 @@
             <RowDefinition Height="1*" MinHeight="50"/>
             <RowDefinition Height="1*" />
             <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0">
@@ -28,7 +29,7 @@
             </Grid.ColumnDefinitions>
 
             <Button Grid.Column="0" Content="Directory" Click="openDirectoryClick"/>
-            <Button Grid.Column="1" x:Name="btFile" Content="File" Click="openFileClick" />
+            <Button Grid.Column="1" x:Name="btFile" Content="File" Click="openFileClick" Height="20" VerticalAlignment="Top" />
             <TextBox Grid.Column="2" Name="tbFileName" BorderThickness="0" Margin="5,0"/>
             <CheckBox Grid.Column="7" x:Name="cbLimitFlux" Content="Limit Flux" Margin="10,0,10,0" VerticalAlignment="Center" 
                       Click="cbLimitClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
@@ -112,7 +113,9 @@
             <Button Margin="0,0,10,0"  Content="Protections" Width="100" Click="btProtectionClick" />
             <Button Margin="0,0,10,0"  Content="Write Disk" Width="100"  Click="btWriteDiskClick"/>
         </StackPanel>
-
+        <Grid Grid.Row="7" Margin="0,0,0,0" >
+            <TextBox x:Name="statusBox" Height="30" />
+        </Grid>
 
     </Grid>
 </Window>
