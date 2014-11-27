@@ -92,7 +92,6 @@ namespace Aufit {
 		public MainWindow() {
 			InitializeComponent();
 
-
 			_fluxDrawing = new FluxDrawing(fluxGrid, cvTextFlux, cvGraphicFlux, this);
 			_fluxDrawing.SlowDraw = cbSlow.IsChecked.Value;
 			//_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
@@ -109,7 +108,8 @@ namespace Aufit {
 			_dataDrawing.Chart.FixOffset = true;
 
 			// this.DataContext = this;	// needed for property changed event
-			// TODO string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+			string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+			Title = "Aufit " + version;
 		}
 
 
@@ -306,8 +306,8 @@ namespace Aufit {
 						readOK = readKFRawFile(ofd.FileName);
 						break;
 					case ".scp":
-						//readOK = await readSPCFile(ofd.FileName);
-						readOK = readSPCFile(ofd.FileName);
+						readOK = await readSPCFile(ofd.FileName);
+						//readOK = readSPCFile(ofd.FileName);
 						break;
 				}
 			}
@@ -334,8 +334,8 @@ namespace Aufit {
 		}
 
 
-		//private async Task<bool> readSPCFile(string fileName) {
-		private bool readSPCFile(string fileName) {
+		private async Task<bool> readSPCFile(string fileName) {
+		//private bool readSPCFile(string fileName) {
 			BM1.Visibility = Visibility.Visible;
 			BM2.Visibility = Visibility.Visible;
 			tabCtrl.Width = matrixGrid.ActualWidth - 370;
@@ -345,8 +345,8 @@ namespace Aufit {
 				infoBox.FontSize = 11;
 
 			_fileName = System.IO.Path.GetFileNameWithoutExtension(fileName);
-			//bool ok = await SCPReader.readScpAsync(fileName, infoBox, statusBox);
-			bool ok =  SCPReader.readScpAsync(fileName, infoBox, statusBox);
+			bool ok = await SCPReader.readScpAsync(fileName, infoBox, statusBox);
+			//bool ok =  SCPReader.readScpAsync(fileName, infoBox, statusBox);
 			if (ok) {
 				selectAndCheck(0, 0);
 				drawAllCharts();

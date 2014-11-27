@@ -61,7 +61,7 @@ class FluxDrawing {
 	private int _track, _side, _rev;
 
 	/// <summary>
-	/// Set to true for slow drawing (indexStart.e. draw ALL points)
+	/// Set to true for slow drawing (i.e. draw ALL points)
 	/// </summary>
 	public bool SlowDraw { get; set; }
 

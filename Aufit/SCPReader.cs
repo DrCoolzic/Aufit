@@ -181,8 +181,8 @@ namespace SCPReaderPackage {
 		/// <returns>True to indicate that the file was read and parsed correctly, false otherwise</returns>
 		/// <see cref="SCPStatus"/>
 		/// <remarks></remarks>
-		// public async static Task<bool> readScpAsync(string fileName, TextBox infobox, TextBox statusBox) {
-		public static bool readScpAsync(string fileName, TextBox infobox, TextBox statusBox) {
+		public async static Task<bool> readScpAsync(string fileName, TextBox infobox, TextBox statusBox) {
+		//public static bool readScpAsync(string fileName, TextBox infobox, TextBox statusBox) {
 			FileStream fs;
 			try {
 				fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -200,14 +200,14 @@ namespace SCPReaderPackage {
 			fs.Close();
 
 			// we parse the file
-			//SCPStatus status = await decodeScp(sbuf, infobox, statusBox);
-			SCPStatus status = decodeScp(sbuf, infobox, statusBox);
+			SCPStatus status = await decodeScp(sbuf, infobox, statusBox);
+			//SCPStatus status = decodeScp(sbuf, infobox, statusBox);
 			return (status == SCPStatus.stsOK) ? true : false;
 		}
 
 
-		//private async static Task<SCPStatus> decodeScp(byte[] buffer, TextBox infoBox, TextBox statusBox) {
-		private  static SCPStatus decodeScp(byte[] buffer, TextBox infoBox, TextBox statusBox) {
+		private async static Task<SCPStatus> decodeScp(byte[] buffer, TextBox infoBox, TextBox statusBox) {
+		//private  static SCPStatus decodeScp(byte[] buffer, TextBox infoBox, TextBox statusBox) {
 			FileHeader file = new FileHeader();
 			int idx = 0;
 			SCPStatus status;
@@ -246,8 +246,8 @@ namespace SCPReaderPackage {
 			for (int trackAndSide = 0; trackAndSide < 166; trackAndSide++) {
 				file.TrackHeader[trackAndSide] = readInt32(buffer, ref idx);
 				if (file.TrackHeader[trackAndSide] != 0) {
-					//status = await readSCPTrackAsync(buffer, trackAndSide, file.TrackHeader[trackAndSide], file.revCount, statusBox);
-					status =  readSCPTrack(buffer, trackAndSide, file.TrackHeader[trackAndSide], file.revCount, statusBox);
+					status = await readSCPTrackAsync(buffer, trackAndSide, file.TrackHeader[trackAndSide], file.revCount, statusBox);
+					//status =  readSCPTrack(buffer, trackAndSide, file.TrackHeader[trackAndSide], file.revCount, statusBox);
 					if (status != SCPStatus.stsOK) 
 						return status;
 					if ((trackAndSide < file.firstTrack) || (trackAndSide > file.lastTrack)) {

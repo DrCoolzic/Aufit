@@ -89,9 +89,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Compile Include="..\KFStreamReader\KFReader.cs">
-      <Link>KFReader.cs</Link>
-    </Compile>
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -110,6 +107,7 @@
     <Compile Include="BufferWindow.xaml.cs">
       <DependentUpon>BufferWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="KFReader.cs" />
     <Compile Include="PastiStruct.cs" />
     <Compile Include="PastiWrite.cs" />
     <Compile Include="Protections.cs" />
