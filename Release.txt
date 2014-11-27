@@ -1,7 +1,7 @@
 * V0.4c March 15, 2014 Better sync display, Fix bug Starglider 2 & PoliceQuest 2, Grid splitter clock/flux
 
 - BufferWindow: ready to display clock and MFM data (flags)
-- ClockDrawing: back to avearge of 50 fluxes
+- ClockDrawing: back to average of 50 fluxes
 - DrawDiskTrack: sync char too small => increase by 3
 - DSR experiment lastByte sync detection ??? need work
 - Global: sectSize returns computed size based on 3 last digits. Fix invalid id containing F7 (starglider 2)
@@ -10,22 +10,22 @@ http://www.atari-forum.com/viewtopic.php?f=102&t=25854&start=350#p248533
 - SCPReader: added verification that indexTimePosition is positive (resultedt in negative flux in PoliceQuest 2)
 http://www.atari-forum.com/viewtopic.php?f=102&t=25906&p=249564#p249564
 
-* V0.4b March 1, 2014 Color changed, improve disk data, fix pre sync data pb, fix fuzzy detection
-- IDG now in ligh blue
+* V0.4b March 1, 2014 Color changed, improve disk data, fix pre-sync data problem, fix fuzzy detection
+- IDG now in light blue
 - button background changed
-- Disk data selection of displayed char drastically changed (more perf / accurate)
+- Disk data selection of displayed char drastically changed (more performance / accurate)
 - DSR.cs now have a preSyn
 - FDC usage of preSync in readTrack. Assert back in readSector compare mode. findSector now allow 32000 slack in position
-- Global hasData (more than 300 in histo) added
-- Main checkboc recover -> Force DS. When reading KF dir name of dir used for disk layout
+- Global hasData (more than 300 in histogram) added
+- Main checkbox recover -> Force DS. When reading KF directory name of directory used for disk layout
 - WritePasti added a ForceDS flag
 
 * V0.4a February 23, 2014 New Entropy, Double sided Disk layout, FDC more robust, SCP more robust
 - New Shannon entropy computation (following exact definition). unformatted limit defined in Global set to 6.5
 - usage of new entropy in different modules
 - ClockDrawing can now correctly handle clock min = max
-- DiskWindow: now the two sides of Disk is drawn for Layout and Data. Size set as const in one place (easier to modif)
-  Reference line in code, finer line (fine/heavy is now const for easy modif). Reference is now horizontal (pi/2 before)
+- DiskWindow: now the two sides of Disk is drawn for Layout and Data. Size set as constant in one place (easier to modify)
+  Reference line in code, finer line (fine/heavy is now constant for easy modification). Reference is now horizontal (pi/2 before)
 - FDC more robust: when reference not found call recursively (still need to investigate).
   Fix wrong ID CRC when SWS
 - Flux drawing: dot radius fixed, color based on cbLimitFlux
