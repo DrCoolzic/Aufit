@@ -291,7 +291,8 @@ namespace Aufit {
 
 		private async void openFileClick(object sender, RoutedEventArgs e) {
 			OpenFileDialog ofd = new OpenFileDialog();
-			ofd.Filter = "SuperCard Pro files|*.scp|Stream Files|*.raw|All Files|*.*";
+			ofd.Filter = "Aufit|*.scp;*.raw|All Files|*.*";
+
 			bool? ok = ofd.ShowDialog();
 			bool readOK = false;			
 			if (ok == true) {
@@ -303,9 +304,29 @@ namespace Aufit {
 				string extension = System.IO.Path.GetExtension(ofd.FileName);
 				switch (extension) {
 					case ".raw":
-						readOK = readKFRawFile(ofd.FileName);
+						string path = System.IO.Path.GetDirectoryName(ofd.FileName);
+
+						//readOK = readKFRawFile(ofd.FileName);
+											BM1.Visibility = Visibility.Visible;
+					BM2.Visibility = Visibility.Visible;
+					tabCtrl.Width = matrixGrid.ActualWidth - 370;
+					Grid.SetColumn(tabCtrl, 2);
+					Grid.SetColumnSpan(tabCtrl, 1);
+
+						infoBox.Clear();
+						infoBox.FontSize = 11;
+
+						string file = System.IO.Path.GetFileName(ofd.FileName);
+					
+						string root = file.Remove(file.Length - 8, 8);
+						tbFileName.Text = ofd.FileName;
+						_fileName = file;
+						Global.resetDisk();
+						readAllTracksAsync(path, root);
+
 						break;
 					case ".scp":
+						
 						readOK = await readSPCFile(ofd.FileName);
 						//readOK = readSPCFile(ofd.FileName);
 						break;
@@ -345,7 +366,8 @@ namespace Aufit {
 				infoBox.FontSize = 11;
 
 			_fileName = System.IO.Path.GetFileNameWithoutExtension(fileName);
-			bool ok = await SCPReader.readScpAsync(fileName, infoBox, statusBox);
+
+			bool ok = await SCPReader.readScpAsync(fileName, infoBox);
 			//bool ok =  SCPReader.readScpAsync(fileName, infoBox, statusBox);
 			if (ok) {
 				selectAndCheck(0, 0);

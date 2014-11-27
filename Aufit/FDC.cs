@@ -263,7 +263,7 @@ namespace WD1772Package {
 			AddrContent ac = Global.Disk[track, side].addrContent;
 
 			Global.DiskTrack dt = Global.Disk[track, side];
-			int start = Global.firstIndex(track, side, rev);
+			// int start = 0; // TODO Global.firstIndex(track, side, rev);
 			//int startBit = Global.Disk[track, side].decodeData.bitPosition[start];
 			int stop = Global.lastIndex(track, side, rev);
 			//int stopBit = Global.Disk[track, side].decodeData.bitPosition[stop];
@@ -319,7 +319,7 @@ namespace WD1772Package {
 						case Phases.p_data: tc.dataOverIdx = true; break;
 					}
 					// we store the number of byte and timing
-					int iff = Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
+					int iff = 0; // TODO Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
 					lastTrackByte = tc.byteCount + (iff / (2000 * 16));
 					lastTrackTime = currentTime + iff;
 				}
@@ -580,7 +580,7 @@ namespace WD1772Package {
 
 					// tc.buffer.addByte(dsr.Data, dsr.Clock, dsr.MFM, phase, (ushort)clock, prevBlockEndTime);
 					tc.buffer.addByte(dsr.Data, dsr.MFM, phase, (ushort)clock, prevBlockEndTime);
-					crc = Global.updateCRC(dsr.Data, crc);
+					// TODO crc = Global.updateCRC(dsr.Data, crc);
 					prevBlockEndTime += 32000;	// we need this for NFA
 				}	// while bytes in the DSR
 				prevBlockEndTime = currentTime;
@@ -668,7 +668,7 @@ namespace WD1772Package {
 			Global.Disk[track, side].addrContent = ac;
 
 			Global.DiskTrack dt = Global.Disk[track, side];
-			int start =  Global.firstIndex(track, side, rev);
+			// int start = 0; // TODO Global.firstIndex(track, side, rev);
 			int stop = Global.lastIndex(track, side, rev);
 			//int startBit = Global.Disk[track, side].decodeData.bitPosition[start];
 			//int stopBit = Global.Disk[track, side].decodeData.bitPosition[stop];
@@ -721,7 +721,7 @@ namespace WD1772Package {
 				//currentBit += bitSpacing;
 
 				if (currentBit == stopBit)
-					trackLength = currentTime + Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
+					trackLength = 0; // TODO  currentTime + Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev);
 
 				//dsr.shiftBitsIn(bitSpacing);	// push data in shift register
 
@@ -1133,7 +1133,7 @@ namespace WD1772Package {
 						if (clock < lowerClock)
 							sc.dataBlock.underClock++;
 					}
-					crc = Global.updateCRC(dsr.Data, crc);
+					// TODO crc = Global.updateCRC(dsr.Data, crc);
 					prevBlockEndTime += 32000;
 				}	// while bytes in the DSR
 				prevBlockEndTime = currentTime;

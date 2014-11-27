@@ -181,8 +181,7 @@ namespace SCPReaderPackage {
 		/// <returns>True to indicate that the file was read and parsed correctly, false otherwise</returns>
 		/// <see cref="SCPStatus"/>
 		/// <remarks></remarks>
-		public async static Task<bool> readScpAsync(string fileName, TextBox infobox, TextBox statusBox) {
-		//public static bool readScpAsync(string fileName, TextBox infobox, TextBox statusBox) {
+		public async static Task<bool> readScpAsync(string fileName, TextBox infobox) {
 			FileStream fs;
 			try {
 				fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -191,7 +190,7 @@ namespace SCPReaderPackage {
 				Console.WriteLine("Error: {0}", exc.Message);
 				return false;
 			}
-			statusBox.Text = String.Format("Processing SCP File {0}", fileName);
+			infobox.Text = String.Format("Processing SCP File {0}", fileName);
 
 			// read file into buffer
 			byte[] sbuf = new byte[fs.Length];
@@ -200,14 +199,12 @@ namespace SCPReaderPackage {
 			fs.Close();
 
 			// we parse the file
-			SCPStatus status = await decodeScp(sbuf, infobox, statusBox);
-			//SCPStatus status = decodeScp(sbuf, infobox, statusBox);
+			SCPStatus status = await decodeScp(sbuf, infobox);
 			return (status == SCPStatus.stsOK) ? true : false;
 		}
 
 
-		private async static Task<SCPStatus> decodeScp(byte[] buffer, TextBox infoBox, TextBox statusBox) {
-		//private  static SCPStatus decodeScp(byte[] buffer, TextBox infoBox, TextBox statusBox) {
+		private async static Task<SCPStatus> decodeScp(byte[] buffer, TextBox infoBox) {
 			FileHeader file = new FileHeader();
 			int idx = 0;
 			SCPStatus status;
@@ -217,7 +214,7 @@ namespace SCPReaderPackage {
 			file.identifier += readChar(buffer, ref idx).ToString();	// 0x01
 			file.identifier += readChar(buffer, ref idx).ToString();	// 0x02
 			if (file.identifier != "SCP") {
-				statusBox.AppendText(String.Format(" - Error: file is not an SCP file"));
+				infoBox.AppendText(String.Format(" - Error: file is not an SCP file"));
 				return SCPStatus.stsInvalidFile;
 			}
 			file.version = readByte(buffer, ref idx);					// 0x03
@@ -231,33 +228,34 @@ namespace SCPReaderPackage {
 			idx++;														// 0x0B reserved
 			file.checksum = readInt32(buffer, ref idx);					// 0x0C-0x0F
 
-			// TODO display file info
+			string versionString = ((file.version & 0xF0) >> 4).ToString() + "." + (file.version & 0x0F).ToString();
+			infoBox.AppendText(String.Format(" --- V{0} - Type={1:X} - {2} Revolutions - Tracks {3}-{4}\n",
+				versionString, file.diskType, file.revCount, file.firstTrack, file.lastTrack));
 
-			int checksum = 0;
-			for (int index = 0x10; index < buffer.Count(); index++)
-				checksum += buffer[index];
-			if (checksum != file.checksum) {
-				statusBox.AppendText(String.Format(" - Error: Checksum incorrect."));
-				return SCPStatus.stsFileChecksum;
-			}
+			//int checksum = 0;
+			//for (int index = 0x10; index < buffer.Count(); index++)
+			//	checksum += buffer[index];
+			//if (checksum == file.checksum) {
+			//	infoBox.AppendText(String.Format("SCP File Error: Checksum incorrect."));
+			//	return SCPStatus.stsFileChecksum;
+			//}
 
 			ButtonMatrix.clearButtons();
 			file.TrackHeader = new int[166];
 			for (int trackAndSide = 0; trackAndSide < 166; trackAndSide++) {
 				file.TrackHeader[trackAndSide] = readInt32(buffer, ref idx);
 				if (file.TrackHeader[trackAndSide] != 0) {
-					status = await readSCPTrackAsync(buffer, trackAndSide, file.TrackHeader[trackAndSide], file.revCount, statusBox);
-					//status =  readSCPTrack(buffer, trackAndSide, file.TrackHeader[trackAndSide], file.revCount, statusBox);
+					status = await readSCPTrackAsync(buffer, trackAndSide, file.TrackHeader[trackAndSide], file.revCount, infoBox);
 					if (status != SCPStatus.stsOK) 
 						return status;
 					if ((trackAndSide < file.firstTrack) || (trackAndSide > file.lastTrack)) {
-						statusBox.Text = String.Format(" SCP File Error: inconsistent number of tracks");
+						infoBox.Text = String.Format("SCP File Error: inconsistent number of tracks");
 						return SCPStatus.stsFileContent;
 					}
 					int track = trackAndSide / 2;
 					int side = trackAndSide % 2;
-					// we decode the track
-					Global.mfmDecode(track, side);
+					
+					//Global.mfmDecode(track, side);
 					Global.computeHisto(track, side, 1, infoBox);
 					ButtonMatrix.setButtonBG(track, side);
 				}
@@ -275,8 +273,8 @@ namespace SCPReaderPackage {
 		/// <param name="trackHeaderPosition">Position of the header in the buffer</param>
 		/// <param name="revCount">Number of revision used</param>
 		/// <returns>The status</returns>
-		public static Task<SCPStatus> readSCPTrackAsync(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount, TextBox statusBox) {
-			return Task<bool>.Run(() => readSCPTrack(buffer, trackSide, trackHeaderPosition, revCount, statusBox));
+		public static Task<SCPStatus> readSCPTrackAsync(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount, TextBox infoBox) {
+			return Task<bool>.Run(() => readSCPTrack(buffer, trackSide, trackHeaderPosition, revCount, infoBox));
 		}
 
 
@@ -288,7 +286,7 @@ namespace SCPReaderPackage {
 		/// <param name="trackHeaderPosition"></param>
 		/// <param name="revCount">Number of revision imaged in the file</param>
 		/// <returns></returns>
-		private static SCPStatus readSCPTrack(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount, TextBox statusBox) {
+		private static SCPStatus readSCPTrack(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount, TextBox infoBox) {
 			int track = trackSide / 2;
 			int side = trackSide % 2;
 			_fluxMin = Int32.MaxValue;
@@ -301,14 +299,14 @@ namespace SCPReaderPackage {
 			ti.identifier += readChar(buffer, ref idx).ToString();	// 0x01
 			ti.identifier += readChar(buffer, ref idx).ToString();	// 0x02
 			if (ti.identifier != "TRK") {
-				statusBox.AppendText(String.Format(" - Error: invalid track header"));
+				infoBox.AppendText(String.Format("SCP File Error: invalid track header"));
 				return SCPStatus.stsInvalidTrack;
 			}
 			ti.trackSide = readByte(buffer, ref idx);				// 0x03 trackSide
 
 			// check track number
 			if (ti.trackSide != trackSide) {
-				statusBox.AppendText(String.Format(" - Error: inconsistent number of tracks"));
+				infoBox.AppendText(String.Format("SCP File Error: inconsistent number of tracks"));
 				return SCPStatus.stsFileContent;
 			}
 
@@ -393,7 +391,6 @@ namespace SCPReaderPackage {
 				if (flux < _fluxMin) _fluxMin = flux;
 			}
 
-			Global.SampleClock = SampleClock;
 			Global.Disk[track, side].fluxData.maxFlux = _fluxMax;
 			Global.Disk[track, side].fluxData.minFlux = _fluxMin;
 

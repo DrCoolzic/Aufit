@@ -201,30 +201,24 @@ public struct HistoData {
 /// Contains all global parameters and functions for AUFIT
 /// </summary>
 public class Global {
-	/// <summary>
-	/// 
-	/// </summary>
 	public const double UNFORMATED_ENTROPY = 6.5;
 	public const int HISTO_SCALE = 50;
 
 	private static DiskTrack[,] _disk = new DiskTrack[85, 2];
 	private static bool _incompleteData = false;
 
-	// TODO remove
-	private static double _sampleClock = 0;
-
 	/// <summary>Contains information about a track of the floppy disk</summary>
 	public struct DiskTrack {
+		/// <summary>
+		/// Pointer to the FluxData class for this track
+		/// </summary>
+		public FluxData fluxData;
+
 		/// <summary> 
 		/// Array of FluxDataRev structure for this track. 
 		/// There is one entry for each revolution
 		/// </summary>
 		public FluxDataRev[] fluxDataRev;
-
-		/// <summary>
-		/// Pointer to the FluxData class for this track
-		/// </summary>
-		public FluxData fluxData;
 
 		/// <summary>
 		/// Pointer to the PackedFluxData class for this track
@@ -263,7 +257,6 @@ public class Global {
 	/// </summary>
 	public static void resetDisk() {
 		_disk = new DiskTrack[85, 2];
-		_sampleClock = 0;
 		_incompleteData = false;
 	}
 
@@ -321,7 +314,6 @@ public class Global {
 		return value;
 	}
 
-	// TODO remove
 	/// <summary>
 	/// This function is used to get the indexStart of the first flux of a track in the FluxValue buffer for a specific revolution
 	/// </summary>
@@ -365,13 +357,6 @@ public class Global {
 	}
 
 
-	// TODO remove
-	/// <summary>Access the sample clock frequency in Hz (indexStart.e. 1/sampling_period </summary>
-	public static double SampleClock {
-		get { return _sampleClock; }
-		set { _sampleClock = value; }
-	}
-
 	/// <summary>
 	/// A two dimensions array that store TrackData structures for a complete disk.
 	/// There are 85 Tracks * 2 Sides (170) TrackData structures.
@@ -379,58 +364,6 @@ public class Global {
 	public static DiskTrack[,] Disk {
 		get { return _disk; }
 		set { _disk = value; }
-	}
-
-
-	// TODO remove
-	/// <summary> This function takes a sample value and returns the corresponding 
-	/// timing in nanoseconds based on the sample clock.</summary>
-	/// <param name="sValue">The sample value</param>
-	/// <returns>The timing value in nanoseconds</returns>
-	public static int sampleToTiming(int sValue) {
-		double compute = (double)sValue * 1000000000.0 / _sampleClock;
-		return (int)compute;
-	}
-
-
-	// TODO remove
-	/// <summary>
-	/// This function convert a sample into a timing value in nanoseconds.
-	/// </summary>
-	/// <remarks>This function is similar to sampleToTiming(). The difference is
-	/// that the value is corrected by a factor based on revolution time. The
-	/// correction factor take in account the actual rotation speed versus
-	/// 200 ms (300 RPM)</remarks>
-	/// <param name="sValue">Sample value</param>
-	/// <param name="track">Track used to recover the rotation time</param>
-	/// <param name="side">Side used to recover the rotation time</param>
-	/// <param name="rev">Revolution used to recover the rotation time</param>
-	/// <returns>The converted time in nanoseconds</returns>
-	public static int CorrectedSampleToTiming(int sValue, int track, int side, int rev) {
-		double correction = 1;
-		if (rev != 0)
-			correction = 200000000.0 / (double)sampleToTiming(Disk[track, side].fluxDataRev[rev-1].revolutionTime);
-		else {
-			int revCount = Disk[track, side].fluxDataRev.Count();
-			int totalRevTime = 0;
-			for (int i = 0; i < revCount; i++)
-				totalRevTime += Global.Disk[track, side].fluxDataRev[i].revolutionTime;
-			correction = (double)revCount * 200000000.0 / (double)sampleToTiming(totalRevTime);
-		}
-		int time = (int)((double)sampleToTiming(sValue) * correction);
-		return time;
-	}
-
-
-	// TODO remove
-	/// <summary>
-	/// This function takes a timing value and convert it back to the corresponding integer sample value
-	/// </summary>
-	/// <param name="tValue">The timing value in nanoseconds</param>
-	/// <returns>The sample value as an integer</returns>
-	public static int timingToSample(double tValue) {
-		double compute = _sampleClock * (double)tValue / 1000000000.0;
-		return (int)compute;
 	}
 
 
@@ -536,30 +469,45 @@ public class Global {
 	/// <param name="text">The TextBox where the information are written</param>
 	/// <returns>the computed entropy</returns>
 	public static double computeHisto(int track, int side, int rev, TextBox text) {
-		//if (Global.Disk[track, side].flux == null) return 0;
-		if (Global.Disk[track, side].fluxData == null) return 0;
+		if ((Global.Disk[track, side].fluxDataRev == null) && (Global.Disk[track, side].packedFluxDataRev == null)) return 0;
 
-		int threshold = 2;
-		int[] tmpHisto;
-
-		if (rev == 0)
-			threshold *= Global.Disk[track, side].fluxDataRev.Count();
-
-		int firstBit = Global.Disk[track, side].packedFluxDataRev[rev - 1].firstFluxBit;
-		int lastBit = firstBit + Global.Disk[track, side].packedFluxDataRev[rev - 1].bitCount;
-		
-		int sizeBeforeTrim = (Global.Disk[track, side].packedFluxData.maxFlux / HISTO_SCALE) + 2;
-		tmpHisto = new int[sizeBeforeTrim];
+		const int THRESHOLD = 2;
+		int[] tmpHisto = null;
+		int sizeBeforeTrim = 0;
 		int fluxCount = 0;
 
-		for (int bitPosition = firstBit; bitPosition < lastBit; bitPosition++) {
-			int bytePos = bitPosition / 8;
-			int testBit = 0x1 << (bitPosition % 8);
-			if ((Global.Disk[track, side].packedFluxData.packBits[bytePos] & (byte)testBit) != 0) {
-				int flux = Global.fluxValue(bitPosition, track, side) / HISTO_SCALE;
+		if (Global.Disk[track, side].fluxDataRev != null) {
+			int first = Global.firstIndex(track, side, rev);
+			int last = Global.lastIndex(track, side, rev);
+			sizeBeforeTrim = (Global.Disk[track, side].fluxData.fluxValue.Max() / HISTO_SCALE) + 2;
+			tmpHisto = new int[sizeBeforeTrim];
+
+			for (int i = first; i < last; i++) {
+				int flux = Global.Disk[track, side].fluxData.fluxValue[i] / HISTO_SCALE;
 				tmpHisto[flux]++;
 				fluxCount++;
 			}
+		}
+
+		else if (Global.Disk[track, side].packedFluxDataRev != null) {
+			int firstBit = Global.Disk[track, side].packedFluxDataRev[rev - 1].firstFluxBit;
+			int lastBit = firstBit + Global.Disk[track, side].packedFluxDataRev[rev - 1].bitCount;
+			sizeBeforeTrim = (Global.Disk[track, side].packedFluxData.maxFlux / HISTO_SCALE) + 2;
+			tmpHisto = new int[sizeBeforeTrim];
+
+			for (int bitPosition = firstBit; bitPosition < lastBit; bitPosition++) {
+				int bytePos = bitPosition / 8;
+				int testBit = 0x1 << (bitPosition % 8);
+				if ((Global.Disk[track, side].packedFluxData.packBits[bytePos] & (byte)testBit) != 0) {
+					int flux = Global.fluxValue(bitPosition, track, side) / HISTO_SCALE;
+					tmpHisto[flux]++;
+					fluxCount++;
+				}
+			}
+		}
+
+		else {
+			Debug.Assert(false, "impossible call to computeHisto!");
 		}
 
 		// we trim the array size to keep only significant entries. This is useful as
@@ -567,7 +515,7 @@ public class Global {
 		// Bezier takes long time on large array. 
 		int histoSize = sizeBeforeTrim;
 		for (int i = sizeBeforeTrim - 1; i >= 0; i--) {
-			if (tmpHisto[i] >= threshold) break;
+			if (tmpHisto[i] >= THRESHOLD) break;
 			else histoSize--;
 		}
 		Global.Disk[track, side].histoData.histogram = new int[histoSize];
@@ -594,23 +542,10 @@ public class Global {
 			(entropy > UNFORMATED_ENTROPY) ? "Unformatted track" : "Normal track", entropy));
 		text.AppendText(String.Format(" - Fluxes {0}", fluxCount));
 		text.AppendText(String.Format(" - Histogram size {0} ({1} ns)\n",
-			histoSize, Global.sampleToTiming(histoSize - 1)));
+			histoSize, (histoSize - 1) * HISTO_SCALE));
 		text.ScrollToEnd();
 		return entropy;
 	}
-
-	/// <summary>
-	/// Update the CRC with the character provided
-	/// </summary>
-	/// <param name="c">Character used to update CRC</param>
-	/// <param name="crc">Current CRC value</param>
-	/// <returns>Updated CRC</returns>
-	public static ushort updateCRC(byte c, ushort crc) {
-		for (int i = 0; i < 8; i++)
-			crc = (ushort)((crc << 1) ^ (((((crc >> 8) ^ (c << i)) & 0x0080) != 0) ? 0x1021 : 0));
-		return crc;
-	} // end of update_crc
-
 
 	/// <summary>
 	/// Return the actual size of the data field of a sector
