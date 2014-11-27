@@ -52,7 +52,6 @@ namespace KFReaderPackage {
 			KFReader stream = new KFReader();
 			StreamStatus status = stream.readStream(name);
 			if (status == StreamStatus.sdsOk) {
-				//Global.SampleClock = stream.SampleClock;
 				
 				double tick = 1000000000.0 / stream.SampleClock;
 				double revSum = 0;
@@ -76,10 +75,8 @@ namespace KFReaderPackage {
 					Global.Disk[track, side].fluxDataRev[i].timeToIndex = stream.Indexes[i].preIndexTime;
 					Global.Disk[track, side].fluxDataRev[i].firstFluxIndex = stream.Indexes[i].fluxPosition;
 				}
-
-
 				return true;
-			}
+			}	// read correctly
 
 			Global.Disk[track, side].fluxData = null;
 			return false;

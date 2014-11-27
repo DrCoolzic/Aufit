@@ -44,7 +44,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Threading;
 
-using Ookii.Dialogs.Wpf;
 using ChartPackage;
 using KFReaderPackage;
 using WD1772Package;
@@ -122,12 +121,6 @@ namespace Aufit {
 		private void matrixGridLoaded(object sender, RoutedEventArgs e) {
 			ButtonMatrix.drawButtons(BM1, 1, btMatrixClicked);
 			ButtonMatrix.drawButtons(BM2, 2, btMatrixClicked);
-			// we hide at startup
-			BM1.Visibility = Visibility.Hidden;
-			BM2.Visibility = Visibility.Hidden;
-			tabCtrl.Width = matrixGrid.ActualWidth;
-			Grid.SetColumn(tabCtrl, 0);
-			Grid.SetColumnSpan(tabCtrl, 3);
 		}
 
 
@@ -144,18 +137,6 @@ namespace Aufit {
 				drawAllCharts();
 				Protections.checkProtection(Track, Side, infoBox);
 			}
-		}
-
-		/// <summary>
-		/// Called when the the size of button matrix grid is changed
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		private void matrixGridSizeChanged(object sender, SizeChangedEventArgs e) {
-			if (BM2.Visibility == Visibility.Visible)
-				tabCtrl.Width = matrixGrid.ActualWidth - 370;
-			else
-				tabCtrl.Width = matrixGrid.ActualWidth;
 		}
 		#endregion
 
@@ -175,7 +156,7 @@ namespace Aufit {
 				return;		// we receive a mouse up event from Openfiledialog !!! Bug?
 
 			_fluxDrawing.mouseLBU(sender, e);
-			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.ClockMin, _clockDrawing.ClockMax);
+			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.MinBitWidth, _clockDrawing.MaxBitWidth);
 			_clockDrawing.drawClock();
 			_dataDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
 			_dataDrawing.drawTrackData();
@@ -187,7 +168,7 @@ namespace Aufit {
 
 		private void fluxMouseWheel(object sender, MouseWheelEventArgs e) {
 			_fluxDrawing.mouseWheel(sender, e);
-			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.ClockMin, _clockDrawing.ClockMax);
+			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.MinBitWidth, _clockDrawing.MaxBitWidth);
 			_clockDrawing.drawClock();
 			_dataDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
 			_dataDrawing.drawTrackData();
@@ -199,7 +180,7 @@ namespace Aufit {
 
 		private void fluxMouseRBDown(object sender, MouseButtonEventArgs e) {
 			_fluxDrawing.mouseRBD(sender, e);
-			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.ClockMin, _clockDrawing.ClockMax);
+			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.MinBitWidth, _clockDrawing.MaxBitWidth);
 			_clockDrawing.drawClock();
 			_dataDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
 			_dataDrawing.drawTrackData();
@@ -236,11 +217,21 @@ namespace Aufit {
 		}
 
 		private void minusRevClicked(object sender, RoutedEventArgs e) {
-			if (Rev == 0)
-				Rev = Global.Disk[Track, Side].fluxDataRev.Count();
-			else Rev--;
+			int RevCount = 1;
+			if (Global.Disk[Track, Side].fluxDataRev != null) {
+				RevCount = Global.Disk[Track, Side].fluxDataRev.Count();
+			}
+			else if (Global.Disk[Track, Side].packedFluxDataRev != null) {
+				RevCount = Global.Disk[Track, Side].packedFluxDataRev.Count();
+			}
+			else return;
 
-			revolution.Text = Rev.ToString();
+			if (Rev == 0)
+				Rev = RevCount - 1;
+			else
+				Rev--;
+
+			revolution.Text = (Rev + 1).ToString();
 			Global.computeHisto(Track, Side, Rev, infoBox);
 			_histoDrawing.drawHisto();
 			FDC.clearTrackContent(Track, Side);
@@ -248,11 +239,18 @@ namespace Aufit {
 		}
 
 		private void plusRevClicked(object sender, RoutedEventArgs e) {
-			if (Rev == (Global.Disk[Track, Side].fluxDataRev.Count()))
-				Rev = 0;
-			else Rev++;
+			int RevCount = 1;
+			if (Global.Disk[Track, Side].fluxDataRev != null) {
+				RevCount = Global.Disk[Track, Side].fluxDataRev.Count();
+			}
+			else if (Global.Disk[Track, Side].packedFluxDataRev != null) {
+				RevCount = Global.Disk[Track, Side].packedFluxDataRev.Count();
+			}
+			else return;
 
-			revolution.Text = Rev.ToString();
+			Rev = (Rev + 1) % RevCount;
+
+			revolution.Text = (Rev + 1).ToString();
 			Global.computeHisto(Track, Side, Rev, infoBox);
 			_histoDrawing.drawHisto();
 			FDC.clearTrackContent(Track, Side);
@@ -269,7 +267,7 @@ namespace Aufit {
 			int side = Side;
 			int rev = Rev;
 
-			revolution.Text = rev.ToString();
+			revolution.Text = (rev + 1).ToString();
 			if (Global.Disk[track, side].packedFluxData == null)
 				Global.mfmDecode(track, side);
 
@@ -288,6 +286,8 @@ namespace Aufit {
 			ButtonMatrix.setButtonBG(track, side);
 		}
 
+		// Do we read KF directory using Asynchronous read or as tasks.
+		private bool _readKFAsync = true;
 
 		private async void openFileClick(object sender, RoutedEventArgs e) {
 			OpenFileDialog ofd = new OpenFileDialog();
@@ -296,39 +296,26 @@ namespace Aufit {
 			bool? ok = ofd.ShowDialog();
 			bool readOK = false;			
 			if (ok == true) {
-				Track = Side = 0;
-				Rev = 1;
+				Track = Side = Rev = 0;
+				//Rev = 1;
 				Global.resetDisk();
-
 				tbFileName.Text = ofd.FileName;
+				
 				string extension = System.IO.Path.GetExtension(ofd.FileName);
+
 				switch (extension) {
 					case ".raw":
 						string path = System.IO.Path.GetDirectoryName(ofd.FileName);
-
-						//readOK = readKFRawFile(ofd.FileName);
-											BM1.Visibility = Visibility.Visible;
-					BM2.Visibility = Visibility.Visible;
-					tabCtrl.Width = matrixGrid.ActualWidth - 370;
-					Grid.SetColumn(tabCtrl, 2);
-					Grid.SetColumnSpan(tabCtrl, 1);
-
-						infoBox.Clear();
-						infoBox.FontSize = 11;
-
 						string file = System.IO.Path.GetFileName(ofd.FileName);
-					
-						string root = file.Remove(file.Length - 8, 8);
-						tbFileName.Text = ofd.FileName;
 						_fileName = file;
-						Global.resetDisk();
-						readAllTracksAsync(path, root);
-
+						string root = file.Remove(file.Length - 8, 8);
+						if (_readKFAsync)
+							readOK = await readAllTracksAsync(path, root);
+						else
+							readOK =  readAllTracksTasks(path, root);
 						break;
 					case ".scp":
-						
 						readOK = await readSPCFile(ofd.FileName);
-						//readOK = readSPCFile(ofd.FileName);
 						break;
 				}
 			}
@@ -337,89 +324,14 @@ namespace Aufit {
 		}
 
 
-		private bool readKFRawFile(string fileName) {
-			BM1.Visibility = Visibility.Hidden;
-			BM2.Visibility = Visibility.Hidden;
-			tabCtrl.Width = matrixGrid.ActualWidth;
-			Grid.SetColumn(tabCtrl, 0);
-			Grid.SetColumnSpan(tabCtrl, 3);
-
-			_fileName = fileName;
-			bool ok = ProcessStream.readStreamTrack(fileName, Track, Side);
-			if (ok) {
-				infoBox.Clear();
-				infoBox.FontSize = 11;
-				drawAllCharts();
-			}
-			return ok;
-		}
-
-
 		private async Task<bool> readSPCFile(string fileName) {
-		//private bool readSPCFile(string fileName) {
-			BM1.Visibility = Visibility.Visible;
-			BM2.Visibility = Visibility.Visible;
-			tabCtrl.Width = matrixGrid.ActualWidth - 370;
-			Grid.SetColumn(tabCtrl, 2);
-			Grid.SetColumnSpan(tabCtrl, 1);
-				infoBox.Clear();
-				infoBox.FontSize = 11;
-
 			_fileName = System.IO.Path.GetFileNameWithoutExtension(fileName);
-
 			bool ok = await SCPReader.readScpAsync(fileName, infoBox);
-			//bool ok =  SCPReader.readScpAsync(fileName, infoBox, statusBox);
 			if (ok) {
 				selectAndCheck(0, 0);
 				drawAllCharts();
 			}
-
 			return ok;
-		}
-
-		// Do we read KF directory using Asynchronous read or as tasks.
-		private bool _readKFAsync = true;
-
-		private void openDirectoryClick(object sender, RoutedEventArgs e) {
-			VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
-			dialog.Description = "Please select a folder.";
-			dialog.UseDescriptionForTitle = true;
-			if ((bool)dialog.ShowDialog(this)) {
-				string selectedDir = dialog.SelectedPath;
-				DirectoryInfo di = new DirectoryInfo(selectedDir);
-				// for some reason this may also includes the directories
-				FileInfo[] fi = di.GetFiles("*.raw");
-				// to remove the number of directories from the count
-				DirectoryInfo[] children = di.GetDirectories();
-				if (fi.Length != 0) {
-					if (fi.Length == children.Length) {
-						tbFileName.Text = "Sorry no Stream files found in this directory";
-						return;
-					}
-
-					BM1.Visibility = Visibility.Visible;
-					BM2.Visibility = Visibility.Visible;
-					tabCtrl.Width = matrixGrid.ActualWidth - 370;
-					Grid.SetColumn(tabCtrl, 2);
-					Grid.SetColumnSpan(tabCtrl, 1);
-
-					infoBox.Clear();
-					infoBox.FontSize = 11;
-					string file = fi[0].Name;
-					string path = fi[0].DirectoryName;
-					string root = file.Remove(file.Length - 8, 8);
-					tbFileName.Text = selectedDir;
-					_fileName = di.Name;
-					Global.resetDisk();
-
-					if (_readKFAsync)
-						readAllTracksAsync(path, root);
-					else
-						readAllTracksTasks(path, root);
-				}
-				else
-					tbFileName.Text = "Sorry no Stream files found in this directory";
-			}
 		}
 
 
@@ -428,7 +340,7 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="path">Path to directory that contains the streams</param>
 		/// <param name="root">Root name expanded with xx.x to create the final name</param>
-		public void readAllTracksTasks(string path, string root) {
+		public bool readAllTracksTasks(string path, string root) {
 			Task<bool>[] tasks = new Task<bool>[168];
 			for (int i = 0; i < 84; i++) {
 				for (int j = 0; j < 2; j++) {
@@ -448,11 +360,11 @@ namespace Aufit {
 				}
 			}
 			selectAndCheck(0 , 0);
-			Track = Side = 0;
-			Rev = 1;
+			Track = Side = Rev = 0;
 			infoBox.Clear();
 			infoBox.FontSize = 11;
 			drawAllCharts();
+			return true;
 		}
 
 
@@ -461,7 +373,7 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="path">Path to directory that contains the streams</param>
 		/// <param name="root">Root name expanded with xx.x to create the final name</param>
-		public async void readAllTracksAsync(string path, string root) {
+		public async Task<bool> readAllTracksAsync(string path, string root) {
 			string fname;
 			_fluxDrawing.FastDraw = true;
 			infoBox.Clear();
@@ -472,31 +384,26 @@ namespace Aufit {
 				for (int track = 0; track < 84; track++) {
 					fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, track, side);
 					bool streamOK = await ProcessStream.readStreamTrackAsync(fname, track, side);
-					//bool streamOK = ProcessStream.readStreamTrack(fname, track, side);
 					if (streamOK) {
-						//drawCharts();
 						Global.computeHisto(track, side, 1, infoBox);
-						//double entropy = Global.Disk[track, side].entropy;
-						//Brush color = (entropy < 2000) ? (entropy < 0) ? Brushes.LightSlateGray : Brushes.Orange : Brushes.LimeGreen;
 						ButtonMatrix.setButtonBG(track, side);
 					}
+					// else return false;
 				}
 			}
 
 			_fluxDrawing.FastDraw = false;
-			Track = Side = 0;
-			Rev = 1;
+			Track = Side = Rev = 0;
 			if (Global.Disk[Track, Side].fluxData != null) {
 				ButtonMatrix.selectButton(Track, Side);
 			}
 			drawAllCharts();
+			return true;
 		}
 
 
 		private void keyDown(object sender, KeyEventArgs e) {
 			e.Handled = true;
-
-			if (BM1.Visibility != Visibility.Visible) return;
 
 			int track = Track;
 			int side = Side;
@@ -640,7 +547,7 @@ namespace Aufit {
 
 
 		private void btDiskLayoutClick(object sender, RoutedEventArgs e) {
-			if (BM1.Visibility == Visibility.Hidden) return;
+//			if (BM1.Visibility == Visibility.Hidden) return;
 			if (_diskWindowIsOpen)
 				_diskWindow.Close();
 
@@ -672,7 +579,7 @@ namespace Aufit {
 		}
 
 		private void btDiskDataClick(object sender, RoutedEventArgs e) {
-			if (BM1.Visibility == Visibility.Hidden) return;
+//			if (BM1.Visibility == Visibility.Hidden) return;
 			if (_diskWindowIsOpen)
 				_diskWindow.Close();
 
@@ -722,5 +629,6 @@ namespace Aufit {
 		private void cbRecoverClick(object sender, RoutedEventArgs e) {
 			// TODO
 		}
+
 	}
 }

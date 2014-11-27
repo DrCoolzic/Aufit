@@ -16,7 +16,6 @@
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="80"/>
-                <ColumnDefinition Width="80"/>
                 <ColumnDefinition Width="1*"/>
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="auto"/>
@@ -27,18 +26,18 @@
                 <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
 
-            <Button Grid.Column="0" Content="Directory" Click="openDirectoryClick"/>
-            <Button Grid.Column="1" x:Name="btFile" Content="File" Click="openFileClick" Height="20" VerticalAlignment="Top" />
-            <TextBox Grid.Column="2" Name="tbFileName" BorderThickness="0" Margin="5,0"/>
-            <CheckBox Grid.Column="7" x:Name="cbLimitFlux" Content="Limit Flux" Margin="10,0,10,0" VerticalAlignment="Center" 
+            
+            <Button Grid.Column="0" x:Name="btFile" Content="File" Click="openFileClick" Height="20" VerticalAlignment="Top" />
+            <TextBox Grid.Column="1" Name="tbFileName" BorderThickness="0" Margin="5,0"/>
+            <CheckBox Grid.Column="6" x:Name="cbLimitFlux" Content="Limit Flux" Margin="10,0,10,0" VerticalAlignment="Center" 
                       Click="cbLimitClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
-            <CheckBox Grid.Column="8" x:Name="cbForceDS" Content="Force DS" Margin="10,0,10,0" VerticalAlignment="Center" 
+            <CheckBox Grid.Column="7" x:Name="cbForceDS" Content="Force DS" Margin="10,0,10,0" VerticalAlignment="Center" 
                       Click="cbRecoverClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
-            <CheckBox Grid.Column="9" x:Name="cbSlow" Content="Slow" Margin="10,0,10,0" VerticalAlignment="Center" Click="cbSlowClick"
+            <CheckBox Grid.Column="8" x:Name="cbSlow" Content="Slow" Margin="10,0,10,0" VerticalAlignment="Center" Click="cbSlowClick"
                       FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
         </Grid>
 
-        <Grid Grid.Row="1" Name="matrixGrid" Margin="10,10,10,10" Loaded="matrixGridLoaded" SizeChanged="matrixGridSizeChanged">
+        <Grid Grid.Row="1" Name="matrixGrid" Margin="10,10,10,10" Loaded="matrixGridLoaded">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="185"/>
                 <ColumnDefinition Width="185"/>

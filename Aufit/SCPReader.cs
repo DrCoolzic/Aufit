@@ -163,17 +163,8 @@ namespace SCPReaderPackage {
 	/// This class is used to read an SCVP file and to fill the Global structures
 	/// </summary>
 	public class SCPReader {
-		private static double _sckValue = 40000000.0;	//		1 /25 ns
 		private static int _fluxMin = Int32.MaxValue;
 		private static int _fluxMax = 0;
-
-		/// <summary>
-		/// Access the SCP sample clock value given in Hz
-		/// </summary>
-		public static double SampleClock {
-			get { return _sckValue; }
-		}
-
 
 		/// <summary>Reads and decodes the SCP file specified in the parameter</summary>	
 		/// <param name="fileName">Name of the stream file to read and decode</param>
@@ -203,7 +194,12 @@ namespace SCPReaderPackage {
 			return (status == SCPStatus.stsOK) ? true : false;
 		}
 
-
+		/// <summary>
+		/// Decodes an SCP file read in a buffer
+		/// </summary>
+		/// <param name="buffer">Contains the SCP file</param>
+		/// <param name="infoBox">TextBox to log information</param>
+		/// <returns></returns>
 		private async static Task<SCPStatus> decodeScp(byte[] buffer, TextBox infoBox) {
 			FileHeader file = new FileHeader();
 			int idx = 0;
@@ -214,7 +210,7 @@ namespace SCPReaderPackage {
 			file.identifier += readChar(buffer, ref idx).ToString();	// 0x01
 			file.identifier += readChar(buffer, ref idx).ToString();	// 0x02
 			if (file.identifier != "SCP") {
-				infoBox.AppendText(String.Format(" - Error: file is not an SCP file"));
+				infoBox.AppendText(String.Format(" --- Error: file is not an SCP file"));
 				return SCPStatus.stsInvalidFile;
 			}
 			file.version = readByte(buffer, ref idx);					// 0x03
@@ -281,10 +277,11 @@ namespace SCPReaderPackage {
 		/// <summary>
 		/// Reads one Track information from buffer
 		/// </summary>
-		/// <param name="buffer"></param>
-		/// <param name="trackSide"></param>
-		/// <param name="trackHeaderPosition"></param>
+		/// <param name="buffer">Buffer that contains the SCP file content</param>
+		/// <param name="trackSide">The track and side value</param>
+		/// <param name="trackHeaderPosition">Position of the track header in the buffer</param>
 		/// <param name="revCount">Number of revision imaged in the file</param>
+		/// <param name="infoBox">TextBox to display log information</param>
 		/// <returns></returns>
 		private static SCPStatus readSCPTrack(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount, TextBox infoBox) {
 			int track = trackSide / 2;
@@ -379,7 +376,7 @@ namespace SCPReaderPackage {
 			double tick = 25.0 * correction;
 
 			// now we transfer to our Global Disk structure
-			MainWindow.Rev = 1;
+			MainWindow.Rev = 0;
 			Global.Disk[track, side].fluxData = new FluxData();
 			Global.Disk[track, side].fluxData.fluxCount = ti.fluxValues.Count();
 			Global.Disk[track, side].fluxData.fluxValue = new int[ti.fluxValues.Count()];
@@ -418,10 +415,22 @@ namespace SCPReaderPackage {
 			return value;
 		}
 
+		/// <summary>
+		/// Extract one byte from the stream file.
+		/// </summary>
+		/// <param name="sbuf">input buffer</param>
+		/// <param name="pos">position of the byte</param>
+		/// <returns>the byte extracted</returns>
 		private static byte readByte(byte[] sbuf, ref int pos) {
 			return sbuf[pos++];
 		}
 
+		/// <summary>
+		/// extract one character from the buffer
+		/// </summary>
+		/// <param name="sbuf">the input buffer</param>
+		/// <param name="pos">position of the character</param>
+		/// <returns>the extracted character</returns>
 		private static char readChar(byte[] sbuf, ref int pos) {
 			return (char)(sbuf[pos++]);
 		}

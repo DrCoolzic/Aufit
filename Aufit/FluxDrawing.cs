@@ -66,11 +66,6 @@ class FluxDrawing {
 	public bool SlowDraw { get; set; }
 
 	/// <summary>
-	/// When set to true we limit the maximum value of the flux to 10µs
-	/// </summary>
-//	public bool LimitFlux { get; set; }
-
-	/// <summary>
 	/// When set we draw the fluxes with a limited number of points for performance
 	/// </summary>
 	public bool FastDraw { get; set; }
@@ -135,12 +130,14 @@ class FluxDrawing {
 		else _side = side;
 		if (rev == -1) rev = _rev;
 		else _rev = rev;
-		if (Global.Disk[track, side].packedFluxData == null) return;
+		Global.DiskTrack dt = Global.Disk[track, side];
+
+		if (dt.packedFluxData == null) return;
 
 		_fluxChartLayout.drawChartGrids();
 		
-		int startBit = Global.Disk[track, side].packedFluxDataRev[rev - 1].firstFluxBit;
-		int stopBit = startBit + Global.Disk[track, side].packedFluxDataRev[rev - 1].bitCount;
+		int startBit = dt.packedFluxDataRev[rev].firstFluxBit;
+		int stopBit = startBit + dt.packedFluxDataRev[rev].bitCount;
 		int pointsInViewport = 0;
 		int currentTime = 0;
 
@@ -149,7 +146,7 @@ class FluxDrawing {
 			for (int bitPosition = startBit; bitPosition < stopBit; bitPosition++) {
 				int bytePos = bitPosition / 8;
 				int testBit = 0x1 << (bitPosition % 8);
-				if ((Global.Disk[track, side].packedFluxData.packBits[bytePos] & (byte)testBit) == 0) continue;
+				if ((dt.packedFluxData.packBits[bytePos] & (byte)testBit) == 0) continue;
 				int flux = Global.fluxValue(bitPosition, track, side);
 				currentTime += flux;
 				if (_fluxChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)flux / 1000.0))
@@ -157,7 +154,7 @@ class FluxDrawing {
 			}	// for all
 		}	// zoomed
 		else
-			pointsInViewport = Global.Disk[track, side].packedFluxDataRev[rev - 1].fluxCount;
+			pointsInViewport = dt.packedFluxDataRev[rev].fluxCount;
 
 		double zoom = _fluxChartLayout.zoom();
 		_speedUp = pointsInViewport / 10000 + 1;
@@ -178,7 +175,7 @@ class FluxDrawing {
 		for (int bitPosition = startBit; bitPosition < stopBit; bitPosition++) {
 			int currentByte = bitPosition / 8;
 			int currentBitInByte = bitPosition % 8;
-			byte bits = Global.Disk[track, side].packedFluxData.packBits[currentByte];
+			byte bits = dt.packedFluxData.packBits[currentByte];
 			int bit = (bits >> currentBitInByte) & 0x1;
 			dsr.shiftBitsIn(bit);
 
@@ -186,22 +183,6 @@ class FluxDrawing {
 			int flux = Global.fluxValue(bitPosition, track, side);
 			currentTime += flux;
 			fluxCount++;
-
-			//// black line for revolution
-			//if (rev == 0) {
-			//	for (int j = 1; j < Global.Disk[track, side].revData.Count(); j++) {
-			//		if (Global.Disk[track, side].revData[j].fluxPosition - 1 == bitPosition) {
-			//			Line revLine = new Line();
-			//			revLine.Stroke = Brushes.Black;
-			//			revLine.StrokeThickness = 1.5;
-			//			revLine.X1 = _fluxChartLayout.NormPoint(new Point((double)(currentTime + Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev)) / 1000000.0, 2)).X;
-			//			revLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
-			//			revLine.X2 = _fluxChartLayout.NormPoint(new Point((double)(currentTime + Global.CorrectedSampleToTiming(indexFirstFluxCorrection, track, side, rev)) / 1000000.0, 10)).X;
-			//			revLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
-			//			_fluxChartLayout.GraphicCanvas.Children.Add(revLine);
-			//		}
-			//	}
-			//}
 
 			// add sync bar
 			if (dsr.SyncFound) {
@@ -258,10 +239,10 @@ class FluxDrawing {
 		_fluxChartLayout.GraphicCanvas.Children.Add(_fluxEnsemble);
 
 		_win.tbFluxInfo.Clear();
-		_win.tbFluxInfo.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev));
+		_win.tbFluxInfo.AppendText(String.Format("Track {0:D2}.{1} Rev {2} of {3}", track, side, rev + 1, dt.packedFluxDataRev.Count()));
 		_win.tbFluxInfo.AppendText(String.Format(" - Flux range: {0:F2}-{1:F2} µs", 
-			(double)Global.Disk[track, side].fluxData.minFlux / 1000.0, (double)Global.Disk[track, side].fluxData.maxFlux / 1000.0));
-		_win.tbFluxInfo.AppendText(String.Format(" - Track length: {0:F3} ms Flux count: {1}", (double)currentTime / 1000000.0, fluxCount));
+			(double)dt.fluxData.minFlux / 1000.0, (double)dt.fluxData.maxFlux / 1000.0));
+		_win.tbFluxInfo.AppendText(String.Format(" - Track length: {0:F3} ms - Flux count: {1}", (double)currentTime / 1000000.0, fluxCount));
 		//_win.tbFluxInfo.AppendText(String.Format(" - Debug z={0:F1} s={1} p={2}", _fluxChartLayout.zoom(), SpeedUp, pointsInViewport));
 	}
 
@@ -280,10 +261,7 @@ class FluxDrawing {
 		if (Global.Disk[track, side].packedFluxData == null) return;
 
 		_viewportXmin = 0;
-		if (rev > 0)
-			_viewportXmax = 200;
-		else
-			_viewportXmax = 200 * Global.Disk[track, side].fluxDataRev.Count();
+		_viewportXmax = 200;
 
 		int max = Global.Disk[track, side].packedFluxData.maxFlux + 500;
 		if (max < 10000) max = 10000;

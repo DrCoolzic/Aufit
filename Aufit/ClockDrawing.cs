@@ -42,24 +42,23 @@ namespace ChartPackage {
 /// </summary>
 class ClockDrawing {
 	private ChartLayout _clockChartLayout = null;
-	private int _clockMin;
-	private int _clockMax;
+	private int _minBitWidth;
+	private int _maxBitWidth;
 	private int _track, _side, _rev;
-
 	private const int CLK_AVG_COUNT = 50;
 
 	/// <summary>
 	/// Access the minimum value of the clock computed in setClockDefault()
 	/// </summary>
-	public int ClockMin {
-		get { return _clockMin; }
+	public int MinBitWidth {
+		get { return _minBitWidth; }
 	}
 
 	/// <summary>
 	/// Access the maximum value of the clock computed in setClockDefault()
 	/// </summary>
-	public int ClockMax {
-		get { return _clockMax; }
+	public int MaxBitWidth {
+		get { return _maxBitWidth; }
 	}
 
 	/// <summary>
@@ -98,18 +97,14 @@ class ClockDrawing {
 		if (rev == -1) rev = _rev;
 		else _rev = rev;
 
-		if (Global.Disk[track, side].fluxData == null) return;
 		Global.DiskTrack td = Global.Disk[track, side];
-		if (td.packedFluxData == null) return;
+		if (Global.Disk[track, side].packedFluxData == null) return;
 
 		_clockChartLayout.drawChartGrids();
 		int speedUp = FluxDrawing.SpeedUp;
 
-		//int start = Global.firstIndex(track, side, rev);
-		//int stop = Global.lastIndex(track, side, rev);
-		//int indexFirstFluxCorrection = Global.indexTimePosition(track, side, rev);
-		int startBit = Global.Disk[track, side].packedFluxDataRev[rev - 1].firstFluxBit;
-		int stopBit = startBit + Global.Disk[track, side].packedFluxDataRev[rev - 1].bitCount;
+		int startBit = Global.Disk[track, side].packedFluxDataRev[rev].firstFluxBit;
+		int stopBit = startBit + Global.Disk[track, side].packedFluxDataRev[rev].bitCount;
 
 		int currentTime = 0;
 		Polyline clockLine = new Polyline();
@@ -207,15 +202,14 @@ class ClockDrawing {
 
 		int fluxXmin = 0;
 		int fluxXmax = 200;
-		if (rev == 0) fluxXmax = 200 * Global.Disk[track, side].fluxDataRev.Count();
 
-		_clockMin = Global.Disk[track, side].packedFluxData.minBitWidth;
-		_clockMax = Global.Disk[track, side].packedFluxData.maxBitWidth;
-		if (_clockMin == _clockMax) {
-			_clockMin -= _clockMin / 100;
-			_clockMax += _clockMax / 100;
+		_minBitWidth = Global.Disk[track, side].packedFluxData.minBitWidth;
+		_maxBitWidth = Global.Disk[track, side].packedFluxData.maxBitWidth;
+		if (_minBitWidth == _maxBitWidth) {
+			_minBitWidth -= _minBitWidth / 100;
+			_maxBitWidth += _maxBitWidth / 100;
 		}	// do not want infinity scale
-		_clockChartLayout.setViewport(fluxXmin, fluxXmax, _clockMin, _clockMax);
+		_clockChartLayout.setViewport(fluxXmin, fluxXmax, _minBitWidth, _maxBitWidth);
 	}
 
 }

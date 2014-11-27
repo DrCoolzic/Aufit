@@ -314,6 +314,7 @@ public class Global {
 		return value;
 	}
 
+	// TODO remove
 	/// <summary>
 	/// This function is used to get the indexStart of the first flux of a track in the FluxValue buffer for a specific revolution
 	/// </summary>
@@ -324,8 +325,7 @@ public class Global {
 	/// <remarks>The revision parameter should be in the range 1 to the number of revolutions recorded.
 	/// rev==0 has a special meaning: it indicates that we want to use the data from *all* revolutions</remarks>
 	public static int firstIndex(int track, int side, int rev) {
-		if (rev == 0) rev++;
-		return Disk[track, side].fluxDataRev[rev - 1].firstFluxIndex;
+		return Disk[track, side].fluxDataRev[rev].firstFluxIndex;
 	}
 
 
@@ -340,8 +340,7 @@ public class Global {
 	/// <remarks>The revision parameter should be in the range 1 to the number of revolutions recorded.
 	/// rev==0 has a special meaning: it indicates that we want to use the data from *all* revolutions</remarks>
 	public static int lastIndex(int track, int side, int rev) {
-		if (rev == 0) rev = Disk[track, side].fluxDataRev.Count();
-		return (Disk[track, side].fluxDataRev[rev - 1].firstFluxIndex + Disk[track, side].fluxDataRev[rev - 1].fluxCount);
+		return (Disk[track, side].fluxDataRev[rev].firstFluxIndex + Disk[track, side].fluxDataRev[rev].fluxCount);
 	}
 
 	// TODO remove
@@ -352,8 +351,7 @@ public class Global {
 	/// <returns>The offset of the first flux in the buffer</returns>
 	/// <remarks>The revision parameter should be in the range 1 to the number of revolutions recorded.
 	public static int indexTimePosition(int track, int side, int rev) {
-		if (rev == 0) rev++;
-		return (Disk[track, side].fluxDataRev[rev - 1].timeToIndex);
+		return (Disk[track, side].fluxDataRev[rev].timeToIndex);
 	}
 
 
@@ -487,11 +485,11 @@ public class Global {
 				tmpHisto[flux]++;
 				fluxCount++;
 			}
-		}
+		}	// fluxData
 
 		else if (Global.Disk[track, side].packedFluxDataRev != null) {
-			int firstBit = Global.Disk[track, side].packedFluxDataRev[rev - 1].firstFluxBit;
-			int lastBit = firstBit + Global.Disk[track, side].packedFluxDataRev[rev - 1].bitCount;
+			int firstBit = Global.Disk[track, side].packedFluxDataRev[rev].firstFluxBit;
+			int lastBit = firstBit + Global.Disk[track, side].packedFluxDataRev[rev].bitCount;
 			sizeBeforeTrim = (Global.Disk[track, side].packedFluxData.maxFlux / HISTO_SCALE) + 2;
 			tmpHisto = new int[sizeBeforeTrim];
 
@@ -504,7 +502,7 @@ public class Global {
 					fluxCount++;
 				}
 			}
-		}
+		}	// packedFluxData
 
 		else {
 			Debug.Assert(false, "impossible call to computeHisto!");
@@ -537,6 +535,7 @@ public class Global {
 		Global.Disk[track, side].histoData.entropy = entropy;
 		Global.Disk[track, side].histoData.hasData = hasData;
 
+		// log information
 		text.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev));
 		text.AppendText(String.Format(" * {0} * (Entropy {1:F2})",
 			(entropy > UNFORMATED_ENTROPY) ? "Unformatted track" : "Normal track", entropy));
@@ -552,18 +551,14 @@ public class Global {
 	/// </summary>
 	/// <param name="size">encoded size of the sector</param>
 	/// <returns>"decoded size" of the data segment</returns>
-	/// 
+	/// <remarks>
 	/// In the ID field the size of the sector is coded 0=128, 1=256, 2=512, 3=1024
-	/// The function returns the decoded value. The value 0 and 1 are not used in
-	/// Atari FD and value above 3 is not valid, therefore in all these cases something
-	/// is wrong with the size field in those cases the functions return a "default
-	/// value" of 512.
+	/// The function returns the decoded value. Only the last 2 bytes are used by
+	/// The WD1772 therefore all other bits are ignored
+	/// </remarks>
 	public static int sectSize(byte size) {
 		int s;
-		//if (size < 4)
 		s = 128 << (size & 0x03);
-		//else
-		//	s = 512;
 		return s;
 	}
 
