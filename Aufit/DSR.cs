@@ -1,6 +1,38 @@
-﻿
+﻿/*!
+@file DSR.cs
+ * 
+<summary>This file contains the structures and functions for the WD1772 DST, MFM, and CRC registers</summary>
+
+<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
+This file is part of the Atari Universal FD Image Tool project.\n\n
+The Atari Universal FD Image Tool project may be used and distributed without restriction provided
+that this copyright statement is not removed from the file and that any
+derivative work contains the original copyright notice and the associated
+disclaimer.\n\n
+The Atari Universal FD Image Tool project is free software; you can redistribute it
+and/or modify  it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.\n\n
+The Atari Universal FD Image Tool project is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n
+See the GNU General Public License for more details.\n\n
+You should have received a copy of the GNU General Public License
+along with the Atari Universal FD Image Tool project; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</div>
+
+ The shiftBitsIn function is a direct adaptation of the <b>FdcShiftBit</b> function provided
+ as part of the SPS DEcoder library from the Software Preservation Society http://www.softpres.org/.
+ The original sources can be found at http://www.kryoflux.com/?page=download. The in the 
+ <b>FdcShiftBit</b> function is located in the CapsEFDC.cpp file.
+ 
+ @author Jean Louis-Guerin & SPS People */
+
 
 namespace WD1772Package {
+	/// <summary>
+	/// The DSR, Sync Mark Detector, and CRC modules of the WD1772
+	/// </summary>
 	public class DSR {
 		const int BIT_0 = 0x0001;
 		const int BIT_1 = 0x0002;
@@ -145,10 +177,16 @@ namespace WD1772Package {
 			get { return (ushort)(_syncDetector >> 1); }
 		}
 
+		/// <summary>
+		/// Returns the current CRC
+		/// </summary>
 		public ushort CRC {
 			get { return _crc; }
 		}
 
+		/// <summary>
+		/// Set to true for one byte after a sequence of three consecutive sync marks
+		/// </summary>
 		public bool IAM {
 			get {
 				return testBits(_decoderFlags, IAM_POSITION);
@@ -171,7 +209,19 @@ namespace WD1772Package {
 			_crcCount = 0;
 		}
 
-
+		/// <summary>
+		/// Shift one bit in the Address Mark Detector (MFM)
+		/// </summary>
+		/// <param name="bit">The bit to shift in 0 or 1</param>
+		/// <remarks>
+		/// One bit is shifted inside the MFM AM detector for detection of the
+		/// Sync Marks. The bit shifted in are clock/data bits from a FDC stream
+		/// in MFM format. The data bit is shifted in the Data Shift Register (DSR)
+		/// and when a byte is ready it is made available. The distinction between
+		/// clock and data bits is done by using the Sync Mark.\n
+		/// This function is a direct adaptation of the source code from SPS people
+		/// for more information read the header of this file.
+		/// </remarks>
 		public void shiftBitsIn(int bit) {
 			// shift the provided bit in AM Detector LSB
 			_syncDetector = (_syncDetector << 1) | bit;
@@ -292,11 +342,25 @@ namespace WD1772Package {
 
 		}	// end of dsrShiftBitIn()
 
+		/// <summary>
+		/// Sets the right flags to read a track
+		/// </summary>
+		/// <remarks>
+		/// In track mode the Sync Detector is always on and no CRC is computed
+		/// </remarks>
 		public void trackMode() {
 			setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
 			resetBits(ref _decoderFlags, CRC_ENABLED);
 		}
 
+		/// <summary>
+		/// Sets the right flags to read an ID or DATA segment of a sector
+		/// </summary>
+		/// <remarks>
+		/// In sector mode the Sync Detector is on until 3 sync marks are detected.
+		/// In sector mode the CRC is computed. This function must be called before
+		/// reading each and every ID DATA as the flags are resets after the sync
+		/// </remarks>
 		public void sectorMode() {
 			setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED, CRC_ENABLED);
 		}

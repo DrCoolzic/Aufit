@@ -78,6 +78,8 @@ namespace PastiPackage {
 		/// Read a Pasti file and fills the Floppy structure
 		/// </summary>
 		/// <param name="fileName">Name of the Pasti file to read</param>
+		/// <param name="forceDs">When set to true this force writing information 
+		/// for a Double sided floppy disk</param>
 		/// <returns>The status</returns>
 		public FileStatus writePasti(string fileName, bool forceDs) {
 			FileStream fs;

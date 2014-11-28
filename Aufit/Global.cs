@@ -201,7 +201,13 @@ public struct HistoData {
 /// Contains all global parameters and functions for AUFIT
 /// </summary>
 public class Global {
+	/// <summary>
+	/// The entropy crossing value between formatted and unformatted
+	/// </summary>
 	public const double UNFORMATED_ENTROPY = 6.5;
+	/// <summary>
+	/// Scale used to reduce the size of the histogram arrays
+	/// </summary>
 	public const int HISTO_SCALE = 50;
 
 	private static DiskTrack[,] _disk = new DiskTrack[85, 2];

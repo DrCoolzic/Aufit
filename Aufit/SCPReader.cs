@@ -268,6 +268,7 @@ namespace SCPReaderPackage {
 		/// <param name="trackSide">The Trackand Side parameter</param>
 		/// <param name="trackHeaderPosition">Position of the header in the buffer</param>
 		/// <param name="revCount">Number of revision used</param>
+		/// <param name="infoBox">Text box to display log information</param>
 		/// <returns>The status</returns>
 		public static Task<SCPStatus> readSCPTrackAsync(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount, TextBox infoBox) {
 			return Task<bool>.Run(() => readSCPTrack(buffer, trackSide, trackHeaderPosition, revCount, infoBox));

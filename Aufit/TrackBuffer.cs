@@ -76,7 +76,6 @@ namespace Aufit {
 		/// Add one more byte to the buffer
 		/// </summary>
 		/// <param name="data">Data byte</param>
-		/// <param name="clock">Clock byte</param>
 		/// <param name="mfm">MFM word</param>
 		/// <param name="phase">Current Phase</param>
 		/// <param name="density">Current Clock value</param>

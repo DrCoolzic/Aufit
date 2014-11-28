@@ -241,7 +241,7 @@ class FluxDrawing {
 		_win.tbFluxInfo.Clear();
 		_win.tbFluxInfo.AppendText(String.Format("Track {0:D2}.{1} Rev {2} of {3}", track, side, rev + 1, dt.packedFluxDataRev.Count()));
 		_win.tbFluxInfo.AppendText(String.Format(" - Flux range: {0:F2}-{1:F2} µs", 
-			(double)dt.fluxData.minFlux / 1000.0, (double)dt.fluxData.maxFlux / 1000.0));
+			(double)dt.packedFluxData.minFlux / 1000.0, (double)dt.packedFluxData.maxFlux / 1000.0));
 		_win.tbFluxInfo.AppendText(String.Format(" - Track length: {0:F3} ms - Flux count: {1}", (double)currentTime / 1000000.0, fluxCount));
 		//_win.tbFluxInfo.AppendText(String.Format(" - Debug z={0:F1} s={1} p={2}", _fluxChartLayout.zoom(), SpeedUp, pointsInViewport));
 	}

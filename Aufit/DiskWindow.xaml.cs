@@ -66,7 +66,6 @@ public partial class DiskWindow : Window {
 	/// <summary>
 	/// Display the layout of a FD
 	/// </summary>
-	/// <param name="side">Side of the FD</param>
 	/// <param name="message">Message to display at end of drawing</param>
 	public async void drawDiskLayout(string message) {
 		int side = 0;
@@ -97,7 +96,6 @@ public partial class DiskWindow : Window {
 	/// <summary>
 	/// Display the Data of a FD
 	/// </summary>
-	/// <param name="side">Side of the FD</param>
 	/// <param name="message">Message to display at end of drawing</param>
 	public async void drawDiskData(string message) {
 		int side = 0;
