@@ -379,7 +379,7 @@ namespace SCPReaderPackage {
 			// now we transfer to our Global Disk structure
 			MainWindow.Rev = 0;
 			Global.Disk[track, side].fluxData = new FluxData();
-			Global.Disk[track, side].fluxData.fluxCount = ti.fluxValues.Count();
+			Global.Disk[track, side].fluxData.totalFluxCount = ti.fluxValues.Count();
 			Global.Disk[track, side].fluxData.fluxValue = new int[ti.fluxValues.Count()];
 			for (int i = 0; i < ti.fluxValues.Count(); i++) {
 				Debug.Assert(ti.fluxValues[i] > -1, "Invalid negative flux read");

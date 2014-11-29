@@ -281,8 +281,8 @@ namespace Aufit {
 			_clockDrawing.setClockDefault(track, side, rev);
 			_clockDrawing.drawClock(track, side, rev);
 
-			//_dataDrawing.Chart.setDefaultViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
-			//_dataDrawing.drawTrackData(track, side, rev);
+			_dataDrawing.Chart.setDefaultViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
+			_dataDrawing.drawTrackData(track, side, rev);
 			ButtonMatrix.setButtonBG(track, side);
 		}
 

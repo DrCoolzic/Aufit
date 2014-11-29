@@ -151,7 +151,7 @@ public partial class DiskWindow : Window {
 		TrackContent trackInfo = Global.Disk[track, side].trackContent;
 		if (trackInfo != null) return trackInfo;
 		Global.mfmDecode(track, side);
-		FDC.fdcAllRead(track, side, rev);
+		FDC.fdcRealAll(track, side, rev);
 		trackInfo = Global.Disk[track, side].trackContent;
 		return trackInfo;
 	}

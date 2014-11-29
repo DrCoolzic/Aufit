@@ -63,7 +63,7 @@ namespace Aufit {
 			Global.Disk[track, side].sectorsContent = null;
 			Global.Disk[track, side].trackContent = null;
 
-			FDC.fdcAllRead(track, side, rev);
+			FDC.fdcRealAll(track, side, rev);
 			AddrContent ac = Global.Disk[track, side].addrContent;
 
 			displayBuffer.FontFamily = new FontFamily("Consolas");
@@ -131,7 +131,7 @@ namespace Aufit {
 			Global.Disk[track, side].sectorsContent = null;
 			Global.Disk[track, side].trackContent = null;
 
-			FDC.fdcAllRead(track, side, rev);
+			FDC.fdcRealAll(track, side, rev);
 			TrackContent tc = Global.Disk[track, side].trackContent;
 			AddrContent ac = Global.Disk[track, side].addrContent;
 

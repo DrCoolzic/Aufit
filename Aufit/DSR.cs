@@ -192,6 +192,12 @@ namespace WD1772Package {
 				return testBits(_decoderFlags, IAM_POSITION);
 			}
 		}
+
+		public bool LastSyncA1 {
+			get {
+				return (_lastSyncFound == SyncType.A1) ? true : false;
+			}
+		}
 		#endregion properties
 
 		/// <summary>Initialize the DSR class</summary>
@@ -363,6 +369,7 @@ namespace WD1772Package {
 		/// </remarks>
 		public void sectorMode() {
 			setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED, CRC_ENABLED);
+			resetBits(ref _decoderFlags, CRC_ACTIVE);
 		}
 
 		/// <summary>

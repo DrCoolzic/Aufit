@@ -90,7 +90,7 @@ public struct PackedFluxDataRev {
 	public int revolutionTime;
 	/// <summary>
 	///  Position of the first flux for this revolution. This position is given as the
-	///  absolute position inside the packBits[] array of PackedFluxData class
+	///  absolute position inside the packedBits[] array of PackedFluxData class
 	/// </summary>
 	public int firstFluxBit;
 	/// <summary>
@@ -114,8 +114,8 @@ public class FluxData {
 	/// <summary>Array of flux transitions recorded for this track (including all revolutions). 
 	/// The value is given in number of sample clock</summary>
 	public int[] fluxValue;
-	/// <summary>Total number of  flux transitions recorded for this track  for ALL revolutions</summary>
-	public int fluxCount;
+	/// <summary>Total number of flux transitions for ALL revolutions of this track</summary>
+	public int totalFluxCount;
 	/// <summary>Value of the shortest flux transition recorded for this track in sample clock</summary>
 	/// <remarks>This value is filled by readStreamTrack() method</remarks>
 	public int minFlux;
@@ -135,9 +135,9 @@ public class PackedFluxData {
 	/// <summary>
 	/// Decoded clock + data bits packed in a byte
 	/// </summary>
-	public byte[] packBits;
+	public byte[] packedBits;
 	/// <summary>
-	/// The average width of a bit (half cell) time  in nanoseconds for a packBits byte.
+	/// The average width of a bit (half cell) time  in nanoseconds for a packedBits byte.
 	/// </summary>
 	/// <remarks>If null standard width assumed</remarks>
 	public int[] bitWidth;
@@ -145,7 +145,7 @@ public class PackedFluxData {
 	/// The timing of the first flux transition in nanoseconds.
 	/// </summary>
 	/// <remarks>
-	/// The timing of the first flux (first "1" bit in a packBits) in nanoseconds.
+	/// The timing of the first flux (first "1" bit in a packedBits) in nanoseconds.
 	/// This reference is from the start of all samples which may or may not be the 
 	/// sampling of the first track of the first revolution.
 	/// </remarks>
@@ -155,7 +155,7 @@ public class PackedFluxData {
 	/// </summary>
 	/// <remarks>
 	/// When packed data are extracted from a flux transition array, this value is the index in the
-	/// flux transition array of the first flux (first "1" bit in a packBits). 
+	/// flux transition array of the first flux (first "1" bit in a packedBits). 
 	/// If packed data are not extracted from a flux transitions array its value is null.
 	/// </remarks>
 	public int[] firstFluxIndex;
@@ -254,6 +254,9 @@ public class Global {
 		/// <summary>Information from a FDC read sector command</summary>
 		/// <remarks>This value is set by readSect()</remarks>
 		public List<SectorContent> sectorsContent;
+
+		public Track track;
+		public List<Sector> sectors;
 	}
 
 
@@ -293,7 +296,7 @@ public class Global {
 	
 		// if flux exist use it other we compute
 		if (dt.fluxData != null) {
-			byte bits = dt.packedFluxData.packBits[packedIndex];		
+			byte bits = dt.packedFluxData.packedBits[packedIndex];		
 			for (int i = bit - 1; i >= 0; i--) {
 				if ((bits & testBit) != 0) count++;
 				testBit >>= 1;
@@ -306,7 +309,7 @@ public class Global {
 				packedIndex -= 1;
 			}
 			for (int pbi = packedIndex; pbi >= 0; pbi--) {
-				byte bits = dt.packedFluxData.packBits[pbi];
+				byte bits = dt.packedFluxData.packedBits[pbi];
 				for (int i = bit - 1; i >= 0; i--) {
 					testBit = 0x1 << (i % 8);
 					if ((bits & testBit) != 0) goto done;
@@ -387,13 +390,13 @@ public class Global {
 		int currentBit = 0;
 		DiskTrack td = Global.Disk[track, side];
 
-		int decodeCount = Global.Disk[track, side].fluxData.fluxCount + 1;
+		int decodeCount = Global.Disk[track, side].fluxData.totalFluxCount + 1;
 		ushort[] decodeBitWidth = new ushort[decodeCount];
 		int[] decodeBitPosition = new int[decodeCount];
 		int[] decodeFluxPosition = new int[decodeCount];
 		
 		DPLL dpll = new DPLL();
-		for (int index = 0; index < Global.Disk[track, side].fluxData.fluxCount; index++) {
+		for (int index = 0; index < Global.Disk[track, side].fluxData.totalFluxCount; index++) {
 			int flux = Global.Disk[track, side].fluxData.fluxValue[index];
 			currentPosition += flux;
 			int bitSpacing = dpll.bitSpacing(currentPosition);
@@ -409,7 +412,7 @@ public class Global {
 
 		Global.Disk[track, side].packedFluxData = new PackedFluxData();
 		int packedCount = (currentBit / 8) + 1;
-		Global.Disk[track, side].packedFluxData.packBits = new byte[packedCount];
+		Global.Disk[track, side].packedFluxData.packedBits = new byte[packedCount];
 		Global.Disk[track, side].packedFluxData.bitWidth = new int[packedCount];
 		Global.Disk[track, side].packedFluxData.firstFluxTiming = new int[packedCount];
 		Global.Disk[track, side].packedFluxData.firstFluxIndex = new int[packedCount];
@@ -418,13 +421,13 @@ public class Global {
 		int lastIndex = 0;
 		widthSum = 0;
 		int widthCount = 0;
-		Global.Disk[track, side].packedFluxData.packBits[0] = 1;
+		Global.Disk[track, side].packedFluxData.packedBits[0] = 1;
 
-		for (int fluxIndex = 0; fluxIndex < Global.Disk[track, side].fluxData.fluxCount; fluxIndex++) {
+		for (int fluxIndex = 0; fluxIndex < Global.Disk[track, side].fluxData.totalFluxCount; fluxIndex++) {
 			int bitPosition = decodeBitPosition[fluxIndex];
 			int bytePos = bitPosition / 8;
 			int setBit = 0x1 << (bitPosition % 8);
-			Global.Disk[track, side].packedFluxData.packBits[bytePos] |= (byte)setBit;
+			Global.Disk[track, side].packedFluxData.packedBits[bytePos] |= (byte)setBit;
 			widthSum += decodeBitWidth[fluxIndex];
 			widthCount++;
 			if (bytePos > lastPackedBytePos) {
@@ -502,7 +505,7 @@ public class Global {
 			for (int bitPosition = firstBit; bitPosition < lastBit; bitPosition++) {
 				int bytePos = bitPosition / 8;
 				int testBit = 0x1 << (bitPosition % 8);
-				if ((Global.Disk[track, side].packedFluxData.packBits[bytePos] & (byte)testBit) != 0) {
+				if ((Global.Disk[track, side].packedFluxData.packedBits[bytePos] & (byte)testBit) != 0) {
 					int flux = Global.fluxValue(bitPosition, track, side) / HISTO_SCALE;
 					tmpHisto[flux]++;
 					fluxCount++;

@@ -79,7 +79,7 @@ class DataDrawing {
 		_dataChartLayout.chartResetCanvas();
 		_dataChartLayout.drawChartGrids();
 
-		FDC.fdcAllRead(track, side, rev);
+		FDC.fdcRealAll(track, side, rev);
 		TrackContent tc = Global.Disk[track, side].trackContent;
 
 		for (int i = 0; i < tc.sectors.Count; i++) {

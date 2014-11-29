@@ -64,7 +64,7 @@ namespace KFReaderPackage {
 				for (int i = 0; i < stream.FluxCount; i++)
 					Global.Disk[track, side].fluxData.fluxValue[i] = (int)((double)stream.FluxValues[i] * tick);
 
-				Global.Disk[track, side].fluxData.fluxCount = stream.FluxCount;
+				Global.Disk[track, side].fluxData.totalFluxCount = stream.FluxCount;
 				Global.Disk[track, side].fluxData.maxFlux = (int)((double)stream.StreamStat.fluxMax * tick);
 				Global.Disk[track, side].fluxData.minFlux = (int)((double)stream.StreamStat.fluxMin * tick);
 

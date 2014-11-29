@@ -27,7 +27,7 @@
             </Grid.ColumnDefinitions>
 
             
-            <Button Grid.Column="0" x:Name="btFile" Content="File" Click="openFileClick" Height="20" VerticalAlignment="Top" />
+            <Button Grid.Column="0" x:Name="btFile" Content="Load image" Click="openFileClick" Height="20" VerticalAlignment="Top" />
             <TextBox Grid.Column="1" Name="tbFileName" BorderThickness="0" Margin="5,0"/>
             <CheckBox Grid.Column="6" x:Name="cbLimitFlux" Content="Limit Flux" Margin="10,0,10,0" VerticalAlignment="Center" 
                       Click="cbLimitClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />

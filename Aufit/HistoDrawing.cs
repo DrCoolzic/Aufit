@@ -52,7 +52,7 @@ class HistoDrawing {
 	/// <param name="histoGrid">The enclosing grid</param>
 	/// <param name="cvTextHisto">The text canvas</param>
 	/// <param name="cvGraphicHisto">The graphic canvas</param>
-	/// <param name="win">Pointedr to the MainWindow</param>
+	/// <param name="win">Pointer to the MainWindow</param>
 	public HistoDrawing(Grid histoGrid, Canvas cvTextHisto, Canvas cvGraphicHisto, MainWindow win) {
 		_histoChartLayout = new ChartLayout(histoGrid, cvTextHisto, cvGraphicHisto);
 		_win = win;

@@ -118,7 +118,7 @@ class ClockDrawing {
 		for (int bitPosition = startBit; bitPosition < stopBit; bitPosition++) {
 			int currentByte = bitPosition / 8;
 			int currentBitInByte = bitPosition % 8;
-			byte bits = Global.Disk[track, side].packedFluxData.packBits[currentByte];
+			byte bits = Global.Disk[track, side].packedFluxData.packedBits[currentByte];
 			int bit = (bits >> currentBitInByte) & 0x1;
 			if (bit == 0) continue;
 

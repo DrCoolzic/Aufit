@@ -80,14 +80,14 @@ namespace Aufit {
 		/// <param name="phase">Current Phase</param>
 		/// <param name="density">Current Clock value</param>
 		/// <param name="startTime">Byte start time</param>
-		public void addByte(byte data, ushort mfm, Phases phase, ushort density, int startTime) {
+		public void addByte(byte data, ushort mfm, ushort density, int startTime) {
 			TrackByte b = new TrackByte();
 			b.dataByte = data;
 			//b.clockByte = clock;
 			b.mfmWord = mfm;
 			b.density = density;
 			b.startTime = startTime;
-			b.phase = phase;
+			b.phase = Phases.p_outer;
 			_bytes.Add(b);
 		}
 
