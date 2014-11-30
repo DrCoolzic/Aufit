@@ -52,7 +52,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>floppy2.ico</ApplicationIcon>
+    <ApplicationIcon>floppy.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Accessibility" />
@@ -175,10 +175,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Aufit.css" />
-    <Resource Include="floppy2.ico" />
-    <Resource Include="Resources\floppy2.ico" />
+    <Resource Include="floppy.ico" />
     <Resource Include="Resources\floppy.ico" />
-    <Resource Include="Delacro-Id-Floppy-Drive.ico" />
     <Resource Include="Resources\plus.png" />
     <Resource Include="Resources\minus.png" />
   </ItemGroup>

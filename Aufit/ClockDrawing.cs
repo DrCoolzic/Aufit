@@ -122,7 +122,7 @@ class ClockDrawing {
 			int bit = (bits >> currentBitInByte) & 0x1;
 			if (bit == 0) continue;
 
-			int flux = Global.fluxValue(bitPosition, track, side);
+			int flux = Global.fluxWidth(bitPosition, track, side);
 			currentTime += flux;
 
 			int clk = td.packedFluxData.bitWidth[currentByte];

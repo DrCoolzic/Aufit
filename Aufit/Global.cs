@@ -286,7 +286,7 @@ public class Global {
 	/// <param name="track">The current track</param>
 	/// <param name="side">The current side</param>
 	/// <returns>The flux value in nanoseconds</returns>
-	public static int fluxValue(int bitPosition, int track, int side) {
+	public static int fluxWidth(int bitPosition, int track, int side) {
 		DiskTrack dt = Global.Disk[track, side];
 		int packedIndex = bitPosition / 8;
 		int bit = bitPosition % 8;
@@ -506,7 +506,7 @@ public class Global {
 				int bytePos = bitPosition / 8;
 				int testBit = 0x1 << (bitPosition % 8);
 				if ((Global.Disk[track, side].packedFluxData.packedBits[bytePos] & (byte)testBit) != 0) {
-					int flux = Global.fluxValue(bitPosition, track, side) / HISTO_SCALE;
+					int flux = Global.fluxWidth(bitPosition, track, side) / HISTO_SCALE;
 					tmpHisto[flux]++;
 					fluxCount++;
 				}

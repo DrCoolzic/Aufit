@@ -147,7 +147,7 @@ class FluxDrawing {
 				int bytePos = bitPosition / 8;
 				int testBit = 0x1 << (bitPosition % 8);
 				if ((dt.packedFluxData.packedBits[bytePos] & (byte)testBit) == 0) continue;
-				int flux = Global.fluxValue(bitPosition, track, side);
+				int flux = Global.fluxWidth(bitPosition, track, side);
 				currentTime += flux;
 				if (_fluxChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)flux / 1000.0))
 					pointsInViewport++;
@@ -180,7 +180,7 @@ class FluxDrawing {
 			dsr.shiftBitsIn(bit);
 
 			if (bit == 0) continue;
-			int flux = Global.fluxValue(bitPosition, track, side);
+			int flux = Global.fluxWidth(bitPosition, track, side);
 			currentTime += flux;
 			fluxCount++;
 

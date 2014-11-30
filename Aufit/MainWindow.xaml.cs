@@ -310,7 +310,8 @@ namespace Aufit {
 						_fileName = file;
 						string root = file.Remove(file.Length - 8, 8);
 						if (_readKFAsync)
-							readOK = await readAllTracksAsync(path, root);
+							//readOK = await readAllTracksAsync(path, root);
+							readOK = readAllTracks(path, root);
 						else
 							readOK =  readAllTracksTasks(path, root);
 						break;
@@ -400,6 +401,39 @@ namespace Aufit {
 			drawAllCharts();
 			return true;
 		}
+
+
+
+
+		public bool readAllTracks(string path, string root) {
+			string fname;
+			_fluxDrawing.FastDraw = true;
+			infoBox.Clear();
+			infoBox.FontSize = 11;
+			ButtonMatrix.clearButtons();
+
+			for (int side = 0; side < 2; side++) {
+				for (int track = 0; track < 84; track++) {
+					fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, track, side);
+					//bool streamOK = await ProcessStream.readStreamTrackAsync(fname, track, side);
+					bool streamOK = ProcessStream.readStreamTrack(fname, track, side);
+					if (streamOK) {
+						Global.computeHisto(track, side, 1, infoBox);
+						ButtonMatrix.setButtonBG(track, side);
+					}
+					// else return false;
+				}
+			}
+
+			_fluxDrawing.FastDraw = false;
+			Track = Side = Rev = 0;
+			if (Global.Disk[Track, Side].fluxData != null) {
+				ButtonMatrix.selectButton(Track, Side);
+			}
+			drawAllCharts();
+			return true;
+		}
+
 
 
 		private void keyDown(object sender, KeyEventArgs e) {
