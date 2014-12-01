@@ -28,33 +28,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</di
  
  @author Jean Louis-Guerin & SPS People */
 
+using GlobalPackage;
 
 namespace WD1772Package {
 	/// <summary>
 	/// The DSR, Sync Mark Detector, and CRC modules of the WD1772
 	/// </summary>
 	public class DSR {
-		const int BIT_0 = 0x0001;
-		const int BIT_1 = 0x0002;
-		const int BIT_2 = 0x0004;
-		const int BIT_3 = 0x0008;
-		const int BIT_4 = 0x0010;
-		const int BIT_5 = 0x0020;
-		const int BIT_6 = 0x0040;
-		const int BIT_7 = 0x0080;
-		const int BIT_8 = 0x0100;
 
 		enum SyncType { No, A1, C2 }
 
 		/// <summary>Bit used in the _decoderFlags for the Address Mark detector enabled</summary>
-		const int SYNC_DETECTOR_ENABLED = BIT_0;
+		const int SYNC_DETECTOR_ENABLED = Bit.BIT_01;
 		/// <summary>Bit used in the _decoderFlags to indicates that DSR data are available</summary>
-		const int DATA_READY = BIT_1;
-		const int A1_FOUND = BIT_2;
-		const int C2_FOUND = BIT_3;
-		const int CRC_ENABLED = BIT_4;
-		const int CRC_ACTIVE = BIT_5;
-		const int IAM_POSITION = BIT_6;
+		const int DATA_READY = Bit.BIT_02;
+		const int A1_FOUND = Bit.BIT_03;
+		const int C2_FOUND = Bit.BIT_04;
+		const int CRC_ENABLED = Bit.BIT_05;
+		const int CRC_ACTIVE = Bit.BIT_06;
+		const int IAM_POSITION = Bit.BIT_07;
 
 		/// <summary>AM Detector</summary>
 		/// <remarks>The _syncDetector is a 16 bits wide shift register that accumulates directly 
@@ -98,43 +90,15 @@ namespace WD1772Package {
 		ushort _crc;
 		int _crcCount;
 
-		#region flag_helper_functions
-		/// <summary>Set the specified bit(s) in the flag</summary>
-		/// <param name="flag">The flag to update</param>
-		/// <param name="bits">An array of bits to set in the flag</param>
-		void setBits(ref int flag, params int[] bits) {
-			for (int i = 0; i < bits.Length; i++)
-				flag |= bits[i];
-		}
-
-		/// <summary>Reset the specified bit(s) in the flag</summary>
-		/// <param name="flag">The flag to update</param>
-		/// <param name="bits">An array of bits to reset in the flag</param>		
-		void resetBits(ref int flag, params int[] bits) {
-			for (int i = 0; i < bits.Length; i++)
-				flag &= ~bits[i];
-		}
-
-		/// <summary>Test the specified bit(s) in the flag</summary>
-		/// <param name="flag">The flag to test</param>
-		/// <param name="bits">An array of bits to test in the flag</param>
-		/// <returns>True if any of the tested bits is set</returns>
-		bool testBits(int flag, params int[] bits) {
-			bool result = false;
-			for (int i = 0; i < bits.Length; i++)
-				result |= ((flag & bits[i]) != 0);
-			return result;
-		}
-		#endregion flag_helper_functions
-
+	
 
 		#region properties
 		/// <summary>This property indicates if the AM detection is enabled (true) or disabled (false)</summary>
 		public bool SyncDetectEnable {
-			get { return testBits(_decoderFlags, SYNC_DETECTOR_ENABLED); }
+			get { return Bit.testBits(_decoderFlags, SYNC_DETECTOR_ENABLED); }
 			set {
-				if (value) setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
-				else resetBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
+				if (value) Bit.setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
+				else Bit.resetBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
 			}
 		}
 
@@ -142,25 +106,25 @@ namespace WD1772Package {
 		/// This property is set to true if the last decoded character is an AM (A1 or C2)
 		/// </summary>
 		public bool SyncFound {
-			get { return testBits(_decoderFlags, A1_FOUND, C2_FOUND); }
+			get { return Bit.testBits(_decoderFlags, A1_FOUND, C2_FOUND); }
 			// get { return (DataReady && ( ((MFM == 0x4489) && (Data == 0xA1)) || ((MFM == 0x5224)))); }
 		}
 
 		/// <summary>The last decoded byte is an A1 Sync </summary>
 		public bool A1Found {
-			get { return testBits(_decoderFlags, A1_FOUND); }
+			get { return Bit.testBits(_decoderFlags, A1_FOUND); }
 		}
 
 		/// <summary>The last decoded byte is an C2 Sync </summary>
 		public bool C2Found {
-			get { return testBits(_decoderFlags, C2_FOUND); }
+			get { return Bit.testBits(_decoderFlags, C2_FOUND); }
 		}
 
 		/// <summary>
 		/// This property indicates if a character is ready to be read from the DSR using the Data property
 		/// </summary>
 		public bool DataReady {
-			get { return testBits(_decoderFlags, DATA_READY); }
+			get { return Bit.testBits(_decoderFlags, DATA_READY); }
 		}
 
 		/// <summary>
@@ -189,7 +153,7 @@ namespace WD1772Package {
 		/// </summary>
 		public bool IAM {
 			get {
-				return testBits(_decoderFlags, IAM_POSITION);
+				return Bit.testBits(_decoderFlags, IAM_POSITION);
 			}
 		}
 
@@ -236,8 +200,8 @@ namespace WD1772Package {
 			if (_syncOverlapCount != 0) _syncOverlapCount--;
 
 			if (DataReady)
-				resetBits(ref _decoderFlags, A1_FOUND, C2_FOUND);
-			resetBits(ref _decoderFlags, DATA_READY);
+				Bit.resetBits(ref _decoderFlags, A1_FOUND, C2_FOUND);
+			Bit.resetBits(ref _decoderFlags, DATA_READY);
 
 			// Check for Address Mark only if detection enabled
 			if (SyncDetectEnable) {
@@ -248,11 +212,11 @@ namespace WD1772Package {
 						// detect A1 only if it does not overlap with a previous A1 AM
 						if ((_syncOverlapCount == 0) || (_lastSyncFound != SyncType.A1)) {
 							bitsInDetector = SyncType.A1;
-							setBits(ref _decoderFlags, A1_FOUND);
-							if (testBits(_decoderFlags, CRC_ENABLED)) {
+							Bit.setBits(ref _decoderFlags, A1_FOUND);
+							if (Bit.testBits(_decoderFlags, CRC_ENABLED)) {
 								// if CRC not yet active - activate
-								if (!testBits(_decoderFlags, CRC_ACTIVE)) {
-									setBits(ref _decoderFlags, CRC_ACTIVE);
+								if (!Bit.testBits(_decoderFlags, CRC_ACTIVE)) {
+									Bit.setBits(ref _decoderFlags, CRC_ACTIVE);
 									_crc = 0xFFFF;		// reset CRC
 									_crcCount = 16;
 								}	// start CRC computation on first A1
@@ -261,7 +225,7 @@ namespace WD1772Package {
 						break;
 					case 0x5224:
 						bitsInDetector = SyncType.C2;
-						setBits(ref _decoderFlags, C2_FOUND);
+						Bit.setBits(ref _decoderFlags, C2_FOUND);
 						break;
 				}	// detect AM
 
@@ -289,14 +253,14 @@ namespace WD1772Package {
 			}	// Sync detection enabled
 
 			// Process CRC if activated
-			if (testBits(_decoderFlags, CRC_ACTIVE)) {
+			if (Bit.testBits(_decoderFlags, CRC_ACTIVE)) {
 				// process every 16 bits
 				if ((_crcCount & 0xF) == 0) {
-					if ((_crcCount > 48) || testBits(_decoderFlags, A1_FOUND)) {
+					if ((_crcCount > 48) || Bit.testBits(_decoderFlags, A1_FOUND)) {
 						if (_crcCount == 48) {
 							// TODO A1 is already active? do we need
-							setBits(ref _decoderFlags);
-							resetBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
+							Bit.setBits(ref _decoderFlags);
+							Bit.resetBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
 						}
 
 						// select data bits for CRC source byte value; needed without separate clock and data shifters
@@ -313,7 +277,7 @@ namespace WD1772Package {
 					}	// A1 or following bytes
 					else
 						// reset CRC process if less than 3 consecutive A1 detected
-						resetBits(ref _decoderFlags, CRC_ACTIVE);
+						Bit.resetBits(ref _decoderFlags, CRC_ACTIVE);
 				}	// every 16 bits
 
 				_crcCount++;
@@ -331,13 +295,13 @@ namespace WD1772Package {
 					_dsrBitCount = 0;	// reset count
 					// set DSR flag if valid data
 					if (_dsrInvalid == 0) {
-						setBits(ref _decoderFlags, DATA_READY);
+						Bit.setBits(ref _decoderFlags, DATA_READY);
 						if ((_syncSeq == 3) && (!SyncFound)) {
 							_syncSeq = 0;
-							setBits(ref _decoderFlags, IAM_POSITION);
+							Bit.setBits(ref _decoderFlags, IAM_POSITION);
 						}
 						else
-							resetBits(ref _decoderFlags, IAM_POSITION);
+							Bit.resetBits(ref _decoderFlags, IAM_POSITION);
 					}
 					else
 						_dsrInvalid--;
@@ -355,8 +319,8 @@ namespace WD1772Package {
 		/// In track mode the Sync Detector is always on and no CRC is computed
 		/// </remarks>
 		public void trackMode() {
-			setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
-			resetBits(ref _decoderFlags, CRC_ENABLED);
+			Bit.setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
+			Bit.resetBits(ref _decoderFlags, CRC_ENABLED);
 		}
 
 		/// <summary>
@@ -368,8 +332,8 @@ namespace WD1772Package {
 		/// reading each and every ID DATA as the flags are resets after the sync
 		/// </remarks>
 		public void sectorMode() {
-			setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED, CRC_ENABLED);
-			resetBits(ref _decoderFlags, CRC_ACTIVE);
+			Bit.setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED, CRC_ENABLED);
+			Bit.resetBits(ref _decoderFlags, CRC_ACTIVE);
 		}
 
 		/// <summary>

@@ -81,15 +81,17 @@ class DataDrawing {
 
 		FDC.fdcRealAll(track, side, rev);
 		List<Sector> sectors = Global.Disk[track, side].sectors;
+		double revolutionTime = (double)Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime / 1000000.0;
 
-		foreach (Sector sector in sectors) {
+		for (int i = 0; i < sectors.Count; i++) {
+			Sector sector = sectors[i];
 
-			Polygon polySect = new Polygon();
-			polySect.Stroke = Brushes.DarkBlue;
-			polySect.StrokeThickness = 0.5;
-			polySect.Fill = Brushes.Transparent;
+			Polygon sectorBorderPolygon = new Polygon();
+			sectorBorderPolygon.Stroke = Brushes.DarkBlue;
+			sectorBorderPolygon.StrokeThickness = 0.5;
+			sectorBorderPolygon.Fill = Brushes.Transparent;
 
-			StackPanel panel = new StackPanel();
+			StackPanel sectorInfoPanel = new StackPanel();
 			TextBox snum = new TextBox();
 			int endTime;
 			if (sector.data != null)
@@ -98,107 +100,138 @@ class DataDrawing {
 				endTime = sector.id.info.startTime + sector.id.info.timeLength;
 
 			snum.Text = String.Format("Sector {0} Start {1:F2} ms - Stop: {2:F2} ms",
-				sector.id.number, (double)sector.id.info.startTime / 1000000.0, (double)endTime / 1000000.0);
-				
-			panel.Children.Add(snum);
+				sector.id.number, (double)sector.id.info.startTime / 1000000.0, (double)endTime / 1000000.0);				
+			sectorInfoPanel.Children.Add(snum);
 
 			double bstart = 0;
 			double bstop = 0;
 			double blength;
 			
 			// draw ID field
-			Polygon idPlg = new Polygon();
-			idPlg.Stroke = Brushes.Black;
-			idPlg.StrokeThickness = 0.5;
-
 			bstart = (double)sector.id.info.startTime / 1000000.0;
 			blength = (double)sector.id.info.timeLength / 1000000.0;
 			bstop = bstart + blength;
+			double idbstop = bstop;
 
-			polySect.Points.Add(_dataChartLayout.NormPoint(bstart, 0.2));
-			polySect.Points.Add(_dataChartLayout.NormPoint(bstart, 0.8));
+			sectorBorderPolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.2));
+			sectorBorderPolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.8));
 
 			TextBox tb = new TextBox();
-			tb.Text = String.Format("ID Field (T={0} H={1} N={2} S={3} CRC={4:X4}) Bit={5} Time={6:F2} ms",
+			tb.Text = String.Format("ID Field (T={0} H={1} N={2} S={3} CRC={4:X4}) Start @ Bit={5} Time={6:F2} ms",
 				sector.id.track, sector.id.head, sector.id.number, sector.id.size, sector.id.crc,
 				sector.id.info.startBit, bstart);
-			panel.Children.Add(tb);
+			sectorInfoPanel.Children.Add(tb);
 
-			idPlg.Fill = Brushes.Maroon;
-			idPlg.Points.Add(_dataChartLayout.NormPoint(bstart, 0.2));
-			idPlg.Points.Add(_dataChartLayout.NormPoint(bstart, 0.8));
-			idPlg.Points.Add(_dataChartLayout.NormPoint(bstop, 0.8));
-			idPlg.Points.Add(_dataChartLayout.NormPoint(bstop, 0.2));
-			_dataChartLayout.GraphicCanvas.Children.Add(idPlg);
+			drawRectangle(sector, bstart, bstop, Phases.p_id);
 
 			// draw DATA field
 			if (sector.data != null) {
-				Polygon dataPlg = new Polygon();
-				dataPlg.Stroke = Brushes.Black;
-				dataPlg.StrokeThickness = 0.5;
-
 				bstart = (double)sector.data.info.startTime / 1000000.0;
 				blength = (double)sector.data.info.timeLength / 1000000.0;
 				bstop = bstart + blength;
 
 				tb = new TextBox();
-				tb.Text = String.Format("Data Field {0} bytes Bit={1} Time={2:F2} ms Length={3:F2} {4} {5}",
-					sector.data.info.byteCount - 3, sector.data.info.startBit, bstart, blength,
-					(sector.data.info.crc != 0) ? " Bad CRC" : "",
-					(sector.data.fuzzy != null) ? " has fuzzy bytes" : "");
-				panel.Children.Add(tb);
+				tb.Text = String.Format("Gap Field Start @ Bit={0} Time={1:F2} ms - {2} bytes",
+					sector.id.info.startBit + sector.id.info.bitCount,
+					(double)(sector.id.info.startTime + sector.id.info.timeLength) / 1000000.0,
+					sector.data.info.startByte - sector.id.info.startByte - sector.id.info.byteCount);
+				sectorInfoPanel.Children.Add(tb);
+				drawRectangle(sector, idbstop, bstart, Phases.p_gap);
 
-				dataPlg.Fill = Brushes.DeepSkyBlue;
-				//if (si.phases[p].overClock > Global.sectSize(si.addr.size) / 2)
-				//	plg.Fill = Brushes.Blue;
-				//if (si.phases[p].underClock > Global.sectSize(si.addr.size) / 2)
-				//	plg.Fill = Brushes.Aqua;
-				//// macrodos
-				//if ((si.phases[p].underClock > Global.sectSize(si.addr.size) / 8) && (si.phases[p].overClock > Global.sectSize(si.addr.size) / 8))
-				//	plg.Fill = Brushes.BlueViolet;
+				tb = new TextBox();
+				tb.Text = String.Format("Data Field Start @ Bit={0} Time={1:F2} ms - {2} bytes Length={3:F2} µs {4} {5}",
+					sector.data.info.startBit, bstart, sector.data.info.byteCount - 3, blength * 1000,
+					(sector.data.info.crc != 0) ? " - Bad CRC" : "",
+					(sector.data.fuzzy != null) ? " - Fuzzy sector" : "");
+				sectorInfoPanel.Children.Add(tb);
 
+				// if SWS we truncate
+				if (((i+1) < sectors.Count) &&
+					(((double)sectors[i+1].id.info.startTime / 1000000.0) < bstop))
+					bstop = (double)sectors[i+1].id.info.startTime / 1000000.0;
 
-				if (sector.data.info.crc != 0) {
-					Polygon perr = new Polygon();
-					perr.Fill = Brushes.Red;
-					perr.StrokeThickness = 0;
-					perr.Points.Add(_dataChartLayout.NormPoint(bstart, 0.05));
-					perr.Points.Add(_dataChartLayout.NormPoint(bstart, 0.95));
-					perr.Points.Add(_dataChartLayout.NormPoint(bstop, 0.95));
-					perr.Points.Add(_dataChartLayout.NormPoint(bstop, 0.05));
-					_dataChartLayout.GraphicCanvas.Children.Add(perr);
-				}
-				if (sector.data.fuzzy != null) {
-					Polygon perr = new Polygon();
-					perr.Fill = Brushes.Orange;
-					perr.StrokeThickness = 0;
-					perr.Points.Add(_dataChartLayout.NormPoint(bstart, 0.10));
-					perr.Points.Add(_dataChartLayout.NormPoint(bstart, 0.9));
-					perr.Points.Add(_dataChartLayout.NormPoint(bstop, 0.9));
-					perr.Points.Add(_dataChartLayout.NormPoint(bstop, 0.10));
-					_dataChartLayout.GraphicCanvas.Children.Add(perr);
+				drawRectangle(sector, bstart, bstop, Phases.p_data);
 
-					//	int nbFuzzy = 0;
-					//	for (int j = 0; j < sc.fuzzyMask.Bytes.Count; j++) {
-					//		if (sc.fuzzyMask.Bytes[j].dataByte != 0) nbFuzzy++;
-					//	}
-					//	if (nbFuzzy > (int)((double)sc.fuzzyMask.Bytes.Count * 0.6)) plg.Fill = Brushes.Gray;
+				// if shifted we draw an extra wrapped part
+				if (bstop > revolutionTime) {
+					double shiftedBstart = 0;
+					double shiftedBstop = bstop - revolutionTime;
+					// if SWS we truncate
+					if (((double)sectors[0].id.info.startTime / 1000000.0) < shiftedBstop)
+						shiftedBstop = (double)sectors[0].id.info.startTime / 1000000.0;
+
+					drawRectangle(sector, shiftedBstart, shiftedBstop, Phases.p_data);
 				}
 
-				dataPlg.Points.Add(_dataChartLayout.NormPoint(bstart, 0.2));
-				dataPlg.Points.Add(_dataChartLayout.NormPoint(bstart, 0.8));
-				dataPlg.Points.Add(_dataChartLayout.NormPoint(bstop, 0.8));
-				dataPlg.Points.Add(_dataChartLayout.NormPoint(bstop, 0.2));
-				_dataChartLayout.GraphicCanvas.Children.Add(dataPlg);
 			}	// sector has data field
 
-			polySect.Points.Add(_dataChartLayout.NormPoint(bstop, 0.8));
-			polySect.Points.Add(_dataChartLayout.NormPoint(bstop, 0.2));
-			ToolTipService.SetToolTip(polySect, panel);
-			ToolTipService.SetShowDuration(polySect, 100000);
-			_dataChartLayout.GraphicCanvas.Children.Add(polySect);
+			sectorBorderPolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.8));
+			sectorBorderPolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.2));
+
+			ToolTipService.SetToolTip(sectorBorderPolygon, sectorInfoPanel);
+			ToolTipService.SetShowDuration(sectorBorderPolygon, 100000);
+			_dataChartLayout.GraphicCanvas.Children.Add(sectorBorderPolygon);
 
 		}	// all sectors
+	}
+
+
+	private void drawRectangle(Sector sector, double bstart, double bstop, Phases phase) {
+		Polygon sectorPhasePolygon = new Polygon();
+		sectorPhasePolygon.Stroke = Brushes.Black;
+		sectorPhasePolygon.StrokeThickness = 0.5;
+
+		if (phase == Phases.p_id)
+			sectorPhasePolygon.Fill = Brushes.Maroon;
+		else if (phase == Phases.p_gap)
+			sectorPhasePolygon.Fill = Brushes.LightGreen;
+		else {
+			sectorPhasePolygon.Fill = Brushes.DeepSkyBlue;
+			if (Bit.testBits(sector.data.flags, DataField.WIDTH_OVER))
+				sectorPhasePolygon.Fill = Brushes.Blue;
+			if (Bit.testBits(sector.data.flags, DataField.WIDTH_UNDER))
+				sectorPhasePolygon.Fill = Brushes.Aqua;
+
+
+			//// macrodos
+			//if ((si.phases[p].underClock > Global.sectSize(si.addr.size) / 8) && (si.phases[p].overClock > Global.sectSize(si.addr.size) / 8))
+			//	plg.Fill = Brushes.BlueViolet;
+
+			if (sector.data.info.crc != 0) {
+				Polygon crcPolygon = new Polygon();
+				crcPolygon.Fill = Brushes.Red;
+				crcPolygon.StrokeThickness = 0;
+				crcPolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.05));
+				crcPolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.95));
+				crcPolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.95));
+				crcPolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.05));
+				_dataChartLayout.GraphicCanvas.Children.Add(crcPolygon);
+			}
+			if (sector.data.fuzzy != null) {
+				Polygon fuzzyPolygon = new Polygon();
+				fuzzyPolygon.Fill = Brushes.Orange;
+				fuzzyPolygon.StrokeThickness = 0;
+				fuzzyPolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.10));
+				fuzzyPolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.9));
+				fuzzyPolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.9));
+				fuzzyPolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.10));
+				_dataChartLayout.GraphicCanvas.Children.Add(fuzzyPolygon);
+
+				//	int nbFuzzy = 0;
+				//	for (int j = 0; j < sc.fuzzyMask.Bytes.Count; j++) {
+				//		if (sc.fuzzyMask.Bytes[j].dataByte != 0) nbFuzzy++;
+				//	}
+				//	if (nbFuzzy > (int)((double)sc.fuzzyMask.Bytes.Count * 0.6)) plg.Fill = Brushes.Gray;
+			}
+
+
+		}
+
+		sectorPhasePolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.2));
+		sectorPhasePolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.8));
+		sectorPhasePolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.8));
+		sectorPhasePolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.2));
+		_dataChartLayout.GraphicCanvas.Children.Add(sectorPhasePolygon);
 	}
 		
 }

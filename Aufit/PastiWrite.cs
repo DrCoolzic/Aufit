@@ -202,7 +202,7 @@ namespace PastiPackage {
 								tb.mfmWord = 0;
 								tb.density = 0;
 								tb.startTime = 0;
-								tb.phase = Phases.p_inner;
+								tb.phase = Phases.p_gap;
 								tdata.sectorsContent[sect].fuzzyMask.Bytes.Add(tb);
 							}
 							tdesc.fuzzyCount += (uint)tdata.sectorsContent[sect].fuzzyMask.Bytes.Count - 3;
@@ -275,8 +275,8 @@ namespace PastiPackage {
 								// we check to see if we already have the same content in track data
 									if (OPT_SECT && needTrackData && (tdata.trackContent.sectors[sect + 1].phases[(int)Phases.p_data].badSync == 0) && (tdata.trackContent.sectors[sect + 1].sws == -1)) {
 									// as some bytes may have been shifted we start from inner-gap till we find the 0xFB
-									int firstByte = tdata.trackContent.sectors[sect + 1].phases[(int)Phases.p_inner].startByte;
-									int lastByte = firstByte + tdata.trackContent.sectors[sect + 1].phases[(int)Phases.p_inner].byteCount + 10;
+									int firstByte = tdata.trackContent.sectors[sect + 1].phases[(int)Phases.p_gap].startByte;
+									int lastByte = firstByte + tdata.trackContent.sectors[sect + 1].phases[(int)Phases.p_gap].byteCount + 10;
 									for (int i = firstByte; i < lastByte; i++)
 										if (tdata.trackContent.buffer.Bytes[i].dataByte == 0xFB) {
 											trackOffset = (uint)i;

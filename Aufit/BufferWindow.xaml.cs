@@ -59,12 +59,13 @@ namespace Aufit {
 		/// </summary>
 		public void drawSectorBuffer(int track, int side, int rev) {
 			// force re read
-			Global.Disk[track, side].addrContent = null;
-			Global.Disk[track, side].sectorsContent = null;
-			Global.Disk[track, side].trackContent = null;
+			//Global.Disk[track, side].addrContent = null;
+			//Global.Disk[track, side].sectorsContent = null;
+			//Global.Disk[track, side].trackContent = null;
 
-			FDC.fdcRealAll(track, side, rev);
-			AddrContent ac = Global.Disk[track, side].addrContent;
+			//FDC.fdcRealAll(track, side, rev);
+
+			List<Sector> sectors = Global.Disk[track, side].sectors;
 
 			displayBuffer.FontFamily = new FontFamily("Consolas");
 			displayBuffer.FontSize = 16;
@@ -72,46 +73,44 @@ namespace Aufit {
 			displayBuffer.FontWeight = FontWeights.Normal;
 
 			displayBuffer.Inlines.Add(new Run(
-				String.Format("Read Sectors for Track {0:D2}.{1} has {2} sectors\n", track, side, ac.ids.Count)
+				String.Format("Track {0:D2}.{1} has {2} sectors\n", track, side, sectors.Count)
 				) { FontWeight = FontWeights.Bold });
 
 			displayBuffer.Inlines.Add(String.Format("-------------------+---------------------------\n"));
 			displayBuffer.Inlines.Add(String.Format("ID                 | DATA                      \n"));
-			displayBuffer.Inlines.Add(String.Format("SCT    POS LEN CRC | BYTE    POS   LEN CRC FUZ \n"));
+			displayBuffer.Inlines.Add(String.Format("SCT    POS LEN CRC | BYTE    POS  TIME CRC FUZ \n"));
 			displayBuffer.Inlines.Add(String.Format("-------------------+---------------------------\n"));
 
-			for (int i = 0; i < ac.ids.Count; i++) {
+			foreach (Sector sector in sectors) {
 				// ID
-				if (ac.blocs[i].byteCount > 0) {
-					displayBuffer.Inlines.Add(String.Format("{0,3:D} {1,6:D} {2,3:D} {3} |", ac.ids[i].number, ac.blocs[i].startTime / 1000,
-						ac.blocs[i].timeLength / 1000, (ac.blocs[i].crc == 0) ? " OK" : "Bad"));
-				}
-				
+				displayBuffer.Inlines.Add(String.Format("{0,3:D} {1,6:D} {2,3:D} {3} |", sector.id.number, sector.id.info.startTime / 1000,
+						sector.id.info.timeLength / 1000, (sector.id.info.crc == 0) ? " OK" : "Bad"));
 				// DATA
-				SectorContent sc = FDC.findSectorContent(track, side, ac.ids[i].number, ac.blocs[i].startTime);
-				if ((sc != null) && (sc.dataBlock.byteCount > 0))
+				if (sector.data != null)
 					displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4}",
-						sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000, (sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.fuzzyMask != null) ? "Yes" : " No"));
+						sector.data.info.byteCount, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000, 
+						(sector.data.info.crc == 0) ? " OK" : "Bad", (sector.data.fuzzy != null) ? "Yes" : " No"));
 				displayBuffer.Inlines.Add("\n");
 			}			
 			displayBuffer.Inlines.Add(String.Format("-------------------+---------------------------\n\n"));
 
-			for (int i = 0; i < ac.ids.Count; i++) {
-				displayBuffer.Inlines.Add(String.Format("Sector {0}", ac.ids[i].number));
-				SectorContent sc = FDC.findSectorContent(track, side, ac.ids[i].number, ac.blocs[i].startTime);
-				if ((sc != null) && (sc.data.Bytes.Count > 0)) {
-					if (sc.data.Bytes.Count != Global.sectSize(ac.ids[i].size) + 3)
+			foreach (Sector sector in sectors) {
+				displayBuffer.Inlines.Add(String.Format("Sector {0} - ", sector.id.number));
+				if (sector.data != null) {
+					if (sector.data.info.byteCount != Global.sectSize(sector.id.size) + 3)
 						displayBuffer.Inlines.Add(" *** Imcomplete ***");
-					displayBuffer.Inlines.Add(String.Format(" {0} bytes start at {1}µs length {2}µs {3} {4}\n",
-						sc.data.Bytes.Count, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000,
-						(sc.dataBlock.crc == 0) ? "Good CRC" : "Bad CRC", (sc.fuzzyMask != null) ? "Has Fuzzy bytes" : "" ));
-					drawBuffer(sc.data);
-					if (sc.fuzzyMask != null) {
-						displayBuffer.Inlines.Add(String.Format("\nFuzzy bytes for sector {0}\n", ac.ids[i].number));
-						_noColor = true;
-						drawBuffer(sc.fuzzyMask);
-						_noColor = false;
-					}
+					displayBuffer.Inlines.Add(String.Format("{0} bytes start at {1}µs length {2} µs IAM={3:X2} {4}={5:X4} {6}\n",
+						sector.data.info.byteCount, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000,
+						sector.data.iam, (sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.crc,
+						(sector.data.fuzzy != null) ? "Fuzzy sector" : "" ));
+					drawBuffer(sector.data.buffer);
+					// TODO
+					//if (sc.fuzzyMask != null) {
+					//	displayBuffer.Inlines.Add(String.Format("\nFuzzy bytes for sector {0}\n", ac.ids[i].number));
+					//	_noColor = true;
+					//	drawBuffer(sc.fuzzyMask);
+					//	_noColor = false;
+					//}
 				}
 				else
 					displayBuffer.Inlines.Add(" *** Sector has no data ***\n");
@@ -127,13 +126,13 @@ namespace Aufit {
 		/// <param name="rev">Revolution number</param>
 		public void drawTrackBuffer(int track, int side, int rev) {
 			// force re read
-			Global.Disk[track, side].addrContent = null;
-			Global.Disk[track, side].sectorsContent = null;
-			Global.Disk[track, side].trackContent = null;
+			//Global.Disk[track, side].addrContent = null;
+			//Global.Disk[track, side].sectorsContent = null;
+			//Global.Disk[track, side].trackContent = null;
 
-			FDC.fdcRealAll(track, side, rev);
-			TrackContent tc = Global.Disk[track, side].trackContent;
-			AddrContent ac = Global.Disk[track, side].addrContent;
+			//FDC.fdcRealAll(track, side, rev);
+
+			Track tr = Global.Disk[track, side].track;
 
 			//displayBuffer.FontFamily = new FontFamily("Lucida Console");
 			displayBuffer.FontFamily = new FontFamily("Consolas");
@@ -142,77 +141,11 @@ namespace Aufit {
 			displayBuffer.FontWeight = FontWeights.Normal;
 
 			displayBuffer.Inlines.Add(new Run(
-				String.Format("Read Track for track {0:D2}.{1} {2} bytes Length {3} µs with {4} sectors\n",
-					track, side, tc.byteCount, tc.timeLength / 1000, tc.sectors.Count - 1)
+				String.Format("Track {0:D2}.{1} {2} bytes Length {3} µs\n\n",
+					track, side, tr.info.byteCount, tr.info.timeLength / 1000)
 				) { FontWeight = FontWeights.Bold });
 
-			displayBuffer.Inlines.Add(String.Format("-------------------+-----------+---------------------------+-----------\n"));
-			displayBuffer.Inlines.Add(String.Format("ID                 | INTER-GAP | DATA                      | INTRA-GAP\n"));
-			displayBuffer.Inlines.Add(String.Format("SCT    POS LEN CRC | BYTE  LEN | BYTE    POS   LEN CRC FUZ | BYTE  LEN\n"));
-			displayBuffer.Inlines.Add(String.Format("-------------------+-----------+---------------------------+-----------\n"));
-
-			for (int i = 0; i < tc.sectors.Count; i++) {
-				if (i == 0) {
-					displayBuffer.Inlines.Add(String.Format("                   |"));
-					displayBuffer.Inlines.Add(String.Format("           |"));
-					// DATA
-					if ((tc.sectors[i].phases[(byte)Phases.p_data].byteCount > 0) && (ac.ids.Count > 0))  {
-						// this should be the data from last id ?
-						SectorContent sc = FDC.findSectorContent(track, side, ac.ids[tc.sectors.Count - 2].number, ac.blocs[tc.sectors.Count - 2].startTime);
-						if (sc != null)
-							displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4} |",
-								//sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000, (sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.fuzzyMask != null) ? "Yes" : " No"));
-								tc.sectors[i].phases[(byte)Phases.p_data].byteCount, tc.sectors[i].phases[(byte)Phases.p_data].startTime / 1000,
-								tc.sectors[i].phases[(byte)Phases.p_data].timeLength / 1000,
-								(sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.fuzzyMask != null) ? "Yes" : " No"));
-						else
-							displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4} |",
-								tc.sectors[i].phases[(byte)Phases.p_data].byteCount, tc.sectors[i].phases[(byte)Phases.p_data].startTime / 1000,
-								tc.sectors[i].phases[(byte)Phases.p_data].timeLength / 1000,
-								(tc.sectors[i].phases[(byte)Phases.p_data].crc == 0) ? " OK" : "Bad", "???"));
-					}
-					else
-						displayBuffer.Inlines.Add(String.Format("                           |"));
-					// INTER
-					if (tc.sectors[i].phases[(byte)Phases.p_outer].byteCount > 0)
-						displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,5:D}\n", tc.sectors[i].phases[(byte)Phases.p_outer].byteCount,
-							tc.sectors[i].phases[(byte)Phases.p_outer].timeLength / 1000));
-					else
-						displayBuffer.Inlines.Add(String.Format("\n"));
-
-				}	// pseudo sector
-				else {
-					// ID
-					if (tc.sectors[i].phases[(byte)Phases.p_id].byteCount > 0) {
-						displayBuffer.Inlines.Add(String.Format("{0,3:D} {1,6:D} {2,3:D} {3} |", ac.ids[i - 1].number, ac.blocs[i - 1].startTime / 1000,
-							ac.blocs[i - 1].timeLength / 1000, (ac.blocs[i - 1].crc == 0) ? " OK" : "Bad"));
-					}
-					else
-						displayBuffer.Inlines.Add(String.Format("                   |"));
-					// INTRA
-					if (tc.sectors[i].phases[(byte)Phases.p_inner].byteCount > 0)
-						displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,4:D} |", tc.sectors[i].phases[(byte)Phases.p_inner].byteCount,
-							tc.sectors[i].phases[(byte)Phases.p_inner].timeLength / 1000));
-					else
-						displayBuffer.Inlines.Add(String.Format("           |"));
-					// DATA
-					SectorContent sc = FDC.findSectorContent(track, side, ac.ids[i - 1].number, ac.blocs[i - 1].startTime);
-					if ((sc != null) && (sc.dataBlock.byteCount > 0))
-						displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4} |",
-							sc.dataBlock.byteCount, sc.dataBlock.startTime / 1000, sc.dataBlock.timeLength / 1000, (sc.dataBlock.crc == 0) ? " OK" : "Bad", (sc.fuzzyMask != null) ? "Yes" : " No"));
-					else
-						displayBuffer.Inlines.Add(String.Format("                           |"));
-					// INTER
-					if (tc.sectors[i].phases[(byte)Phases.p_outer].byteCount > 0)
-						displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,5:D}\n", tc.sectors[i].phases[(byte)Phases.p_outer].byteCount,
-							tc.sectors[i].phases[(byte)Phases.p_inner].timeLength / 1000));
-					else
-						displayBuffer.Inlines.Add(String.Format("\n"));
-				}	// real sector
-			}
-			displayBuffer.Inlines.Add(String.Format("-------------------+-----------+---------------------------+-----------\n"));
-
-			TrackBuffer buffer = tc.buffer;
+			TrackBuffer buffer = tr.buffer;
 			drawBuffer(buffer);
 		}
 
@@ -222,10 +155,8 @@ namespace Aufit {
 		/// <param name="buffer">The buffer to display</param>
 		/// <param name="message">an optional message to display before the buffer</param>
 		public void drawBuffer(TrackBuffer buffer, string message = null) {
-			// get ready to display MFM and clock
+			// get ready to display MFM
 			bool displayMFM = false;
-			// TODO clean 
-			// bool displayClock = false;
 
 			displayBuffer.FontFamily = new FontFamily("Consolas");
 			displayBuffer.FontSize = 16;
@@ -235,7 +166,9 @@ namespace Aufit {
 				displayBuffer.Inlines.Add(message);
 
 			for (int i = 0; i < buffer.Bytes.Count; i += 16) {
+				// display position
 				displayBuffer.Inlines.Add(String.Format("{0:D5}  ", i));
+				// display bitWidth
 				displayBuffer.Inlines.Add(new Run(
 					String.Format("{0:D4} ", buffer.Bytes[i].density)) {
 						Foreground = (buffer.Bytes[i].density > 2050) ? Brushes.Blue :
@@ -243,6 +176,7 @@ namespace Aufit {
 						FontWeight = ((buffer.Bytes[i].density > 2050) || (buffer.Bytes[i].density < 1950)) ?
 										FontWeights.Bold : FontWeights.Normal
 					});
+				// display start time
 				displayBuffer.Inlines.Add(String.Format("{0:D6}  ", buffer.Bytes[i].startTime / 1000));
 
 				string ascii = "  ";
@@ -254,8 +188,8 @@ namespace Aufit {
 							displayBuffer.Inlines.Add(new Run(
 								String.Format("{0:X2} ", buffer.Bytes[i + j].dataByte)) {
 									Background =
-										((buffer.Bytes[i + j].dataByte >= 0xF5) && (buffer.Bytes[i + j].dataByte <= 0xF7) && 
-										 ((buffer.Bytes[i + j].phase == Phases.p_inner) || (buffer.Bytes[i + j].phase == Phases.p_outer))) ? Brushes.LightBlue :
+										((buffer.Bytes[i + j].dataByte >= 0xF5) && (buffer.Bytes[i + j].dataByte <= 0xF7) &&
+										 (buffer.Bytes[i + j].phase == Phases.p_gap)) ? Brushes.LightBlue :
 										(buffer.Bytes[i + j].mfmWord == 0x00) ? Brushes.Coral :
 										(((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ||
 										 ((buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224))) ? Brushes.Yellow :
@@ -267,15 +201,15 @@ namespace Aufit {
 										(buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224) ? Brushes.Green :
 										(buffer.Bytes[i + j].phase == Phases.p_id) ? Brushes.Blue :
 										(buffer.Bytes[i + j].phase == Phases.p_data) ? Brushes.Black :
-										(buffer.Bytes[i + j].phase == Phases.p_inner) ? Brushes.Black :
+										(buffer.Bytes[i + j].phase == Phases.p_gap) ? Brushes.Black :
 										Brushes.DarkBlue,
 									FontWeight =
 										((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ||
 										((buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224)) ||
-										(buffer.Bytes[i + j].phase == Phases.p_id) ? FontWeights.Bold : 
+										(buffer.Bytes[i + j].phase == Phases.p_id) ? FontWeights.Bold :
 										FontWeights.Normal,
-									FontStyle = 
-									(buffer.Bytes[i + j].startTime > 200000000) ? FontStyle = FontStyles.Italic : 
+									FontStyle =
+									(buffer.Bytes[i + j].startTime > 200000000) ? FontStyle = FontStyles.Italic :
 									FontStyles.Normal
 								});
 						char ch = Convert.ToChar(buffer.Bytes[i + j].dataByte);
@@ -286,23 +220,6 @@ namespace Aufit {
 				}	// one more line
 				displayBuffer.Inlines.Add(ascii);
 				displayBuffer.Inlines.Add(String.Format("\n"));
-
-
-				// TODO
-				//if (displayClock) {
-				//	ascii = "  ";
-				//	displayBuffer.Inlines.Add("                    ");
-				//	for (int j = 0; j < 16; j++) {
-				//		if ((indexStart + j) < buffer.Bytes.Count) {
-				//			displayBuffer.Inlines.Add(String.Format("{0:X2} ", buffer.Bytes[indexStart + j].clockByte));
-				//			char ch = Convert.ToChar(buffer.Bytes[indexStart + j].clockByte);
-				//			ascii += Char.IsControl(ch) ? "." : ch.ToString();
-				//		}
-				//		else displayBuffer.Inlines.Add("   ");
-				//	}
-				//	displayBuffer.Inlines.Add(ascii);
-				//	displayBuffer.Inlines.Add(String.Format("\n"));
-				//}
 
 				if (displayMFM) {
 					displayBuffer.Inlines.Add("       ");
@@ -315,6 +232,7 @@ namespace Aufit {
 
 			}	// all lines
 
+			// EXAMPLE FOR REFERENCE
 			//displayBuffer.Inlines.Add(String.Format("first clock {0}", _buffer.Bytes[0].density));
 			//displayBuffer.Inlines.Add(new Run("the TextBlock control ") { FontWeight = FontWeights.Bold });
 			//displayBuffer.Inlines.Add("using ");

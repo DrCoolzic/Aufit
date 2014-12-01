@@ -87,7 +87,7 @@ namespace Aufit {
 			b.mfmWord = mfm;
 			b.density = density;
 			b.startTime = startTime;
-			b.phase = Phases.p_outer;
+			b.phase = Phases.p_gap;
 			_bytes.Add(b);
 		}
 

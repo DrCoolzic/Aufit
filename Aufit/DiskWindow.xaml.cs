@@ -208,7 +208,7 @@ public partial class DiskWindow : Window {
 								// if (sector.phases[p].crc != 0) plg.Fill = Brushes.Orange;
 								break;
 
-							case (byte)Phases.p_inner:
+							case (byte)Phases.p_gap:
 								path.Stroke = Brushes.LightGreen;
 								addArc(pg, startAngle, stopAngle, center, radius);
 								break;
@@ -247,10 +247,10 @@ public partial class DiskWindow : Window {
 								addArc(pg, startAngle, stopAngle, center, radius);
 								break;
 
-							case (byte)Phases.p_outer:
-								path.Stroke = Brushes.Green;
-								addArc(pg, startAngle, stopAngle, center, radius);
-								break;
+							//case (byte)Phases.p_gap:
+							//	path.Stroke = Brushes.Green;
+							//	addArc(pg, startAngle, stopAngle, center, radius);
+							//	break;
 							default:
 								//plg.Fill = Brushes.Red;
 								break;

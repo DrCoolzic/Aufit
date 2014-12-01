@@ -142,14 +142,14 @@ namespace Aufit {
 					continue;
 
 				// Invalid Data into GAP
-				if ((tc.sectors[sect+1].phases[(int)Phases.p_inner].invDataGap + tc.sectors[sect+1].phases[(int)Phases.p_outer].invDataGap) > 0) {
+				if ((tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap + tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap) > 0) {
 					sc.sectorBadDataInGap = true;
 					trackProtection(tc);
 					string message = "has invalid characters: ";
-					if (tc.sectors[sect+1].phases[(int)Phases.p_inner].invDataGap > 0)
-						message += String.Format(" {0} in intra gap", tc.sectors[sect+1].phases[(int)Phases.p_inner].invDataGap);
-					if (tc.sectors[sect+1].phases[(int)Phases.p_outer].invDataGap > 0)
-						message += String.Format(" {0} in inter gap", tc.sectors[sect+1].phases[(int)Phases.p_outer].invDataGap);
+					if (tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap > 0)
+						message += String.Format(" {0} in intra gap", tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap);
+					if (tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap > 0)
+						message += String.Format(" {0} in inter gap", tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap);
 					writeInfo(info, message);
 				}
 

@@ -289,40 +289,62 @@ namespace Aufit {
 		// Do we read KF directory using Asynchronous read or as tasks.
 		private bool _readKFAsync = true;
 
-		private async void openFileClick(object sender, RoutedEventArgs e) {
+		// when set to true the KF files are read without treading for debug
+		private bool _debugNoThread = false;
+		
+		
+		private void openFileClick(object sender, RoutedEventArgs e) {
 			OpenFileDialog ofd = new OpenFileDialog();
 			ofd.Filter = "Aufit|*.scp;*.raw|All Files|*.*";
 
-			bool? ok = ofd.ShowDialog();
-			bool readOK = false;			
+			bool? ok = ofd.ShowDialog();		
 			if (ok == true) {
-				Track = Side = Rev = 0;
-				//Rev = 1;
-				Global.resetDisk();
-				tbFileName.Text = ofd.FileName;
-				
-				string extension = System.IO.Path.GetExtension(ofd.FileName);
-
-				switch (extension) {
-					case ".raw":
-						string path = System.IO.Path.GetDirectoryName(ofd.FileName);
-						string file = System.IO.Path.GetFileName(ofd.FileName);
-						_fileName = file;
-						string root = file.Remove(file.Length - 8, 8);
-						if (_readKFAsync)
-							//readOK = await readAllTracksAsync(path, root);
-							readOK = readAllTracks(path, root);
-						else
-							readOK =  readAllTracksTasks(path, root);
-						break;
-					case ".scp":
-						readOK = await readSPCFile(ofd.FileName);
-						break;
-				}
+				processFile(ofd.FileName);
 			}
+		}
+
+
+		private void fileDrop(object sender, DragEventArgs e) {
+			string[] droppedFiles = null;
+			if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
+				droppedFiles = e.Data.GetData(DataFormats.FileDrop, true) as string[];
+			}
+
+			if ((null == droppedFiles) || (!droppedFiles.Any())) { return; }
+			processFile(droppedFiles[0]);
+		}
+
+		private async void processFile(string fileName) {
+			bool readOK = false;			
+			Track = Side = Rev = 0;
+			Global.resetDisk();
+			tbFileName.Text = fileName;
+				
+			string extension = System.IO.Path.GetExtension(fileName);
+
+			switch (extension) {
+				case ".raw":
+					string path = System.IO.Path.GetDirectoryName(fileName);
+					string file = System.IO.Path.GetFileName(fileName);
+					_fileName = file;
+					string root = file.Remove(file.Length - 8, 8);
+					if (_debugNoThread)
+						readOK = readAllTracks(path, root);
+					else if (_readKFAsync)
+						readOK = await readAllTracksAsync(path, root);							
+					else
+						readOK =  readAllTracksTasks(path, root);
+					break;
+					
+				case ".scp":
+					readOK = await readSPCFile(fileName);
+					break;
+			}
+
 			if (!readOK)
 				tbFileName.Text = "Sorry could not read correctly the input file";
 		}
+
 
 
 		private async Task<bool> readSPCFile(string fileName) {
@@ -405,6 +427,12 @@ namespace Aufit {
 
 
 
+		/// <summary>
+		/// For debug: Reads track without multi-threading
+		/// </summary>
+		/// <param name="path"></param>
+		/// <param name="root"></param>
+		/// <returns></returns>
 		public bool readAllTracks(string path, string root) {
 			string fname;
 			_fluxDrawing.FastDraw = true;
@@ -415,7 +443,6 @@ namespace Aufit {
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {
 					fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, track, side);
-					//bool streamOK = await ProcessStream.readStreamTrackAsync(fname, track, side);
 					bool streamOK = ProcessStream.readStreamTrack(fname, track, side);
 					if (streamOK) {
 						Global.computeHisto(track, side, 1, infoBox);
@@ -509,21 +536,27 @@ namespace Aufit {
 				Point p = e.GetPosition(_dataDrawing.Chart.GraphicCanvas);
 				int pos = (int) _dataDrawing.Chart.WorldPoint(p).X * 1000000;
 
-				byte index;
-				for (index = 0; index < Global.Disk[Track, Side].trackContent.sectors.Count; index++) {
-					if ((Global.Disk[Track, Side].trackContent.sectors[index].startTime < pos) && (Global.Disk[Track, Side].trackContent.sectors[index].endTime > pos)) {
+				foreach (Sector sector in Global.Disk[Track, Side].sectors) {
+					int startPos = sector.id.info.startTime;
+					int endPos = (sector.data != null) ? sector.data.info.startTime + sector.data.info.timeLength :
+						sector.id.info.startTime + sector.id.info.timeLength;
+					if ((startPos < pos) && (endPos > pos)) {
 						// infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", _dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, indexStart));
-						byte number = Global.Disk[Track, Side].trackContent.sectors[index].addr.number;
-						SectorContent sect = FDC.findSectorContent(Track, Side, number, Global.Disk[Track, Side].trackContent.sectors[index].startTime);
-						if (sect == null) return;	// TODO for now we return
-						TrackBuffer buffer = sect.data;
-						string message = String.Format("Sector {0} with {1} bytes {2} {3}\n", 
-							number, sect.dataBlock.byteCount, (sect.dataBlock.crc == 0) ? "crc OK" : "Bad crc", (sect.fuzzyMask != null) ? "Has fuzzy bits" : "");
+						
+						//byte number = Global.Disk[Track, Side].trackContent.sectors[index].addr.number;
+						//SectorContent sect = FDC.findSectorContent(Track, Side, number, Global.Disk[Track, Side].trackContent.sectors[index].startTime);
+						//if (sect == null) return;	// TODO for now we return
+						//TrackBuffer buffer = sect.data;
+
+						string message = String.Format("Sector {0} - {1} bytes IAM={2:X2} {3}={4:X4} {5}\n", 
+							sector.id.number, Global.sectSize(sector.id.size), sector.data.iam, 
+							(sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.crc, 
+							(sector.data.fuzzy != null) ? "Has fuzzy bits" : "");
 						if (_sectorWindowIsOpen)
 							_sectorWindow.Close();
 
 						_sectorWindow = new BufferWindow();
-						_sectorWindow.drawBuffer(buffer, message);
+						_sectorWindow.drawBuffer(sector.data.buffer, message);
 
 						_sectorWindow.Closed += new EventHandler(sectorWindowClosed);
 						_sectorWindowIsOpen = true;
@@ -551,7 +584,8 @@ namespace Aufit {
 
 
 		private void btTrackWindowClick(object sender, RoutedEventArgs e) {
-			if (Global.Disk[Track, Side].trackContent == null) return;			
+			//if (Global.Disk[Track, Side].trackContent == null) return;
+			if (Global.Disk[Track, Side].track == null) return;
 			if (_trackWindowIsOpen)
 				_trackWindow.Close();
 
@@ -568,7 +602,8 @@ namespace Aufit {
 
 
 		private void btSectorWindowClick(object sender, EventArgs e) {
-			if (Global.Disk[Track, Side].trackContent == null) return;	
+			//if (Global.Disk[Track, Side].trackContent == null) return;
+			if (Global.Disk[Track, Side].sectors == null) return;
 			if (_sectorWindowIsOpen)
 				_sectorWindow.Close();
 
@@ -663,6 +698,7 @@ namespace Aufit {
 		private void cbRecoverClick(object sender, RoutedEventArgs e) {
 			// TODO
 		}
+
 
 	}
 }

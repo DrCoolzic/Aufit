@@ -42,10 +42,9 @@ namespace WD1772Package {
 	/// Different phases inside a sector: ID, Inner Gap, Data, Outer Gap
 	/// </summary>
 	public enum Phases : byte {
-		p_id = 0,	// ID (Address) block
-		p_inner,	// GAP inside sectors (between ID and DATA)
+		p_gap = 0,	// GAP
+		p_id,		// ID (Address) block
 		p_data,		// DATA block
-		p_outer,	// GAP outside (between) sectors
 	}
 
 
@@ -235,6 +234,9 @@ namespace WD1772Package {
 		/// <summary>Length of the Block in nanoseconds </summary>
 		public int timeLength;
 
+		/// <summary>Number of bits (clock + data) in the block</summary>
+		public int bitCount;
+
 		/// <summary>CRC value at the end of reading an ID or DATA block. Should be zero on a "good" block</summary>
 		public ushort crc;
 
@@ -277,6 +279,9 @@ namespace WD1772Package {
 	}
 
 	public class DataField {
+		public const int WIDTH_OVER = Bit.BIT_01;
+		public const int WIDTH_UNDER = Bit.BIT_02;
+
 		/// <summary>Store the Index Address Mark</summary> 
 		public byte iam;
 
@@ -290,6 +295,8 @@ namespace WD1772Package {
 		public FieldInfo info = new FieldInfo();
 
 		public byte[] fuzzy;
+
+		public int flags;
 	}
 
 	public class Sector {
@@ -312,8 +319,8 @@ namespace WD1772Package {
 
 	/// <summary>Emulate WD1772 FDC Commands</summary>
 	public class FDC {
-		//private readonly static int upperClock = 2000 + (4 * 20);
-		//private readonly static int lowerClock = 2000 - (4 * 20);
+		private readonly static int widthUpperLimit = 2000 + (4 * 20);
+		private readonly static int widthLowerLimit = 2000 - (4 * 20);
 
 		/// <summary>Read a track by decoding all the track MFM bits</summary>
 		/// <remarks>This function interprets the bits stream as a WD1772 would do with a 
@@ -377,7 +384,7 @@ namespace WD1772Package {
 			int byteCount = 0;
 			ushort crc = 0;
 
-			Phases phase = Phases.p_outer;
+			Phases phase = Phases.p_gap;
 			DSR dsr = new DSR();
 			dsr.sectorMode();
 
@@ -457,7 +464,8 @@ namespace WD1772Package {
 								Global.Disk[track, side].sectors[sectorCount - 1].id.info.byteCount = byteCount - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startByte;
 								Global.Disk[track, side].sectors[sectorCount - 1].id.info.crc = crc;
 								Global.Disk[track, side].sectors[sectorCount - 1].id.info.timeLength = currentTime - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startTime;
-								phase = Phases.p_outer;
+								Global.Disk[track, side].sectors[sectorCount - 1].id.info.bitCount = currentBit - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startBit;
+								phase = Phases.p_gap;
 								dsr.sectorMode();	// we re-enable sync
 								break;
 						}					
@@ -523,8 +531,10 @@ namespace WD1772Package {
 			ushort crc = 0;
 			bool idFound = false;
 			bool breakLoop = false;
+			int widthOver = 0;
+			int widthUnder = 0;
 
-			Phases phase = Phases.p_outer;
+			Phases phase = Phases.p_gap;
 			DSR dsr = new DSR();
 			dsr.sectorMode();
 			DataField data = null;
@@ -535,7 +545,7 @@ namespace WD1772Package {
 
 			// we normally loop from start to stop for the specified revolution.
 			// However we continue if we are in the middle of ID, Inner GAP, or DATA field
-			for (int currentBit = startBit; (currentBit < stopBit) || (phase != Phases.p_outer); currentBit++) {
+			for (int currentBit = startBit; (currentBit < stopBit) || (phase != Phases.p_gap); currentBit++) {
 				if (breakLoop) break;
 
 				int currentByte = currentBit / 8;
@@ -581,7 +591,7 @@ namespace WD1772Package {
 										// if we have not yet reach the requested position we ignore
 										if ((currentBit - startBit) < idBitPosition) {
 											dsr.sectorMode();
-											phase = Phases.p_outer;
+											phase = Phases.p_gap;
 											break;
 										}
 										// otherwise we need to read the ID block
@@ -602,6 +612,7 @@ namespace WD1772Package {
 											//dataFound = true;
 											byteLeftInBlock = Global.sectSize(sector.id.size) + 3; // AM + 2 CRC + Size
 											phase = Phases.p_data;
+											widthOver = widthUnder = 0;
 
 											data.info.startBit = currentBit - startBit;
 											data.info.startByte = byteCount;
@@ -609,7 +620,7 @@ namespace WD1772Package {
 										}
 										else {
 											dsr.sectorMode();
-											phase = Phases.p_outer;
+											phase = Phases.p_gap;
 										}
 										break;	
 							
@@ -631,7 +642,7 @@ namespace WD1772Package {
 								// we only check if we have the right sector number
 								case 4: 
 									if (sectToRead != dsr.Data) {
-										phase = Phases.p_outer;
+										phase = Phases.p_gap;
 										idFound = false;
 										dsr.sectorMode();
 									}
@@ -640,7 +651,7 @@ namespace WD1772Package {
 									break;
 								case 0:
 									dsr.sectorMode();
-									phase = Phases.p_inner;
+									phase = Phases.p_gap;
 									break;
 								default:
 									break;
@@ -655,11 +666,18 @@ namespace WD1772Package {
 									data.info.crc = crc;
 									data.info.byteCount = byteCount - data.info.startByte;
 									data.info.timeLength = currentTime - data.info.startTime;
-									phase = Phases.p_outer;
+									data.info.bitCount = currentBit - data.info.startBit;
+									if (widthOver > (Global.sectSize(sector.id.size) / 2))
+										Bit.setBits(ref data.flags, DataField.WIDTH_OVER);
+									if (widthUnder > (Global.sectSize(sector.id.size) / 2))
+										Bit.setBits(ref data.flags, DataField.WIDTH_UNDER);
+									phase = Phases.p_gap;
 									breakLoop = true;
 									break;
 								default:
 									data.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime);
+									if (bitWidth > widthUpperLimit) widthOver++;
+									if (bitWidth < widthLowerLimit) widthUnder++;
 									break;
 							}	// switch
 						}	// DATA Segment

@@ -197,10 +197,68 @@ public struct HistoData {
 }
 
 
+public class Bit {
+	public const int BIT_01 = 0x00000001;
+	public const int BIT_02 = 0x00000002;
+	public const int BIT_03 = 0x00000004;
+	public const int BIT_04 = 0x00000008;
+	public const int BIT_05 = 0x00000010;
+	public const int BIT_06 = 0x00000020;
+	public const int BIT_07 = 0x00000040;
+	public const int BIT_08 = 0x00000080;
+	public const int BIT_09 = 0x00000100;
+	public const int BIT_10 = 0x00000200;
+	public const int BIT_11 = 0x00000400;
+	public const int BIT_12 = 0x00000800;
+	public const int BIT_13 = 0x00001000;
+	public const int BIT_14 = 0x00002000;
+	public const int BIT_15 = 0x00004000;
+	public const int BIT_16 = 0x00008000;
+	public const int BIT_17 = 0x00010000;
+	public const int BIT_18 = 0x00020000;
+	public const int BIT_19 = 0x00040000;
+	public const int BIT_20 = 0x00080000;
+	public const int BIT_21 = 0x00100000;
+	public const int BIT_22 = 0x00200000;
+	public const int BIT_23 = 0x00400000;
+	public const int BIT_24 = 0x00800000;
+
+	#region flag_helper_functions
+	/// <summary>Set the specified bit(s) in the flag</summary>
+	/// <param name="flag">The flag to update</param>
+	/// <param name="bits">An array of bits to set in the flag</param>
+	public static void setBits(ref int flag, params int[] bits) {
+		for (int i = 0; i < bits.Length; i++)
+			flag |= bits[i];
+	}
+
+	/// <summary>Reset the specified bit(s) in the flag</summary>
+	/// <param name="flag">The flag to update</param>
+	/// <param name="bits">An array of bits to reset in the flag</param>		
+	public static void resetBits(ref int flag, params int[] bits) {
+		for (int i = 0; i < bits.Length; i++)
+			flag &= ~bits[i];
+	}
+
+	/// <summary>Test the specified bit(s) in the flag</summary>
+	/// <param name="flag">The flag to test</param>
+	/// <param name="bits">An array of bits to test in the flag</param>
+	/// <returns>True if any of the tested bits is set</returns>
+	public static bool testBits(int flag, params int[] bits) {
+		bool result = false;
+		for (int i = 0; i < bits.Length; i++)
+			result |= ((flag & bits[i]) != 0);
+		return result;
+	}
+	#endregion flag_helper_functions
+}
+
 /// <summary>
 /// Contains all global parameters and functions for AUFIT
 /// </summary>
 public class Global {
+
+
 	/// <summary>
 	/// The entropy crossing value between formatted and unformatted
 	/// </summary>
