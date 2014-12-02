@@ -346,6 +346,13 @@ namespace WD1772Package {
 			DSR dsr = new DSR();
 			dsr.trackMode();
 
+			// we use the sector information
+			int sectorNumber = 0;
+			int sectorCount = Global.Disk[track, side].sectors.Count;
+			Phases phase = Phases.p_gap;
+
+
+
 			// We read from the beginning to end of a track looking with AM decoder on all time
 			for (int currentBit = startBit; (currentBit < stopBit); currentBit++) {
 				int currentByte = currentBit / 8;
@@ -356,9 +363,32 @@ namespace WD1772Package {
 				currentTime += bitWidth;
 				dsr.shiftBitsIn(bit);
 
+				Sector sector = Global.Disk[track, side].sectors[sectorNumber];
+				int nextIdStart = sector.id.info.startBit + startBit;
+				int nextIdStop = nextIdStart + sector.id.info.bitCount;
+				int nextDataStart = 0;
+				int nextDataStop = 0;
+				if (sector.data != null) {
+					nextDataStart = sector.data.info.startBit + startBit;
+					nextDataStop = nextDataStart + sector.data.info.bitCount;
+				}
+				if (currentBit == nextIdStart) 
+					phase = Phases.p_id;
+				else if (currentBit == nextIdStop) {
+					if (sector.data == null)
+						if ((sectorNumber + 1) < sectorCount) sectorNumber++;
+					phase = Phases.p_gap;
+				}
+				else if (currentBit == nextDataStart)
+					phase = Phases.p_data;
+				else if (currentBit == nextDataStop) {
+					phase = Phases.p_gap;
+					if ((sectorNumber + 1) < sectorCount) sectorNumber++;
+				}
+
 				if (dsr.DataReady) {
 					byteCount++;
-					Global.Disk[track, side].track.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime);
+					Global.Disk[track, side].track.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
 				}	// data ready
 
 			}	// for all bits
@@ -464,7 +494,7 @@ namespace WD1772Package {
 								Global.Disk[track, side].sectors[sectorCount - 1].id.info.byteCount = byteCount - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startByte;
 								Global.Disk[track, side].sectors[sectorCount - 1].id.info.crc = crc;
 								Global.Disk[track, side].sectors[sectorCount - 1].id.info.timeLength = currentTime - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startTime;
-								Global.Disk[track, side].sectors[sectorCount - 1].id.info.bitCount = currentBit - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startBit;
+								Global.Disk[track, side].sectors[sectorCount - 1].id.info.bitCount = currentBit - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startBit - startBit;
 								phase = Phases.p_gap;
 								dsr.sectorMode();	// we re-enable sync
 								break;
@@ -503,25 +533,7 @@ namespace WD1772Package {
 		/// But if compare==true we are in "compare" mode. In that case we read the sector using the rev parameter 
 		/// and we compare the data buffer read with the "reference" data buffer to fill the fuzzyMask structure.</remarks>
 		public static void readSector(int track, int side, int rev, byte sectToRead, int idBitPosition, bool compare) {
-			//// if no list of sectors exist we need to create one 
-			//// ? TODO is this the best place to create the list!
-			//if (Global.Disk[track, side].sectorsContent == null)
-			//	Global.Disk[track, side].sectorsContent = new List<SectorContent>();
-
 			Sector sector = findSector(track, side, sectToRead, idBitPosition);
-
-			//// if not in compare mode and sector already there nothing to do
-			//SectorContent sref = findSectorContent(track, side, sectToRead, position);
-			//if (!compare && (sref != null))
-			//	return sref;
-
-			//// sanity check in compare mode the reference should already be there
-			//if (compare && (sref == null)) {
-			//	sref = readSector(track, side, rev, sectToRead, position, false);
-			//	Debug.Assert(!(compare && (sref == null)), "Read Sector: Reference sector not found in compare mode",
-			//		String.Format("Track {0:D2}.{1} Rev {2} Sector {3} at {4}", track, side, rev, sectToRead, position));
-			//};
-
 			int startBit = Global.Disk[track, side].packedFluxDataRev[rev].firstFluxBit;
 			int stopBit = startBit + Global.Disk[track, side].packedFluxDataRev[rev].bitCount;
 			int lastBye = Global.Disk[track, side].packedFluxData.packedBits.Count();
@@ -666,7 +678,7 @@ namespace WD1772Package {
 									data.info.crc = crc;
 									data.info.byteCount = byteCount - data.info.startByte;
 									data.info.timeLength = currentTime - data.info.startTime;
-									data.info.bitCount = currentBit - data.info.startBit;
+									data.info.bitCount = currentBit - startBit - data.info.startBit;
 									if (widthOver > (Global.sectSize(sector.id.size) / 2))
 										Bit.setBits(ref data.flags, DataField.WIDTH_OVER);
 									if (widthUnder > (Global.sectSize(sector.id.size) / 2))
@@ -675,7 +687,7 @@ namespace WD1772Package {
 									breakLoop = true;
 									break;
 								default:
-									data.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime);
+									data.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
 									if (bitWidth > widthUpperLimit) widthOver++;
 									if (bitWidth < widthLowerLimit) widthUnder++;
 									break;
@@ -749,7 +761,7 @@ namespace WD1772Package {
 			if (Global.Disk[track, side].sectors == null)
 				Global.Disk[track, side].sectors = new List<Sector>();
 
-			readTrack(track, side, rev);
+
 			readAddr(track, side, rev);
 			for (int i = 0; i < Global.Disk[track, side].sectors.Count; i++) {
 				byte sectorNumber = Global.Disk[track, side].sectors[i].id.number;
@@ -765,6 +777,7 @@ namespace WD1772Package {
 			//	if (sc.fuzzyMask != null)
 			//		tc.hasProtection = true;				
 			}
+			readTrack(track, side, rev);
 
 			//Protections.checkProtection(track, side);
 		}

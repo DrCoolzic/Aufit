@@ -290,7 +290,7 @@ namespace Aufit {
 		private bool _readKFAsync = true;
 
 		// when set to true the KF files are read without treading for debug
-		private bool _debugNoThread = false;
+		private bool _debugNoThread = true;
 		
 		
 		private void openFileClick(object sender, RoutedEventArgs e) {
