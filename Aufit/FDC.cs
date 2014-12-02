@@ -363,27 +363,29 @@ namespace WD1772Package {
 				currentTime += bitWidth;
 				dsr.shiftBitsIn(bit);
 
-				Sector sector = Global.Disk[track, side].sectors[sectorNumber];
-				int nextIdStart = sector.id.info.startBit + startBit;
-				int nextIdStop = nextIdStart + sector.id.info.bitCount;
-				int nextDataStart = 0;
-				int nextDataStop = 0;
-				if (sector.data != null) {
-					nextDataStart = sector.data.info.startBit + startBit;
-					nextDataStop = nextDataStart + sector.data.info.bitCount;
-				}
-				if (currentBit == nextIdStart) 
-					phase = Phases.p_id;
-				else if (currentBit == nextIdStop) {
-					if (sector.data == null)
-						if ((sectorNumber + 1) < sectorCount) sectorNumber++;
-					phase = Phases.p_gap;
-				}
-				else if (currentBit == nextDataStart)
-					phase = Phases.p_data;
-				else if (currentBit == nextDataStop) {
-					phase = Phases.p_gap;
-					if ((sectorNumber + 1) < sectorCount) sectorNumber++;
+				if ((Global.Disk[track, side].sectors != null) && (Global.Disk[track, side].sectors.Count > 0)) {
+					Sector sector = Global.Disk[track, side].sectors[sectorNumber];
+					int nextIdStart = sector.id.info.startBit + startBit;
+					int nextIdStop = nextIdStart + sector.id.info.bitCount;
+					int nextDataStart = 0;
+					int nextDataStop = 0;
+					if (sector.data != null) {
+						nextDataStart = sector.data.info.startBit + startBit;
+						nextDataStop = nextDataStart + sector.data.info.bitCount;
+					}
+					if (currentBit == nextIdStart)
+						phase = Phases.p_id;
+					else if (currentBit == nextIdStop) {
+						if (sector.data == null)
+							sectorNumber = (sectorNumber + 1) % sectorCount;
+						phase = Phases.p_gap;
+					}
+					else if (currentBit == nextDataStart)
+						phase = Phases.p_data;
+					else if (currentBit == nextDataStop) {
+						phase = Phases.p_gap;
+						sectorNumber = (sectorNumber + 1) % sectorCount;
+					}
 				}
 
 				if (dsr.DataReady) {
@@ -550,6 +552,7 @@ namespace WD1772Package {
 			DSR dsr = new DSR();
 			dsr.sectorMode();
 			DataField data = null;
+			bool p_inner = false;
 
 			//// if not there or we are in compare mode create a new sectorContent
 			//SectorContent sc = new SectorContent();
@@ -557,7 +560,7 @@ namespace WD1772Package {
 
 			// we normally loop from start to stop for the specified revolution.
 			// However we continue if we are in the middle of ID, Inner GAP, or DATA field
-			for (int currentBit = startBit; (currentBit < stopBit) || (phase != Phases.p_gap); currentBit++) {
+			for (int currentBit = startBit; (currentBit < stopBit) || (phase != Phases.p_gap) || p_inner; currentBit++) {
 				if (breakLoop) break;
 
 				int currentByte = currentBit / 8;
@@ -624,6 +627,7 @@ namespace WD1772Package {
 											//dataFound = true;
 											byteLeftInBlock = Global.sectSize(sector.id.size) + 3; // AM + 2 CRC + Size
 											phase = Phases.p_data;
+											p_inner = false;
 											widthOver = widthUnder = 0;
 
 											data.info.startBit = currentBit - startBit;
@@ -654,7 +658,7 @@ namespace WD1772Package {
 								// we only check if we have the right sector number
 								case 4: 
 									if (sectToRead != dsr.Data) {
-										phase = Phases.p_gap;
+										//phase = Phases.p_gap;
 										idFound = false;
 										dsr.sectorMode();
 									}
@@ -664,6 +668,7 @@ namespace WD1772Package {
 								case 0:
 									dsr.sectorMode();
 									phase = Phases.p_gap;
+									p_inner = true;
 									break;
 								default:
 									break;
@@ -757,6 +762,8 @@ namespace WD1772Package {
 		public static void fdcRealAll(int track, int side, int rev) {
 			if ((Global.Disk[track, side].sectors != null) && (Global.Disk[track, side].sectors.Count > 0))
 				return;
+			// non existing track
+			if (Global.Disk[track, side].packedFluxData == null) return;
 
 			if (Global.Disk[track, side].sectors == null)
 				Global.Disk[track, side].sectors = new List<Sector>();
@@ -768,7 +775,7 @@ namespace WD1772Package {
 				int idBitPosition = Global.Disk[track, side].sectors[i].id.info.startBit;
 				readSector(track, side, rev, sectorNumber, idBitPosition, false);
 
-				// now multiple readSector() for fuzzy bits
+				//// now multiple readSector() for fuzzy bits
 				for (int j = 0; j < Global.Disk[track, side].packedFluxDataRev.Count(); j++) {
 					if (j == rev) continue;
 					readSector(track, side, j, sectorNumber, idBitPosition, true);

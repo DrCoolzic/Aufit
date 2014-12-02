@@ -286,11 +286,11 @@ namespace Aufit {
 			ButtonMatrix.setButtonBG(track, side);
 		}
 
-		// Do we read KF directory using Asynchronous read or as tasks.
-		private bool _readKFAsync = true;
 
 		// when set to true the KF files are read without treading for debug
-		private bool _debugNoThread = true;
+		private bool _debugNoThread = false;
+		// Do we read KF directory using Asynchronous read or as tasks.
+		private bool _readKFAsync = true;
 		
 		
 		private void openFileClick(object sender, RoutedEventArgs e) {
@@ -408,7 +408,8 @@ namespace Aufit {
 					fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, track, side);
 					bool streamOK = await ProcessStream.readStreamTrackAsync(fname, track, side);
 					if (streamOK) {
-						Global.computeHisto(track, side, 1, infoBox);
+						Global.mfmDecode(track, side);
+						Global.computeHisto(track, side, 0, infoBox);
 						ButtonMatrix.setButtonBG(track, side);
 					}
 					// else return false;
@@ -648,13 +649,14 @@ namespace Aufit {
 		}
 
 		private void btDiskDataClick(object sender, RoutedEventArgs e) {
+			// TODO remove ?
 //			if (BM1.Visibility == Visibility.Hidden) return;
 			if (_diskWindowIsOpen)
 				_diskWindow.Close();
 
 			string message = String.Format("{0}", _fileName);
 			_diskWindow = new DiskWindow();
-			_diskWindow.drawDiskData(message);
+			//_diskWindow.drawDiskData(message);
 			_diskWindow.Closed += new EventHandler(diskWindowClosed);
 			_diskWindowIsOpen = true;
 			_diskWindow.Show();

@@ -448,6 +448,7 @@ public class Global {
 		int currentBit = 0;
 		DiskTrack td = Global.Disk[track, side];
 
+		if (Global.Disk[track, side].fluxData == null) return;
 		int decodeCount = Global.Disk[track, side].fluxData.totalFluxCount + 1;
 		ushort[] decodeBitWidth = new ushort[decodeCount];
 		int[] decodeBitPosition = new int[decodeCount];
