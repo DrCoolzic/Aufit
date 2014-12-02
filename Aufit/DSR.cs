@@ -22,7 +22,7 @@ along with the Atari Universal FD Image Tool project; if not, write to the Free 
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</div>
 
  The shiftBitsIn function is a direct adaptation of the <b>FdcShiftBit</b> function provided
- as part of the SPS DEcoder library from the Software Preservation Society http://www.softpres.org/.
+ as part of the SPS Decoder library from the Software Preservation Society http://www.softpres.org/.
  The original sources can be found at http://www.kryoflux.com/?page=download. The in the 
  <b>FdcShiftBit</b> function is located in the CapsEFDC.cpp file.
  
@@ -95,10 +95,10 @@ namespace WD1772Package {
 		#region properties
 		/// <summary>This property indicates if the AM detection is enabled (true) or disabled (false)</summary>
 		public bool SyncDetectEnable {
-			get { return Bit.testBits(_decoderFlags, SYNC_DETECTOR_ENABLED); }
+			get { return ((_decoderFlags & SYNC_DETECTOR_ENABLED) != 0); }
 			set {
-				if (value) Bit.setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
-				else Bit.resetBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
+				if (value) _decoderFlags |= SYNC_DETECTOR_ENABLED;
+				else _decoderFlags &= ~SYNC_DETECTOR_ENABLED;
 			}
 		}
 
@@ -106,25 +106,24 @@ namespace WD1772Package {
 		/// This property is set to true if the last decoded character is an AM (A1 or C2)
 		/// </summary>
 		public bool SyncFound {
-			get { return Bit.testBits(_decoderFlags, A1_FOUND, C2_FOUND); }
-			// get { return (DataReady && ( ((MFM == 0x4489) && (Data == 0xA1)) || ((MFM == 0x5224)))); }
+			get { return ((_decoderFlags & (A1_FOUND + C2_FOUND)) != 0); }
 		}
 
 		/// <summary>The last decoded byte is an A1 Sync </summary>
 		public bool A1Found {
-			get { return Bit.testBits(_decoderFlags, A1_FOUND); }
+			get { return ((_decoderFlags & A1_FOUND) != 0); }
 		}
 
 		/// <summary>The last decoded byte is an C2 Sync </summary>
 		public bool C2Found {
-			get { return Bit.testBits(_decoderFlags, C2_FOUND); }
+			get { return ((_decoderFlags & C2_FOUND) != 0); }
 		}
 
 		/// <summary>
 		/// This property indicates if a character is ready to be read from the DSR using the Data property
 		/// </summary>
 		public bool DataReady {
-			get { return Bit.testBits(_decoderFlags, DATA_READY); }
+			get { return ((_decoderFlags & DATA_READY) != 0); }
 		}
 
 		/// <summary>
@@ -152,15 +151,11 @@ namespace WD1772Package {
 		/// Set to true for one byte after a sequence of three consecutive sync marks
 		/// </summary>
 		public bool IAM {
-			get {
-				return Bit.testBits(_decoderFlags, IAM_POSITION);
-			}
+			get { return ((_decoderFlags & IAM_POSITION) != 0); }
 		}
 
 		public bool LastSyncA1 {
-			get {
-				return (_lastSyncFound == SyncType.A1) ? true : false;
-			}
+			get { return (_lastSyncFound == SyncType.A1) ? true : false; }
 		}
 		#endregion properties
 
@@ -199,12 +194,12 @@ namespace WD1772Package {
 			// decrement AM overlap count
 			if (_syncOverlapCount != 0) _syncOverlapCount--;
 
-			if (DataReady)
-				Bit.resetBits(ref _decoderFlags, A1_FOUND, C2_FOUND);
-			Bit.resetBits(ref _decoderFlags, DATA_READY);
+			if ((_decoderFlags & DATA_READY) != 0)
+				_decoderFlags &= ~(A1_FOUND | C2_FOUND);
+			_decoderFlags &= ~DATA_READY;
 
 			// Check for Address Mark only if detection enabled
-			if (SyncDetectEnable) {
+			if ((_decoderFlags & SYNC_DETECTOR_ENABLED) != 0) {
 				SyncType bitsInDetector = SyncType.No;
 				// Check if AM detector content is an Address Mark
 				switch (_syncDetector & 0xFFFF) {
@@ -212,11 +207,11 @@ namespace WD1772Package {
 						// detect A1 only if it does not overlap with a previous A1 AM
 						if ((_syncOverlapCount == 0) || (_lastSyncFound != SyncType.A1)) {
 							bitsInDetector = SyncType.A1;
-							Bit.setBits(ref _decoderFlags, A1_FOUND);
-							if (Bit.testBits(_decoderFlags, CRC_ENABLED)) {
+							_decoderFlags |= A1_FOUND;
+							if ((_decoderFlags & CRC_ENABLED) != 0) {
 								// if CRC not yet active - activate
-								if (!Bit.testBits(_decoderFlags, CRC_ACTIVE)) {
-									Bit.setBits(ref _decoderFlags, CRC_ACTIVE);
+								if ((_decoderFlags & CRC_ACTIVE) == 0) {
+									_decoderFlags |= CRC_ACTIVE;
 									_crc = 0xFFFF;		// reset CRC
 									_crcCount = 16;
 								}	// start CRC computation on first A1
@@ -225,7 +220,7 @@ namespace WD1772Package {
 						break;
 					case 0x5224:
 						bitsInDetector = SyncType.C2;
-						Bit.setBits(ref _decoderFlags, C2_FOUND);
+						_decoderFlags |= C2_FOUND;
 						break;
 				}	// detect AM
 
@@ -253,15 +248,13 @@ namespace WD1772Package {
 			}	// Sync detection enabled
 
 			// Process CRC if activated
-			if (Bit.testBits(_decoderFlags, CRC_ACTIVE)) {
+			if ((_decoderFlags & CRC_ACTIVE) != 0) {
 				// process every 16 bits
 				if ((_crcCount & 0xF) == 0) {
-					if ((_crcCount > 48) || Bit.testBits(_decoderFlags, A1_FOUND)) {
+					if ((_crcCount > 48) || ((_decoderFlags & A1_FOUND) != 0)) {
 						if (_crcCount == 48) {
-							// TODO A1 is already active? do we need
-							Bit.setBits(ref _decoderFlags);
-							Bit.resetBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
-						}
+							_decoderFlags &= ~SYNC_DETECTOR_ENABLED;
+						}	// after 3 A1 we disable AM detector
 
 						// select data bits for CRC source byte value; needed without separate clock and data shifters
 						byte value = 0;
@@ -277,7 +270,7 @@ namespace WD1772Package {
 					}	// A1 or following bytes
 					else
 						// reset CRC process if less than 3 consecutive A1 detected
-						Bit.resetBits(ref _decoderFlags, CRC_ACTIVE);
+						_decoderFlags &= ~CRC_ACTIVE;
 				}	// every 16 bits
 
 				_crcCount++;
@@ -295,13 +288,14 @@ namespace WD1772Package {
 					_dsrBitCount = 0;	// reset count
 					// set DSR flag if valid data
 					if (_dsrInvalid == 0) {
-						Bit.setBits(ref _decoderFlags, DATA_READY);
+						_decoderFlags |= DATA_READY;
+						//if ((_syncSeq == 3) && (!SyncFound) && (_lastSyncFound == SyncType.A1)) {
 						if ((_syncSeq == 3) && (!SyncFound)) {
 							_syncSeq = 0;
-							Bit.setBits(ref _decoderFlags, IAM_POSITION);
+							_decoderFlags |= IAM_POSITION;
 						}
 						else
-							Bit.resetBits(ref _decoderFlags, IAM_POSITION);
+							_decoderFlags &= ~IAM_POSITION;
 					}
 					else
 						_dsrInvalid--;
@@ -319,8 +313,8 @@ namespace WD1772Package {
 		/// In track mode the Sync Detector is always on and no CRC is computed
 		/// </remarks>
 		public void trackMode() {
-			Bit.setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED);
-			Bit.resetBits(ref _decoderFlags, CRC_ENABLED);
+			_decoderFlags |= SYNC_DETECTOR_ENABLED;
+			_decoderFlags &= ~CRC_ENABLED;
 		}
 
 		/// <summary>
@@ -332,8 +326,8 @@ namespace WD1772Package {
 		/// reading each and every ID DATA as the flags are resets after the sync
 		/// </remarks>
 		public void sectorMode() {
-			Bit.setBits(ref _decoderFlags, SYNC_DETECTOR_ENABLED, CRC_ENABLED);
-			Bit.resetBits(ref _decoderFlags, CRC_ACTIVE);
+			_decoderFlags |= (SYNC_DETECTOR_ENABLED | CRC_ENABLED);
+			_decoderFlags &= ~CRC_ACTIVE;
 		}
 
 		/// <summary>
