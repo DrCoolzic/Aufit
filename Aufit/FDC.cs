@@ -36,7 +36,7 @@ using GlobalPackage;
 using Aufit;
 
 namespace WD1772Package {
-	enum Sync { No, A1, C2 }
+	//enum Sync { No, A1, C2 }
 
 	/// <summary>
 	/// Different phases inside a sector: ID, Inner Gap, Data, Outer Gap
@@ -48,167 +48,167 @@ namespace WD1772Package {
 	}
 
 
-	/// <summary>Contains all information for a sector.</summary>
-	/// <remarks>Normally a sector contains 4 FieldInfo (one per phase): ID / INNER / DATA / OUTER
-	/// but may contain less. We use a pseudo sector 0 that contains the GAP placed before the
-	/// first real sector and may contain DATA for a track with Data beyond index. Therefore in
-	/// read track we have an extra pseudo sector. \n 
-	/// The SectorInfo structure contains a pointer to an IDField
-	/// structure to copy all the data read from the ID field</remarks>
-	public class SectorInfo {
-		/// <summary>
-		/// For each phase p_id, p_inner, p_data, p_outer we have an associated information block
-		/// </summary>
-		public FieldInfo[] phases = new FieldInfo[4];	// one block per phase
-		/// <summary>Pointer to the IdField</summary>
-		public IDField addr = new IDField();			// store ID info
-		/// <summary>
-		/// If we find a sector within another sector we store here the number of the sector 
-		/// that contains this one, or -1 otherwise
-		/// </summary>
-		public int sws = -1;
-		/// <summary>Set to true if the Sector has been validated ???</summary>
-		public bool valid = false;
-		/// <summary>Sector start time = first ID byte</summary> 
-		public int startTime;
-		/// <summary>Sector end time = last inter GAP byte</summary> 
-		public int endTime;
-	}
+	///// <summary>Contains all information for a sector.</summary>
+	///// <remarks>Normally a sector contains 4 FieldInfo (one per phase): ID / INNER / DATA / OUTER
+	///// but may contain less. We use a pseudo sector 0 that contains the GAP placed before the
+	///// first real sector and may contain DATA for a track with Data beyond index. Therefore in
+	///// read track we have an extra pseudo sector. \n 
+	///// The SectorInfo structure contains a pointer to an IDField
+	///// structure to copy all the data read from the ID field</remarks>
+	//public class SectorInfo {
+	//	/// <summary>
+	//	/// For each phase p_id, p_inner, p_data, p_outer we have an associated information block
+	//	/// </summary>
+	//	public FieldInfo[] phases = new FieldInfo[4];	// one block per phase
+	//	/// <summary>Pointer to the IdField</summary>
+	//	public IDField addr = new IDField();			// store ID info
+	//	/// <summary>
+	//	/// If we find a sector within another sector we store here the number of the sector 
+	//	/// that contains this one, or -1 otherwise
+	//	/// </summary>
+	//	public int sws = -1;
+	//	/// <summary>Set to true if the Sector has been validated ???</summary>
+	//	public bool valid = false;
+	//	/// <summary>Sector start time = first ID byte</summary> 
+	//	public int startTime;
+	//	/// <summary>Sector end time = last inter GAP byte</summary> 
+	//	public int endTime;
+	//}
 
-	/// <summary>Store information for each sync found on the track</summary>
-	public class SyncInfo {
-		/// <summary>Time position of the sync</summary>
-		public int startTime;
-		/// <summary>Byte position of the sync</summary>
-		public int startByte;
-		/// <summary>count the number of Sync in sequence</summary>
-		public int syncInSeq;
-		/// <summary>Sync value</summary>
-		public ushort value;
-		/// <summary>Bad Sync sequence = part of a bad sequence</summary>
-		public bool badSync = false;
-	}
+	///// <summary>Store information for each sync found on the track</summary>
+	//public class SyncInfo {
+	//	/// <summary>Time position of the sync</summary>
+	//	public int startTime;
+	//	/// <summary>Byte position of the sync</summary>
+	//	public int startByte;
+	//	/// <summary>count the number of Sync in sequence</summary>
+	//	public int syncInSeq;
+	//	/// <summary>Sync value</summary>
+	//	public ushort value;
+	//	/// <summary>Bad Sync sequence = part of a bad sequence</summary>
+	//	public bool badSync = false;
+	//}
 
-	/// <summary>
-	/// Store information collected after doing a read track command.
-	/// </summary>
-	/// <remarks>Contains information for a complete track. This information is filled
-	/// by the readTrack() function. The two main fields are the List of sectors and the
-	/// buffer. Note that sectors[0] is a pseudo sector to store GAP and eventually DATA 
-	/// information before detecting the first ID on the track and should not be
-	/// considered as a real sector</remarks>
-	public class TrackContent {
-		/// <summary>List of all sectors in the track</summary>
-		public List<SectorInfo> sectors = new List<SectorInfo>();
-		/// <summary>Length of the track in nanoseconds</summary>
-		public int timeLength = 0;
-		/// <summary> Number of bytes in the track</summary>
-		public int byteCount = 0;
-		/// <summary>List of sync found on the track</summary> 
-		public List<SyncInfo> syncs = new List<SyncInfo>();
-		/// <summary>buffer for all the byte read in the track</summary>
-		public TrackBuffer buffer = null;
+	///// <summary>
+	///// Store information collected after doing a read track command.
+	///// </summary>
+	///// <remarks>Contains information for a complete track. This information is filled
+	///// by the readTrack() function. The two main fields are the List of sectors and the
+	///// buffer. Note that sectors[0] is a pseudo sector to store GAP and eventually DATA 
+	///// information before detecting the first ID on the track and should not be
+	///// considered as a real sector</remarks>
+	//public class TrackContent {
+	//	/// <summary>List of all sectors in the track</summary>
+	//	public List<SectorInfo> sectors = new List<SectorInfo>();
+	//	/// <summary>Length of the track in nanoseconds</summary>
+	//	public int timeLength = 0;
+	//	/// <summary> Number of bytes in the track</summary>
+	//	public int byteCount = 0;
+	//	/// <summary>List of sync found on the track</summary> 
+	//	public List<SyncInfo> syncs = new List<SyncInfo>();
+	//	/// <summary>buffer for all the byte read in the track</summary>
+	//	public TrackBuffer buffer = null;
 
-		/// <summary>Set to true when protections have been found for this track</summary>
-		/// <remarks>This include track as well as sector protections. This is primarily 
-		/// used to set track grid buttons background color.</remarks>
-		public bool hasProtection = false;
+	//	/// <summary>Set to true when protections have been found for this track</summary>
+	//	/// <remarks>This include track as well as sector protections. This is primarily 
+	//	/// used to set track grid buttons background color.</remarks>
+	//	public bool hasProtection = false;
 
-		/// <summary>Set to true when the track has a DATA segment that span over index pulse</summary>
-		public bool dataOverIdx;
-		/// <summary>Set to true when the track has an ID segment that span over index pulse</summary>
-		public bool idOverIdx;
-		/// <summary>Set to true when the track has Data segment beyond the index pulse</summary>
-		public bool dataBeyondIdx;
-		/// <summary>Position of NFA on track</summary>
-		public int NFA = -1;
+	//	/// <summary>Set to true when the track has a DATA segment that span over index pulse</summary>
+	//	public bool dataOverIdx;
+	//	/// <summary>Set to true when the track has an ID segment that span over index pulse</summary>
+	//	public bool idOverIdx;
+	//	/// <summary>Set to true when the track has Data segment beyond the index pulse</summary>
+	//	public bool dataBeyondIdx;
+	//	/// <summary>Position of NFA on track</summary>
+	//	public int NFA = -1;
 
-		/// <summary>All the sectors of the track are numbered sequentially from 1 to n</summary>
-		public bool sectorInSeq = true;
-		/// <summary>All the sectors use valid sector numbers from 0x00-0xF4</summary>
-		public bool sectorValidNumber = true;
-		/// <summary>All the sectors of the track have unique sector number</summary>
-		public bool sectorUnique = true;
-		/// <summary>All sectors in the track have standard timing values</summary>
-		public bool sectorStandard = true;
-		/// <summary>All sector has standard size</summary>
-		public bool sectorSandardSize = true;
-		/// <summary>Short track</summary>
-		public bool shortTrack = false;
-		/// <summary>Long Track</summary>
-		public bool longTrack = false;
-		public bool incompleteTrack = false;
-	}
+	//	/// <summary>All the sectors of the track are numbered sequentially from 1 to n</summary>
+	//	public bool sectorInSeq = true;
+	//	/// <summary>All the sectors use valid sector numbers from 0x00-0xF4</summary>
+	//	public bool sectorValidNumber = true;
+	//	/// <summary>All the sectors of the track have unique sector number</summary>
+	//	public bool sectorUnique = true;
+	//	/// <summary>All sectors in the track have standard timing values</summary>
+	//	public bool sectorStandard = true;
+	//	/// <summary>All sector has standard size</summary>
+	//	public bool sectorSandardSize = true;
+	//	/// <summary>Short track</summary>
+	//	public bool shortTrack = false;
+	//	/// <summary>Long Track</summary>
+	//	public bool longTrack = false;
+	//	public bool incompleteTrack = false;
+	//}
 
-	/// <summary>
-	/// Store the content read from a sector ID (Address) Field
-	/// </summary>
-	public struct IDField {
-		/// <summary>Store the Index Address Mark</summary> 
-		public byte iam;
-		/// <summary>Store the track number</summary> 
-		public byte track;
-		/// <summary>Store the Head/Side number</summary> 
-		public byte head;
-		/// <summary>Store the sector number</summary> 
-		public byte number;
-		/// <summary>Store the encoded data segment size</summary> 
-		public byte size;
-		/// <summary>Store the CRC on two bytes</summary> 
-		public ushort crc;
-	}
-
-
+	///// <summary>
+	///// Store the content read from a sector ID (Address) Field
+	///// </summary>
+	//public struct IDField {
+	//	/// <summary>Store the Index Address Mark</summary> 
+	//	public byte iam;
+	//	/// <summary>Store the track number</summary> 
+	//	public byte track;
+	//	/// <summary>Store the Head/Side number</summary> 
+	//	public byte head;
+	//	/// <summary>Store the sector number</summary> 
+	//	public byte number;
+	//	/// <summary>Store the encoded data segment size</summary> 
+	//	public byte size;
+	//	/// <summary>Store the CRC on two bytes</summary> 
+	//	public ushort crc;
+	//}
 
 
-	/// <summary>
-	/// Store the information collected after doing a read address command
-	/// </summary>
-	/// <remarks>Contains information for all ID found on a track. This information
-	/// is filled by the readAddr() function</remarks>
-	public class AddrContent {
-		/// <summary>List of all ID found in the track</summary>
-		public List<IDField> ids = new List<IDField>();
-		/// <summary>Block information associated with all ID found in the track</summary>
-		public List<FieldInfo> blocs = new List<FieldInfo>();
-	}
 
 
-	/// <summary>
-	/// Store the information collected after doing a read sector command
-	/// </summary>
-	/// <remarks>Contains information for a specific sector. This information
-	/// is filled by the readSector() function.</remarks>
-	public class SectorContent {
-		/// <summary>Block information for DATA field of the sector</summary>
-		public FieldInfo dataBlock;
-		/// <summary>buffer for all the byte read in the DATA field of the sector</summary>
-		public TrackBuffer data;
-		/// <summary>Block information for ID field of the sector</summary>
-		public FieldInfo idBlock;
-		/// <summary>contains the information of the ID field of the sector</summary>
-		public IDField id;
-		/// <summary>This flag is set to true when a sector has a DATA field. If the 
-		///sector contains an ID field but no DATA field the flag is set to false.</summary>
-		public bool sectHasData;
-		/// <summary>This byte array contains the result of XOR operation on same byte on two
-		/// or more different revolutions. This is an indicator of fuzzy byte. When no 
-		/// difference is found the mask pointer is kept null (no memory allocation)</summary>
-		public TrackBuffer fuzzyMask;
+	///// <summary>
+	///// Store the information collected after doing a read address command
+	///// </summary>
+	///// <remarks>Contains information for all ID found on a track. This information
+	///// is filled by the readAddr() function</remarks>
+	//public class AddrContent {
+	//	/// <summary>List of all ID found in the track</summary>
+	//	public List<IDField> ids = new List<IDField>();
+	//	/// <summary>Block information associated with all ID found in the track</summary>
+	//	public List<FieldInfo> blocs = new List<FieldInfo>();
+	//}
 
-		/// <summary>Sector has more than 50% of the bytes with clock above 5%</summary>
-		public bool sectorOverClocked = false;
-		/// <summary>Sector has more than 50% of the bytes with clock below 5%</summary>
-		public bool sectorUnderClocked = false;
-		/// <summary>Sector has more than 25% of the bytes with clock above 5% AND more than 25% of the bytes with clock below 5%</summary>
-		public bool sectorIntraVariation = false;
-		/// <summary>Sector has data byte in range 0xF5 - 0xF7 in the GAP field</summary>
-		public bool sectorBadDataInGap = false;
-		/// <summary>The Track field in the ID is not equal to current track</summary>
-		public bool sectorValidTrack = true;
-		/// <summary>Sector contains invalid sync sequences</summary>
-		public bool sectorBadSync = false;
-	}
+
+	///// <summary>
+	///// Store the information collected after doing a read sector command
+	///// </summary>
+	///// <remarks>Contains information for a specific sector. This information
+	///// is filled by the readSector() function.</remarks>
+	//public class SectorContent {
+	//	/// <summary>Block information for DATA field of the sector</summary>
+	//	public FieldInfo dataBlock;
+	//	/// <summary>buffer for all the byte read in the DATA field of the sector</summary>
+	//	public TrackBuffer data;
+	//	/// <summary>Block information for ID field of the sector</summary>
+	//	public FieldInfo idBlock;
+	//	/// <summary>contains the information of the ID field of the sector</summary>
+	//	public IDField id;
+	//	/// <summary>This flag is set to true when a sector has a DATA field. If the 
+	//	///sector contains an ID field but no DATA field the flag is set to false.</summary>
+	//	public bool sectHasData;
+	//	/// <summary>This byte array contains the result of XOR operation on same byte on two
+	//	/// or more different revolutions. This is an indicator of fuzzy byte. When no 
+	//	/// difference is found the mask pointer is kept null (no memory allocation)</summary>
+	//	public TrackBuffer fuzzyMask;
+
+	//	/// <summary>Sector has more than 50% of the bytes with clock above 5%</summary>
+	//	public bool sectorOverClocked = false;
+	//	/// <summary>Sector has more than 50% of the bytes with clock below 5%</summary>
+	//	public bool sectorUnderClocked = false;
+	//	/// <summary>Sector has more than 25% of the bytes with clock above 5% AND more than 25% of the bytes with clock below 5%</summary>
+	//	public bool sectorIntraVariation = false;
+	//	/// <summary>Sector has data byte in range 0xF5 - 0xF7 in the GAP field</summary>
+	//	public bool sectorBadDataInGap = false;
+	//	/// <summary>The Track field in the ID is not equal to current track</summary>
+	//	public bool sectorValidTrack = true;
+	//	/// <summary>Sector contains invalid sync sequences</summary>
+	//	public bool sectorBadSync = false;
+	//}
 
 
 
@@ -281,6 +281,7 @@ namespace WD1772Package {
 	public class DataField {
 		public const int WIDTH_OVER = Bit.BIT_01;
 		public const int WIDTH_UNDER = Bit.BIT_02;
+		public const int WIDTH_INTRA = Bit.BIT_03;
 
 		/// <summary>Store the Index Address Mark</summary> 
 		public byte iam;
@@ -795,30 +796,32 @@ namespace WD1772Package {
 		/// <param name="track"></param>
 		/// <param name="side"></param>
 		public static void clearTrackContent(int track, int side) {
-			Global.Disk[track, side].trackContent = null;
-			Global.Disk[track, side].addrContent = null;
-			Global.Disk[track, side].sectorsContent = null;
+			//Global.Disk[track, side].trackContent = null;
+			//Global.Disk[track, side].addrContent = null;
+			//Global.Disk[track, side].sectorsContent = null;
+			Global.Disk[track, side].sectors = null;
+			Global.Disk[track, side].track = null;
 		}
 
 
-		/// <summary>
-		/// Find a specific sector
-		/// </summary>
-		/// <param name="track">The track to use</param>
-		/// <param name="side">The size to use</param>
-		/// <param name="num">The sector to find</param>
-		/// <param name="position">The starting position of the sector</param>
-		/// <returns>The sector found or null if not found</returns>
-		/// <remarks>It is necessary  to use the position parameter for the case where several 
-		/// sectors with the same number are present oin a track</remarks>
-		public static SectorContent findSectorContent(int track, int side, byte num, int position) {
-			List<SectorContent> sectors = Global.Disk[track, side].sectorsContent;
-			foreach(SectorContent sector in sectors)
-				// we need to allow a certain slack for the position ?
-				if ((sector.id.number == num) && (sector.idBlock.startTime >= (position - 32000)))
-					return sector;
-			return null;
-		}
+		///// <summary>
+		///// Find a specific sector
+		///// </summary>
+		///// <param name="track">The track to use</param>
+		///// <param name="side">The size to use</param>
+		///// <param name="num">The sector to find</param>
+		///// <param name="position">The starting position of the sector</param>
+		///// <returns>The sector found or null if not found</returns>
+		///// <remarks>It is necessary  to use the position parameter for the case where several 
+		///// sectors with the same number are present oin a track</remarks>
+		//public static SectorContent findSectorContent(int track, int side, byte num, int position) {
+		//	List<SectorContent> sectors = Global.Disk[track, side].sectorsContent;
+		//	foreach(SectorContent sector in sectors)
+		//		// we need to allow a certain slack for the position ?
+		//		if ((sector.id.number == num) && (sector.idBlock.startTime >= (position - 32000)))
+		//			return sector;
+		//	return null;
+		//}
 
 		public static Sector findSector(int track, int side, int num, int idBitPosition) {
 			List<Sector> sectors = Global.Disk[track, side].sectors;

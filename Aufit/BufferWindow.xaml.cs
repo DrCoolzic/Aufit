@@ -58,12 +58,10 @@ namespace Aufit {
 		/// Draw the content of the buffer
 		/// </summary>
 		public void drawSectorBuffer(int track, int side, int rev) {
-			// force re read
-			//Global.Disk[track, side].addrContent = null;
-			//Global.Disk[track, side].sectorsContent = null;
-			//Global.Disk[track, side].trackContent = null;
-
-			//FDC.fdcRealAll(track, side, rev);
+			// Force reread
+			Global.Disk[track, side].sectors = null;
+			Global.Disk[track, side].track = null;
+			FDC.fdcRealAll(track, side, rev);
 
 			List<Sector> sectors = Global.Disk[track, side].sectors;
 
@@ -95,10 +93,13 @@ namespace Aufit {
 			displayBuffer.Inlines.Add(String.Format("-------------------+---------------------------\n\n"));
 
 			foreach (Sector sector in sectors) {
-				displayBuffer.Inlines.Add(String.Format("Sector {0} - ", sector.id.number));
+				displayBuffer.Inlines.Add(String.Format("Sector {0}\n", sector.id.number));
+				displayBuffer.Inlines.Add(String.Format("ID Field: Track={0} Side={1} Sect={2} Size={3} CRC={4:X4} {5}\n",
+					sector.id.track, sector.id.head, sector.id.number, sector.id.size, sector.id.crc, (sector.id.info.crc == 0) ? " Good CRC" : "Bad CRC"));
 				if (sector.data != null) {
+					displayBuffer.Inlines.Add("DATA Field: ");
 					if (sector.data.info.byteCount != Global.sectSize(sector.id.size) + 3)
-						displayBuffer.Inlines.Add(" *** Imcomplete ***");
+						displayBuffer.Inlines.Add(" *** Imcomplete *** ");
 					displayBuffer.Inlines.Add(String.Format("{0} bytes start at {1}µs length {2} µs IAM={3:X2} {4}={5:X4} {6}\n",
 						sector.data.info.byteCount - 3, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000,
 						sector.data.iam, (sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.crc,
@@ -125,12 +126,10 @@ namespace Aufit {
 		/// <param name="side">Specifies the side from the disk</param>
 		/// <param name="rev">Revolution number</param>
 		public void drawTrackBuffer(int track, int side, int rev) {
-			// force re read
-			//Global.Disk[track, side].addrContent = null;
-			//Global.Disk[track, side].sectorsContent = null;
-			//Global.Disk[track, side].trackContent = null;
-
-			//FDC.fdcRealAll(track, side, rev);
+			// Force reread
+			Global.Disk[track, side].sectors = null;
+			Global.Disk[track, side].track = null;
+			FDC.fdcRealAll(track, side, rev);
 
 			Track tr = Global.Disk[track, side].track;
 

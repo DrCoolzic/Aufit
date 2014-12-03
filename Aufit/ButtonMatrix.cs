@@ -169,28 +169,30 @@ namespace Aufit {
 		/// <param name="side">Side Number </param>
 		public static void setButtonBG(int track, int side) {
 			Brush color = Brushes.LimeGreen;
-			Global.DiskTrack td = Global.Disk[track, side];
-			TrackContent tc = td.trackContent;
-			// track processed
-			if (tc != null) {
-				if (tc.sectors.Count < 3) {
-					if ((td.histoData.hasData) && (td.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
-						bool multiSync = false;
-						for (int i = 0; i < tc.syncs.Count; i++)
-							if ((tc.syncs[i].value == 0xA1) && (tc.syncs[i].syncInSeq > 2))
-								multiSync = true;
-						if (multiSync)
-							color = Brushes.Blue;
-						else
-							color = Brushes.Yellow;
-					}	// data bits found
-					else
-						color = Brushes.SlateGray;
-				}
-				else if (tc.hasProtection) color = Brushes.Orange;
-			}
-			else if (Global.Disk[track, side].fluxData != null) {
-				double entropy = td.histoData.entropy;
+			Global.DiskTrack dt = Global.Disk[track, side];
+
+			////TrackContent tc = dt.trackContent;
+			//// track processed
+			//if (dt.sectors != null) {
+			//	if (dt.sectors.Count < 3) {
+			//		if ((dt.histoData.hasData) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
+			//			bool multiSync = false;
+			//			for (int i = 0; i < tc.syncs.Count; i++)
+			//				if ((tc.syncs[i].value == 0xA1) && (tc.syncs[i].syncInSeq > 2))
+			//					multiSync = true;
+			//			if (multiSync)
+			//				color = Brushes.Blue;
+			//			else
+			//				color = Brushes.Yellow;
+			//		}	// data bits found
+			//		else
+			//			color = Brushes.SlateGray;
+			//	}
+			//	else if (tc.hasProtection) color = Brushes.Orange;
+			//}
+			//else 
+			if (Global.Disk[track, side].fluxData != null) {
+				double entropy = dt.histoData.entropy;
 				//color = (entropy < 2000) ? (entropy < 0) ? Brushes.LightGray : Brushes.Yellow : Brushes.Lime;
 				color = (entropy > Global.UNFORMATED_ENTROPY) ? Brushes.LightGray : Brushes.Lime;
 			}

@@ -303,15 +303,15 @@ public class Global {
 
 		/// <summary>Information from a FDC read track command</summary>
 		/// <remarks>This value is set by readTrack()</remarks>
-		public TrackContent trackContent;
+		//public TrackContent trackContent;
 
 		/// <summary>Information from a FDC read address command</summary>
 		/// <remarks>This value is set by readAddr()</remarks>
-		public AddrContent addrContent;
+		//public AddrContent addrContent;
 
 		/// <summary>Information from a FDC read sector command</summary>
 		/// <remarks>This value is set by readSect()</remarks>
-		public List<SectorContent> sectorsContent;
+		//public List<SectorContent> sectorsContent;
 
 		public Track track;
 		public List<Sector> sectors;
