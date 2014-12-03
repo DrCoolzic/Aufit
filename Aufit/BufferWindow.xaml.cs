@@ -105,13 +105,20 @@ namespace Aufit {
 						sector.data.iam, (sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.crc,
 						(sector.data.fuzzy != null) ? "Fuzzy sector" : "" ));
 					drawBuffer(sector.data.buffer);
-					// TODO
-					//if (sc.fuzzyMask != null) {
-					//	displayBuffer.Inlines.Add(String.Format("\nFuzzy bytes for sector {0}\n", ac.ids[i].number));
-					//	_noColor = true;
-					//	drawBuffer(sc.fuzzyMask);
-					//	_noColor = false;
-					//}
+
+					if (sector.data.fuzzy != null) {
+						displayBuffer.Inlines.Add(String.Format("\nSector {0} Contains Fuzzy bytes\n", sector.id.number));
+						for (int line = 0; line < sector.data.fuzzy.Count() / 16; line++) {
+							displayBuffer.Inlines.Add(String.Format("{0:D4} ", line * 16));
+							for (int col = 0; col < 16; col++) {
+								displayBuffer.Inlines.Add(new Run(
+									String.Format("{0:X2} ", sector.data.fuzzy[line + col])) {
+									FontWeight = (sector.data.fuzzy[line + col] == 0) ? FontWeights.Normal : FontWeights.Bold
+								});
+							}
+							displayBuffer.Inlines.Add("\n");
+						}
+					}
 				}
 				else
 					displayBuffer.Inlines.Add(" *** Sector has no data ***\n");
@@ -120,7 +127,7 @@ namespace Aufit {
 		}
 
 		/// <summary>
-		/// Display the content of the Track Information in a textbox
+		/// Display the content of the Track Information in a TextBlock
 		/// </summary>
 		/// <param name="track">Specifies the track from the disk</param>
 		/// <param name="side">Specifies the side from the disk</param>
@@ -149,7 +156,7 @@ namespace Aufit {
 		}
 
 		/// <summary>
-		/// Display the content of	 TrackBuffer buffer in the displayBuffer TextBox
+		/// Display the content of TrackBuffer buffer in the displayBuffer TextBox
 		/// </summary>
 		/// <param name="buffer">The buffer to display</param>
 		/// <param name="message">an optional message to display before the buffer</param>

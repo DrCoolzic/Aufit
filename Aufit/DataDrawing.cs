@@ -187,9 +187,9 @@ class DataDrawing {
 			sectorPhasePolygon.Fill = Brushes.LightGreen;
 		else {
 			sectorPhasePolygon.Fill = Brushes.DeepSkyBlue;
-			if (Bit.testBits(sector.data.flags, DataField.WIDTH_OVER))
+			if (Bit.testBits(sector.flags, Sector.WIDTH_ABOVE))
 				sectorPhasePolygon.Fill = Brushes.Blue;
-			if (Bit.testBits(sector.data.flags, DataField.WIDTH_UNDER))
+			if (Bit.testBits(sector.flags, Sector.WIDTH_BELOW))
 				sectorPhasePolygon.Fill = Brushes.Aqua;
 
 

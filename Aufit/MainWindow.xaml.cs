@@ -234,7 +234,7 @@ namespace Aufit {
 			revolution.Text = (Rev + 1).ToString();
 			Global.computeHisto(Track, Side, Rev, infoBox);
 			_histoDrawing.drawHisto();
-			FDC.clearTrackContent(Track, Side);
+			FDC.releaseTrack(Track, Side);
 			drawAllCharts();
 		}
 
@@ -253,7 +253,7 @@ namespace Aufit {
 			revolution.Text = (Rev + 1).ToString();
 			Global.computeHisto(Track, Side, Rev, infoBox);
 			_histoDrawing.drawHisto();
-			FDC.clearTrackContent(Track, Side);
+			FDC.releaseTrack(Track, Side);
 			drawAllCharts();
 		}
 		#endregion
@@ -288,7 +288,7 @@ namespace Aufit {
 
 
 		// when set to true the KF files are read without treading for debug
-		private bool _debugNoThread = false;
+		private bool _debugNoThread = true;
 		// Do we read KF directory using Asynchronous read or as tasks.
 		private bool _readKFAsync = true;
 		
@@ -680,8 +680,8 @@ namespace Aufit {
 						"Incomplete Image Data", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
 					if (result == MessageBoxResult.No) return;				
 				}	// incomplete
-				//PastiWriter pasti = new PastiWriter(infoBox);
-				PastiWriter pasti = new PastiWriter();
+				PastiWriter pasti = new PastiWriter(infoBox);
+				//PastiWriter pasti = new PastiWriter();
 				pasti.writePasti(sfd.FileName, cbForceDS.IsChecked.Value);
 			}
 

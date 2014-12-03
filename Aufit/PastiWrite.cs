@@ -194,7 +194,7 @@ namespace PastiPackage {
 							tdesc.fuzzyCount += (uint)dt.sectors[sect].data.fuzzy.Count();
 						//else if (SIM_FUZZY && (dt.sectorsContent[sect].dataBlock.crc != 0) &&
 						//	(dt.sectorsContent[sect].dataBlock.overClock > Global.sectSize(dt.sectorsContent[sect].id.size) / 2)) {
-						else if (SIM_FUZZY && (dt.sectors[sect].data.crc != 0) && Bit.testBits(dt.sectors[sect].data.flags, DataField.WIDTH_OVER)) {
+						else if (SIM_FUZZY && (dt.sectors[sect].data.crc != 0) && Bit.testBits(dt.sectors[sect].flags, Sector.WIDTH_ABOVE)) {
 							// Rob Northen protection we force fuzzy bits if not there
 							int dataSize = Global.sectSize(dt.sectors[sect].id.size);
 							dt.sectors[sect].data.fuzzy = new byte[dataSize];
@@ -225,7 +225,7 @@ namespace PastiPackage {
 					// do we need timing record
 					int timingEntries = 0;
 					for (int sect = 0; sect < sectorCount; sect++)
-						if (Bit.testBits(dt.sectors[sect].data.flags, DataField.WIDTH_INTRA))
+						if (Bit.testBits(dt.sectors[sect].flags, Sector.WIDTH_INTRA))
 							timingEntries += Global.sectSize(dt.sectors[sect].id.size) / 16;
 
 					if (timingEntries > 0)
@@ -315,7 +315,7 @@ namespace PastiPackage {
 							}	// these two flags are only meaningful if record has bytes
 							if (dt.sectors[sect].data.fuzzy != null)
 								fdcFlag |= SectorDesc.FUZZY_BITS;
-							if (Bit.testBits(dt.sectors[sect].data.flags, DataField.WIDTH_INTRA))
+							if (Bit.testBits(dt.sectors[sect].flags, Sector.WIDTH_INTRA))
 								fdcFlag |= SectorDesc.BIT_WIDTH;
 
 							sd.fdcFlags = fdcFlag;
@@ -389,7 +389,7 @@ namespace PastiPackage {
 							//}
 							//else {
 								for (int i = 0; i < dt.sectors[sect].data.info.byteCount; i++)
-									writeByte(buffer, dt.sectors[sect].data.buffer.Bytes[i + 1].dataByte);
+									writeByte(buffer, dt.sectors[sect].data.buffer.Bytes[i].dataByte);
 								if (_infoBox != null) _infoBox.AppendText(String.Format("      Writing Sector {0} {1} bytes ({2}-{3})\n",
 									dt.sectors[sect].id.number, dt.sectors[sect].data.info.byteCount, start, buffer.Count - 1));
 							//}
@@ -407,10 +407,10 @@ namespace PastiPackage {
 						// write timing
 						for (int sect = 0; sect < sectorCount; sect++) {
 							//if (dt.sectorsContent[sect].sectorIntraVariation) {
-							if (Bit.testBits(dt.sectors[sect].data.flags, DataField.WIDTH_INTRA)) {
+							if (Bit.testBits(dt.sectors[sect].flags, Sector.WIDTH_INTRA)) {
 								int timingSum = 0;
 								for (int i = 0; i < (dt.sectors[sect].data.info.byteCount); i++) {
-									timingSum += (dt.sectors[sect].data.buffer.Bytes[i + 1].density * 16);
+									timingSum += (dt.sectors[sect].data.buffer.Bytes[i].density * 16);
 									if (((i+1) % 16) == 0) {
 										timingSum = timingSum / 4000;
 										buffer.Add((byte)(timingSum << 8));
