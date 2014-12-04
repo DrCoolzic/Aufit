@@ -128,6 +128,20 @@ namespace WD1772Package {
 		public const int WIDTH_ABOVE = Bit.BIT_01;
 		public const int WIDTH_BELOW = Bit.BIT_02;
 		public const int WIDTH_INTRA = Bit.BIT_03;
+		public const int NO_STD_IDAM = Bit.BIT_04;
+		public const int BAD_TRK_NUM = Bit.BIT_05;
+		public const int BAD_HEAD_NUM = Bit.BIT_06;
+		public const int BAD_SEC_NUM = Bit.BIT_07;
+		public const int BAD_SEC_LEN = Bit.BIT_08;
+		public const int SEC_IN_SEC = Bit.BIT_09;
+		public const int NO_STD_DAM = Bit.BIT_10;
+		public const int DUP_SEC_NUM = Bit.BIT_11;
+		public const int LONG_SECT = Bit.BIT_12;
+		public const int SHORT_SECT = Bit.BIT_13;
+		// BAD_ID_CRC => id.info.crc != 0
+		// SECT_NO_DATA => data == null
+		// BAD_DATA_CRC => data.info.crc != 0
+		// FUZZY_SECT => data.fuzzy != null
 
 		/// <summary>Pointer to the Id Field of a sector</summary>
 		public IdField id;
@@ -142,6 +156,23 @@ namespace WD1772Package {
 
 	/// <summary>Track information</summary>
 	public class Track {
+		public const int SHORT_TRACK = Bit.BIT_01;
+		public const int LONG_TRACK = Bit.BIT_02;
+		public const int DATA_TRACK = Bit.BIT_03;
+
+		public const int BAD_DATA_GAP = Bit.BIT_05;
+
+		public const int NO_FLUX_AREA = Bit.BIT_07;
+		public const int DATA_OVER_IDX = Bit.BIT_08;
+		public const int DATA_AFTER_IDX = Bit.BIT_09;
+		public const int ID_OVER_IDX = Bit.BIT_10;
+		public const int ID_AFTER_IDX = Bit.BIT_11;
+		// SYNC_IN_DATA ???
+		// hidden data in track ?
+		// invalid sync seq
+		// partially formatted track
+		// Fuzzy track ???
+
 		/// <summary>buffer for all the byte read in the DATA field of the sector</summary>
 		public TrackBuffer buffer;
 
@@ -150,6 +181,11 @@ namespace WD1772Package {
 
 		/// <summary>Protection Flags related to the track</summary>
 		public int flags;
+
+		public bool hasSyncSeq = false;
+
+		public bool hasProtections = false;
+
 	}
 
 
@@ -187,8 +223,9 @@ namespace WD1772Package {
 			int sectorNumber = 0;
 			int sectorCount = Global.Disk[track, side].sectors.Count;
 			Phases phase = Phases.p_gap;
-
-
+			int invalidByteInGap = 0;
+			int nfaCount = 0;
+			int nfaStart;
 
 			// We read from the beginning to end of a track looking with AM decoder on all time
 			for (int currentBit = startBit; (currentBit < stopBit); currentBit++) {
@@ -200,6 +237,7 @@ namespace WD1772Package {
 				currentTime += bitWidth;
 				dsr.shiftBitsIn(bit);
 
+				// here we set phase if sectors found in readAddr
 				if ((Global.Disk[track, side].sectors != null) && (Global.Disk[track, side].sectors.Count > 0)) {
 					Sector sector = Global.Disk[track, side].sectors[sectorNumber];
 					int nextIdStart = sector.id.info.startBit + startBit;
@@ -227,6 +265,26 @@ namespace WD1772Package {
 
 				if (dsr.DataReady) {
 					byteCount++;
+
+					if (dsr.IAM & dsr.LastSyncA1) {
+						Global.Disk[track, side].track.hasSyncSeq = true;
+					}
+					if ((dsr.Data >= 0xF5) && (dsr.Data <= 0xF7) && (phase == Phases.p_gap))
+						invalidByteInGap++;
+
+					// check NFA
+					if ((dsr.MFM == 0) || (dsr.MFM == 0xFFFF)) {
+						if (nfaCount == 0) {
+							nfaStart = currentTime;
+						}
+						nfaCount++;
+					}
+					else {
+						if (nfaCount > 8)
+							Global.Disk[track, side].track.flags |= Track.NO_FLUX_AREA;
+						nfaCount = 0;
+					}
+
 					Global.Disk[track, side].track.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
 				}	// data ready
 
@@ -234,6 +292,10 @@ namespace WD1772Package {
 
 			Global.Disk[track, side].track.info.byteCount = byteCount;
 			Global.Disk[track, side].track.info.timeLength = currentTime;
+
+			if (invalidByteInGap > 10) {
+				Global.Disk[track, side].track.flags |= Track.BAD_DATA_GAP;
+			}
 
 		}	// end of readTrack()
 
@@ -308,6 +370,15 @@ namespace WD1772Package {
 										sector.id.info.startTime = currentTime;
 										byteLeftInBlock = 7;
 										phase = Phases.p_id;
+
+										// Check SWS
+										if (Global.Disk[track, side].sectors.Count > 1) {
+											Sector prevSect = Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 2];
+											// we take a min value for GAP3 (22+12+3) and min for GAP4 (24+8+3) 
+											int prevEnd = prevSect.id.info.startByte + prevSect.id.info.byteCount + 37 + Global.sectSize(prevSect.id.size) + 35;
+											if (byteCount < prevEnd)
+												Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].flags |= Sector.SEC_IN_SEC;
+										}
 										break;
 									default:
 										// other AM re-enable sync search
@@ -422,7 +493,6 @@ namespace WD1772Package {
 					if ((phase != Phases.p_id) && (phase != Phases.p_data)) {
 						// We are in a GAP						
 						if (dsr.IAM) {
-							// TODO check only after 2 A1 and not 3C1
 							if (dsr.LastSyncA1) {
 								switch (dsr.Data) {
 									case 0xFC:	// IBM IAM
@@ -454,6 +524,7 @@ namespace WD1772Package {
 									case 0xFB:	// DAM - Start of a DATA block
 										// If we have found the right ID field we check that this
 										// Data field is less than 43 bytes apart from the Id
+										// id field is already 7 bytes so 43+7 = 50
 										if (idFound && ((byteCount - sector.id.info.startByte) <= 50)) {
 											data = new DataField();
 											data.buffer = new TrackBuffer();
@@ -522,7 +593,7 @@ namespace WD1772Package {
 										Bit.setBits(ref flags, Sector.WIDTH_ABOVE);
 									if (widthUnder > (Global.sectSize(sector.id.size) / 2))
 										Bit.setBits(ref flags, Sector.WIDTH_BELOW);
-									if ((widthOver > (Global.sectSize(sector.id.size) / 8)) && (widthUnder > (Global.sectSize(sector.id.size) / 8)))
+									if ((widthOver > (Global.sectSize(sector.id.size) / 10)) && (widthUnder > (Global.sectSize(sector.id.size) / 10)))
 										Bit.setBits(ref flags, Sector.WIDTH_INTRA);
 									phase = Phases.p_gap;
 									breakLoop = true;
@@ -546,10 +617,12 @@ namespace WD1772Package {
 			// if no data field found nothing to do
 			if (data == null) return;
 
+			// We OR the flags from all revolutions for max detection
+			sector.flags |= flags;
+
+
 			if (!compare) {
 				sector.data = data;
-				// TODO ??? OR ???
-				sector.flags = flags;
 			}
 			else {
 				int size = sector.data.info.byteCount;
@@ -623,7 +696,7 @@ namespace WD1772Package {
 			}
 			readTrack(track, side, rev);
 
-			//Protections.checkProtection(track, side);
+			Protections.checkProtection(track, side);
 		}
 
 		/// <summary>

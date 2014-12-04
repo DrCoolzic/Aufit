@@ -193,7 +193,7 @@ public struct HistoData {
 	/// <summary>
 	/// The track seems to have data
 	/// </summary>
-	public bool hasData;
+	public bool hasBitsInBands;
 }
 
 
@@ -301,20 +301,13 @@ public class Global {
 		public HistoData histoData;
 
 
-		/// <summary>Information from a FDC read track command</summary>
-		/// <remarks>This value is set by readTrack()</remarks>
-		//public TrackContent trackContent;
-
-		/// <summary>Information from a FDC read address command</summary>
-		/// <remarks>This value is set by readAddr()</remarks>
-		//public AddrContent addrContent;
-
-		/// <summary>Information from a FDC read sector command</summary>
-		/// <remarks>This value is set by readSect()</remarks>
-		//public List<SectorContent> sectorsContent;
-
+		/// <summary>Track Information</summary>
 		public Track track;
+
+		/// <summary>Sectors Information</summary>
+		/// <remarks>This value is set by readSect()</remarks>
 		public List<Sector> sectors;
+
 	}
 
 
@@ -588,12 +581,12 @@ public class Global {
 		for (int i = 0; i < histoSize; i++)
 			Global.Disk[track, side].histoData.histogram[i] = tmpHisto[i];
 
-		bool hasData = false;
+		bool hasBitsInBands = false;
 		double entropy = 0;
 		for (int i = 0; i < histoSize; i++)
 			if (Global.Disk[track, side].histoData.histogram[i] > 0) {
 				if (Global.Disk[track, side].histoData.histogram[i] > 300) {
-					if ((i > (3400/HISTO_SCALE)) && (i < (8600/HISTO_SCALE))) hasData = true;
+					if ((i > (3400/HISTO_SCALE)) && (i < (8600/HISTO_SCALE))) hasBitsInBands = true;
 				}	// large number of flux transitions
 				double p = (double)Global.Disk[track, side].histoData.histogram[i] / (double)(fluxCount); 
 				entropy += p * Math.Log(p, 2);
@@ -601,7 +594,7 @@ public class Global {
 		entropy = -entropy;
 
 		Global.Disk[track, side].histoData.entropy = entropy;
-		Global.Disk[track, side].histoData.hasData = hasData;
+		Global.Disk[track, side].histoData.hasBitsInBands = hasBitsInBands;
 
 		// log information
 		text.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev));

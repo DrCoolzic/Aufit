@@ -55,30 +55,38 @@ namespace Aufit {
 		/// TODO? IIS / SDS / NonStd DAM & IDAM / data into GAP
 		/// </remarks>
 		public static void checkProtection(int track, int side, TextBox text = null) {
-			//TrackContent tc = Global.Disk[track, side].trackContent;
-			//if (tc == null) return;
-			//AddrContent ac = Global.Disk[track, side].addrContent;
-			//if (ac == null) return;
-			//if (ac.ids.Count == 0) return;
-			//PInfo info = new PInfo();
-			//info.track = track;
-			//info.side = side;
-			//info.text = text;
-			//info.sect = -1;
-			////////////////////////
-			//// Track Protections
-			////////////////////////
-			//// normal track is 200000 / 32 = 6250 bytes - short track N-5% = 5940 - long track = N+5% = 6560
-			//if (tc.byteCount < 6000) {
-			//	tc.shortTrack = true;
-			//	trackProtection(tc);
-			//	writeInfo(info, String.Format("is a short Track of {0} bytes", tc.byteCount));
-			//} 
-			//if (tc.byteCount > 6500) {
-			//	tc.longTrack = true;
-			//	trackProtection(tc);
-			//	writeInfo(info, String.Format("is a long Track of {0} bytes", tc.byteCount));
-			//}
+			Global.DiskTrack dt = Global.Disk[track, side];
+			if ((dt.track == null) || (dt.sectors.Count == 0))
+				return;
+
+			PInfo info = new PInfo();
+			info.track = track;
+			info.side = side;
+			info.text = text;
+			info.sect = -1;
+
+
+			//////////////////////
+			// Track Protections
+			//////////////////////
+			// normal track is 200000 / 32 = 6250 bytes - short track N-3% = 6062 - long track = N+3% = 6437
+			if (dt.track.info.byteCount < 6062) {
+				dt.track.flags |= Track.SHORT_TRACK;
+				dt.track.hasProtections = true;
+				writeInfo(info, String.Format("is a short Track of {0} bytes", dt.track.info.byteCount));
+			}
+			if (dt.track.info.byteCount > 6437) {
+				dt.track.flags |= Track.LONG_TRACK;
+				dt.track.hasProtections = true;
+				writeInfo(info, String.Format("is a long Track of {0} bytes", dt.track.info.byteCount));
+			}
+
+			// Bad data byte in GAP
+			if ((dt.track.flags & Track.BAD_DATA_GAP) != 0) {
+				dt.track.hasProtections = true;
+				writeInfo(info, "invalid bytes in GAP");
+			}
+
 
 			//// NFA
 			//if (tc.NFA != -1) {
@@ -94,137 +102,150 @@ namespace Aufit {
 			//if (tc.idOverIdx)
 			//	writeInfo(info, "has ID field over index");
 
-			////////////////////////
-			//// Sector Protections
-			////////////////////////
-			//int secnum = 1;
-			//for (int sect = 0; sect < ac.ids.Count; sect++) {
-			//	info.sect = ac.ids[sect].number;
+			//////////////////////
+			// Sector Protections
+			//////////////////////		
+			for (int secIndex = 0; secIndex < dt.sectors.Count; secIndex++) {
 
-			//	// sector in sequence 1 - n
-			//	if (ac.ids[sect].number != secnum++) {
-			//		tc.sectorInSeq = false;
-			//		//trackProtection(tc);
-			//		//writeInfo(info, "not in sequence");
-			//	}
+				info.sect = dt.sectors[secIndex].id.number;
 
-			//	// Duplicate sector number
-			//	for (int comp = sect + 1; comp < ac.ids.Count; comp++)
-			//		if (ac.ids[sect].number == ac.ids[comp].number) {
-			//			tc.sectorUnique = false;
-			//			trackProtection(tc);
-			//			writeInfo(info, "duplicated");
-			//		}
+				// Duplicate sector number
+				for (int comp = secIndex + 1; comp < dt.sectors.Count; comp++) {
+					if (dt.sectors[secIndex].id.number == dt.sectors[comp].id.number) {
+						dt.sectors[secIndex].flags |= Sector.DUP_SEC_NUM;
+						dt.track.hasProtections = true;
+						writeInfo(info, "duplicated");
+					}
+				}
 
-			//	// invalid sector number
-			//	if (ac.ids[sect].number > 0xF4) {
-			//		tc.sectorValidNumber = false;
-			//		trackProtection(tc);
-			//		writeInfo(info, "has an invalid number");
-			//	}
+				// non standard IDAM
+				if (dt.sectors[secIndex].id.iam != 0xFE) {
+					dt.sectors[secIndex].flags |= Sector.NO_STD_IDAM;
+					dt.track.hasProtections = true;
+					writeInfo(info, "non standard IDAM");
+				}
 
-			//	// Standard Size
-			//	if (ac.ids[sect].size != 2) {
-			//		tc.sectorSandardSize = false;
-			//		//trackProtection(tc);
-			//		//writeInfo(info, "has not a standard size");
-			//	}
+				// invalid track number
+				if (dt.sectors[secIndex].id.track != track) {
+					dt.sectors[secIndex].flags |= Sector.BAD_TRK_NUM;
+					dt.track.hasProtections = true;
+					writeInfo(info, "track number does not match");
+				}
 
+				// invalid side value
+				if (dt.sectors[secIndex].id.head > 1) {
+					dt.sectors[secIndex].flags |= Sector.BAD_HEAD_NUM;
+					dt.track.hasProtections = true;
+					writeInfo(info, "invalid head value");
+				}
 
-			//	// sector within sector
-			//	if (tc.sectors[sect + 1].sws != -1) {
-			//		trackProtection(tc);
-			//		writeInfo(info, String.Format("is inside sector {0}", tc.sectors[sect + 1].sws));
-			//	}
+				// invalid sector number
+				if (dt.sectors[secIndex].id.number > 0xF4) {
+					dt.sectors[secIndex].flags |= Sector.BAD_SEC_NUM;
+					dt.track.hasProtections = true;
+					writeInfo(info, "invalid sector number");
+				}
 
-			//	SectorContent sc = FDC.findSectorContent(track, side, ac.ids[sect].number, ac.blocs[sect].startTime);
-			//	if (sc == null)
-			//		continue;
+				// invalid size value
+				if (dt.sectors[secIndex].id.size > 3) {
+					dt.sectors[secIndex].flags |= Sector.BAD_SEC_LEN;
+					dt.track.hasProtections = true;
+					writeInfo(info, "invalid sector size");
+				}
 
-			//	// Invalid Data into GAP
-			//	if ((tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap + tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap) > 0) {
-			//		sc.sectorBadDataInGap = true;
-			//		trackProtection(tc);
-			//		string message = "has invalid characters: ";
-			//		if (tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap > 0)
-			//			message += String.Format(" {0} in intra gap", tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap);
-			//		if (tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap > 0)
-			//			message += String.Format(" {0} in inter gap", tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap);
-			//		writeInfo(info, message);
-			//	}
+				// ID CRC error
+				if (dt.sectors[secIndex].id.info.crc != 0) {
+					dt.track.hasProtections = true;
+					writeInfo(info, "CRC error in id field");
+				}
 
-			//	//// Bad Sync
-			//	//if ((tc.sectors[sect+1].phases[(int)Phases.p_inner].badSync + tc.sectors[sect+1].phases[(int)Phases.p_outer].badSync) 
-			//	//	// + (tc.sectors[sect+1].phases[(int)Phases.p_data].badSync + tc.sectors[sect+1].phases[(int)Phases.p_id].badSync) 
-			//	//	> 0) {
-			//	//	sc.sectorBadSync = true;
-			//	//	trackProtection(tc);
-			//	//	string message = "has invalid sync seq: ";
-			//	//	if (tc.sectors[sect+1].phases[(int)Phases.p_inner].badSync > 0)
-			//	//		message += String.Format(" {0} in intra gap", tc.sectors[sect + 1].phases[(int)Phases.p_inner].badSync);
-			//	//	if (tc.sectors[sect+1].phases[(int)Phases.p_outer].badSync > 0)
-			//	//		message += String.Format(" {0} in inter gap", tc.sectors[sect + 1].phases[(int)Phases.p_outer].badSync);
-			//	//	//if (tc.sectors[sect+1].phases[(int)Phases.p_data].badSync > 0)
-			//	//	//	message += String.Format(" {0} in data", tc.sectors[sect + 1].phases[(int)Phases.p_data].badSync);
-			//	//	//if (tc.sectors[sect+1].phases[(int)Phases.p_id].badSync > 0)
-			//	//	//	message += String.Format(" {0} in id", tc.sectors[sect + 1].phases[(int)Phases.p_id].badSync);
-			//	//	writeInfo(info, message);
-			//	//}
-
-			//	// Data CRC Error
-			//	if (sc.dataBlock.crc != 0) {
-			//		trackProtection(tc);
-			//		writeInfo(info, "has CRC error in data field");
-			//	}
-
-			//	// ID CRC error
-			//	if (sc.idBlock.crc != 0) {
-			//		trackProtection(tc);
-			//		writeInfo(info, "has CRC error in id field");
-			//	}
-
-			//	// fuzzy bits
-			//	if (sc.fuzzyMask != null) {
-			//		trackProtection(tc);
-			//		writeInfo(info, "has fuzzy bits");
-			//	}
-
-			//	// sector under clocked
-			//	if ((sc.dataBlock.underClock > (Global.sectSize(sc.id.size) / 2)) && !tc.longTrack) {
-			//		sc.sectorUnderClocked = true;
-			//		trackProtection(tc);
-			//		writeInfo(info, String.Format("Short sector {0} µs ({1} bytes under clocked)", sc.dataBlock.timeLength / 1000, sc.dataBlock.underClock));
-			//	}
-
-			//	// sector over clocked
-			//	if ((sc.dataBlock.overClock > (Global.sectSize(sc.id.size) / 2)) && !tc.shortTrack) {
-			//		sc.sectorOverClocked = true;
-			//		trackProtection(tc);
-			//		writeInfo(info, String.Format("Long sector {0} µs ({1} bytes over clocked)", sc.dataBlock.timeLength / 1000, sc.dataBlock.overClock));
-			//	}
-
-			//	// intra bit width variation => normal macrodos if size/4 above and size/4 below
-			//	if (sc.dataBlock.underClock > (Global.sectSize(sc.id.size) / 8) && (sc.dataBlock.overClock > (Global.sectSize(sc.id.size) / 8))) {
-			//		sc.sectorIntraVariation = true;
-			//		trackProtection(tc);
-			//		writeInfo(info, String.Format("intra-sector variation ({0} bytes under {1} bytes over clocked))", sc.dataBlock.underClock, sc.dataBlock.overClock));
-			//	}
-
-			//	// sector with no data
-			//	if (sc.data.Bytes.Count == 0) {
-			//		trackProtection(tc);
-			//		writeInfo(info, "sector with no data");
-			//	}
-
-			//	// sector has invalid track number
-			//	if (sc.id.track != track) {
-			//		sc.sectorValidTrack = true;
-			//		trackProtection(tc);
-			//		writeInfo(info, String.Format("has invalid track number {0}", sc.id.track));
-			//	}
+				// sector within sector
+				if ((dt.sectors[secIndex].flags & Sector.SEC_IN_SEC) != 0) {
+					dt.track.hasProtections = true;
+					writeInfo(info, "sector within sector");
+				}
 
 
-			//}	// for all sector
+				if (dt.sectors[secIndex].data != null) {
+					// Data CRC Error
+					if (dt.sectors[secIndex].data.info.crc != 0) {
+						dt.track.hasProtections = true;
+						writeInfo(info, "has CRC error in data field");
+					}
+
+					// fuzzy bits
+					if (dt.sectors[secIndex].data.fuzzy != null) {
+						dt.track.hasProtections = true;
+						writeInfo(info, "has fuzzy bits");
+					}
+
+					// non standard DAM
+					if (dt.sectors[secIndex].data.iam != 0xFB) {
+						dt.sectors[secIndex].flags |= Sector.NO_STD_DAM;
+						dt.track.hasProtections = true;
+						writeInfo(info, "non standard DAM");
+					}
+
+					// long sector ( 4000 * 8) + 3%
+					if (dt.sectors[secIndex].data.info.timeLength > (32960 * (Global.sectSize(dt.sectors[secIndex].id.size) + 3))) {
+						dt.sectors[secIndex].flags |= Sector.LONG_SECT;
+						dt.track.hasProtections = true;
+						writeInfo(info, "long sector");
+					}
+
+					// long sector ( 4000 * 8) - 3%
+					if (dt.sectors[secIndex].data.info.timeLength < (31040 * (Global.sectSize(dt.sectors[secIndex].id.size) + 3))) {
+						dt.sectors[secIndex].flags |= Sector.SHORT_SECT;
+						dt.track.hasProtections = true;
+						writeInfo(info, "long sector");
+					}
+
+
+					// long sector ( 4000 * 8) - 3%
+					if ((dt.sectors[secIndex].flags & Sector.WIDTH_INTRA) != 0) {
+						dt.track.hasProtections = true;
+						writeInfo(info, "intra bit with variation (macrodos)");
+					}
+
+				}	// sector has data
+				else {
+					dt.track.hasProtections = true;
+					writeInfo(info, "sector with no data");
+				}
+
+			}	// for all sectors
+
+
+				//	// Invalid Data into GAP
+				//	if ((tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap + tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap) > 0) {
+				//		sc.sectorBadDataInGap = true;
+				//		trackProtection(tc);
+				//		string message = "has invalid characters: ";
+				//		if (tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap > 0)
+				//			message += String.Format(" {0} in intra gap", tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap);
+				//		if (tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap > 0)
+				//			message += String.Format(" {0} in inter gap", tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap);
+				//		writeInfo(info, message);
+				//	}
+
+				//	//// Bad Sync
+				//	//if ((tc.sectors[sect+1].phases[(int)Phases.p_inner].badSync + tc.sectors[sect+1].phases[(int)Phases.p_outer].badSync) 
+				//	//	// + (tc.sectors[sect+1].phases[(int)Phases.p_data].badSync + tc.sectors[sect+1].phases[(int)Phases.p_id].badSync) 
+				//	//	> 0) {
+				//	//	sc.sectorBadSync = true;
+				//	//	trackProtection(tc);
+				//	//	string message = "has invalid sync seq: ";
+				//	//	if (tc.sectors[sect+1].phases[(int)Phases.p_inner].badSync > 0)
+				//	//		message += String.Format(" {0} in intra gap", tc.sectors[sect + 1].phases[(int)Phases.p_inner].badSync);
+				//	//	if (tc.sectors[sect+1].phases[(int)Phases.p_outer].badSync > 0)
+				//	//		message += String.Format(" {0} in inter gap", tc.sectors[sect + 1].phases[(int)Phases.p_outer].badSync);
+				//	//	//if (tc.sectors[sect+1].phases[(int)Phases.p_data].badSync > 0)
+				//	//	//	message += String.Format(" {0} in data", tc.sectors[sect + 1].phases[(int)Phases.p_data].badSync);
+				//	//	//if (tc.sectors[sect+1].phases[(int)Phases.p_id].badSync > 0)
+				//	//	//	message += String.Format(" {0} in id", tc.sectors[sect + 1].phases[(int)Phases.p_id].badSync);
+				//	//	writeInfo(info, message);
+			
+
 
 		}
 

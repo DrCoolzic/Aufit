@@ -140,7 +140,7 @@ class DataDrawing {
 
 				tb = new TextBox();
 				tb.Text = String.Format("Data Field Start @ Bit={0} Time={1:F2} ms - {2} bytes Length={3:F2} µs {4} {5}",
-					sector.data.info.startBit, bstart, sector.data.info.byteCount - 3, blength * 1000,
+					sector.data.info.startBit, bstart, sector.data.info.byteCount, blength * 1000,
 					(sector.data.info.crc != 0) ? " - Bad CRC" : "",
 					(sector.data.fuzzy != null) ? " - Fuzzy sector" : "");
 				sectorInfoPanel.Children.Add(tb);
@@ -191,10 +191,8 @@ class DataDrawing {
 				sectorPhasePolygon.Fill = Brushes.Blue;
 			if (Bit.testBits(sector.flags, Sector.WIDTH_BELOW))
 				sectorPhasePolygon.Fill = Brushes.Aqua;
-
-
-			//// macrodos
-			//if ((si.phases[p].underClock > Global.sectSize(si.addr.size) / 8) && (si.phases[p].overClock > Global.sectSize(si.addr.size) / 8))
+			if (Bit.testBits(sector.flags, Sector.WIDTH_INTRA))
+				sectorPhasePolygon.Fill = Brushes.Purple;
 			//	plg.Fill = Brushes.BlueViolet;
 
 			if (sector.data.info.crc != 0) {
@@ -222,16 +220,16 @@ class DataDrawing {
 				//		if (sc.fuzzyMask.Bytes[j].dataByte != 0) nbFuzzy++;
 				//	}
 				//	if (nbFuzzy > (int)((double)sc.fuzzyMask.Bytes.Count * 0.6)) plg.Fill = Brushes.Gray;
-			}
+			}	// fuzzy
 
-
-		}
+		}	// phase data
 
 		sectorPhasePolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.2));
 		sectorPhasePolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.8));
 		sectorPhasePolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.8));
 		sectorPhasePolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.2));
 		_dataChartLayout.GraphicCanvas.Children.Add(sectorPhasePolygon);
+	
 	}
 		
 }

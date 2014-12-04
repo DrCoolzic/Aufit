@@ -86,7 +86,7 @@ namespace Aufit {
 				// DATA
 				if (sector.data != null)
 					displayBuffer.Inlines.Add(String.Format(" {0,4:D} {1,6:D} {2,5:D} {3} {4}",
-						sector.data.info.byteCount - 3, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000, 
+						sector.data.info.byteCount, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000, 
 						(sector.data.info.crc == 0) ? " OK" : "Bad", (sector.data.fuzzy != null) ? "Yes" : " No"));
 				displayBuffer.Inlines.Add("\n");
 			}			
@@ -98,10 +98,10 @@ namespace Aufit {
 					sector.id.track, sector.id.head, sector.id.number, sector.id.size, sector.id.crc, (sector.id.info.crc == 0) ? " Good CRC" : "Bad CRC"));
 				if (sector.data != null) {
 					displayBuffer.Inlines.Add("DATA Field: ");
-					if (sector.data.info.byteCount != Global.sectSize(sector.id.size) + 3)
+					if (sector.data.info.byteCount != Global.sectSize(sector.id.size))
 						displayBuffer.Inlines.Add(" *** Imcomplete *** ");
 					displayBuffer.Inlines.Add(String.Format("{0} bytes start at {1}µs length {2} µs IAM={3:X2} {4}={5:X4} {6}\n",
-						sector.data.info.byteCount - 3, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000,
+						sector.data.info.byteCount, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000,
 						sector.data.iam, (sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.crc,
 						(sector.data.fuzzy != null) ? "Fuzzy sector" : "" ));
 					drawBuffer(sector.data.buffer);
@@ -196,7 +196,7 @@ namespace Aufit {
 									Background =
 										((buffer.Bytes[i + j].dataByte >= 0xF5) && (buffer.Bytes[i + j].dataByte <= 0xF7) &&
 										 (buffer.Bytes[i + j].phase == Phases.p_gap)) ? Brushes.LightBlue :
-										(buffer.Bytes[i + j].mfmWord == 0x00) ? Brushes.Coral :
+										((buffer.Bytes[i + j].mfmWord == 0x0000) || (buffer.Bytes[i + j].mfmWord == 0xFFFF)) ? Brushes.Coral :
 										(((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ||
 										 ((buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224))) ? Brushes.Yellow :
 										(buffer.Bytes[i + j].phase == Phases.p_data) ? Brushes.LightGreen :
