@@ -40,6 +40,8 @@ using System.Windows.Shapes;
 using WD1772Package;
 using KFReaderPackage;
 using GlobalPackage;
+using System.IO;
+
 
 namespace Aufit {
 
@@ -191,7 +193,7 @@ public partial class DiskWindow : Window {
 		else {
 			double startAngle = - 0.0001;
 			double stopAngle = Math.PI * 2;
-			Path path = new Path();
+			System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
 			path.StrokeThickness = heavyLine;
 			PathGeometry pg = new PathGeometry();
 			path.Stroke = Brushes.Red;
@@ -203,7 +205,7 @@ public partial class DiskWindow : Window {
 
 
 	private void drawArc(Sector sector, Point center, double radius, double startAngle, double stopAngle, Phases phase) {
-		Path idPath = new Path();
+		System.Windows.Shapes.Path idPath = new System.Windows.Shapes.Path();
 		idPath.StrokeThickness = fineLine;
 		idPath.Stroke = Brushes.LightGreen;
 
@@ -433,6 +435,39 @@ public partial class DiskWindow : Window {
 		//double angle = Math.PI / 2 + 2 * Math.PI * (double)pos / (double)count;
 		double angle = 2 * Math.PI * (double)pos / (double)count;
 		return angle;
+	}
+
+	private void saveImageClick0(object sender, RoutedEventArgs e) {
+		CreateBitmapFromVisual(cvDisk0, "U:\\test0.png");
+	}
+
+	private void saveImageClick1(object sender, RoutedEventArgs e) {
+		CreateBitmapFromVisual(cvDisk1, "U:\\test1.png");
+	}
+
+	// http://mcleodsean.wordpress.com/2008/10/07/bitmap-snapshots-of-wpf-visuals/
+	void CreateBitmapFromVisual(Visual target, string filename) {
+		if (target == null) return;
+
+		Rect bounds = VisualTreeHelper.GetDescendantBounds(target);
+
+		int scale = 4;
+		DrawingVisual dv = new DrawingVisual();
+		using (DrawingContext dc = dv.RenderOpen()) {
+			dv.Transform = new ScaleTransform(scale, scale);
+			VisualBrush vb = new VisualBrush(target);
+			dc.DrawRectangle(vb, null, new Rect(new Point(), bounds.Size));
+		}
+
+		RenderTargetBitmap rtb = new RenderTargetBitmap(scale * (Int32)bounds.Width, scale * (Int32)bounds.Height, 96, 96, PixelFormats.Pbgra32);
+		rtb.Render(dv);
+
+		PngBitmapEncoder png = new PngBitmapEncoder();
+		png.Frames.Add(BitmapFrame.Create(rtb));
+
+		using (Stream stm = File.Create(filename)) {
+			png.Save(stm);
+		}
 	}
 
 }	// class DiskWindow

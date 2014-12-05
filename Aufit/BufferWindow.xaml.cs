@@ -94,7 +94,7 @@ namespace Aufit {
 
 			foreach (Sector sector in sectors) {
 				displayBuffer.Inlines.Add(String.Format("Sector {0}\n", sector.id.number));
-				displayBuffer.Inlines.Add(String.Format("ID Field: Track={0} Side={1} Sect={2} Size={3} CRC={4:X4} {5}\n",
+				displayBuffer.Inlines.Add(String.Format("ID Field: IDAM={0:X2} - Track={1} Side={2} Sect={3} Size={4} CRC={5:X4} {6}\n", sector.id.iam,
 					sector.id.track, sector.id.head, sector.id.number, sector.id.size, sector.id.crc, (sector.id.info.crc == 0) ? " Good CRC" : "Bad CRC"));
 				if (sector.data != null) {
 					displayBuffer.Inlines.Add("DATA Field: ");

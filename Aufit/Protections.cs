@@ -197,7 +197,7 @@ namespace Aufit {
 					if (dt.sectors[secIndex].data.info.timeLength < (31040 * (Global.sectSize(dt.sectors[secIndex].id.size) + 3))) {
 						dt.sectors[secIndex].flags |= Sector.SHORT_SECT;
 						dt.track.hasProtections = true;
-						writeInfo(info, "long sector");
+						writeInfo(info, "short sector");
 					}
 
 

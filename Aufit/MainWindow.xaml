@@ -73,11 +73,11 @@
             <TextBox Grid.Column="0" x:Name="tbFluxInfo" FontFamily="Arial" FontSize="13" Foreground="DarkBlue" FontWeight="Bold" Width="auto" Height="18" BorderThickness="0" />
             <TextBox Grid.Column="1" Text="Rev" Margin="5,0" BorderThickness="0" Height="20" TextAlignment="Center" HorizontalAlignment="Right"/>
             <Button Grid.Column="2" Margin="0" Height="18" Width="18" BorderThickness="0" Background="{x:Null}" Click="minusRevClicked">
-                <Image Source="Resources/minus.png"/>
+                <Image Source="Ressources/minus.png"/>
             </Button>
             <TextBox Grid.Column="3" Name="revolution" BorderThickness="0" Text="1" Height="18" Width="18" TextAlignment="Center" HorizontalAlignment="Right"/>
             <Button Grid.Column="4" Margin="0" Height="18" Width="18" Click="plusRevClicked" BorderThickness="0" Background="{x:Null}" >
-                <Image Source="Resources/plus.png"/>
+                <Image Source="Ressources/plus.png"/>
             </Button>
             <!--<Border Grid.Column="1" Grid.ColumnSpan="4" BorderThickness="1" Margin="-2" BorderBrush="Black"></Border>-->
         </Grid>

@@ -157,6 +157,11 @@ namespace WD1772Package {
 		public bool LastSyncA1 {
 			get { return (_lastSyncFound == SyncType.A1) ? true : false; }
 		}
+
+		public bool inSyncSeq {
+			get { return (_syncSeq > 0);  }
+		}
+
 		#endregion properties
 
 		/// <summary>Initialize the DSR class</summary>

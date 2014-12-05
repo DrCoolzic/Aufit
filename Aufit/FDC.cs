@@ -322,7 +322,7 @@ namespace WD1772Package {
 			// We read from the beginning to end of a track looking only for ID field (in current revolution).
 			// If the end of track happen in the middle of an ID field we continue with data from the next revolution.
 			// TODO we may want to continue on sync seq
-			for (int currentBit = startBit; (currentBit < stopBit) || (phase == Phases.p_id); currentBit++) {
+			for (int currentBit = startBit; (currentBit < stopBit) || (phase == Phases.p_id) || dsr.inSyncSeq; currentBit++) {
 				int currentByte = currentBit / 8;
 				int bitInByte = currentBit % 8;
 
@@ -375,7 +375,7 @@ namespace WD1772Package {
 										if (Global.Disk[track, side].sectors.Count > 1) {
 											Sector prevSect = Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 2];
 											// we take a min value for GAP3 (22+12+3) and min for GAP4 (24+8+3) 
-											int prevEnd = prevSect.id.info.startByte + prevSect.id.info.byteCount + 37 + Global.sectSize(prevSect.id.size) + 35;
+											int prevEnd = prevSect.id.info.startByte + prevSect.id.info.byteCount + 37 + Global.sectSize(prevSect.id.size) + 10;
 											if (byteCount < prevEnd)
 												Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].flags |= Sector.SEC_IN_SEC;
 										}
@@ -465,7 +465,7 @@ namespace WD1772Package {
 
 			// we normally loop from start to stop for the specified revolution.
 			// However we continue if we are in the middle of ID, Inner GAP, or DATA field
-			for (int currentBit = startBit; (currentBit < stopBit) || (phase != Phases.p_gap) || p_inner; currentBit++) {
+			for (int currentBit = startBit; (currentBit < stopBit) || (phase != Phases.p_gap) || p_inner || dsr.inSyncSeq; currentBit++) {
 				if (breakLoop) break;
 
 				int currentByte = currentBit / 8;

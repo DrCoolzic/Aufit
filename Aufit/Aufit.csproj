@@ -176,9 +176,9 @@
   <ItemGroup>
     <Content Include="Aufit.css" />
     <Resource Include="floppy.ico" />
-    <Resource Include="Resources\floppy.ico" />
-    <Resource Include="Resources\plus.png" />
-    <Resource Include="Resources\minus.png" />
+    <Resource Include="Ressources\floppy.ico" />
+    <Resource Include="Ressources\plus.png" />
+    <Resource Include="Ressources\minus.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

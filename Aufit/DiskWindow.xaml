@@ -11,9 +11,11 @@
         <Viewbox Grid.Column="0"   Stretch="Uniform">
             <Grid Name="cvDisk0" Margin="0" />
         </Viewbox>
+        <Button Grid.Column="0" Content="Save picture" Click="saveImageClick0" Height="20" Width="100" VerticalAlignment="bottom" HorizontalAlignment="Left"/>
         <TextBox Grid.Column="1" Name="tbDisk1" Width="auto" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left"/>
         <Viewbox Grid.Column="1" Stretch="Uniform" >
             <Grid Name="cvDisk1" Margin="0" />
         </Viewbox>
+        <Button Grid.Column="1" Content="Save picture" Click="saveImageClick1" Height="20" Width="100" VerticalAlignment="bottom" HorizontalAlignment="Left"/>
     </Grid>
 </Window>

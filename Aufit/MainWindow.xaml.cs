@@ -288,7 +288,7 @@ namespace Aufit {
 
 
 		// when set to true the KF files are read without treading for debug
-		private bool _debugNoThread = true;
+		private bool _debugNoThread = false;
 		// Do we read KF directory using Asynchronous read or as tasks.
 		private bool _readKFAsync = true;
 		
