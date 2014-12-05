@@ -53,7 +53,7 @@ public partial class DiskWindow : Window {
 	Grid _gd;
 	const int halfWindowSize = 300;
 	const double fineLine = 1.5;
-	const double heavyLine = 2.0;
+	const double heavyLine = 2.2;
 	const double referenceThickness = 0.4;
 	DoubleCollection referenceDashPattern = new DoubleCollection(new double[2] { 10, 5 });
 
@@ -75,6 +75,42 @@ public partial class DiskWindow : Window {
 		int side = 0;
 		_tb = tbDisk0;
 		_gd = cvDisk0;
+
+		double startAngle = -0.0001;
+		double stopAngle = Math.PI * 2;
+		Point center = new Point(halfWindowSize, halfWindowSize);
+		double radius = halfWindowSize; 
+
+		System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
+		//path.StrokeThickness = fineLine;
+		//path.Stroke = Brushes.Black;
+		path.Fill = Brushes.Black;
+
+		PathGeometry pg = new PathGeometry();
+		addArc(pg, startAngle, stopAngle, center, radius);
+		path.Data = pg;
+		cvDisk0.Children.Add(path);
+
+		path = new System.Windows.Shapes.Path();
+		path.Fill = Brushes.Black;
+		path.Data = pg;
+		cvDisk1.Children.Add(path);
+
+		radius /= 7;
+		path = new System.Windows.Shapes.Path();
+		path.Fill = Brushes.White;		
+		
+		PathGeometry hole = new PathGeometry();		
+		addArc(hole, startAngle, stopAngle, center, radius);
+		path.Data = hole;
+		cvDisk0.Children.Add(path);
+
+		path = new System.Windows.Shapes.Path();
+		path.Fill = Brushes.White;
+		path.Data = hole;
+		cvDisk1.Children.Add(path);
+
+
 		for (int track = 0; track < 84; track++) {
 			if ((Global.Disk[track, side].fluxData == null) &&
 				(Global.Disk[track, side].packedFluxData == null)) continue;
@@ -146,7 +182,8 @@ public partial class DiskWindow : Window {
 	/// <param name="track">The track to display</param>
 	/// <param name="side">The side of the FD</param>
 	public void drawDiskTrackLayout(int track, int side, int rev) {
-		List<Sector> sectors = Global.Disk[track, side].sectors;
+		 Global.DiskTrack dt = Global.Disk[track, side];
+		List<Sector> sectors = dt.sectors;
 		if (sectors == null) return;
 
 		Point center = new Point(halfWindowSize, halfWindowSize);
@@ -165,11 +202,12 @@ public partial class DiskWindow : Window {
 		zeroLine.Y2 = halfWindowSize;
 		_gd.Children.Add(zeroLine);
 
-		if (sectors.Count > 0) {
+		if ((sectors.Count > 0) && (sectors[0].data != null)) {
 			for (int i = 0; i < sectors.Count; i++) {
 				Sector sector = sectors[i];
 				double start = 0;
 				double stop = 0;
+				double revolutionTime = (double)Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime;
 
 				// draw ID segment
 				start = (double)sector.id.info.startTime;
@@ -186,21 +224,55 @@ public partial class DiskWindow : Window {
 					// if SWS we truncate
 					if (((i + 1) < sectors.Count) && ((double)sectors[i + 1].id.info.startTime < stop))
 						stop = (double)sectors[i + 1].id.info.startTime;
+
+					// if shifted we check to see if need truncate
+					if (stop > revolutionTime) {
+						// if SWS we truncate
+						double shiftedBstop = stop - revolutionTime;
+						if ((double)sectors[0].id.info.startTime < shiftedBstop)
+							shiftedBstop = (double)sectors[0].id.info.startTime;
+						stop = shiftedBstop + revolutionTime;
+					}
 					drawArc(sector, center, radius, timeAngle(start), timeAngle(stop), Phases.p_data);
 				}	// sector has data field
 			}	// all sectors
 		}	// one or more sectors
 		else {
+			System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
+			path.StrokeThickness = fineLine;
+			PathGeometry pg = new PathGeometry();
+			path.Stroke = Brushes.Black;
+
+			if ((dt.histoData.hasBitsInBands) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
+				if (dt.track.hasSyncSeq)
+					path.Stroke = Brushes.Blue;
+				else
+					path.Stroke = Brushes.Yellow;
+			}	// bits in band found
+			else
+				path.Stroke = Brushes.SlateGray;
+			
 			double startAngle = - 0.0001;
 			double stopAngle = Math.PI * 2;
-			System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
-			path.StrokeThickness = heavyLine;
-			PathGeometry pg = new PathGeometry();
-			path.Stroke = Brushes.Red;
 			addArc(pg, startAngle, stopAngle, center, radius);
 			path.Data = pg;
 			_gd.Children.Add(path);
 		}	// no sector track
+
+		for (int i = 0; i < dt.track.info.byteCount; i++) {
+			double startAngle = byteAngle(i - 1, dt.track.info.byteCount);
+			double stopAngle = byteAngle(i, dt.track.info.byteCount);
+			if ((dt.track.buffer.Bytes[i].mfmWord == 0) || (dt.track.buffer.Bytes[i].mfmWord == 0xFFFF)) {
+				System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
+				path.StrokeThickness = heavyLine;
+				PathGeometry pg = new PathGeometry();
+				path.Stroke = Brushes.Red;
+				addArc(pg, startAngle, stopAngle, center, radius);
+				path.Data = pg;
+				_gd.Children.Add(path);
+			}
+		}
+
 	}	// End of drawDisk()
 
 
@@ -212,47 +284,8 @@ public partial class DiskWindow : Window {
 		if (phase == Phases.p_id)
 			idPath.Stroke = Brushes.Blue;
 		if (phase == Phases.p_data)
+			// TODO color of data over/under/macro/crc/fuzzy
 			idPath.Stroke = Brushes.DeepSkyBlue;
-
-		//if (sector.phases[p].overClock > Global.sectSize(sector.addr.size) / 2)
-		//	path.Stroke = Brushes.Blue;
-		//if (sector.phases[p].underClock > Global.sectSize(sector.addr.size) / 2)
-		//	path.Stroke = Brushes.Aqua;
-		//if ((sector.phases[p].underClock > Global.sectSize(sector.addr.size) / 8) && (sector.phases[p].overClock > Global.sectSize(sector.addr.size) / 8))
-		//	path.Stroke = Brushes.BlueViolet;
-
-		//if ((i > 0) && (s != null) && ((s.dataBlock.crc != 0) || (s.fuzzyMask != null))) {
-		//	path.StrokeThickness = heavyLine;
-		//	path.Stroke = Brushes.Red;
-		//	//Path patherr = new Path();
-		//	//patherr.StrokeThickness = 5;
-		//	//patherr.Stroke = Brushes.Red;
-		//	//PathGeometry perr = new PathGeometry();
-		//	//addArc(perr, startAngle, stopAngle, center, radius);
-		//	//patherr.Data = perr;
-		//	//cvDisk.Children.Add(patherr);
-
-		////	if (s.fuzzyMask != null) {
-		////		int nbFuzzy = 0;
-		////		for (int j = 0; j < s.fuzzyMask.Bytes.Count; j++) {
-		////			if (s.fuzzyMask.Bytes[j].dataByte != 0) 
-		////				nbFuzzy++;
-		////		}
-		////		if (nbFuzzy > (int)((double)s.fuzzyMask.Bytes.Count * 0.6))
-		////			path.Stroke = Brushes.DarkSlateGray;
-		////	}	// has many fuzzy = unformatted ?
-		//}	// crc error or fuzzy bytes
-		//addArc(pg, startAngle, stopAngle, center, radius);
-		////break;
-
-		//	//case (byte)Phases.p_gap:
-		//	//	path.Stroke = Brushes.Green;
-		//	//	addArc(pg, startAngle, stopAngle, center, radius);
-		//	//	break;
-		//	default:
-		//		//plg.Fill = Brushes.Red;
-		//		break;
-		//}
 
 		PathGeometry idPg = new PathGeometry();
 		addArc(idPg, startAngle, stopAngle, center, radius);
@@ -451,7 +484,7 @@ public partial class DiskWindow : Window {
 
 		Rect bounds = VisualTreeHelper.GetDescendantBounds(target);
 
-		int scale = 4;
+		int scale = 3;
 		DrawingVisual dv = new DrawingVisual();
 		using (DrawingContext dc = dv.RenderOpen()) {
 			dv.Transform = new ScaleTransform(scale, scale);

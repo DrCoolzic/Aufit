@@ -8,6 +8,7 @@
 - check DSR for sync detect / IAM / ... ? still not elegant
 - load Aufit by double clicking
 - change UI for tabs
+- seems to work?: display of ID past index todo
 
 
 - disk browser / create / ...
@@ -15,8 +16,9 @@
 BUG
 - SWS air sea disk1 sect 0
 - NFA at end of track stop too soon.
-- airborne disk ranger d1 - sector wrap not stoped by IDAM => overlap
+- FIXED: airborne disk ranger d1 - sector wrap not stop by IDAM => overlap
 - FIXED: computer hit vol 2 D2 some ID missing (id after index)
+- comphitvol2 d2 : invalid byte in gaps actually located in data segment wrapped => should fix in read track detection (check in track buffer that it also display correctly)
 
 
 TESTS

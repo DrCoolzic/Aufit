@@ -420,9 +420,11 @@ namespace WD1772Package {
 				Global.Disk[track, side].sectors[sectorCount - 1].id.info.timeLength = currentTime - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startTime;
 			}
 
-			//// since we now continue when finding sync we can have duplicate sector in first last position
-			//if ((ac.ids.Count > 0) && (ac.ids[0].number == ac.ids[ac.ids.Count - 1].number) && (ac.blocs[ac.ids.Count - 1].startTime > trackLength))
-			//		ac.ids.RemoveAt(ac.ids.Count - 1);
+			// since we now continue when finding sync we can have duplicate sector in first last position
+			if ((Global.Disk[track, side].sectors.Count > 0) && 
+				(Global.Disk[track, side].sectors[0].id.number == Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].id.number) &&
+				(Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].id.info.startTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime))
+					Global.Disk[track, side].sectors.RemoveAt(Global.Disk[track, side].sectors.Count - 1);
 		}	// end of readAddr()
 
 
