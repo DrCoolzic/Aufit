@@ -1,4 +1,4 @@
-- Detection of macrodos not good should divide in 4 segment and check width on 2 & 3 (50%)
+- DONE: Detection of macrodos not good should divide in 4 segment and check width on 2 & 3 (50%)
 - optimize read sector do everything in one pass if no SWS ==> may move back mfmDecode if read fast enough
 - in Disk draw add NFA regions ? unformatted in black
 - optimize for Pasti sector=track ???
@@ -8,7 +8,7 @@
 - check DSR for sync detect / IAM / ... ? still not elegant
 - load Aufit by double clicking
 - change UI for tabs
-- seems to work?: display of ID past index todo
+- DONE? seems to work? display of ID past index todo
 
 
 - disk browser / create / ...

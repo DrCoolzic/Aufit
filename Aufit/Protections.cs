@@ -202,9 +202,9 @@ namespace Aufit {
 
 
 					// long sector ( 4000 * 8) - 3%
-					if ((dt.sectors[secIndex].flags & Sector.WIDTH_INTRA) != 0) {
+					if ((dt.sectors[secIndex].flags & Sector.MACRODOS) != 0) {
 						dt.track.hasProtections = true;
-						writeInfo(info, "intra bit with variation (macrodos)");
+						writeInfo(info, "Macrodos protection");
 					}
 
 				}	// sector has data

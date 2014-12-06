@@ -202,7 +202,7 @@ public partial class DiskWindow : Window {
 		zeroLine.Y2 = halfWindowSize;
 		_gd.Children.Add(zeroLine);
 
-		if ((sectors.Count > 0) && (sectors[0].data != null)) {
+		if ((sectors.Count > 0) || ((sectors.Count == 1) && (sectors[0].data != null))) {
 			for (int i = 0; i < sectors.Count; i++) {
 				Sector sector = sectors[i];
 				double start = 0;

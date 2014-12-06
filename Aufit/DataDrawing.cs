@@ -117,7 +117,7 @@ class DataDrawing {
 			sectorBorderPolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.8));
 
 			TextBox tb = new TextBox();
-			tb.Text = String.Format("ID Field (T={0} H={1} N={2} S={3} CRC={4:X4}) Start @ Bit={5} Time={6:F2} ms",
+			tb.Text = String.Format("ID Field (T={0} H={1} N={2} S={3} CRC={4:X4}) - Start @ Bit={5} Time={6:F2} ms",
 				sector.id.track, sector.id.head, sector.id.number, sector.id.size, sector.id.crc,
 				sector.id.info.startBit, bstart);
 			sectorInfoPanel.Children.Add(tb);
@@ -131,16 +131,16 @@ class DataDrawing {
 				bstop = bstart + blength;
 
 				tb = new TextBox();
-				tb.Text = String.Format("Gap Field Start @ Bit={0} Time={1:F2} ms - {2} bytes",
+				tb.Text = String.Format("Gap Field {0} bytes - Start @ Bit={1} Time={2:F2} ms",
+					sector.data.info.startByte - sector.id.info.startByte - sector.id.info.byteCount,
 					sector.id.info.startBit + sector.id.info.bitCount,
-					(double)(sector.id.info.startTime + sector.id.info.timeLength) / 1000000.0,
-					sector.data.info.startByte - sector.id.info.startByte - sector.id.info.byteCount);
+					(double)(sector.id.info.startTime + sector.id.info.timeLength) / 1000000.0);
 				sectorInfoPanel.Children.Add(tb);
 				drawRectangle(sector, idbstop, bstart, Phases.p_gap);
 
 				tb = new TextBox();
-				tb.Text = String.Format("Data Field Start @ Bit={0} Time={1:F2} ms - {2} bytes Length={3:F2} µs {4} {5}",
-					sector.data.info.startBit, bstart, sector.data.info.byteCount, blength * 1000,
+				tb.Text = String.Format("Data Field {0} bytes Length={1:F2} µs - Start @ Bit={2} Time={3:F2} ms {4} {5}",
+					sector.data.info.byteCount, blength * 1000, sector.data.info.startBit, bstart, 
 					(sector.data.info.crc != 0) ? " - Bad CRC" : "",
 					(sector.data.fuzzy != null) ? " - Fuzzy sector" : "");
 				sectorInfoPanel.Children.Add(tb);
@@ -191,7 +191,7 @@ class DataDrawing {
 				sectorPhasePolygon.Fill = Brushes.Blue;
 			if (Bit.testBits(sector.flags, Sector.WIDTH_BELOW))
 				sectorPhasePolygon.Fill = Brushes.Aqua;
-			if (Bit.testBits(sector.flags, Sector.WIDTH_INTRA))
+			if (Bit.testBits(sector.flags, Sector.MACRODOS))
 				sectorPhasePolygon.Fill = Brushes.Purple;
 			//	plg.Fill = Brushes.BlueViolet;
 

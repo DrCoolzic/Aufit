@@ -127,7 +127,7 @@ namespace WD1772Package {
 	public class Sector {
 		public const int WIDTH_ABOVE = Bit.BIT_01;
 		public const int WIDTH_BELOW = Bit.BIT_02;
-		public const int WIDTH_INTRA = Bit.BIT_03;
+		public const int MACRODOS = Bit.BIT_03;
 		public const int NO_STD_IDAM = Bit.BIT_04;
 		public const int BAD_TRK_NUM = Bit.BIT_05;
 		public const int BAD_HEAD_NUM = Bit.BIT_06;
@@ -192,8 +192,8 @@ namespace WD1772Package {
 
 	/// <summary>Emulate some WD1772 FDC Commands</summary>
 	public class FDC {
-		private readonly static int widthUpperLimit = 2000 + (4 * 20);
-		private readonly static int widthLowerLimit = 2000 - (4 * 20);
+		private readonly static int widthUpperLimit = 2060;
+		private readonly static int widthLowerLimit = 1940;
 
 		/// <summary>Read a track by decoding all the track MFM bits</summary>
 		/// <remarks>This function interprets the bits stream as a WD1772 would do with a 
@@ -455,8 +455,8 @@ namespace WD1772Package {
 			ushort crc = 0;
 			bool idFound = false;
 			bool breakLoop = false;
-			int widthOver = 0;
-			int widthUnder = 0;
+			int[] widthOver = { 0, 0, 0, 0 };
+			int[] widthUnder = { 0, 0, 0, 0 };
 
 			Phases phase = Phases.p_gap;
 			DSR dsr = new DSR();
@@ -535,7 +535,8 @@ namespace WD1772Package {
 											byteLeftInBlock = Global.sectSize(sector.id.size) + 3; // AM + 2 CRC + Size
 											phase = Phases.p_data;
 											p_inner = false;
-											widthOver = widthUnder = 0;
+											widthOver[0] = widthOver[1] = widthOver[2] = widthOver[3] = 0;
+											widthUnder[0] = widthUnder[1] = widthUnder[2] = widthUnder[3] = 0;
 
 											data.info.startBit = currentBit - startBit;
 											data.info.startByte = byteCount;
@@ -591,19 +592,22 @@ namespace WD1772Package {
 									data.info.byteCount = byteCount - data.info.startByte - 3;
 									data.info.timeLength = currentTime - data.info.startTime;
 									data.info.bitCount = currentBit - startBit - data.info.startBit;
-									if (widthOver > (Global.sectSize(sector.id.size) / 2))
+									if ((widthOver[0] + widthOver[1] + widthOver[2] + widthOver[3]) > (Global.sectSize(sector.id.size) / 2))
 										Bit.setBits(ref flags, Sector.WIDTH_ABOVE);
-									if (widthUnder > (Global.sectSize(sector.id.size) / 2))
+									if ((widthUnder[0] + widthUnder[1] + widthUnder[2] + widthUnder[3]) > (Global.sectSize(sector.id.size) / 2))
 										Bit.setBits(ref flags, Sector.WIDTH_BELOW);
-									if ((widthOver > (Global.sectSize(sector.id.size) / 10)) && (widthUnder > (Global.sectSize(sector.id.size) / 10)))
-										Bit.setBits(ref flags, Sector.WIDTH_INTRA);
+									if ((widthOver[0] < (Global.sectSize(sector.id.size) / 8)) && (widthOver[3] < (Global.sectSize(sector.id.size) / 8)) &&
+										(widthUnder[0] < (Global.sectSize(sector.id.size) / 8)) && (widthUnder[3] < (Global.sectSize(sector.id.size) / 8)) &&
+										(widthOver[1] > (Global.sectSize(sector.id.size) / 6)) && (widthUnder[2] > (Global.sectSize(sector.id.size) / 6)))
+										Bit.setBits(ref flags, Sector.MACRODOS);
 									phase = Phases.p_gap;
 									breakLoop = true;
 									break;
 								default:
 									data.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
-									if (bitWidth > widthUpperLimit) widthOver++;
-									if (bitWidth < widthLowerLimit) widthUnder++;
+									int segment = 3 - ((byteLeftInBlock - 3) / (Global.sectSize(sector.id.size) / 4));
+									if (bitWidth > widthUpperLimit) widthOver[segment]++;
+									if (bitWidth < widthLowerLimit) widthUnder[segment]++;
 									break;
 							}	// switch
 						}	// DATA Segment
@@ -626,7 +630,7 @@ namespace WD1772Package {
 			if (!compare) {
 				sector.data = data;
 			}
-			else {
+			else if (sector.data != null) {
 				int size = sector.data.info.byteCount;
 				// We check that size is same otherwise we probably have a shifted track
 				if (data.info.byteCount < size) {
@@ -647,7 +651,7 @@ namespace WD1772Package {
 				}
 				bool fuzzyFound = false;
 
-				for (int i = 0; i < size; i++) {
+				for (int i = 0; i < size - 3; i++) {
 					byte xor = (byte)(data.buffer.Bytes[i].dataByte ^ sector.data.buffer.Bytes[i].dataByte);
 					if (xor != 0) {
 						fuzzyFound = true;

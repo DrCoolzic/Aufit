@@ -225,7 +225,7 @@ namespace PastiPackage {
 					// do we need timing record
 					int timingEntries = 0;
 					for (int sect = 0; sect < sectorCount; sect++)
-						if (Bit.testBits(dt.sectors[sect].flags, Sector.WIDTH_INTRA))
+						if (Bit.testBits(dt.sectors[sect].flags, Sector.MACRODOS))
 							timingEntries += Global.sectSize(dt.sectors[sect].id.size) / 16;
 
 					if (timingEntries > 0)
@@ -315,7 +315,7 @@ namespace PastiPackage {
 							}	// these two flags are only meaningful if record has bytes
 							if (dt.sectors[sect].data.fuzzy != null)
 								fdcFlag |= SectorDesc.FUZZY_BITS;
-							if (Bit.testBits(dt.sectors[sect].flags, Sector.WIDTH_INTRA))
+							if (Bit.testBits(dt.sectors[sect].flags, Sector.MACRODOS))
 								fdcFlag |= SectorDesc.BIT_WIDTH;
 
 							sd.fdcFlags = fdcFlag;
@@ -407,7 +407,7 @@ namespace PastiPackage {
 						// write timing
 						for (int sect = 0; sect < sectorCount; sect++) {
 							//if (dt.sectorsContent[sect].sectorIntraVariation) {
-							if (Bit.testBits(dt.sectors[sect].flags, Sector.WIDTH_INTRA)) {
+							if (Bit.testBits(dt.sectors[sect].flags, Sector.MACRODOS)) {
 								int timingSum = 0;
 								for (int i = 0; i < (dt.sectors[sect].data.info.byteCount); i++) {
 									timingSum += (dt.sectors[sect].data.buffer.Bytes[i].density * 16);
