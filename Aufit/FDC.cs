@@ -222,12 +222,18 @@ namespace WD1772Package {
 			dsr.trackMode();
 
 			// we use the sector information
-			int sectorNumber = 0;
+			int sectorNumber = -1;
 			int sectorCount = Global.Disk[track, side].sectors.Count;
 			Phases phase = Phases.p_gap;
 			int invalidByteInGap = 0;
 			int nfaCount = 0;
 			int nfaStart;
+			bool compute = true;
+			int nextIdStartTime = int.MaxValue;
+			int nextIdStopTime = int.MaxValue;
+			int nextDataStartTime = int.MaxValue;
+			int nextDataStopTime = int.MaxValue;
+			bool hasData = false;
 
 			// We read from the beginning to end of a track looking with AM decoder on all time
 			for (int currentBit = startBit; (currentBit < stopBit); currentBit++) {
@@ -241,29 +247,61 @@ namespace WD1772Package {
 
 				// here we set phase if sectors found in readAddr
 				if ((Global.Disk[track, side].sectors != null) && (Global.Disk[track, side].sectors.Count > 0)) {
-					Sector sector = Global.Disk[track, side].sectors[sectorNumber];
-					int nextIdStart = sector.id.info.startBit + startBit;
-					int nextIdStop = nextIdStart + sector.id.info.bitCount;
-					int nextDataStart = 0;
-					int nextDataStop = 0;
-					if (sector.data != null) {
-						nextDataStart = sector.data.info.startBit + startBit;
-						nextDataStop = nextDataStart + sector.data.info.bitCount;
-					}
-					if (currentBit == nextIdStart)
+					if (compute) {
+						// here we test wrapped sector - we det phase to p_data if necessary but do not test for p_id!
+						if (sectorNumber == -1) {
+							int startTime = Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].data.info.startTime;
+							int stopTime = startTime + Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].data.info.timeLength;
+							if ((Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].data != null) &&
+								((startTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime) ||
+								(stopTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime))) {
+
+								if (startTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime)
+									nextDataStartTime = startTime - Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime;
+								else
+									nextDataStartTime = currentTime;
+								nextDataStopTime = stopTime - Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime;
+								hasData = true;
+								compute = false;
+							}	// last sector has data past index
+							else {
+								sectorNumber = 0;
+								compute =  true;
+							}
+						}	// test if last sector is wrapped
+						else {
+							Sector sector = Global.Disk[track, side].sectors[sectorNumber];
+							nextIdStartTime = sector.id.info.startTime;
+							nextIdStopTime = nextIdStartTime + sector.id.info.timeLength;
+							nextDataStartTime = int.MaxValue;
+							nextDataStopTime = int.MaxValue;
+							if (sector.data != null) {
+								nextDataStartTime = sector.data.info.startTime;
+								nextDataStopTime = nextDataStartTime + sector.data.info.timeLength;
+								hasData = true;
+							}	// has sector
+							else hasData = false;
+							compute = false;						
+						}
+					} // need compute values
+
+					if (currentTime >= nextIdStartTime)
 						phase = Phases.p_id;
-					else if (currentBit == nextIdStop) {
-						if (sector.data == null)
+					if (currentTime >= nextIdStopTime) {
+						if (hasData == false) {
 							sectorNumber = (sectorNumber + 1) % sectorCount;
+							compute = true;
+						}
 						phase = Phases.p_gap;
 					}
-					else if (currentBit == nextDataStart)
+					if (currentTime >= nextDataStartTime)
 						phase = Phases.p_data;
-					else if (currentBit == nextDataStop) {
+					if (currentTime >= nextDataStopTime) {
 						phase = Phases.p_gap;
 						sectorNumber = (sectorNumber + 1) % sectorCount;
+						compute = true;
 					}
-				}
+				}	// we use sectors info
 
 				if (dsr.DataReady) {
 					byteCount++;

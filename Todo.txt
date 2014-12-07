@@ -1,6 +1,7 @@
 - DONE: Detection of macrodos not good should divide in 4 segment and check width on 2 & 3 (50%)
 - DONE: optimize read sector do everything in one pass if no SWS ==> may move back mfmDecode if read fast enough
 - DONE: in Disk draw add NFA regions ? unformatted in black
+- DONE: store correct phase for byte entered of a wrapped sector
 - optimize for Pasti sector=track ???
 - more optimization when reading stream files?
 - remove bit functions slow
@@ -18,7 +19,7 @@ BUG
 - NFA at end of track stop too soon.
 - FIXED: airborne disk ranger d1 - sector wrap not stop by IDAM => overlap
 - FIXED: computer hit vol 2 D2 some ID missing (id after index)
-- comphitvol2 d2 : invalid byte in gaps actually located in data segment wrapped => should fix in read track detection (check in track buffer that it also display correctly)
+- FIXED: comphitvol2 d2 : invalid byte in gaps actually located in data segment wrapped => should fix in read track detection (check in track buffer that it also display correctly)
 
 
 TESTS
