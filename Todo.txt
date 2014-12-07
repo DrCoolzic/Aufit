@@ -1,6 +1,6 @@
 - DONE: Detection of macrodos not good should divide in 4 segment and check width on 2 & 3 (50%)
-- optimize read sector do everything in one pass if no SWS ==> may move back mfmDecode if read fast enough
-- in Disk draw add NFA regions ? unformatted in black
+- DONE: optimize read sector do everything in one pass if no SWS ==> may move back mfmDecode if read fast enough
+- DONE: in Disk draw add NFA regions ? unformatted in black
 - optimize for Pasti sector=track ???
 - more optimization when reading stream files?
 - remove bit functions slow
@@ -14,7 +14,7 @@
 - disk browser / create / ...
 
 BUG
-- SWS air sea disk1 sect 0
+- FIXED: SWS air sea disk1 sect 0
 - NFA at end of track stop too soon.
 - FIXED: airborne disk ranger d1 - sector wrap not stop by IDAM => overlap
 - FIXED: computer hit vol 2 D2 some ID missing (id after index)

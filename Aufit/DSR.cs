@@ -39,14 +39,14 @@ namespace WD1772Package {
 		enum SyncType { No, A1, C2 }
 
 		/// <summary>Bit used in the _decoderFlags for the Address Mark detector enabled</summary>
-		const int SYNC_DETECTOR_ENABLED = Bit.BIT_01;
+		const uint SYNC_DETECTOR_ENABLED = Bit.BIT_01;
 		/// <summary>Bit used in the _decoderFlags to indicates that DSR data are available</summary>
-		const int DATA_READY = Bit.BIT_02;
-		const int A1_FOUND = Bit.BIT_03;
-		const int C2_FOUND = Bit.BIT_04;
-		const int CRC_ENABLED = Bit.BIT_05;
-		const int CRC_ACTIVE = Bit.BIT_06;
-		const int IAM_POSITION = Bit.BIT_07;
+		const uint DATA_READY = Bit.BIT_02;
+		const uint A1_FOUND = Bit.BIT_03;
+		const uint C2_FOUND = Bit.BIT_04;
+		const uint CRC_ENABLED = Bit.BIT_05;
+		const uint CRC_ACTIVE = Bit.BIT_06;
+		const uint IAM_POSITION = Bit.BIT_07;
 
 		/// <summary>AM Detector</summary>
 		/// <remarks>The _syncDetector is a 16 bits wide shift register that accumulates directly 
@@ -63,7 +63,7 @@ namespace WD1772Package {
 		int _dsr;
 
 		/// <summary>Stores the various decoder Flags</summary>
-		int _decoderFlags;
+		uint _decoderFlags;
 
 		/// <summary>Indicates the distance of the next data bit</summary>
 		/// <remarks>A value of 0 indicates we just read a clock bit in the _amDetector and that

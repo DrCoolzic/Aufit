@@ -198,36 +198,44 @@ public struct HistoData {
 
 
 public class Bit {
-	public const int BIT_01 = 0x00000001;
-	public const int BIT_02 = 0x00000002;
-	public const int BIT_03 = 0x00000004;
-	public const int BIT_04 = 0x00000008;
-	public const int BIT_05 = 0x00000010;
-	public const int BIT_06 = 0x00000020;
-	public const int BIT_07 = 0x00000040;
-	public const int BIT_08 = 0x00000080;
-	public const int BIT_09 = 0x00000100;
-	public const int BIT_10 = 0x00000200;
-	public const int BIT_11 = 0x00000400;
-	public const int BIT_12 = 0x00000800;
-	public const int BIT_13 = 0x00001000;
-	public const int BIT_14 = 0x00002000;
-	public const int BIT_15 = 0x00004000;
-	public const int BIT_16 = 0x00008000;
-	public const int BIT_17 = 0x00010000;
-	public const int BIT_18 = 0x00020000;
-	public const int BIT_19 = 0x00040000;
-	public const int BIT_20 = 0x00080000;
-	public const int BIT_21 = 0x00100000;
-	public const int BIT_22 = 0x00200000;
-	public const int BIT_23 = 0x00400000;
-	public const int BIT_24 = 0x00800000;
+	public const uint BIT_01 = 0x00000001;
+	public const uint BIT_02 = 0x00000002;
+	public const uint BIT_03 = 0x00000004;
+	public const uint BIT_04 = 0x00000008;
+	public const uint BIT_05 = 0x00000010;
+	public const uint BIT_06 = 0x00000020;
+	public const uint BIT_07 = 0x00000040;
+	public const uint BIT_08 = 0x00000080;
+	public const uint BIT_09 = 0x00000100;
+	public const uint BIT_10 = 0x00000200;
+	public const uint BIT_11 = 0x00000400;
+	public const uint BIT_12 = 0x00000800;
+	public const uint BIT_13 = 0x00001000;
+	public const uint BIT_14 = 0x00002000;
+	public const uint BIT_15 = 0x00004000;
+	public const uint BIT_16 = 0x00008000;
+	public const uint BIT_17 = 0x00010000;
+	public const uint BIT_18 = 0x00020000;
+	public const uint BIT_19 = 0x00040000;
+	public const uint BIT_20 = 0x00080000;
+	public const uint BIT_21 = 0x00100000;
+	public const uint BIT_22 = 0x00200000;
+	public const uint BIT_23 = 0x00400000;
+	public const uint BIT_24 = 0x00800000;
+	public const uint BIT_25 = 0x01000000;
+	public const uint BIT_26 = 0x02000000;
+	public const uint BIT_27 = 0x04000000;
+	public const uint BIT_28 = 0x08000000;
+	public const uint BIT_29 = 0x10000000;
+	public const uint BIT_30 = 0x20000000;
+	public const uint BIT_31 = 0x40000000;
+	public const uint BIT_32 = 0x80000000;
 
 	#region flag_helper_functions
 	/// <summary>Set the specified bit(s) in the flag</summary>
 	/// <param name="flag">The flag to update</param>
 	/// <param name="bits">An array of bits to set in the flag</param>
-	public static void setBits(ref int flag, params int[] bits) {
+	public static void setBits(ref uint flag, params uint[] bits) {
 		for (int i = 0; i < bits.Length; i++)
 			flag |= bits[i];
 	}
@@ -235,7 +243,7 @@ public class Bit {
 	/// <summary>Reset the specified bit(s) in the flag</summary>
 	/// <param name="flag">The flag to update</param>
 	/// <param name="bits">An array of bits to reset in the flag</param>		
-	public static void resetBits(ref int flag, params int[] bits) {
+	public static void resetBits(ref uint flag, params uint[] bits) {
 		for (int i = 0; i < bits.Length; i++)
 			flag &= ~bits[i];
 	}
@@ -244,7 +252,7 @@ public class Bit {
 	/// <param name="flag">The flag to test</param>
 	/// <param name="bits">An array of bits to test in the flag</param>
 	/// <returns>True if any of the tested bits is set</returns>
-	public static bool testBits(int flag, params int[] bits) {
+	public static bool testBits(uint flag, params uint[] bits) {
 		bool result = false;
 		for (int i = 0; i < bits.Length; i++)
 			result |= ((flag & bits[i]) != 0);
