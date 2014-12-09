@@ -138,7 +138,9 @@ namespace WD1772Package {
 		public const uint DUP_SEC_NUM = Bit.BIT_11;
 		public const uint LONG_SECT = Bit.BIT_12;
 		public const uint SHORT_SECT = Bit.BIT_13;
+		public const uint SECTOR_SEQ = Bit.BIT_14;
 
+		public const uint SEC_IN_TRACK = Bit.BIT_31;
 		public const uint SEC_PROCESSED = Bit.BIT_32;
 		// BAD_ID_CRC => id.info.crc != 0
 		// SECT_NO_DATA => data == null
@@ -153,6 +155,9 @@ namespace WD1772Package {
 
 		/// <summary>Protection Flags related to the sector</summary>
 		public uint flags;
+
+		/// <summary>the content of the sector can be found at this track offset</summary>
+		public uint trackOffset;
 	}
 
 
@@ -184,7 +189,7 @@ namespace WD1772Package {
 		/// <summary>Protection Flags related to the track</summary>
 		public uint flags;
 
-		public bool hasSyncSeq = false;
+		public int firstSyncOffset = 0;
 
 		public bool hasProtections = false;
 
@@ -203,7 +208,6 @@ namespace WD1772Package {
 		/// be read by a WD1772 decode the flux transitions. However we do an interpretation 
 		/// of the different segments of a sector (called phases) to be able to display 
 		/// useful information.</remarks>
-		/// TODO do something special for SDS ?
 		public static void readTrack(int track, int side, int rev) {
 			if (Global.Disk[track, side].track != null) return;
 
@@ -248,28 +252,31 @@ namespace WD1772Package {
 				// here we set phase if sectors found in readAddr
 				if ((Global.Disk[track, side].sectors != null) && (Global.Disk[track, side].sectors.Count > 0)) {
 					if (compute) {
-						// here we test wrapped sector - we det phase to p_data if necessary but do not test for p_id!
-						if (sectorNumber == -1) {
-							int startTime = Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].data.info.startTime;
-							int stopTime = startTime + Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].data.info.timeLength;
-							if ((Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].data != null) &&
-								((startTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime) ||
-								(stopTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime))) {
+						// here we test wrapped sector - test first id last sector has data
+						if ((sectorNumber == -1) && (Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].data != null)) {
+							int dataStartTime = Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].data.info.startTime;
+							int dataStopTime = dataStartTime + Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].data.info.timeLength;
+							if ((dataStartTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime) ||
+								(dataStopTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime)) {
 
-								if (startTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime)
-									nextDataStartTime = startTime - Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime;
+								if (dataStartTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime)
+									nextDataStartTime = dataStartTime - Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime;
 								else
 									nextDataStartTime = currentTime;
-								nextDataStopTime = stopTime - Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime;
+								nextDataStopTime = dataStopTime - Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime;
+								// check SWS
+								int IdStartTime = Global.Disk[track, side].sectors[0].id.info.startTime;
+								if (nextDataStopTime > IdStartTime)
+									nextDataStopTime = IdStartTime;
 								hasData = true;
 								compute = false;
-							}	// last sector has data past index
-							else {
+
+							}	// last sector has data past index - shifted track
+							else
 								sectorNumber = 0;
-								compute =  true;
-							}
 						}	// test if last sector is wrapped
-						else {
+						
+						if (sectorNumber != -1) {
 							Sector sector = Global.Disk[track, side].sectors[sectorNumber];
 							nextIdStartTime = sector.id.info.startTime;
 							nextIdStopTime = nextIdStartTime + sector.id.info.timeLength;
@@ -278,8 +285,14 @@ namespace WD1772Package {
 							if (sector.data != null) {
 								nextDataStartTime = sector.data.info.startTime;
 								nextDataStopTime = nextDataStartTime + sector.data.info.timeLength;
+								// check SWS
+								if ((sectorNumber + 1) < Global.Disk[track, side].sectors.Count) {
+									int IdStartTime = Global.Disk[track, side].sectors[sectorNumber + 1].id.info.startTime;
+									if (nextDataStopTime > IdStartTime)
+										nextDataStopTime = IdStartTime;
+								}
 								hasData = true;
-							}	// has sector
+							}	// sector has data
 							else hasData = false;
 							compute = false;						
 						}
@@ -307,7 +320,7 @@ namespace WD1772Package {
 					byteCount++;
 
 					if (dsr.IAM & dsr.LastSyncA1) {
-						Global.Disk[track, side].track.hasSyncSeq = true;
+						Global.Disk[track, side].track.firstSyncOffset = currentByte;
 					}
 					if ((dsr.Data >= 0xF5) && (dsr.Data <= 0xF7) && (phase == Phases.p_gap))
 						invalidByteInGap++;
@@ -361,7 +374,6 @@ namespace WD1772Package {
 
 			// We read from the beginning to end of a track looking only for ID field (in current revolution).
 			// If the end of track happen in the middle of an ID field we continue with data from the next revolution.
-			// TODO we may want to continue on sync seq
 			for (int currentBit = startBit; (currentBit < stopBit) || (phase == Phases.p_id) || dsr.inSyncSeq; currentBit++) {
 				int currentByte = currentBit / 8;
 				int bitInByte = currentBit % 8;
@@ -376,13 +388,6 @@ namespace WD1772Package {
 
 				byte bits = Global.Disk[track, side].packedFluxData.packedBits[currentByte];
 				int bit = (bits >> bitInByte) & 0x1;
-
-				// TODO Better ?????
-				//int testBit = 0x1 << (currentBit % 8);
-				//if ((bits & (byte)testBit) != 0) {
-				//	int flux = Global.fluxWidth(currentBit, track, side);
-				//	currentTime += flux;
-				//}
 				currentTime += Global.Disk[track, side].packedFluxData.bitWidth[currentByte];
 
 				dsr.shiftBitsIn(bit);
@@ -691,12 +696,12 @@ namespace WD1772Package {
 										//	//	String.Format("buffers size s1={0} s2={1}\n", sref.buffer.Bytes.Count, sect.buffer.Bytes.Count));
 
 										byte[] fuzzy;
-										if (sector.data.fuzzy != null)
-											fuzzy = sector.data.fuzzy;
-										else {
+										//if (sector.data.fuzzy != null)
+										//	fuzzy = sector.data.fuzzy;
+										//else {
 											int dataSize = Global.sectSize(sector.id.size);
 											fuzzy = new byte[dataSize];
-										}
+										//}
 										bool fuzzyFound = false;
 
 										for (int i = 0; i < size - 3; i++) {
@@ -706,7 +711,7 @@ namespace WD1772Package {
 												fuzzy[i] |= xor;
 											}
 										}	// compare all bytes
-										if (fuzzyFound)
+										if (fuzzyFound && (sector.data.fuzzy == null))
 											sector.data.fuzzy = fuzzy;
 									} // compare mode
 									break;

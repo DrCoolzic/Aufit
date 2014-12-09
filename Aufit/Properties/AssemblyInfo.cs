@@ -53,5 +53,7 @@ using System.Windows;
 // [assembly: AssemblyVersion("1.0.*")]
 
 // [assembly: AssemblyVersion("0.5.1.0")]
+
+// number of day since 2000 - number second since midnight / 2
 [assembly: AssemblyVersion("0.5.*")]
 //[assembly: AssemblyFileVersion("0.5.1")]

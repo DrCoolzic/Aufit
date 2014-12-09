@@ -87,20 +87,32 @@ namespace Aufit {
 				writeInfo(info, "invalid bytes in GAP");
 			}
 
-
-			//// NFA
-			//if (tc.NFA != -1) {
-			//	writeInfo(info, String.Format("has No Flux Area starting at {0}", tc.NFA / 1000));
-			//	trackProtection(tc);
-			//}
-
-			//// Over index
-			//if (tc.dataOverIdx)
-			//	writeInfo(info, "has data over index");
-			//if (tc.dataBeyondIdx)
-			//	writeInfo(info, "has data beyond index");
-			//if (tc.idOverIdx)
-			//	writeInfo(info, "has ID field over index");
+			if (dt.sectors.Count > 0) {
+				Sector lastSector = dt.sectors[dt.sectors.Count - 1];
+				int revTime = dt.packedFluxDataRev[0].revolutionTime;
+				if (lastSector.id.info.startTime > revTime) {
+					dt.track.flags |= Track.ID_AFTER_IDX;
+					dt.track.hasProtections = true;
+					writeInfo(info, "Shifted track: Id Beyond Index");
+				}
+				else if ((lastSector.id.info.startTime + lastSector.id.info.timeLength) > revTime) {
+					dt.track.flags |= Track.ID_OVER_IDX;
+					dt.track.hasProtections = true;
+					writeInfo(info, "Shifted track: Id Over Index");
+				}
+				else if (lastSector.data != null) {
+					if (lastSector.data.info.startTime > revTime) {
+						dt.track.flags |= Track.DATA_AFTER_IDX;
+						dt.track.hasProtections = true;
+						writeInfo(info, "Shifted track: Data Beyond Index");
+					}
+					else if ((lastSector.data.info.startTime + lastSector.data.info.timeLength) > revTime) {
+						dt.track.flags |= Track.DATA_OVER_IDX;
+						dt.track.hasProtections = true;
+						writeInfo(info, "Shifted track: Data over Index");
+					}
+				}
+			}
 
 			//////////////////////
 			// Sector Protections
@@ -109,12 +121,18 @@ namespace Aufit {
 
 				info.sect = dt.sectors[secIndex].id.number;
 
+				// sector normal sequence = normally sec num = index + 1
+				if (dt.sectors[secIndex].id.number != (secIndex + 1)) {
+					dt.sectors[secIndex].flags |= Sector.SECTOR_SEQ;
+					//writeInfo(info, "Index non sequentially numbered");
+				}
+
 				// Duplicate sector number
 				for (int comp = secIndex + 1; comp < dt.sectors.Count; comp++) {
 					if (dt.sectors[secIndex].id.number == dt.sectors[comp].id.number) {
 						dt.sectors[secIndex].flags |= Sector.DUP_SEC_NUM;
 						dt.track.hasProtections = true;
-						writeInfo(info, "duplicated");
+						dt.sectors[secIndex].flags |= Sector.DUP_SEC_NUM;
 					}
 				}
 
@@ -187,21 +205,23 @@ namespace Aufit {
 					}
 
 					// long sector ( 4000 * 8) + 3%
-					if (dt.sectors[secIndex].data.info.timeLength > (32960 * (Global.sectSize(dt.sectors[secIndex].id.size) + 3))) {
+					if ((dt.sectors[secIndex].data.info.timeLength > (32960 * (Global.sectSize(dt.sectors[secIndex].id.size) + 3))) &&
+						((dt.track.flags & Track.SHORT_TRACK) == 0)) {
 						dt.sectors[secIndex].flags |= Sector.LONG_SECT;
 						dt.track.hasProtections = true;
 						writeInfo(info, "long sector");
 					}
 
-					// long sector ( 4000 * 8) - 3%
-					if (dt.sectors[secIndex].data.info.timeLength < (31040 * (Global.sectSize(dt.sectors[secIndex].id.size) + 3))) {
+					// short sector ( 4000 * 8) - 3%
+					if ((dt.sectors[secIndex].data.info.timeLength < (31040 * (Global.sectSize(dt.sectors[secIndex].id.size) + 3))) &&
+						((dt.track.flags & Track.LONG_TRACK) == 0)) {
 						dt.sectors[secIndex].flags |= Sector.SHORT_SECT;
 						dt.track.hasProtections = true;
 						writeInfo(info, "short sector");
 					}
 
 
-					// long sector ( 4000 * 8) - 3%
+					// macrodos
 					if ((dt.sectors[secIndex].flags & Sector.MACRODOS) != 0) {
 						dt.track.hasProtections = true;
 						writeInfo(info, "Macrodos protection");

@@ -182,7 +182,7 @@ class DataDrawing {
 		sectorPhasePolygon.StrokeThickness = 0.5;
 
 		if (phase == Phases.p_id)
-			sectorPhasePolygon.Fill = Brushes.Maroon;
+			sectorPhasePolygon.Fill = Brushes.Yellow;
 		else if (phase == Phases.p_gap)
 			sectorPhasePolygon.Fill = Brushes.LightGreen;
 		else {

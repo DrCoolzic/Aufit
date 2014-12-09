@@ -175,7 +175,7 @@ namespace Aufit {
 			if (dt.sectors != null) {
 				if (dt.sectors.Count < 3) {
 					if ((dt.histoData.hasBitsInBands) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
-						if (dt.track.hasSyncSeq)
+						if (dt.track.firstSyncOffset > 0)
 							color = Brushes.Blue;
 						else
 							color = Brushes.Yellow;

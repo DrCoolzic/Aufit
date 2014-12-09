@@ -244,7 +244,7 @@ public partial class DiskWindow : Window {
 			path.Stroke = Brushes.Black;
 
 			if ((dt.histoData.hasBitsInBands) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
-				if (dt.track.hasSyncSeq)
+				if (dt.track.firstSyncOffset > 0)
 					path.Stroke = Brushes.Blue;
 				else
 					path.Stroke = Brushes.Yellow;
@@ -282,10 +282,18 @@ public partial class DiskWindow : Window {
 		idPath.Stroke = Brushes.LightGreen;
 
 		if (phase == Phases.p_id)
-			idPath.Stroke = Brushes.Blue;
-		if (phase == Phases.p_data)
-			// TODO color of data over/under/macro/crc/fuzzy
+			idPath.Stroke = Brushes.Yellow;
+		if (phase == Phases.p_data) {
 			idPath.Stroke = Brushes.DeepSkyBlue;
+			if (Bit.testBits(sector.flags, Sector.WIDTH_ABOVE))
+				idPath.Stroke = Brushes.Blue;
+			if (Bit.testBits(sector.flags, Sector.WIDTH_BELOW))
+				idPath.Stroke = Brushes.Aqua;
+			if (Bit.testBits(sector.flags, Sector.MACRODOS))
+				idPath.Stroke = Brushes.Purple;
+			if ((sector.data.info.crc != 0) || (sector.data.fuzzy != null))
+				idPath.Stroke = Brushes.Orange;
+		}
 
 		PathGeometry idPg = new PathGeometry();
 		addArc(idPg, startAngle, stopAngle, center, radius);

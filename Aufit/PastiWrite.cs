@@ -45,70 +45,44 @@ namespace PastiPackage {
 
 		// when set the track data header contains sync position
 		readonly bool TRK_SYNC = false;
-		// when set sector data try to use track data
+		// when set we try to use track data for sector
 		readonly bool OPT_SECT = false;
 		// simulate fuzzy bits on Rob Northen
 		readonly bool SIM_FUZZY = false;
 
 		/// <summary>
-		/// Constructor
+		/// Write the Pasti file
 		/// </summary>
-		/// <param name="tb">TextBox used to display write information (debug)</param>
-		/// <remarks>TextBox parameter can be ignored (normal case). Setting it is used for debug purpose</remarks>
-		public PastiWriter(TextBox tb = null) {
-			_infoBox = tb;
-		}
-
-		/// <summary>
-		/// Status returned when reading Pasti file
-		/// </summary>
-		public enum FileStatus {
-			/// <summary>File read correctly</summary>
-			Ok = 0,
-			/// <summary>Could not open file for reading or file not found</summary>
-			FileNotFound,
-			/// <summary>The header in the file is not RSY</summary>
-			NotPastiFile,
-			/// <summary>Not version 3</summary>
-			UnsupportedVersion
-		}
-
-
-		/// <summary>
-		/// Read a Pasti file and fills the Floppy structure
-		/// </summary>
-		/// <param name="fileName">Name of the Pasti file to read</param>
+		/// <param name="fileName">Name of the Pasti file to write</param>
 		/// <param name="forceDs">When set to true this force writing information 
 		/// for a Double sided floppy disk</param>
-		/// <returns>The status</returns>
-		public FileStatus writePasti(string fileName, bool forceDs) {
+		/// <returns>True if succeeds; false if fails</returns>
+		public bool writePasti(string fileName, bool forceDs) {
 			FileStream fs;
 
 			// encode file into buffer
 			List<byte> sbuf = new List<byte>();
-			FileStatus status = encodePasti(sbuf, forceDs);
+			bool status = encodePasti(sbuf, forceDs);
 
 			try {
 				fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.Read);
 			}
 			catch (Exception exc) {
 				Console.WriteLine("Error: {0}", exc.Message);
-				return FileStatus.FileNotFound;
+				return false;
 			}
 			fs.Write(sbuf.ToArray(), 0, sbuf.Count);
 			fs.Close();
-
 			return status;		
 		}
 
 
 		/// <summary>
-		/// Encode the information in a Floppy structure into a buffer using Pasti file structure
+		/// Encode the Floppy content into a buffer using Pasti file structure
 		/// </summary>
-		/// <param name="buffer">Contains the data read from Pasti file</param>
-		/// <param name="floppy">The Floppy structure to fill</param>
-		/// <returns>The read status</returns>
-		private FileStatus encodePasti(List<byte> buffer, bool forceDs) {
+		/// <param name="buffer">Contains the data to be written to Pasti file</param>
+		/// <returns>Always returns true!</returns>
+		private bool encodePasti(List<byte> buffer, bool forceDs) {
 			int start = 0;
 			byte trackCount = 0;
 			int sideCount = 1;	// single sided
@@ -172,7 +146,6 @@ namespace PastiPackage {
 					tdesc.trackFlags = 0x0020;		// Bit 5 has to be set to 1 for new format
 					tdesc.sectorCount = (ushort)sectorCount;
 
-					//tdesc.trackLength = (ushort)dt.trackContent.byteCount;
 					tdesc.trackLength = (ushort)dt.track.info.byteCount;
 					tdesc.trackNumber = (byte)trackNum;
 					if (side == 1) tdesc.trackNumber |= 0x80;
@@ -187,13 +160,10 @@ namespace PastiPackage {
 						tdesc.recordSize += (uint)(16 * tdesc.sectorCount);
 					}
 
-
 					// do we need fuzzy record
 					for (int sect = 0; sect < sectorCount; sect++) {
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null))
 							tdesc.fuzzyCount += (uint)dt.sectors[sect].data.fuzzy.Count();
-						//else if (SIM_FUZZY && (dt.sectorsContent[sect].dataBlock.crc != 0) &&
-						//	(dt.sectorsContent[sect].dataBlock.overClock > Global.sectSize(dt.sectorsContent[sect].id.size) / 2)) {
 						else if (SIM_FUZZY && (dt.sectors[sect].data.crc != 0) && Bit.testBits(dt.sectors[sect].flags, Sector.WIDTH_ABOVE)) {
 							// Rob Northen protection we force fuzzy bits if not there
 							int dataSize = Global.sectSize(dt.sectors[sect].id.size);
@@ -218,7 +188,7 @@ namespace PastiPackage {
 							tdesc.recordSize += 2;	// header
 						}
 						tdesc.recordSize +=  (uint)dt.track.info.byteCount;
-						// we write even number of bytes
+						// we write even number of bytes (padding)
 						tdesc.recordSize += (uint)(dt.track.info.byteCount % 2);
 					}
 
@@ -231,18 +201,14 @@ namespace PastiPackage {
 					if (timingEntries > 0)
 						tdesc.recordSize += (uint)((2 * timingEntries) + 4);
 
-					// we add up the sector data -
-					for (int sect = 0; sect < sectorCount; sect++)
-						if (dt.sectors[sect].data.info.byteCount != 0) {
-							// we do not add up if we already have it in track
-							// TODO !!!!!!!!!!!!!!!!!!! --------------------------------------------------------
-							//if (OPT_SECT) {
-							//	if (needTrackData && ((dt.trackContent.sectors[sect + 1].phases[(int)Phases.p_data].badSync != 0) || (dt.trackContent.sectors[sect + 1].sws != -1)))
-							//		tdesc.recordSize += (uint)dt.sectorsContent[sect].data.Bytes.Count - 3;
-							//}
-							//else
-								tdesc.recordSize += (uint)dt.sectors[sect].data.info.byteCount;
+					// we add up the sector data
+					for (int sect = 0; sect < sectorCount; sect++) {
+						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.buffer.Bytes.Count != 0)) {
+							// we do not add up if we can use the info in track
+							if (!OPT_SECT || !needTrackData || ((dt.sectors[sect].flags & Sector.SEC_IN_TRACK) == 0))
+								tdesc.recordSize += (uint)dt.sectors[sect].data.buffer.Bytes.Count;
 						}
+					}
 
 					// Track Descriptor is now ready => write it
 					start = buffer.Count;
@@ -260,39 +226,23 @@ namespace PastiPackage {
 					// write sector descriptor if needed
 					if (needSectorDesc) {
 						uint startSectorOffset = 0;
-						uint trackOffset = 0;
 						if (needTrackData)
 							startSectorOffset = (uint)(dt.track.info.byteCount + (dt.track.info.byteCount % 2) + (TRK_SYNC ? 4 : 2));
 						for (int sect = 0; sect < sectorCount; sect++) {
 							SectorDesc sd = new SectorDesc();
 
 							// we have data
-							if ((dt.sectors[sect].data.info.byteCount) != 0) {
-
-								// TODO !!!!!!!!!!!!!!!!!!!!!!!!!! --------------------------------------------------
-								//// we check to see if we already have the same content in track data
-								//if (OPT_SECT && needTrackData && (dt.trackContent.sectors[sect + 1].phases[(int)Phases.p_data].badSync == 0) && (dt.trackContent.sectors[sect + 1].sws == -1)) {
-								//	// as some bytes may have been shifted we start from inner-gap till we find the 0xFB
-								//	int firstByte = dt.trackContent.sectors[sect + 1].phases[(int)Phases.p_gap].startByte;
-								//	int lastByte = firstByte + dt.trackContent.sectors[sect + 1].phases[(int)Phases.p_gap].byteCount + 10;
-								//	for (int i = firstByte; i < lastByte; i++)
-								//		if (dt.trackContent.buffer.Bytes[i].dataByte == 0xFB) {
-								//			trackOffset = (uint)i;
-								//			break;
-								//		}
-								//}
-
-								if (trackOffset > 0) {
-									sd.dataOffset = trackOffset + 3;
-									trackOffset = 0;
-								}
+							if ((dt.sectors[sect].data != null) && ((dt.sectors[sect].data.buffer.Bytes.Count) != 0)) {
+								// we check to see if we already have the same content in track data
+								if (OPT_SECT && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_IN_TRACK) != 0))
+									sd.dataOffset = dt.sectors[sect].trackOffset;
 								else {
 									sd.dataOffset = startSectorOffset;
-									startSectorOffset += (uint)dt.sectors[sect].data.info.byteCount;
-								}
-							}
+									startSectorOffset += (uint)dt.sectors[sect].data.buffer.Bytes.Count;
+								}	// no optimization
+							}	// we have data
 							else
-								sd.dataOffset = 0;	// dont care
+								sd.dataOffset = 0;	// don't care
 
 							sd.bitPosition = (ushort)(dt.sectors[sect].id.info.startBit / 2);
 							sd.readTime = (ushort)(dt.sectors[sect].data.info.timeLength / 1000);
@@ -305,10 +255,13 @@ namespace PastiPackage {
 
 							// compute flag
 							byte fdcFlag = 0;
-							if (dt.sectors[sect].data.info.byteCount == 0)
+							if (dt.sectors[sect].data == null) {
 								fdcFlag |= SectorDesc.SECT_RNF;
+								if (dt.sectors[sect].id.info.crc != 0)
+									fdcFlag |= SectorDesc.CRC_ERR;
+							}
 							else {
-								if (dt.sectors[sect].data.buffer.Bytes[0].dataByte != 0xFB)
+								if (dt.sectors[sect].data.iam != 0xFB)
 									fdcFlag |= SectorDesc.REC_TYPE;
 								if (dt.sectors[sect].data.info.crc != 0)
 									fdcFlag |= SectorDesc.CRC_ERR;
@@ -342,7 +295,7 @@ namespace PastiPackage {
 
 					// write fuzzy mask if needed
 					for (int sect = 0; sect < sectorCount; sect++) {
-						if (dt.sectors[sect].data.fuzzy != null) {
+						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null)) {
 							start = buffer.Count;
 							for (int i = 0; i < dt.sectors[sect].data.fuzzy.Count(); i++)
 								writeByte(buffer, (byte)~dt.sectors[sect].data.fuzzy[i]);
@@ -357,14 +310,10 @@ namespace PastiPackage {
 					if (_infoBox != null) _infoBox.AppendText(String.Format("   Start of Track data {0}\n", track_data_start));
 
 					// write track data if needed
-					if (trackNeedTrackData(dt)) {
+					if (needTrackData) {
 						start = buffer.Count;
-						int firstSyncOffset = 0;
-						// TODO !!!!!!!!!!!!!!!!!!!!!!!! ----------------------------------------------------
-						//if ((dt.trackContent.syncs.Count > 0) &&  (dt.trackContent.syncs[0] != null))
-						//	firstSyncOffset = dt.trackContent.syncs[0].startByte;
 						if (TRK_SYNC)
-							writeInt16(buffer, (ushort)(firstSyncOffset));
+							writeInt16(buffer, (ushort)(dt.track.firstSyncOffset));
 						writeInt16(buffer, (ushort)dt.track.info.byteCount);
 						for (int i = 0; i < dt.track.info.byteCount; i++)
 							writeByte(buffer, dt.track.buffer.Bytes[i].dataByte);
@@ -374,25 +323,23 @@ namespace PastiPackage {
 
 						if (_infoBox != null) _infoBox.AppendText(String.Format("      Writing Track {0}{1} bytes SyncPos={2} ({3}-{4})\n",
 							dt.track.info.byteCount + ((TRK_SYNC) ? 4 : 2), ((dt.track.info.byteCount % 2) != 0) ? "(+1)" : "",
-							firstSyncOffset, start, buffer.Count - 1));
+							dt.track.firstSyncOffset, start, buffer.Count - 1));
 					}
 
 					// write all sectors data
 					for (int sect = 0; sect < sectorCount; sect++) {
 						start = buffer.Count;
 						if (dt.sectors[sect].data.info.byteCount != 0) {
-							// TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!! ------------------------------------
-							//if (OPT_SECT && needTrackData && (dt.trackContent.sectors[sect + 1].phases[(int)Phases.p_data].badSync == 0) &&
-							//	(dt.trackContent.sectors[sect + 1].sws == -1)) {
-							//	if (_infoBox != null) _infoBox.AppendText(String.Format("      Sector {0} {1} bytes already in track data\n",
-							//		dt.sectorsContent[sect].id.number, dt.sectorsContent[sect].data.Bytes.Count - 3));
-							//}
-							//else {
-								for (int i = 0; i < dt.sectors[sect].data.info.byteCount; i++)
+							if (OPT_SECT && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_IN_TRACK) !=0)) {
+								if (_infoBox != null) _infoBox.AppendText(String.Format("      Sector {0} {1} bytes already in track data\n",
+									dt.sectors[sect].id.number, dt.sectors[sect].data.buffer.Bytes.Count));
+							}
+							else {
+								for (int i = 0; i < dt.sectors[sect].data.buffer.Bytes.Count; i++)
 									writeByte(buffer, dt.sectors[sect].data.buffer.Bytes[i].dataByte);
 								if (_infoBox != null) _infoBox.AppendText(String.Format("      Writing Sector {0} {1} bytes ({2}-{3})\n",
-									dt.sectors[sect].id.number, dt.sectors[sect].data.info.byteCount, start, buffer.Count - 1));
-							//}
+									dt.sectors[sect].id.number, dt.sectors[sect].data.buffer.Bytes.Count, start, buffer.Count - 1));
+							}
 						}
 					}
 
@@ -406,10 +353,9 @@ namespace PastiPackage {
 						if (_infoBox != null) _infoBox.AppendText(String.Format("   Writing Timing header Flag=5 size={0} ({1}-{2})\n", 2 * timingEntries + 4, start, buffer.Count - 1));
 						// write timing
 						for (int sect = 0; sect < sectorCount; sect++) {
-							//if (dt.sectorsContent[sect].sectorIntraVariation) {
 							if (Bit.testBits(dt.sectors[sect].flags, Sector.MACRODOS)) {
 								int timingSum = 0;
-								for (int i = 0; i < (dt.sectors[sect].data.info.byteCount); i++) {
+								for (int i = 0; i < (dt.sectors[sect].data.buffer.Bytes.Count); i++) {
 									timingSum += (dt.sectors[sect].data.buffer.Bytes[i].density * 16);
 									if (((i+1) % 16) == 0) {
 										timingSum = timingSum / 4000;
@@ -420,7 +366,7 @@ namespace PastiPackage {
 								}
 								start = buffer.Count;
 								if (_infoBox != null) _infoBox.AppendText(String.Format("   Writing Timing {0} values for sector {1} ({2}-{3})\n",
-									dt.sectors[sect].data.info.byteCount, dt.sectors[sect].id.number, start, buffer.Count - 1));
+									dt.sectors[sect].data.buffer.Bytes.Count, dt.sectors[sect].id.number, start, buffer.Count - 1));
 							}	// timing found
 						}	// all sect
 					}
@@ -430,7 +376,7 @@ namespace PastiPackage {
 				} // for all tracks
 			}	// for all side
 
-			return FileStatus.Ok;
+			return true;
 
 		}	// encode pasti
 

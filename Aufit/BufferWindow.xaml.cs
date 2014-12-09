@@ -112,8 +112,8 @@ namespace Aufit {
 							displayBuffer.Inlines.Add(String.Format("{0:D4} ", line * 16));
 							for (int col = 0; col < 16; col++) {
 								displayBuffer.Inlines.Add(new Run(
-									String.Format("{0:X2} ", sector.data.fuzzy[line + col])) {
-									FontWeight = (sector.data.fuzzy[line + col] == 0) ? FontWeights.Normal : FontWeights.Bold
+									String.Format("{0:X2} ", sector.data.fuzzy[(line *16) + col])) {
+									FontWeight = (sector.data.fuzzy[(line * 16) + col] == 0) ? FontWeights.Normal : FontWeights.Bold
 								});
 							}
 							displayBuffer.Inlines.Add("\n");

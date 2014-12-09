@@ -20,6 +20,7 @@ BUG
 - FIXED: airborne disk ranger d1 - sector wrap not stop by IDAM => overlap
 - FIXED: computer hit vol 2 D2 some ID missing (id after index)
 - FIXED: comphitvol2 d2 : invalid byte in gaps actually located in data segment wrapped => should fix in read track detection (check in track buffer that it also display correctly)
+- Fixed: time of lore mitsumi track 46 fuzzy mask all 00 ???? ???? 72 ?
 
 
 TESTS
