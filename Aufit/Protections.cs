@@ -112,6 +112,13 @@ namespace Aufit {
 						writeInfo(info, "Shifted track: Data over Index");
 					}
 				}
+
+				// Bad data byte in GAP
+				if ((dt.track.flags & Track.NO_FLUX_AREA) != 0) {
+					dt.track.hasProtections = true;
+					writeInfo(info, "Has No Flux Area");
+				}
+
 			}
 
 			//////////////////////
@@ -132,7 +139,7 @@ namespace Aufit {
 					if (dt.sectors[secIndex].id.number == dt.sectors[comp].id.number) {
 						dt.sectors[secIndex].flags |= Sector.DUP_SEC_NUM;
 						dt.track.hasProtections = true;
-						dt.sectors[secIndex].flags |= Sector.DUP_SEC_NUM;
+						writeInfo(info, "duplicated");
 					}
 				}
 

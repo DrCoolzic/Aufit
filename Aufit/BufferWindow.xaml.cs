@@ -176,10 +176,10 @@ namespace Aufit {
 				displayBuffer.Inlines.Add(String.Format("{0:D5}  ", i));
 				// display bitWidth
 				displayBuffer.Inlines.Add(new Run(
-					String.Format("{0:D4} ", buffer.Bytes[i].density)) {
-						Foreground = (buffer.Bytes[i].density > 2050) ? Brushes.Blue :
-						(buffer.Bytes[i].density < 1950) ? Brushes.Red : Brushes.Black,
-						FontWeight = ((buffer.Bytes[i].density > 2050) || (buffer.Bytes[i].density < 1950)) ?
+					String.Format("{0:D4} ", buffer.Bytes[i].bitWidth)) {
+						Foreground = (buffer.Bytes[i].bitWidth > 2050) ? Brushes.Blue :
+						(buffer.Bytes[i].bitWidth < 1950) ? Brushes.Red : Brushes.Black,
+						FontWeight = ((buffer.Bytes[i].bitWidth > 2050) || (buffer.Bytes[i].bitWidth < 1950)) ?
 										FontWeights.Bold : FontWeights.Normal
 					});
 				// display start time

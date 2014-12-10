@@ -46,9 +46,18 @@ namespace PastiPackage {
 		// when set the track data header contains sync position
 		readonly bool TRK_SYNC = false;
 		// when set we try to use track data for sector
-		readonly bool OPT_SECT = false;
+		readonly bool OPT_SECT = true;
 		// simulate fuzzy bits on Rob Northen
 		readonly bool SIM_FUZZY = false;
+
+
+		/// <summary>Constructor</summary>
+		/// <param name="tb">TextBox used to display write information (debug)</param>
+		/// <remarks>TextBox parameter can be ignored (normal case). Setting it is used for debug purpose</remarks>
+		public PastiWriter(TextBox tb = null) {
+			_infoBox = tb;
+		}
+
 
 		/// <summary>
 		/// Write the Pasti file
@@ -205,7 +214,7 @@ namespace PastiPackage {
 					for (int sect = 0; sect < sectorCount; sect++) {
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.buffer.Bytes.Count != 0)) {
 							// we do not add up if we can use the info in track
-							if (!OPT_SECT || !needTrackData || ((dt.sectors[sect].flags & Sector.SEC_IN_TRACK) == 0))
+							if (!OPT_SECT || !needTrackData || ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) == 0))
 								tdesc.recordSize += (uint)dt.sectors[sect].data.buffer.Bytes.Count;
 						}
 					}
@@ -233,9 +242,11 @@ namespace PastiPackage {
 
 							// we have data
 							if ((dt.sectors[sect].data != null) && ((dt.sectors[sect].data.buffer.Bytes.Count) != 0)) {
+								
 								// we check to see if we already have the same content in track data
-								if (OPT_SECT && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_IN_TRACK) != 0))
-									sd.dataOffset = dt.sectors[sect].trackOffset;
+								if (OPT_SECT && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) != 0))
+									// TODO Why +1 ? already done in readTrack?
+									sd.dataOffset = (uint)dt.sectors[sect].trackOffset + 1;
 								else {
 									sd.dataOffset = startSectorOffset;
 									startSectorOffset += (uint)dt.sectors[sect].data.buffer.Bytes.Count;
@@ -330,9 +341,9 @@ namespace PastiPackage {
 					for (int sect = 0; sect < sectorCount; sect++) {
 						start = buffer.Count;
 						if (dt.sectors[sect].data.info.byteCount != 0) {
-							if (OPT_SECT && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_IN_TRACK) !=0)) {
-								if (_infoBox != null) _infoBox.AppendText(String.Format("      Sector {0} {1} bytes already in track data\n",
-									dt.sectors[sect].id.number, dt.sectors[sect].data.buffer.Bytes.Count));
+							if (OPT_SECT && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) !=0)) {
+								if (_infoBox != null) _infoBox.AppendText(String.Format("      Sector {0} {1} bytes already in track data @{2}\n",
+									dt.sectors[sect].id.number, dt.sectors[sect].data.buffer.Bytes.Count, dt.sectors[sect].trackOffset));
 							}
 							else {
 								for (int i = 0; i < dt.sectors[sect].data.buffer.Bytes.Count; i++)
@@ -356,7 +367,7 @@ namespace PastiPackage {
 							if (Bit.testBits(dt.sectors[sect].flags, Sector.MACRODOS)) {
 								int timingSum = 0;
 								for (int i = 0; i < (dt.sectors[sect].data.buffer.Bytes.Count); i++) {
-									timingSum += (dt.sectors[sect].data.buffer.Bytes[i].density * 16);
+									timingSum += (dt.sectors[sect].data.buffer.Bytes[i].bitWidth * 16);
 									if (((i+1) % 16) == 0) {
 										timingSum = timingSum / 4000;
 										buffer.Add((byte)(timingSum << 8));

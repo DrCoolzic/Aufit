@@ -34,29 +34,31 @@ using WD1772Package;
 
 namespace Aufit {
 	/// <summary>
-	/// Helper for storing and displaying Track / Sector information
+	/// Buffer to store Track / Sector information
 	/// </summary>
 	public class TrackBuffer {
+		private List<TrackByte> _bytes;
+
 		/// <summary>
 		/// Store all important information about one decoded byte
 		/// </summary>
 		public struct TrackByte {
 			/// <summary>The Data Byte</summary>
 			public byte dataByte;
-			/// <summary>The Clock Byte</summary>
-			//public byte clockByte;
+
 			/// <summary>The complete MFM word (two bytes)</summary>
 			public ushort mfmWord;
-			/// <summary>Current clock value</summary>
-			public int density;
+
+			/// <summary>Current bit width</summary>
+			public int bitWidth;
+
 			/// <summary>Start Time of the Byte</summary>
 			public int startTime;
+
 			/// <summary>Current Phase (id / inner gap / data / outer gap</summary>
 			public Phases phase;
 		}
 
-		private List<TrackByte> _bytes;
-		// _fuzzy
 
 		/// <summary>
 		/// Get access to the buffer of TrackByte
@@ -65,32 +67,32 @@ namespace Aufit {
 			get { return _bytes; }
 		}
 
+
 		/// <summary>
-		/// Create a new TrackBuffer object. Set initial size of the array to 7000
+		/// Create a new TrackBuffer object. Set initial size of the array to 600
 		/// </summary>
 		public TrackBuffer() {
-			_bytes = new List<TrackByte>(7000);
+			_bytes = new List<TrackByte>(600);
 		}
+
 
 		/// <summary>
 		/// Add one more byte to the buffer
 		/// </summary>
 		/// <param name="data">Data byte</param>
 		/// <param name="mfm">MFM word</param>
-		/// <param name="phase">Current Phase</param>
-		/// <param name="density">Current Clock value</param>
+		/// <param name="bitWidth">Current bitWidth value</param>
 		/// <param name="startTime">Byte start time</param>
-		public void addByte(byte data, ushort mfm, ushort density, int startTime, Phases phase) {
+		/// <param name="phase">Current Phase</param>
+		public void addByte(byte data, ushort mfm, ushort bitWidth, int startTime, Phases phase) {
 			TrackByte b = new TrackByte();
 			b.dataByte = data;
-			//b.clockByte = clock;
 			b.mfmWord = mfm;
-			b.density = density;
+			b.bitWidth = bitWidth;
 			b.startTime = startTime;
-			b.phase =phase;
+			b.phase = phase;
 			_bytes.Add(b);
 		}
-
-
+	
 	}
 }

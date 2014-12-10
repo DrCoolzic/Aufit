@@ -154,6 +154,9 @@ namespace WD1772Package {
 			get { return ((_decoderFlags & IAM_POSITION) != 0); }
 		}
 
+		/// <summary>
+		/// Last Sync found was an A1 sync mark
+		/// </summary>
 		public bool LastSyncA1 {
 			get { return (_lastSyncFound == SyncType.A1) ? true : false; }
 		}
