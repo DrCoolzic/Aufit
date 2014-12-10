@@ -40,7 +40,8 @@ using System.Windows.Shapes;
 using WD1772Package;
 using KFReaderPackage;
 using GlobalPackage;
-using System.IO;
+
+
 
 
 namespace Aufit {
@@ -479,37 +480,14 @@ public partial class DiskWindow : Window {
 	}
 
 	private void saveImageClick0(object sender, RoutedEventArgs e) {
-		CreateBitmapFromVisual(cvDisk0, "U:\\test0.png");
+		Global.saveImage(cvDisk0);
 	}
 
 	private void saveImageClick1(object sender, RoutedEventArgs e) {
-		CreateBitmapFromVisual(cvDisk1, "U:\\test1.png");
+		Global.saveImage(cvDisk1);
 	}
 
-	// http://mcleodsean.wordpress.com/2008/10/07/bitmap-snapshots-of-wpf-visuals/
-	void CreateBitmapFromVisual(Visual target, string filename) {
-		if (target == null) return;
 
-		Rect bounds = VisualTreeHelper.GetDescendantBounds(target);
-
-		int scale = 3;
-		DrawingVisual dv = new DrawingVisual();
-		using (DrawingContext dc = dv.RenderOpen()) {
-			dv.Transform = new ScaleTransform(scale, scale);
-			VisualBrush vb = new VisualBrush(target);
-			dc.DrawRectangle(vb, null, new Rect(new Point(), bounds.Size));
-		}
-
-		RenderTargetBitmap rtb = new RenderTargetBitmap(scale * (Int32)bounds.Width, scale * (Int32)bounds.Height, 96, 96, PixelFormats.Pbgra32);
-		rtb.Render(dv);
-
-		PngBitmapEncoder png = new PngBitmapEncoder();
-		png.Frames.Add(BitmapFrame.Create(rtb));
-
-		using (Stream stm = File.Create(filename)) {
-			png.Save(stm);
-		}
-	}
 
 }	// class DiskWindow
 }	// name space

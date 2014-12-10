@@ -37,34 +37,32 @@ using WD1772Package;
 using Aufit;
 
 namespace PastiPackage {
-	/// <summary>
-	/// Pasti Writer Functions
-	/// </summary>
+	/// <summary>Pasti Writer Class</summary>
 	class PastiWriter {
 		TextBox _infoBox;
 
-		// when set the track data header contains sync position
+		// when set to true the track data header contains sync position
 		readonly bool TRK_SYNC = false;
-		// when set we try to use track data for sector
+
+		// when set to true we try to use track data for sector
 		readonly bool OPT_SECT = true;
-		// simulate fuzzy bits on Rob Northen
+
+		// when set to true we simulate fuzzy bits on Rob Northen ?
 		readonly bool SIM_FUZZY = false;
 
 
 		/// <summary>Constructor</summary>
-		/// <param name="tb">TextBox used to display write information (debug)</param>
+		/// <param name="tb">TextBox used to display write information (debug information)</param>
 		/// <remarks>TextBox parameter can be ignored (normal case). Setting it is used for debug purpose</remarks>
 		public PastiWriter(TextBox tb = null) {
 			_infoBox = tb;
 		}
 
 
-		/// <summary>
-		/// Write the Pasti file
-		/// </summary>
+		/// <summary>Write the Pasti file</summary>
 		/// <param name="fileName">Name of the Pasti file to write</param>
-		/// <param name="forceDs">When set to true this force writing information 
-		/// for a Double sided floppy disk</param>
+		/// <param name="forceDs">When set to true this force writing Pasti 
+		/// information for a Double sided floppy disk</param>
 		/// <returns>True if succeeds; false if fails</returns>
 		public bool writePasti(string fileName, bool forceDs) {
 			FileStream fs;

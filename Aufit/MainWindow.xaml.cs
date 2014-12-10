@@ -648,18 +648,19 @@ namespace Aufit {
 				}
 		}
 
-		private void btDiskDataClick(object sender, RoutedEventArgs e) {
-			// TODO remove ?
-//			if (BM1.Visibility == Visibility.Hidden) return;
-			if (_diskWindowIsOpen)
-				_diskWindow.Close();
+		private void btSavePictClick(object sender, RoutedEventArgs e) {
+			Global.saveImage(mainGrid);
+//			// TODO remove ?
+////			if (BM1.Visibility == Visibility.Hidden) return;
+//			if (_diskWindowIsOpen)
+//				_diskWindow.Close();
 
-			string message = String.Format("{0}", _fileName);
-			_diskWindow = new DiskWindow();
-			//_diskWindow.drawDiskData(message);
-			_diskWindow.Closed += new EventHandler(diskWindowClosed);
-			_diskWindowIsOpen = true;
-			_diskWindow.Show();
+//			string message = String.Format("{0}", _fileName);
+//			_diskWindow = new DiskWindow();
+//			//_diskWindow.drawDiskData(message);
+//			_diskWindow.Closed += new EventHandler(diskWindowClosed);
+//			_diskWindowIsOpen = true;
+//			_diskWindow.Show();
 		}
 
 		private void selectAndCheck(int track, int side) {
