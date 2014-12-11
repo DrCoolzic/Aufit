@@ -171,7 +171,7 @@ namespace PastiPackage {
 					for (int sect = 0; sect < sectorCount; sect++) {
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null))
 							tdesc.fuzzyCount += (uint)dt.sectors[sect].data.fuzzy.Count();
-						else if (SIM_FUZZY && (dt.sectors[sect].data.crc != 0) && Bit.testBits(dt.sectors[sect].flags, Sector.WIDTH_ABOVE)) {
+						else if (SIM_FUZZY && (dt.sectors[sect].data.crc != 0) && ((dt.sectors[sect].flags & Sector.WIDTH_ABOVE) != 0)) {
 							// Rob Northen protection we force fuzzy bits if not there
 							int dataSize = Global.sectSize(dt.sectors[sect].id.size);
 							dt.sectors[sect].data.fuzzy = new byte[dataSize];
@@ -202,7 +202,7 @@ namespace PastiPackage {
 					// do we need timing record
 					int timingEntries = 0;
 					for (int sect = 0; sect < sectorCount; sect++)
-						if (Bit.testBits(dt.sectors[sect].flags, Sector.MACRODOS))
+						if ((dt.sectors[sect].flags & Sector.MACRODOS) != 0)
 							timingEntries += Global.sectSize(dt.sectors[sect].id.size) / 16;
 
 					if (timingEntries > 0)
@@ -277,7 +277,7 @@ namespace PastiPackage {
 							}	// these two flags are only meaningful if record has bytes
 							if (dt.sectors[sect].data.fuzzy != null)
 								fdcFlag |= SectorDesc.FUZZY_BITS;
-							if (Bit.testBits(dt.sectors[sect].flags, Sector.MACRODOS))
+							if ((dt.sectors[sect].flags & Sector.MACRODOS) != 0)
 								fdcFlag |= SectorDesc.BIT_WIDTH;
 
 							sd.fdcFlags = fdcFlag;
@@ -362,7 +362,7 @@ namespace PastiPackage {
 						if (_infoBox != null) _infoBox.AppendText(String.Format("   Writing Timing header Flag=5 size={0} ({1}-{2})\n", 2 * timingEntries + 4, start, buffer.Count - 1));
 						// write timing
 						for (int sect = 0; sect < sectorCount; sect++) {
-							if (Bit.testBits(dt.sectors[sect].flags, Sector.MACRODOS)) {
+							if ((dt.sectors[sect].flags & Sector.MACRODOS) != 0) {
 								int timingSum = 0;
 								for (int i = 0; i < (dt.sectors[sect].data.buffer.Bytes.Count); i++) {
 									timingSum += (dt.sectors[sect].data.buffer.Bytes[i].bitWidth * 16);

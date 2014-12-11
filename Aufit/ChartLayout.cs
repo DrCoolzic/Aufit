@@ -164,7 +164,7 @@ public class ChartLayout {
 	}
 
 	/// <summary>
-	/// Access the brus used to draw the gris lines
+	/// Access the brush used to draw the grid lines
 	/// </summary>
 	public Brush GridlineColor {
 		get { return _gridlineColor; }

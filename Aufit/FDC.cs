@@ -38,9 +38,9 @@ using Aufit;
 namespace WD1772Package {
 	/// <summary>Different phases of a sector: ID, Gap, Data</summary>
 	public enum Phases : byte {
-		p_gap = 0,	// GAP
-		p_id,		// ID (Address) block
-		p_data,		// DATA block
+		p_gap = 0,	///<! GAP
+		p_id,		///<! ID (Address) block
+		p_data,		///<! DATA block
 	}
 
 
@@ -111,7 +111,7 @@ namespace WD1772Package {
 		/// <summary>Store the CRC on two bytes</summary> 
 		public ushort crc;
 
-		/// <summary>Array to store fuzzy mask</summary> 
+		/// <summary>Array of bytes to store fuzzy mask</summary> 
 		public byte[] fuzzy;
 
 		/// <summary>information about the data field </summary>
@@ -151,10 +151,10 @@ namespace WD1772Package {
 		/// <summary>Pointer to the Data Field of the sector (can be null)</summary>
 		public DataField data;
 
-		/// <summary>Protection Flags related to the sector</summary>
+		/// <summary>Sector's flags</summary>
 		public uint flags;
 
-		/// <summary>the content of the sector can be found at this track offset</summary>
+		/// <summary>the content of the sector start at this track offset</summary>
 		public int trackOffset;
 	}
 
@@ -164,8 +164,7 @@ namespace WD1772Package {
 		public const uint SHORT_TRACK = Bit.BIT_01;
 		public const uint LONG_TRACK = Bit.BIT_02;
 		public const uint DATA_TRACK = Bit.BIT_03;
-
-		public const uint BAD_DATA_GAP = Bit.BIT_05;
+		public const uint BAD_DATA_GAP = Bit.BIT_04;
 
 		public const uint NO_FLUX_AREA = Bit.BIT_07;
 		public const uint DATA_OVER_IDX = Bit.BIT_08;
@@ -184,15 +183,20 @@ namespace WD1772Package {
 		/// <summary> Contains information about the field </summary>
 		public BlockInfo info = new BlockInfo();
 
-		/// <summary>Protection Flags related to the track</summary>
+		/// <summary>Track's flags</summary>
 		public uint flags;
 
+		/// <summary>
+		/// Location in byte of the first A1 sync before an IAM sequence
+		/// </summary>
 		public int firstSyncOffset = 0;
 
+		/// <summary>
+		/// Protection(s) detected for this track
+		/// </summary>
 		public bool hasProtections = false;
 
 	}
-
 
 
 	/// <summary>Emulate some WD1772 FDC Commands</summary>
@@ -200,12 +204,11 @@ namespace WD1772Package {
 		private readonly static int widthUpperLimit = 2060;
 		private readonly static int widthLowerLimit = 1940;
 
-		/// <summary>Read a track by decoding all the track MFM bits</summary>
-		/// <remarks>This function interprets the bits stream as a WD1772 would do with a 
-		/// read track command. The data placed in the buffer are equivalent to what would 
-		/// be read by a WD1772 decode the flux transitions. However we do an interpretation 
-		/// of the different segments of a sector (called phases) to be able to display 
-		/// useful information.</remarks>
+		/// <summary>Read a track</summary>
+		/// <remarks>The data placed in the buffer are equivalent to what would 
+		/// be read by a WD1772 decode the flux transitions. We store the
+		/// phase for a byte based on information detected by readAddr and readSector.
+		/// Therefore this function must be called last.</remarks>
 		public static void readTrack(int track, int side, int rev) {
 			if (Global.Disk[track, side].track != null) return;
 
@@ -218,11 +221,12 @@ namespace WD1772Package {
 			Global.DiskTrack dt = Global.Disk[track, side];
 			int startBit = dt.packedFluxDataRev[rev].firstFluxBit;
 			int stopBit = startBit + dt.packedFluxDataRev[rev].bitCount;
-			int currentTime = 0;
-			int byteCount = 0;
 
 			DSR dsr = new DSR();
 			dsr.trackMode();
+
+			int currentTime = 0;
+			int byteCount = 0;
 
 			int sectorNumber = -1;
 			int sectorCount = dt.sectors.Count;
@@ -322,7 +326,7 @@ namespace WD1772Package {
 					byteCount++;
 
 					if (dsr.IAM && dsr.LastSyncA1 && (dt.track.firstSyncOffset == 0)) {
-						Global.Disk[track, side].track.firstSyncOffset = byteCount;
+						Global.Disk[track, side].track.firstSyncOffset = byteCount - 3;
 					}
 					if ((dsr.Data >= 0xF5) && (dsr.Data <= 0xF7) && (phase == Phases.p_gap))
 						invalidByteInGap++;
@@ -382,7 +386,12 @@ namespace WD1772Package {
 		/// <summary>
 		/// Read all the ID fields of a track
 		/// </summary>
-		/// <returns>The structure that contains all the address info for a track</returns>
+		/// <param name="track">The track index</param>
+		/// <param name="side">The side index</param>
+		/// <param name="rev">The revolution index</param>
+		/// <remarks>Interpret the flux transition as the WD1772 would do with
+		/// a read address command. For each new ID a sector is added to the Disk
+		/// data structure.</remarks>
 		public static void readAddr(int track, int side, int rev) {
 			int startBit = Global.Disk[track, side].packedFluxDataRev[rev].firstFluxBit;
 			int stopBit = startBit + Global.Disk[track, side].packedFluxDataRev[rev].bitCount;
@@ -440,15 +449,6 @@ namespace WD1772Package {
 										sector.id.info.startTime = currentTime;
 										byteLeftInBlock = 7;
 										phase = Phases.p_id;
-
-										//// Check SWS
-										//if (Global.Disk[track, side].sectors.Count > 1) {
-										//	Sector prevSect = Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 2];
-										//	// we take a min value for GAP3 (22+12+3) and min for GAP4 (24+8+3) 
-										//	int prevEnd = prevSect.id.info.startByte + prevSect.id.info.byteCount + 37 + Global.sectSize(prevSect.id.size) + 10;
-										//	if (byteCount < prevEnd)
-										//		Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].flags |= Sector.SEC_IN_SEC;
-										//}
 										break;
 									default:
 										// other AM re-enable sync search
@@ -490,7 +490,7 @@ namespace WD1772Package {
 				Global.Disk[track, side].sectors[sectorCount - 1].id.info.timeLength = currentTime - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startTime;
 			}
 
-			// since we now continue when finding sync we can have duplicate sector in first last position
+			// since we now continue when finding sync over index it is possible to have duplicate sector in first last position
 			if ((Global.Disk[track, side].sectors.Count > 0) && 
 				(Global.Disk[track, side].sectors[0].id.number == Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].id.number) &&
 				(Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].id.info.startTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime))
@@ -505,15 +505,19 @@ namespace WD1772Package {
 		/// <param name="side">Side</param>
 		/// <param name="rev">Revolution value</param>
 		/// <param name="sectToRead">Sector number to read</param>
-		/// <param name="position">The sector to find must be located after this specified position in nanosecond</param>
+		/// <param name="idBitPosition">If positive the sector to find must be located after this specified 
+		/// position in nanosecond. If negative this means we read all sector at once</param>
 		/// <param name="compare">If set to true we are in compare mode, else we are in read mode</param>
-		/// <returns>a ReadSectInfo block</returns>
 		/// <remarks>The position parameter is necessary to read the data of a sector multiply  defined 
 		/// (index.e. we have several sectors with same number). Otherwise the data for the first encountered
-		/// sector would always be returned (equivalent to position==0).
+		/// sector would always be returned (equivalent to position==0). \n
+		/// However to speedup things this parameter can be set to a negative value. In this case 
+		/// we read all sector in one revolution. But as we may have sector within sector it is possible 
+		/// that some of the sector are not read in one pass this can be checked with the SEC_PROCESSED flag. 
+		/// For all sector not read the function must be called again this time using a positive idBitPosition value.\n
 		/// When compare is false we are reading the sector normally and we fill the SectorContent structure. 
-		/// But if compare==true we are in "compare" mode. In that case we read the sector using the rev parameter 
-		/// and we compare the data buffer read with the "reference" data buffer to fill the fuzzyMask structure.</remarks>
+		/// But if compare==true we are in "compare" mode. In that case we read the same sector using the rev parameter 
+		/// and we compare the data buffer read with the "reference" data buffer to fill the fuzzy structure.</remarks>
 		public static void readSector(int track, int side, int rev, byte sectToRead, int idBitPosition, bool compare) {
 			int startBit = Global.Disk[track, side].packedFluxDataRev[rev].firstFluxBit;
 			int stopBit = startBit + Global.Disk[track, side].packedFluxDataRev[rev].bitCount;
@@ -692,13 +696,13 @@ namespace WD1772Package {
 									data.info.timeLength = currentTime - data.info.startTime;
 									data.info.bitCount = currentBit - startBit - data.info.startBit;
 									if ((widthOver[0] + widthOver[1] + widthOver[2] + widthOver[3]) > (Global.sectSize(sector.id.size) / 2))
-										Bit.setBits(ref flags, Sector.WIDTH_ABOVE);
+										flags |= Sector.WIDTH_ABOVE;
 									if ((widthUnder[0] + widthUnder[1] + widthUnder[2] + widthUnder[3]) > (Global.sectSize(sector.id.size) / 2))
-										Bit.setBits(ref flags, Sector.WIDTH_BELOW);
+										flags |= Sector.WIDTH_BELOW;
 									if ((widthOver[0] < (Global.sectSize(sector.id.size) / 8)) && (widthOver[3] < (Global.sectSize(sector.id.size) / 8)) &&
 										(widthUnder[0] < (Global.sectSize(sector.id.size) / 8)) && (widthUnder[3] < (Global.sectSize(sector.id.size) / 8)) &&
 										(widthOver[1] > (Global.sectSize(sector.id.size) / 6)) && (widthUnder[2] > (Global.sectSize(sector.id.size) / 6)))
-										Bit.setBits(ref flags, Sector.MACRODOS);
+										flags |= Sector.MACRODOS;
 									phase = Phases.p_gap;
 									if (idBitPosition >= 0) breakLoop = true;
 									dsr.sectorMode();
@@ -762,12 +766,8 @@ namespace WD1772Package {
 
 
 		/// <summary>
-		/// This function calls readTrack(), readAddr() and readSector().
+		/// This function calls readAddr(), readSector(), readTrack(), and checkProtection()
 		/// </summary>
-		/// <remarks>ReadTRack() is called first, then readAddr(). For all sector founds by 
-		/// readAddr() the function readeSctor() is called a first time to read the content
-		/// for the current revolution, then it calls again the readSector() function in "compare"
-		/// mode for all others revolutions. This allows to find fuzzy bits.</remarks>
 		/// <param name="track">The track to read</param>
 		/// <param name="side">The side to read</param>
 		/// <param name="rev">The revolution to use</param>
@@ -779,7 +779,6 @@ namespace WD1772Package {
 
 			if (Global.Disk[track, side].sectors == null)
 				Global.Disk[track, side].sectors = new List<Sector>();
-
 
 			readAddr(track, side, rev);
 
@@ -824,10 +823,6 @@ namespace WD1772Package {
 				}
 			}	// old way to be removed
 
-
-			//	if (sc.fuzzyMask != null)
-			//		tc.hasProtection = true;				
-			//}
 			readTrack(track, side, rev);
 
 			Protections.checkProtection(track, side);
@@ -858,6 +853,5 @@ namespace WD1772Package {
 					return sector;
 			return null;
 		}
-
 	}
 }

@@ -187,11 +187,11 @@ class DataDrawing {
 			sectorPhasePolygon.Fill = Brushes.LightGreen;
 		else {
 			sectorPhasePolygon.Fill = Brushes.DeepSkyBlue;
-			if (Bit.testBits(sector.flags, Sector.WIDTH_ABOVE))
+			if ((sector.flags & Sector.WIDTH_ABOVE) != 0)
 				sectorPhasePolygon.Fill = Brushes.Blue;
-			if (Bit.testBits(sector.flags, Sector.WIDTH_BELOW))
+			if ((sector.flags & Sector.WIDTH_BELOW) != 0)
 				sectorPhasePolygon.Fill = Brushes.Aqua;
-			if (Bit.testBits(sector.flags, Sector.MACRODOS))
+			if ((sector.flags & Sector.MACRODOS) != 0)
 				sectorPhasePolygon.Fill = Brushes.Purple;
 			//	plg.Fill = Brushes.BlueViolet;
 
@@ -214,22 +214,14 @@ class DataDrawing {
 				fuzzyPolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.9));
 				fuzzyPolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.10));
 				_dataChartLayout.GraphicCanvas.Children.Add(fuzzyPolygon);
-
-				//	int nbFuzzy = 0;
-				//	for (int j = 0; j < sc.fuzzyMask.Bytes.Count; j++) {
-				//		if (sc.fuzzyMask.Bytes[j].dataByte != 0) nbFuzzy++;
-				//	}
-				//	if (nbFuzzy > (int)((double)sc.fuzzyMask.Bytes.Count * 0.6)) plg.Fill = Brushes.Gray;
 			}	// fuzzy
-
-		}	// phase data
+		}	// phase p_data
 
 		sectorPhasePolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.2));
 		sectorPhasePolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.8));
 		sectorPhasePolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.8));
 		sectorPhasePolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.2));
 		_dataChartLayout.GraphicCanvas.Children.Add(sectorPhasePolygon);
-	
 	}
 		
 }

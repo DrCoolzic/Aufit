@@ -99,7 +99,7 @@ namespace Aufit {
 				if (sector.data != null) {
 					displayBuffer.Inlines.Add("DATA Field: ");
 					if (sector.data.info.byteCount != Global.sectSize(sector.id.size))
-						displayBuffer.Inlines.Add(" *** Imcomplete *** ");
+						displayBuffer.Inlines.Add(" *** Incomplete *** ");
 					displayBuffer.Inlines.Add(String.Format("{0} bytes start at {1}µs length {2} µs IAM={3:X2} {4}={5:X4} {6}\n",
 						sector.data.info.byteCount, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000,
 						sector.data.iam, (sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.crc,

@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</di
 
  The shiftBitsIn function is a direct adaptation of the <b>FdcShiftBit</b> function provided
  as part of the SPS Decoder library from the Software Preservation Society http://www.softpres.org/.
- The original sources can be found at http://www.kryoflux.com/?page=download. The in the 
+ The original sources can be found at http://www.kryoflux.com/?page=download. The
  <b>FdcShiftBit</b> function is located in the CapsEFDC.cpp file.
  
  @author Jean Louis-Guerin & SPS People */
@@ -40,9 +40,14 @@ namespace WD1772Package {
 
 		/// <summary>Bit used in the _decoderFlags for the Address Mark detector enabled</summary>
 		const uint SYNC_DETECTOR_ENABLED = Bit.BIT_01;
+
 		/// <summary>Bit used in the _decoderFlags to indicates that DSR data are available</summary>
 		const uint DATA_READY = Bit.BIT_02;
+
+		/// <summary>Bit used in the _decoderFlags to indicates that A1 is found</summary>
 		const uint A1_FOUND = Bit.BIT_03;
+
+		/// <summary>Bit used in the _decoderFlags to indicates that C2 is found</summary>
 		const uint C2_FOUND = Bit.BIT_04;
 		const uint CRC_ENABLED = Bit.BIT_05;
 		const uint CRC_ACTIVE = Bit.BIT_06;
@@ -136,6 +141,8 @@ namespace WD1772Package {
 		/// <summary>
 		/// Content of the AM shift register when the AM was detected
 		/// </summary>
+		/// <remarks>As this is read one bit after the detection (data ready) the 
+		/// content is shifted right by one</remarks>
 		public ushort MFM {
 			get { return (ushort)(_syncDetector >> 1); }
 		}
@@ -161,6 +168,9 @@ namespace WD1772Package {
 			get { return (_lastSyncFound == SyncType.A1) ? true : false; }
 		}
 
+		/// <summary>
+		/// Sync sequence in progress
+		/// </summary>
 		public bool inSyncSeq {
 			get { return (_syncSeq > 0);  }
 		}
@@ -331,7 +341,7 @@ namespace WD1772Package {
 		/// <remarks>
 		/// In sector mode the Sync Detector is on until 3 sync marks are detected.
 		/// In sector mode the CRC is computed. This function must be called before
-		/// reading each and every ID DATA as the flags are resets after the sync
+		/// reading each and every ID / DATA fields as the flags are resets after the sync
 		/// </remarks>
 		public void sectorMode() {
 			_decoderFlags |= (SYNC_DETECTOR_ENABLED | CRC_ENABLED);
@@ -349,7 +359,5 @@ namespace WD1772Package {
 				crc = (ushort)((crc << 1) ^ (((((crc >> 8) ^ (c << i)) & 0x0080) != 0) ? 0x1021 : 0));
 			return crc;
 		} // end of update_crc
-
-
 	}
 }

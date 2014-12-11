@@ -33,45 +33,59 @@ namespace WD1772Package {
 public class DPLL {
 	/// <summary> 8 MHz clock = 125 ns</summary>
 	readonly int PLL_CLK = 125;
+
 	/// <summary>00011101 low_value for phase compensation</summary>
 	readonly int LOW_FIX = 29;
+
 	/// <summary>11100011high value for phase compensation</summary>
 	readonly int HIGH_FIX = 227;
+
 	/// <summary>bottom value for counter (128 - 9%) = 116</summary>
-	readonly int BOTTOM = 115;	
+	readonly int BOTTOM = 115;
+	
 	/// <summary>top value for counter (128 + 9%) = 140</summary>
 	readonly int TOP = 141;	
 
 	/// <summary> running time</summary>
-	private int currentTime;
+	private int _currentTime;
+
 	/// <summary>increment counter</summary>
-	private bool up;
+	private bool _up;
+
 	/// <summary>decrement counter</summary>
-	private bool down;
+	private bool _down;
+
 	/// <summary>select LOW_FIX value</summary>
-	private bool low;
+	private bool _low;
+
 	/// <summary>select HIGH_FIX value</summary>
-	private bool high;	
+	private bool _high;	
+
 	/// <summary>period_count initialized to 128 (128*16=2048=2^11)</summary>
-	private int count;
+	private int _count;
+
 	/// <summary>11 bits adder</summary>
-	private int adder;
+	private int _adder;
+
 	/// <summary>lead/lag (msb) history (previous 2 msb)</summary>
-	private int history;
+	private int _history;
+
 	/// <summary> freq correction amount</summary>
-	private int freqAmount;	
+	private int _freqAmount;	
+
 	/// <summary>phase amount correction</summary>
-	private int phaseAmount;
+	private int _phaseAmount;
+
 	/// <summary>Floppy density True=HD False=DD</summary>
-	private bool density;
+	private bool _density;
 
 	/// <summary>get current PLL clock period in nanoseconds </summary>
 	/// <returns>The actual period of the adjusted clock in nanoseconds</returns>
-	public int bitWidth {
+	public int BitWidth {
 		get {
 			// clock = (2048 * 125ns) / period_count
-			int clock = 256000 / count;
-			if (density)
+			int clock = 256000 / _count;
+			if (_density)
 				return clock / 2;
 			return clock;
 		}
@@ -81,21 +95,21 @@ public class DPLL {
  	/// <summary>The DPLL class Constructor. We reset all internals values</summary>
 	/// <param name="den">Set to true for HD MFM FD</param>
 	public DPLL(bool den = false) {
-		currentTime = 0;			// reset current time
-		density = den;				// set density;
+		_currentTime = 0;			// reset current time
+		_density = den;				// set density;
 		reset();
 	}
 
 	private void reset() {
-		up = false;					// increment counter false
-		down = false;				// decrement counter false
-		count = 128;				// period count initialized to 128 (128*16=2048=2^11)
-		adder = 0;					// reset the 11 bits adder
-		low = false;				// select LOW_FIX false
-		high = false;				// select HIGH_FIX false
-		history = 0;				// reset history
-		freqAmount = 0;				// reset freq correction amount
-		phaseAmount = 0;			// reset phase amount correction
+		_up = false;					// increment counter false
+		_down = false;				// decrement counter false
+		_count = 128;				// period count initialized to 128 (128*16=2048=2^11)
+		_adder = 0;					// reset the 11 bits adder
+		_low = false;				// select LOW_FIX false
+		_high = false;				// select HIGH_FIX false
+		_history = 0;				// reset history
+		_freqAmount = 0;				// reset freq correction amount
+		_phaseAmount = 0;			// reset phase amount correction
 	}
 
 
@@ -119,12 +133,12 @@ public class DPLL {
 		int numWindows = 0;			// number of inspection windows to find data pulse
 
 		// trick => if in High Density we multiply the value by 2 ==> clock / 2
-		if (density) dataTime *= 2;
+		if (_density) dataTime *= 2;
 
 		// here we check for Looong flux like in NFA
-		if ((dataTime - currentTime) > 256 * PLL_CLK) {	// 32 µS
-			int nw = (dataTime - currentTime) / (16 * PLL_CLK);
-			currentTime = dataTime;
+		if ((dataTime - _currentTime) > 256 * PLL_CLK) {	// 32 µS
+			int nw = (dataTime - _currentTime) / (16 * PLL_CLK);
+			_currentTime = dataTime;
 			reset();
 			return nw;
 		}
@@ -134,26 +148,26 @@ public class DPLL {
 			numWindows++;
 			// do while no roll over in the 11 bits adder
 			do {
-				currentTime += PLL_CLK;
+				_currentTime += PLL_CLK;
 				// up for one loop only
 				if (readPulse)
 					readPulse = false;
 
 				// check data in inspection window
-				if (currentTime >= dataTime) {
+				if (_currentTime >= dataTime) {
 					if (!dataFound)			// one time
 						readPulse = true;
 					dataFound = true;		// data found
 				}
 
 				// adjust period_count based on frequency correction
-				if (up && (count < TOP))		count++;
-				if (down && (count > BOTTOM))	count--;
+				if (_up && (_count < TOP))		_count++;
+				if (_down && (_count > BOTTOM))	_count--;
 
 				// update adder based on phase correction
-				if (low)		adder += LOW_FIX;
-				else if (high)	adder += HIGH_FIX;
-				else			adder += count;
+				if (_low)		_adder += LOW_FIX;
+				else if (_high)	_adder += HIGH_FIX;
+				else			_adder += _count;
 					
 
 				if (readPulse) {
@@ -161,13 +175,13 @@ public class DPLL {
 					// frequency correction //
 					// -------------------- //
 
-					if ((adder & 0x400) == 0) switch(history) {		// adder msb == 0
+					if ((_adder & 0x400) == 0) switch(_history) {		// adder msb == 0
 							case 0: error = 2; break;	// 000 very fast
 							case 1: error = 1; break;	// 001 fast
 							case 2: error = 0; break;	// 010 ok
 							case 3: error = 0; break;	// 011 now adjusted
 						}	// adder msb == 0
-					else switch (history) {							// adder msb == 1
+					else switch (_history) {							// adder msb == 1
 							case 0: error = 0; break;	// 100 now adjusted
 							case 1: error = 0; break;	// 101 ok
 							case 2: error = 1; break;	// 110 slow
@@ -176,7 +190,7 @@ public class DPLL {
 
 
 					// compute and save new history based on adder msb and previous history
-					history = ((adder & 0x400) >> 9) | (history >> 1) & 0x7F;
+					_history = ((_adder & 0x400) >> 9) | (_history >> 1) & 0x7F;
 
 					// set freq_amount based on error history and msb
 					// The frequency decoder controls the period of the data inspection window respective 
@@ -193,33 +207,33 @@ public class DPLL {
 					// or decrement (value 1) of the adder
 					switch (error) {
 						case 2:
-							switch ((adder >> 8) & 0x7) {
-								case 0: freqAmount = 0x4; break;	// 0100
-								case 1: freqAmount = 0x3; break;	// 0011
-								case 2: freqAmount = 0x2; break;	// 0010
-								case 3: freqAmount = 0x1; break;	// 0001
-								case 4: freqAmount = 0x9; break;	// 1001
-								case 5: freqAmount = 0xA; break;	// 1010
-								case 6: freqAmount = 0xB; break;	// 1011
-								case 7: freqAmount = 0xC; break;	// 1100
+							switch ((_adder >> 8) & 0x7) {
+								case 0: _freqAmount = 0x4; break;	// 0100
+								case 1: _freqAmount = 0x3; break;	// 0011
+								case 2: _freqAmount = 0x2; break;	// 0010
+								case 3: _freqAmount = 0x1; break;	// 0001
+								case 4: _freqAmount = 0x9; break;	// 1001
+								case 5: _freqAmount = 0xA; break;	// 1010
+								case 6: _freqAmount = 0xB; break;	// 1011
+								case 7: _freqAmount = 0xC; break;	// 1100
 							}
 							break;
 
 						case 1:
-							switch ((adder >> 8) & 0x7) {
-								case 0: freqAmount = 0x3; break;	// 0011
-								case 1: freqAmount = 0x2; break;	// 0010
-								case 2: freqAmount = 0x1; break;	// 0001
-								case 3: freqAmount = 0x0; break;	// 0000
-								case 4: freqAmount = 0x8; break;	// 1000
-								case 5: freqAmount = 0x9; break;	// 1001
-								case 6: freqAmount = 0xA; break;	// 1010
-								case 7: freqAmount = 0xB; break;	// 1011
+							switch ((_adder >> 8) & 0x7) {
+								case 0: _freqAmount = 0x3; break;	// 0011
+								case 1: _freqAmount = 0x2; break;	// 0010
+								case 2: _freqAmount = 0x1; break;	// 0001
+								case 3: _freqAmount = 0x0; break;	// 0000
+								case 4: _freqAmount = 0x8; break;	// 1000
+								case 5: _freqAmount = 0x9; break;	// 1001
+								case 6: _freqAmount = 0xA; break;	// 1010
+								case 7: _freqAmount = 0xB; break;	// 1011
 							}
 							break;
 
 						case 0: 
-							freqAmount = 0;
+							_freqAmount = 0;
 							break;
 					} // set freq amount based on history
 
@@ -232,60 +246,60 @@ public class DPLL {
 					// rollover should appear earlier. In case of a phase lag, the next rollover 
 					// should come later (indicated by a '1' of the most significant bit of phase_amount
 					// bit 3 used to control high(0) or low(1) select
-					switch ((adder >> 8) & 0x7) {	// adder 3 msb
-						case 0: phaseAmount = 0x4; break;		// 000 huge lead
-						case 1: phaseAmount = 0x3; break;		// 001 large lead
-						case 2: phaseAmount = 0x2; break;		// 010 medium lead
-						case 3: phaseAmount = 0x1; break;		// 011 small lead
-						case 4: phaseAmount = 0x9; break;		// 100 small lag
-						case 5: phaseAmount = 0xA; break;		// 101 medium lag
-						case 6: phaseAmount = 0xB; break;		// 110 large lag
-						case 7: phaseAmount = 0xC; break;		// 111 huge lag
+					switch ((_adder >> 8) & 0x7) {	// adder 3 msb
+						case 0: _phaseAmount = 0x4; break;		// 000 huge lead
+						case 1: _phaseAmount = 0x3; break;		// 001 large lead
+						case 2: _phaseAmount = 0x2; break;		// 010 medium lead
+						case 3: _phaseAmount = 0x1; break;		// 011 small lead
+						case 4: _phaseAmount = 0x9; break;		// 100 small lag
+						case 5: _phaseAmount = 0xA; break;		// 101 medium lag
+						case 6: _phaseAmount = 0xB; break;		// 110 large lag
+						case 7: _phaseAmount = 0xC; break;		// 111 huge lag
 					}
 				} // readPulse == true
 
 				else {
-					if ((freqAmount & 0x7) != 0)	freqAmount--;
-					if ((phaseAmount & 0x7) != 0)	phaseAmount--;
+					if ((_freqAmount & 0x7) != 0)	_freqAmount--;
+					if ((_phaseAmount & 0x7) != 0)	_phaseAmount--;
 				} // readPulse == false
 
 				// set freq correction flags
-				if ((freqAmount & 0x07) != 0) {
+				if ((_freqAmount & 0x07) != 0) {
 					// freq correction needed
-					if ((freqAmount & 0x8) != 0) {
-						up = false;
-						down = true;
+					if ((_freqAmount & 0x8) != 0) {
+						_up = false;
+						_down = true;
 					}
 					else {
-						up = true;
-						down = false;
+						_up = true;
+						_down = false;
 					}
 				} // freq amount != 0
 				else {
 					// no freq correction needed
-					up = false;
-					down = false;
+					_up = false;
+					_down = false;
 				} // freq amount == 0
 
 				// set phase correction flags
-				if ((phaseAmount & 0x7) != 0) {
+				if ((_phaseAmount & 0x7) != 0) {
 					// phase correction needed
-					if ((phaseAmount & 0x8) != 0) {
-						low = true;
-						high = false;
+					if ((_phaseAmount & 0x8) != 0) {
+						_low = true;
+						_high = false;
 					}
 					else {
-						high = true;
-						low = false;
+						_high = true;
+						_low = false;
 					}
 				} // phase correction needed
 				else {
-					high = false;
-					low = false;
+					_high = false;
+					_low = false;
 				}
 
-			} while (adder < 2048); // do until adder roll over
-			adder -= 2048;
+			} while (_adder < 2048); // do until adder roll over
+			_adder -= 2048;
 
 		} while (!dataFound); // do until we found data
 		return numWindows;

@@ -33,7 +33,7 @@
                       Click="cbLimitClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
             <CheckBox Grid.Column="7" x:Name="cbForceDS" Content="Force DS" Margin="10,0,10,0" VerticalAlignment="Center" 
                       Click="cbRecoverClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
-            <CheckBox Grid.Column="8" x:Name="cbSlow" Content="Slow" Margin="10,0,10,0" VerticalAlignment="Center" Click="cbSlowClick"
+            <CheckBox Grid.Column="8" x:Name="cbDetail" Content="Detail" Margin="10,0,10,0" VerticalAlignment="Center" Click="cbDetailClick"
                       FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
         </Grid>
 
@@ -90,7 +90,7 @@
             <StackPanel Grid.Column="5" Margin="10,20,15,0" Orientation="Horizontal" HorizontalAlignment="Right">
                 <CheckBox Grid.Column="8" x:Name="cbA1" Content="A1" Margin="5,0,5,0" VerticalAlignment="Top" 
                       FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
-                <CheckBox Grid.Column="9" x:Name="cbC2" Content="C2" Margin="5,0,5,0" VerticalAlignment="Top" Click="cbSlowClick"
+                <CheckBox Grid.Column="9" x:Name="cbC2" Content="C2" Margin="5,0,5,0" VerticalAlignment="Top" Click="cbDetailClick"
                       FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
             </StackPanel>
         </Grid>

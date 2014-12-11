@@ -83,8 +83,6 @@ public partial class DiskWindow : Window {
 		double radius = halfWindowSize; 
 
 		System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
-		//path.StrokeThickness = fineLine;
-		//path.Stroke = Brushes.Black;
 		path.Fill = Brushes.Black;
 
 		PathGeometry pg = new PathGeometry();
@@ -182,6 +180,7 @@ public partial class DiskWindow : Window {
 	/// </summary>
 	/// <param name="track">The track to display</param>
 	/// <param name="side">The side of the FD</param>
+	/// <param name="rev">The revolution index</param>
 	public void drawDiskTrackLayout(int track, int side, int rev) {
 		 Global.DiskTrack dt = Global.Disk[track, side];
 		List<Sector> sectors = dt.sectors;
@@ -286,11 +285,11 @@ public partial class DiskWindow : Window {
 			idPath.Stroke = Brushes.Yellow;
 		if (phase == Phases.p_data) {
 			idPath.Stroke = Brushes.DeepSkyBlue;
-			if (Bit.testBits(sector.flags, Sector.WIDTH_ABOVE))
+			if ((sector.flags & Sector.WIDTH_ABOVE) != 0)
 				idPath.Stroke = Brushes.Blue;
-			if (Bit.testBits(sector.flags, Sector.WIDTH_BELOW))
+			if ((sector.flags & Sector.WIDTH_BELOW) != 0)
 				idPath.Stroke = Brushes.Aqua;
-			if (Bit.testBits(sector.flags, Sector.MACRODOS))
+			if ((sector.flags & Sector.MACRODOS) != 0)
 				idPath.Stroke = Brushes.Purple;
 			if ((sector.data.info.crc != 0) || (sector.data.fuzzy != null))
 				idPath.Stroke = Brushes.Orange;
@@ -467,14 +466,11 @@ public partial class DiskWindow : Window {
 	/// <param name="time"></param>
 	/// <returns></returns>
 	private double timeAngle(double time) {
-		//double angle = Math.PI / 2 + Math.PI * time / 100000000.0;
 		double angle = 2 * Math.PI - (Math.PI * time / 100000000.0);
-		//while (angle > 2 * Math.PI) angle -= 2 * Math.PI;
 		return angle;
 	}
 
 	private double byteAngle(int pos, int count) {
-		//double angle = Math.PI / 2 + 2 * Math.PI * (double)pos / (double)count;
 		double angle = 2 * Math.PI * (double)pos / (double)count;
 		return angle;
 	}
@@ -486,8 +482,6 @@ public partial class DiskWindow : Window {
 	private void saveImageClick1(object sender, RoutedEventArgs e) {
 		Global.saveImage(cvDisk1);
 	}
-
-
 
 }	// class DiskWindow
 }	// name space

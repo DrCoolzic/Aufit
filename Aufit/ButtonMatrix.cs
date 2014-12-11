@@ -197,11 +197,11 @@ namespace Aufit {
 
 
 		/// <summary>
-		/// Called by button click handler. !set the current Track/Side based 
-		/// on button clicked and select/unselect buttons accordingly
+		/// Called by button click handler. Set the current Track/Side based 
+		/// on button clicked and select/deselect buttons accordingly
 		/// </summary>
-		/// <param name="button"></param>
-		/// <returns></returns>
+		/// <param name="button">Button clicked</param>
+		/// <returns>True if button found</returns>
 		public static bool buttonClicked(Button button) {
 			var tuple = _buttonList.Where(t => t.Item1 == button).FirstOrDefault();
 

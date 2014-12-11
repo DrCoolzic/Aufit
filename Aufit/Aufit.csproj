@@ -97,7 +97,7 @@
     <Compile Include="BezierSpline.cs" />
     <Compile Include="ButtonMatrix.cs" />
     <Compile Include="ChartLayout.cs" />
-    <Compile Include="ClockDrawing.cs" />
+    <Compile Include="BitWidthDrawing.cs" />
     <Compile Include="DataDrawing.cs" />
     <Compile Include="DiskWindow.xaml.cs">
       <DependentUpon>DiskWindow.xaml</DependentUpon>

@@ -59,7 +59,7 @@ namespace Aufit {
 
 		private FluxDrawing _fluxDrawing = null;
 		private HistoDrawing _histoDrawing = null;
-		private ClockDrawing _clockDrawing = null;
+		private BitWidthDrawing _clockDrawing = null;
 		private DataDrawing _dataDrawing = null;
 
 		private BufferWindow _trackWindow = null;
@@ -92,13 +92,13 @@ namespace Aufit {
 			InitializeComponent();
 
 			_fluxDrawing = new FluxDrawing(fluxGrid, cvTextFlux, cvGraphicFlux, this);
-			_fluxDrawing.SlowDraw = cbSlow.IsChecked.Value;
+			_fluxDrawing.DetailDraw = cbDetail.IsChecked.Value;
 			//_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
 			_fluxDrawing.Chart.FixOffset = true;
 
 			_histoDrawing = new HistoDrawing(histoGrid, cvTextHisto, cvGraphicHisto, this);
 
-			_clockDrawing = new ClockDrawing(clockGrid, cvTextClock, cvGraphicClock);
+			_clockDrawing = new BitWidthDrawing(clockGrid, cvTextClock, cvGraphicClock);
 			_clockDrawing.Chart.OptimalYSpacing = 18;
 			_clockDrawing.Chart.FixOffset = true;
 
@@ -157,7 +157,7 @@ namespace Aufit {
 
 			_fluxDrawing.mouseLBU(sender, e);
 			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.MinBitWidth, _clockDrawing.MaxBitWidth);
-			_clockDrawing.drawClock();
+			_clockDrawing.drawBitWidth();
 			_dataDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
 			_dataDrawing.drawTrackData();
 		}
@@ -169,7 +169,7 @@ namespace Aufit {
 		private void fluxMouseWheel(object sender, MouseWheelEventArgs e) {
 			_fluxDrawing.mouseWheel(sender, e);
 			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.MinBitWidth, _clockDrawing.MaxBitWidth);
-			_clockDrawing.drawClock();
+			_clockDrawing.drawBitWidth();
 			_dataDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
 			_dataDrawing.drawTrackData();
 		}
@@ -181,7 +181,7 @@ namespace Aufit {
 		private void fluxMouseRBDown(object sender, MouseButtonEventArgs e) {
 			_fluxDrawing.mouseRBD(sender, e);
 			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.MinBitWidth, _clockDrawing.MaxBitWidth);
-			_clockDrawing.drawClock();
+			_clockDrawing.drawBitWidth();
 			_dataDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
 			_dataDrawing.drawTrackData();
 
@@ -210,10 +210,10 @@ namespace Aufit {
 			_fluxDrawing.drawFlux(Track, Side, Rev);
 		}
 
-		private void cbSlowClick(object sender, RoutedEventArgs e) {
-			_fluxDrawing.SlowDraw = cbSlow.IsChecked.Value;
+		private void cbDetailClick(object sender, RoutedEventArgs e) {
+			_fluxDrawing.DetailDraw = cbDetail.IsChecked.Value;
 			_fluxDrawing.drawFlux(Track, Side, Rev);
-			_clockDrawing.drawClock();
+			_clockDrawing.drawBitWidth();
 		}
 
 		private void minusRevClicked(object sender, RoutedEventArgs e) {
@@ -278,15 +278,17 @@ namespace Aufit {
 			_fluxDrawing.setFluxDefault(track, side, rev);
 			_fluxDrawing.drawFlux(track, side, rev);
 
-			_clockDrawing.setClockDefault(track, side, rev);
-			_clockDrawing.drawClock(track, side, rev);
+			_clockDrawing.setBitWidthDefault(track, side, rev);
+			_clockDrawing.drawBitWidth(track, side, rev);
 
 			_dataDrawing.Chart.setDefaultViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
 			_dataDrawing.drawTrackData(track, side, rev);
 			ButtonMatrix.setButtonBG(track, side);
 		}
 
-
+		////////////////////////
+		// DEBUG FLAGS
+		////////////////////////
 		// when set to true the KF files are read without treading for debug
 		private bool _debugNoThread = false;
 		// Do we read KF directory using Asynchronous read or as tasks.
@@ -313,6 +315,7 @@ namespace Aufit {
 			if ((null == droppedFiles) || (!droppedFiles.Any())) { return; }
 			processFile(droppedFiles[0]);
 		}
+
 
 		private async void processFile(string fileName) {
 			bool readOK = false;			
@@ -344,7 +347,6 @@ namespace Aufit {
 			if (!readOK)
 				tbFileName.Text = "Sorry could not read correctly the input file";
 		}
-
 
 
 		private async Task<bool> readSPCFile(string fileName) {
@@ -398,7 +400,6 @@ namespace Aufit {
 		/// <param name="root">Root name expanded with xx.x to create the final name</param>
 		public async Task<bool> readAllTracksAsync(string path, string root) {
 			string fname;
-			_fluxDrawing.FastDraw = true;
 			infoBox.Clear();
 			infoBox.FontSize = 11;
 			ButtonMatrix.clearButtons();
@@ -416,7 +417,6 @@ namespace Aufit {
 				}
 			}
 
-			_fluxDrawing.FastDraw = false;
 			Track = Side = Rev = 0;
 			if (Global.Disk[Track, Side].fluxData != null) {
 				ButtonMatrix.selectButton(Track, Side);
@@ -436,7 +436,6 @@ namespace Aufit {
 		/// <returns></returns>
 		public bool readAllTracks(string path, string root) {
 			string fname;
-			_fluxDrawing.FastDraw = true;
 			infoBox.Clear();
 			infoBox.FontSize = 11;
 			ButtonMatrix.clearButtons();
@@ -453,7 +452,6 @@ namespace Aufit {
 				}
 			}
 
-			_fluxDrawing.FastDraw = false;
 			Track = Side = Rev = 0;
 			if (Global.Disk[Track, Side].fluxData != null) {
 				ButtonMatrix.selectButton(Track, Side);
@@ -520,7 +518,7 @@ namespace Aufit {
 
 
 		private void clockGridSizeChanged(object sender, SizeChangedEventArgs e) {
-			_clockDrawing.drawClock();
+			_clockDrawing.drawBitWidth();
 		}
 
 		private void dataGridSizeChanged(object sender, SizeChangedEventArgs e) {
@@ -597,6 +595,7 @@ namespace Aufit {
 			_trackWindow.Show();
 		}
 
+
 		void sectorWindowClosed(object sender, EventArgs e) {
 			_sectorWindowIsOpen = false;
 		}
@@ -648,20 +647,11 @@ namespace Aufit {
 				}
 		}
 
+
 		private void btSavePictClick(object sender, RoutedEventArgs e) {
 			Global.saveImage(mainGrid);
-//			// TODO remove ?
-////			if (BM1.Visibility == Visibility.Hidden) return;
-//			if (_diskWindowIsOpen)
-//				_diskWindow.Close();
-
-//			string message = String.Format("{0}", _fileName);
-//			_diskWindow = new DiskWindow();
-//			//_diskWindow.drawDiskData(message);
-//			_diskWindow.Closed += new EventHandler(diskWindowClosed);
-//			_diskWindowIsOpen = true;
-//			_diskWindow.Show();
 		}
+
 
 		private void selectAndCheck(int track, int side) {
 			ButtonMatrix.selectButton(track, side);
@@ -685,8 +675,8 @@ namespace Aufit {
 				//PastiWriter pasti = new PastiWriter();
 				pasti.writePasti(sfd.FileName, cbForceDS.IsChecked.Value);
 			}
-
 		}
+
 
 		private MessageBoxResult ask(string caption, string messageBoxText) {
 			MessageBoxButton button = MessageBoxButton.YesNoCancel;
@@ -701,7 +691,6 @@ namespace Aufit {
 		private void cbRecoverClick(object sender, RoutedEventArgs e) {
 			// TODO
 		}
-
 
 	}
 }

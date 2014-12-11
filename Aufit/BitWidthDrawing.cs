@@ -40,22 +40,22 @@ namespace ChartPackage {
 /// <summary>
 /// This class contains all functions required to draw the Clock chart
 /// </summary>
-class ClockDrawing {
-	private ChartLayout _clockChartLayout = null;
+class BitWidthDrawing {
+	private ChartLayout _bitWidthChartLayout = null;
 	private int _minBitWidth;
 	private int _maxBitWidth;
 	private int _track, _side, _rev;
-	private const int CLK_AVG_COUNT = 50;
+	private const int BIT_AVG_COUNT = 50;
 
 	/// <summary>
-	/// Access the minimum value of the clock computed in setClockDefault()
+	/// Access the minimum value of the clock computed in setBitWidthDefault()
 	/// </summary>
 	public int MinBitWidth {
 		get { return _minBitWidth; }
 	}
 
 	/// <summary>
-	/// Access the maximum value of the clock computed in setClockDefault()
+	/// Access the maximum value of the clock computed in setBitWidthDefault()
 	/// </summary>
 	public int MaxBitWidth {
 		get { return _maxBitWidth; }
@@ -65,7 +65,7 @@ class ClockDrawing {
 	/// Access the ChartLayout used to draw the clock
 	/// </summary>
 	public ChartLayout Chart {
-		get { return _clockChartLayout; }
+		get { return _bitWidthChartLayout; }
 	}
 
 
@@ -75,20 +75,20 @@ class ClockDrawing {
 	/// <param name="grid">Grid of the clock chart that contains the two canvases</param>
 	/// <param name="text">Text canvas of the clock chart</param>
 	/// <param name="graphic">Graphic canvas of the clock chart</param>
-	public ClockDrawing(Grid grid, Canvas text, Canvas graphic) {
-		_clockChartLayout = new ChartLayout(grid, text, graphic);
+	public BitWidthDrawing(Grid grid, Canvas text, Canvas graphic) {
+		_bitWidthChartLayout = new ChartLayout(grid, text, graphic);
 	}
 
 
 	/// <summary>
 	/// Draw the clock chart
 	/// </summary>
-	/// <param name="track">Clock for this track</param>
-	/// <param name="side">Clock for this side</param>
-	/// <param name="rev">Clock for this revolution</param>
-	public void drawClock(int track = -1, int side = -1, int rev = -1) {
-		if (_clockChartLayout == null) return;
-		_clockChartLayout.chartResetCanvas();
+	/// <param name="track">bitWidth for this track</param>
+	/// <param name="side">bitWidth for this side</param>
+	/// <param name="rev">bitWidth for this revolution</param>
+	public void drawBitWidth(int track = -1, int side = -1, int rev = -1) {
+		if (_bitWidthChartLayout == null) return;
+		_bitWidthChartLayout.chartResetCanvas();
 
 		if (track == -1) track = _track;
 		else _track = track;
@@ -100,7 +100,7 @@ class ClockDrawing {
 		Global.DiskTrack td = Global.Disk[track, side];
 		if (Global.Disk[track, side].packedFluxData == null) return;
 
-		_clockChartLayout.drawChartGrids();
+		_bitWidthChartLayout.drawChartGrids();
 		int speedUp = FluxDrawing.SpeedUp;
 
 		int startBit = Global.Disk[track, side].packedFluxDataRev[rev].firstFluxBit;
@@ -128,8 +128,8 @@ class ClockDrawing {
 			int clk = td.packedFluxData.bitWidth[currentByte];
 			int avgClock = 0;
 			int avgCount = 0;
-			for (int j = 0; j < CLK_AVG_COUNT; j++) {
-				int index = currentByte - CLK_AVG_COUNT / 2 + j;
+			for (int j = 0; j < BIT_AVG_COUNT; j++) {
+				int index = currentByte - BIT_AVG_COUNT / 2 + j;
 				if ((index >= 0) && (index <= (stopBit/8))) {
 					avgClock += td.packedFluxData.bitWidth[index];
 					avgCount++;
@@ -138,10 +138,10 @@ class ClockDrawing {
 			if (avgCount > 0) clk = avgClock / avgCount;
 
 			if (bitPosition % speedUp != 0) continue;
-			if (!_clockChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)clk)) continue;
-			clockLine.Points.Add(_clockChartLayout.NormPoint((double)currentTime / 1000000.0, clk));
+			if (!_bitWidthChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)clk)) continue;
+			clockLine.Points.Add(_bitWidthChartLayout.NormPoint((double)currentTime / 1000000.0, clk));
 		}
-		_clockChartLayout.GraphicCanvas.Children.Add(clockLine);
+		_bitWidthChartLayout.GraphicCanvas.Children.Add(clockLine);
 
 		// Bezier Spline
 		//int nbpoints = 0;
@@ -189,8 +189,8 @@ class ClockDrawing {
 	/// <summary>
 	/// Set the clock chart viewport default value
 	/// </summary>
-	public void setClockDefault(int track, int side, int rev) {
-		if (_clockChartLayout == null) return;
+	public void setBitWidthDefault(int track, int side, int rev) {
+		if (_bitWidthChartLayout == null) return;
 
 		if (track == -1) track = _track;
 		else _track = track;
@@ -209,7 +209,7 @@ class ClockDrawing {
 			_minBitWidth -= _minBitWidth / 100;
 			_maxBitWidth += _maxBitWidth / 100;
 		}	// do not want infinity scale
-		_clockChartLayout.setViewport(fluxXmin, fluxXmax, _minBitWidth, _maxBitWidth);
+		_bitWidthChartLayout.setViewport(fluxXmin, fluxXmax, _minBitWidth, _maxBitWidth);
 	}
 
 }

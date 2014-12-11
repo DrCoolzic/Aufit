@@ -58,6 +58,7 @@ public struct FluxDataRev {
 	/// The time it takes to complete a revolution in nanoseconds (time between two indexes). 
 	/// </summary>
 	public int revolutionTime;
+
 	/// <summary>
 	/// The time it takes to get to the index-pulse in the first flux transition. 
 	/// </summary>
@@ -67,11 +68,13 @@ public struct FluxDataRev {
 	/// case of a no flux area at the beginning of the track this value can be huge.
 	/// </remarks>
 	public int timeToIndex;
+
 	/// <summary>
 	///  Position of the first flux for this revolution. The position is given as
 	///  an index in the FluxValue[] array of the FluxData class.
 	/// </summary>
 	public int firstFluxIndex;
+
 	/// <summary>
 	/// The number of flux transitions for this revolution.
 	/// </summary>
@@ -93,15 +96,18 @@ public struct PackedFluxDataRev {
 	/// The time it takes to complete a revolution in nanoseconds (time between two indexes). 
 	/// </summary>
 	public int revolutionTime;
+
 	/// <summary>
 	///  Position of the first flux for this revolution. This position is given as the
 	///  absolute position inside the packedBits[] array of PackedFluxData class
 	/// </summary>
 	public int firstFluxBit;
+
 	/// <summary>
 	/// The number of clock/data bits for this revolution.
 	/// </summary>
 	public int bitCount;
+
 	/// <summary>
 	/// The number of flux transitions for this revolution.
 	/// </summary>
@@ -119,11 +125,14 @@ public class FluxData {
 	/// <summary>Array of flux transitions recorded for this track (including all revolutions). 
 	/// The value is given in number of sample clock</summary>
 	public int[] fluxValue;
+
 	/// <summary>Total number of flux transitions for ALL revolutions of this track</summary>
 	public int totalFluxCount;
+
 	/// <summary>Value of the shortest flux transition recorded for this track in sample clock</summary>
 	/// <remarks>This value is filled by readStreamTrack() method</remarks>
 	public int minFlux;
+
 	/// <summary>Value of the largest flux transition recorded for this track in sample clock</summary>
 	/// <remarks>This value is filled by readStreamTrack() method</remarks>
 	public int maxFlux;
@@ -141,11 +150,13 @@ public class PackedFluxData {
 	/// Decoded clock + data bits packed in a byte
 	/// </summary>
 	public byte[] packedBits;
+
 	/// <summary>
 	/// The average width of a bit (half cell) time  in nanoseconds for a packedBits byte.
 	/// </summary>
 	/// <remarks>If null standard width assumed</remarks>
 	public int[] bitWidth;
+
 	/// <summary>
 	/// The timing of the first flux transition in nanoseconds.
 	/// </summary>
@@ -155,6 +166,7 @@ public class PackedFluxData {
 	/// sampling of the first track of the first revolution.
 	/// </remarks>
 	public int[] firstFluxTiming;
+
 	/// <summary>
 	/// Index of the first transition in the flux transition array.
 	/// </summary>
@@ -164,21 +176,25 @@ public class PackedFluxData {
 	/// If packed data are not extracted from a flux transitions array its value is null.
 	/// </remarks>
 	public int[] firstFluxIndex;
+
 	/// <summary>
 	/// The maximum width in nanoseconds of a bit (half cell) for all samples
 	/// </summary>
 	/// <remarks>If null standard width assumed</remarks>
 	public int maxBitWidth;
+
 	/// <summary>
 	/// The minimum width in nanoseconds of a bit (half cell) for all samples
 	/// </summary>
 	/// <remarks>If null standard width assumed</remarks>
 	public int minBitWidth;
+
 	/// <summary>
 	/// The minimum flux transition in nanoseconds for all samples
 	/// </summary>
 	/// <remarks>If null standard width assumed</remarks>
 	public int minFlux;
+
 	/// <summary>
 	/// The maximum flux transition in nanoseconds for all samples
 	/// </summary>
@@ -193,8 +209,10 @@ public class PackedFluxData {
 public struct HistoData {
 	/// <summary>Histogram Array: Flux transition repartition</summary>
 	public int[] histogram;
+
 	/// <summary>Computed entropy for the track</summary>
 	public double entropy;
+
 	/// <summary>
 	/// The track seems to have data
 	/// </summary>
@@ -236,34 +254,34 @@ public class Bit {
 	public const uint BIT_31 = 0x40000000;
 	public const uint BIT_32 = 0x80000000;
 
-	#region flag_helper_functions
-	/// <summary>Set the specified bit(s) in the flag</summary>
-	/// <param name="flag">The flag to update</param>
-	/// <param name="bits">An array of bits to set in the flag</param>
-	public static void setBits(ref uint flag, params uint[] bits) {
-		for (int i = 0; i < bits.Length; i++)
-			flag |= bits[i];
-	}
+	//#region flag_helper_functions
+	///// <summary>Set the specified bit(s) in the flag</summary>
+	///// <param name="flag">The flag to update</param>
+	///// <param name="bits">An array of bits to set in the flag</param>
+	//public static void setBits(ref uint flag, params uint[] bits) {
+	//	for (int i = 0; i < bits.Length; i++)
+	//		flag |= bits[i];
+	//}
 
-	/// <summary>Reset the specified bit(s) in the flag</summary>
-	/// <param name="flag">The flag to update</param>
-	/// <param name="bits">An array of bits to reset in the flag</param>		
-	public static void resetBits(ref uint flag, params uint[] bits) {
-		for (int i = 0; i < bits.Length; i++)
-			flag &= ~bits[i];
-	}
+	///// <summary>Reset the specified bit(s) in the flag</summary>
+	///// <param name="flag">The flag to update</param>
+	///// <param name="bits">An array of bits to reset in the flag</param>		
+	//public static void resetBits(ref uint flag, params uint[] bits) {
+	//	for (int i = 0; i < bits.Length; i++)
+	//		flag &= ~bits[i];
+	//}
 
-	/// <summary>Test the specified bit(s) in the flag</summary>
-	/// <param name="flag">The flag to test</param>
-	/// <param name="bits">An array of bits to test in the flag</param>
-	/// <returns>True if any of the tested bits is set</returns>
-	public static bool testBits(uint flag, params uint[] bits) {
-		bool result = false;
-		for (int i = 0; i < bits.Length; i++)
-			result |= ((flag & bits[i]) != 0);
-		return result;
-	}
-	#endregion flag_helper_functions
+	///// <summary>Test the specified bit(s) in the flag</summary>
+	///// <param name="flag">The flag to test</param>
+	///// <param name="bits">An array of bits to test in the flag</param>
+	///// <returns>True if any of the tested bits is set</returns>
+	//public static bool testBits(uint flag, params uint[] bits) {
+	//	bool result = false;
+	//	for (int i = 0; i < bits.Length; i++)
+	//		result |= ((flag & bits[i]) != 0);
+	//	return result;
+	//}
+	//#endregion flag_helper_functions
 }
 
 /// <summary>
@@ -277,6 +295,7 @@ public class Global {
 	/// </summary>
 	public const double UNFORMATED_ENTROPY = 6.5;
 	/// <summary>
+	/// 
 	/// Scale used to reduce the size of the histogram arrays
 	/// </summary>
 	public const int HISTO_SCALE = 50;
@@ -387,46 +406,6 @@ public class Global {
 		return value;
 	}
 
-	// TODO remove
-	/// <summary>
-	/// This function is used to get the indexStart of the first flux of a track in the FluxValue buffer for a specific revolution
-	/// </summary>
-	/// <param name="track">The track we want to use</param>
-	/// <param name="side">The side we want to use.</param>
-	/// <param name="rev">The revolution we want to use</param>
-	/// <returns>The indexStart of the first flux in the buffer</returns>
-	/// <remarks>The revision parameter should be in the range 1 to the number of revolutions recorded.
-	/// rev==0 has a special meaning: it indicates that we want to use the data from *all* revolutions</remarks>
-	public static int firstIndex(int track, int side, int rev) {
-		return Disk[track, side].fluxDataRev[rev].firstFluxIndex;
-	}
-
-
-	// TODO remove
-	/// <summary>
-	/// This function is used to get the position of the last flux of a track in the FluxValue buffer for a specific revolution
-	/// </summary>
-	/// <param name="track">The track we want to use</param>
-	/// <param name="side">The side we want to use.</param>
-	/// <param name="rev">The revolution we want to use</param>
-	/// <returns>The indexStart of the last flux in the buffer</returns>
-	/// <remarks>The revision parameter should be in the range 1 to the number of revolutions recorded.
-	/// rev==0 has a special meaning: it indicates that we want to use the data from *all* revolutions</remarks>
-	public static int lastIndex(int track, int side, int rev) {
-		return (Disk[track, side].fluxDataRev[rev].firstFluxIndex + Disk[track, side].fluxDataRev[rev].fluxCount);
-	}
-
-	// TODO remove
-	/// <summary>This function is used to get the position of the indexStart in the first flux</summary>
-	/// <param name="track">The track we want to use</param>
-	/// <param name="side">The side we want to use.</param>
-	/// <param name="rev">The revolution we want to use</param>
-	/// <returns>The offset of the first flux in the buffer</returns>
-	/// <remarks>The revision parameter should be in the range 1 to the number of revolutions recorded.
-	public static int indexTimePosition(int track, int side, int rev) {
-		return (Disk[track, side].fluxDataRev[rev].timeToIndex);
-	}
-
 
 	/// <summary>
 	/// A two dimensions array that store TrackData structures for a complete disk.
@@ -468,7 +447,7 @@ public class Global {
 			currentBit += bitSpacing;
 			decodeBitPosition[index] = currentBit;
 			decodeFluxPosition[index] = currentPosition;
-			int bitWidth = dpll.bitWidth;
+			int bitWidth = dpll.BitWidth;
 			if (bitWidth > maxBitWidth) maxBitWidth = bitWidth;
 			if (bitWidth < minBitWidth) minBitWidth = bitWidth;
 			widthSum += bitWidth;
@@ -549,8 +528,8 @@ public class Global {
 		int fluxCount = 0;
 
 		if (Global.Disk[track, side].fluxDataRev != null) {
-			int first = Global.firstIndex(track, side, rev);
-			int last = Global.lastIndex(track, side, rev);
+			int first = Disk[track, side].fluxDataRev[rev].firstFluxIndex;
+			int last = (Disk[track, side].fluxDataRev[rev].firstFluxIndex + Disk[track, side].fluxDataRev[rev].fluxCount);
 			sizeBeforeTrim = (Global.Disk[track, side].fluxData.fluxValue.Max() / HISTO_SCALE) + 2;
 			tmpHisto = new int[sizeBeforeTrim];
 
@@ -620,6 +599,7 @@ public class Global {
 		return entropy;
 	}
 
+
 	/// <summary>
 	/// Return the actual size of the data field of a sector
 	/// </summary>
@@ -636,16 +616,26 @@ public class Global {
 		return s;
 	}
 
+	/// <summary>
+	/// Ask where to save a .png image
+	/// </summary>
+	/// <param name="target">Visual to save as png image</param>
 	public static void saveImage(Visual target) {
 		SaveFileDialog sfd = new SaveFileDialog();
 		sfd.Filter = "Png file|*.png|All Files|*.*";
 		if (sfd.ShowDialog() == true)
-			CreateBitmapFromVisual(target, sfd.FileName);
+			savePngFromVisual(target, sfd.FileName);
 	}
 
 
 	// http://mcleodsean.wordpress.com/2008/10/07/bitmap-snapshots-of-wpf-visuals/
-	private static void CreateBitmapFromVisual(Visual target, string filename) {
+
+	/// <summary>
+	/// Take a visual and save it as a png image
+	/// </summary>
+	/// <param name="target">The visual</param>
+	/// <param name="filename">Where to save</param>
+	private static void savePngFromVisual(Visual target, string filename) {
 		if (target == null) return;
 
 		Rect bounds = VisualTreeHelper.GetDescendantBounds(target);

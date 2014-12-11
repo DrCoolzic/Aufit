@@ -63,12 +63,7 @@ class FluxDrawing {
 	/// <summary>
 	/// Set to true for slow drawing (i.e. draw ALL points)
 	/// </summary>
-	public bool SlowDraw { get; set; }
-
-	/// <summary>
-	/// When set we draw the fluxes with a limited number of points for performance
-	/// </summary>
-	public bool FastDraw { get; set; }
+	public bool DetailDraw { get; set; }
 
 	/// <summary>
 	/// Access _speedUp
@@ -112,8 +107,7 @@ class FluxDrawing {
 	public FluxDrawing(Grid grid, Canvas text, Canvas graphic, MainWindow win) {
 		_fluxChartLayout = new ChartLayout(grid, text, graphic);
 		_win = win;
-		FastDraw = false;
-		SlowDraw = false;
+		DetailDraw = false;
 		//LimitFlux = true;
 	}
 
@@ -158,8 +152,7 @@ class FluxDrawing {
 
 		double zoom = _fluxChartLayout.zoom();
 		_speedUp = pointsInViewport / 10000 + 1;
-		if (SlowDraw) _speedUp = 1;
-		if (FastDraw) _speedUp = 20;
+		if (DetailDraw) _speedUp = 1;
 
 		int size = pointsInViewport + 1;
 		FluxEnsemble.FluxPoint[] fluxPoints = new FluxEnsemble.FluxPoint[size];
