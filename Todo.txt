@@ -16,11 +16,11 @@
 
 BUG
 - FIXED: SWS air sea disk1 sect 0
-- NFA at end of track stop too soon.
+- NFA at end of track stop too soon?
 - FIXED: airborne disk ranger d1 - sector wrap not stop by IDAM => overlap
 - FIXED: computer hit vol 2 D2 some ID missing (id after index)
 - FIXED: comphitvol2 d2 : invalid byte in gaps actually located in data segment wrapped => should fix in read track detection (check in track buffer that it also display correctly)
-- Fixed: time of lore mitsumi track 46 fuzzy mask all 00 ???? ???? 72 ?
+- FIXED: time of lore mitsumi track 46 fuzzy mask all 00 ???? ???? 72 ?
 
 
 TESTS
@@ -28,3 +28,11 @@ TESTS
 - SWS
 - protections
 - check Pasti
+
+
+http://dsp.stackexchange.com/questions/736/how-do-i-implement-cross-correlation-to-prove-two-audio-files-are-similar
+http://www.nullskull.com/a/1507/autocorrelation-method-in-c-for-signal-analysis.aspx
+https://pitchtracker.codeplex.com/
+Convolution, polynomial multiplication, and FIR digital filtering are all the same operation. 
+http://paulbourke.net/miscellaneous/correlate/
+

@@ -89,24 +89,23 @@ namespace Aufit {
 
 			if (dt.sectors.Count > 0) {
 				Sector lastSector = dt.sectors[dt.sectors.Count - 1];
-				int revTime = dt.packedFluxDataRev[0].revolutionTime;
-				if (lastSector.id.info.startTime > revTime) {
+				if (lastSector.id.info.startByte > dt.track.info.byteCount) {
 					dt.track.flags |= Track.ID_AFTER_IDX;
 					dt.track.hasProtections = true;
 					writeInfo(info, "Shifted track: Id Beyond Index");
 				}
-				else if ((lastSector.id.info.startTime + lastSector.id.info.timeLength) > revTime) {
+				else if ((lastSector.id.info.startByte + lastSector.id.info.byteCount) > dt.track.info.byteCount) {
 					dt.track.flags |= Track.ID_OVER_IDX;
 					dt.track.hasProtections = true;
 					writeInfo(info, "Shifted track: Id Over Index");
 				}
 				else if (lastSector.data != null) {
-					if (lastSector.data.info.startTime > revTime) {
+					if (lastSector.data.info.startByte > dt.track.info.byteCount) {
 						dt.track.flags |= Track.DATA_AFTER_IDX;
 						dt.track.hasProtections = true;
 						writeInfo(info, "Shifted track: Data Beyond Index");
 					}
-					else if ((lastSector.data.info.startTime + lastSector.data.info.timeLength) > revTime) {
+					else if ((lastSector.data.info.startByte + lastSector.data.info.startByte) > dt.track.info.byteCount) {
 						dt.track.flags |= Track.DATA_OVER_IDX;
 						dt.track.hasProtections = true;
 						writeInfo(info, "Shifted track: Data over Index");

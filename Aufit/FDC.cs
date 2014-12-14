@@ -280,6 +280,9 @@ namespace WD1772Package {
 							else
 								sectorNumber = 0;
 						}	// test if last sector is wrapped
+
+						if ((sectorNumber == -1) && (dt.sectors[dt.sectors.Count - 1].data == null)) 
+							sectorNumber = 0;
 						
 						if (sectorNumber != -1) {
 							Sector sector = dt.sectors[sectorNumber];

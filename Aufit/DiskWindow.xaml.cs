@@ -120,8 +120,8 @@ public partial class DiskWindow : Window {
 			drawDiskTrackLayout(track, side, 0);
 			ButtonMatrix.setButtonBG(track, side);
 		}
-		message += " Side 0";
-		_tb.Text = message;
+
+		_tb.Text = message + " Side 0";
 		side = 1;
 		_tb = tbDisk1;
 		_gd = cvDisk1;
@@ -135,8 +135,8 @@ public partial class DiskWindow : Window {
 			drawDiskTrackLayout(track, side, 0);
 			ButtonMatrix.setButtonBG(track, side);
 		}
-		message += " Side 1";
-		_tb.Text = message;
+
+		_tb.Text = message +  " Side 1";
 	}
 
 
