@@ -105,14 +105,14 @@ namespace Aufit {
 						dt.track.hasProtections = true;
 						writeInfo(info, "Shifted track: Data Beyond Index");
 					}
-					else if ((lastSector.data.info.startByte + lastSector.data.info.startByte) > dt.track.info.byteCount) {
+					else if ((lastSector.data.info.startByte + lastSector.data.info.byteCount) > dt.track.info.byteCount) {
 						dt.track.flags |= Track.DATA_OVER_IDX;
 						dt.track.hasProtections = true;
 						writeInfo(info, "Shifted track: Data over Index");
 					}
 				}
 
-				// Bad data byte in GAP
+				// NFA
 				if ((dt.track.flags & Track.NO_FLUX_AREA) != 0) {
 					dt.track.hasProtections = true;
 					writeInfo(info, "Has No Flux Area");
@@ -146,35 +146,35 @@ namespace Aufit {
 				if (dt.sectors[secIndex].id.iam != 0xFE) {
 					dt.sectors[secIndex].flags |= Sector.NO_STD_IDAM;
 					dt.track.hasProtections = true;
-					writeInfo(info, "non standard IDAM");
+					writeInfo(info, String.Format("non standard IDAM {0:X2}", dt.sectors[secIndex].id.iam));
 				}
 
 				// invalid track number
 				if (dt.sectors[secIndex].id.track != track) {
 					dt.sectors[secIndex].flags |= Sector.BAD_TRK_NUM;
 					dt.track.hasProtections = true;
-					writeInfo(info, "track number does not match");
+					writeInfo(info, String.Format("track number {0} does not match", dt.sectors[secIndex].id.track));
 				}
 
 				// invalid side value
 				if (dt.sectors[secIndex].id.head > 1) {
 					dt.sectors[secIndex].flags |= Sector.BAD_HEAD_NUM;
 					dt.track.hasProtections = true;
-					writeInfo(info, "invalid head value");
+					writeInfo(info, String.Format("invalid head/side {0} value", dt.sectors[secIndex].id.head));
 				}
 
 				// invalid sector number
 				if (dt.sectors[secIndex].id.number > 0xF4) {
 					dt.sectors[secIndex].flags |= Sector.BAD_SEC_NUM;
 					dt.track.hasProtections = true;
-					writeInfo(info, "invalid sector number");
+					writeInfo(info, String.Format("invalid sector number {0}", dt.sectors[secIndex].id.number));
 				}
 
 				// invalid size value
 				if (dt.sectors[secIndex].id.size > 3) {
 					dt.sectors[secIndex].flags |= Sector.BAD_SEC_LEN;
 					dt.track.hasProtections = true;
-					writeInfo(info, "invalid sector size");
+					writeInfo(info, String.Format("invalid sector size {0}", dt.sectors[secIndex].id.size));
 				}
 
 				// ID CRC error
@@ -188,7 +188,6 @@ namespace Aufit {
 					dt.track.hasProtections = true;
 					writeInfo(info, "sector within sector");
 				}
-
 
 				if (dt.sectors[secIndex].data != null) {
 					// Data CRC Error
@@ -207,71 +206,38 @@ namespace Aufit {
 					if (dt.sectors[secIndex].data.iam != 0xFB) {
 						dt.sectors[secIndex].flags |= Sector.NO_STD_DAM;
 						dt.track.hasProtections = true;
-						writeInfo(info, "non standard DAM");
+						writeInfo(info, String.Format("non standard DAM {0:X2}", dt.sectors[secIndex].data.iam));
 					}
 
 					// long sector ( 4000 * 8) + 3%
 					if ((dt.sectors[secIndex].data.info.timeLength > (32960 * (Global.sectSize(dt.sectors[secIndex].id.size) + 3))) &&
-						((dt.track.flags & Track.SHORT_TRACK) == 0)) {
+							((dt.track.flags & Track.SHORT_TRACK) == 0)) {
 						dt.sectors[secIndex].flags |= Sector.LONG_SECT;
 						dt.track.hasProtections = true;
-						writeInfo(info, "long sector");
+						writeInfo(info, String.Format("long sector {0:F2} µs", (double)dt.sectors[secIndex].data.info.timeLength / 1000.0));
 					}
 
 					// short sector ( 4000 * 8) - 3%
 					if ((dt.sectors[secIndex].data.info.timeLength < (31040 * (Global.sectSize(dt.sectors[secIndex].id.size) + 3))) &&
-						((dt.track.flags & Track.LONG_TRACK) == 0)) {
+							((dt.track.flags & Track.LONG_TRACK) == 0)) {
 						dt.sectors[secIndex].flags |= Sector.SHORT_SECT;
 						dt.track.hasProtections = true;
-						writeInfo(info, "short sector");
+						writeInfo(info, String.Format("short sector {0:F2} µs", (double)dt.sectors[secIndex].data.info.timeLength / 1000.0));
 					}
 
-
-					// macrodos
-					if ((dt.sectors[secIndex].flags & Sector.MACRODOS) != 0) {
+					// Check intra sector bit width variation
+					if ((dt.sectors[secIndex].flags & Sector.WIDTH_INTRA) != 0) {
 						dt.track.hasProtections = true;
-						writeInfo(info, "Macrodos protection");
+						writeInfo(info, "Intra sector bit width variation");
 					}
 
-				}	// sector has data
+				}	// sector has no data
 				else {
 					dt.track.hasProtections = true;
 					writeInfo(info, "sector with no data");
 				}
 
 			}	// for all sectors
-
-
-				//	// Invalid Data into GAP
-				//	if ((tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap + tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap) > 0) {
-				//		sc.sectorBadDataInGap = true;
-				//		trackProtection(tc);
-				//		string message = "has invalid characters: ";
-				//		if (tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap > 0)
-				//			message += String.Format(" {0} in intra gap", tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap);
-				//		if (tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap > 0)
-				//			message += String.Format(" {0} in inter gap", tc.sectors[sect+1].phases[(int)Phases.p_gap].invDataGap);
-				//		writeInfo(info, message);
-				//	}
-
-				//	//// Bad Sync
-				//	//if ((tc.sectors[sect+1].phases[(int)Phases.p_inner].badSync + tc.sectors[sect+1].phases[(int)Phases.p_outer].badSync) 
-				//	//	// + (tc.sectors[sect+1].phases[(int)Phases.p_data].badSync + tc.sectors[sect+1].phases[(int)Phases.p_id].badSync) 
-				//	//	> 0) {
-				//	//	sc.sectorBadSync = true;
-				//	//	trackProtection(tc);
-				//	//	string message = "has invalid sync seq: ";
-				//	//	if (tc.sectors[sect+1].phases[(int)Phases.p_inner].badSync > 0)
-				//	//		message += String.Format(" {0} in intra gap", tc.sectors[sect + 1].phases[(int)Phases.p_inner].badSync);
-				//	//	if (tc.sectors[sect+1].phases[(int)Phases.p_outer].badSync > 0)
-				//	//		message += String.Format(" {0} in inter gap", tc.sectors[sect + 1].phases[(int)Phases.p_outer].badSync);
-				//	//	//if (tc.sectors[sect+1].phases[(int)Phases.p_data].badSync > 0)
-				//	//	//	message += String.Format(" {0} in data", tc.sectors[sect + 1].phases[(int)Phases.p_data].badSync);
-				//	//	//if (tc.sectors[sect+1].phases[(int)Phases.p_id].badSync > 0)
-				//	//	//	message += String.Format(" {0} in id", tc.sectors[sect + 1].phases[(int)Phases.p_id].badSync);
-				//	//	writeInfo(info, message);
-			
-
 
 		}
 

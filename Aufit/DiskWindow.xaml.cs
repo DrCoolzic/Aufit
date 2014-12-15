@@ -42,10 +42,7 @@ using KFReaderPackage;
 using GlobalPackage;
 
 
-
-
 namespace Aufit {
-
 /// <summary>
 /// Interaction logic for DiskWindow.xaml
 /// </summary>
@@ -138,7 +135,6 @@ public partial class DiskWindow : Window {
 
 		_tb.Text = message +  " Side 1";
 	}
-
 
 
 	/// <summary>
@@ -259,10 +255,26 @@ public partial class DiskWindow : Window {
 			_gd.Children.Add(path);
 		}	// no sector track
 
+		//for (int i = 0; i < dt.track.info.byteCount; i++) {
+		//	double startAngle = byteAngle(i - 1, dt.track.info.byteCount);
+		//	double stopAngle = byteAngle(i, dt.track.info.byteCount);
+		//	if ((dt.track.buffer.Bytes[i].mfmWord == 0) || (dt.track.buffer.Bytes[i].mfmWord == 0xFFFF)) {
+		//		System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
+		//		path.StrokeThickness = heavyLine;
+		//		PathGeometry pg = new PathGeometry();
+		//		path.Stroke = Brushes.Red;
+		//		addArc(pg, startAngle, stopAngle, center, radius);
+		//		path.Data = pg;
+		//		_gd.Children.Add(path);
+		//	}
+		//}
 		for (int i = 0; i < dt.track.info.byteCount; i++) {
-			double startAngle = byteAngle(i - 1, dt.track.info.byteCount);
-			double stopAngle = byteAngle(i, dt.track.info.byteCount);
 			if ((dt.track.buffer.Bytes[i].mfmWord == 0) || (dt.track.buffer.Bytes[i].mfmWord == 0xFFFF)) {
+				double startAngle = byteAngle(i - 1, dt.track.info.byteCount);
+				int j = i;
+				while ((j < dt.track.info.byteCount) && ((dt.track.buffer.Bytes[j].mfmWord == 0) || (dt.track.buffer.Bytes[j].mfmWord == 0xFFFF)))
+					j++;
+				double stopAngle = byteAngle(j, dt.track.info.byteCount);
 				System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
 				path.StrokeThickness = heavyLine;
 				PathGeometry pg = new PathGeometry();
@@ -270,9 +282,9 @@ public partial class DiskWindow : Window {
 				addArc(pg, startAngle, stopAngle, center, radius);
 				path.Data = pg;
 				_gd.Children.Add(path);
+				i = j;
 			}
 		}
-
 	}	// End of drawDisk()
 
 
@@ -289,7 +301,7 @@ public partial class DiskWindow : Window {
 				idPath.Stroke = Brushes.Blue;
 			if ((sector.flags & Sector.WIDTH_BELOW) != 0)
 				idPath.Stroke = Brushes.Aqua;
-			if ((sector.flags & Sector.MACRODOS) != 0)
+			if ((sector.flags & Sector.WIDTH_INTRA) != 0)
 				idPath.Stroke = Brushes.Purple;
 			if ((sector.data.info.crc != 0) || (sector.data.fuzzy != null))
 				idPath.Stroke = Brushes.Orange;
@@ -470,14 +482,17 @@ public partial class DiskWindow : Window {
 		return angle;
 	}
 
+
 	private double byteAngle(int pos, int count) {
-		double angle = 2 * Math.PI * (double)pos / (double)count;
+		double angle = 2 * Math.PI * (1.0 - (double)pos / (double)count);
 		return angle;
 	}
+
 
 	private void saveImageClick0(object sender, RoutedEventArgs e) {
 		Global.saveImage(cvDisk0);
 	}
+
 
 	private void saveImageClick1(object sender, RoutedEventArgs e) {
 		Global.saveImage(cvDisk1);

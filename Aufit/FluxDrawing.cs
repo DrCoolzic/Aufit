@@ -217,8 +217,8 @@ class FluxDrawing {
 					//r = 2.5 * r;
 					fluxPoints[pointsInViewport].colorIndex = 4;
 				}
-				// odd even
-				if (bitPosition % 2 == 0) fluxPoints[pointsInViewport].colorIndex++;
+				// odd even TODO checkbox?
+				//if (bitPosition % 2 == 0) fluxPoints[pointsInViewport].colorIndex++;
 			}
 			else
 				fluxPoints[pointsInViewport].colorIndex = 6;

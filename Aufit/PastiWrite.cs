@@ -202,7 +202,7 @@ namespace PastiPackage {
 					// do we need timing record
 					int timingEntries = 0;
 					for (int sect = 0; sect < sectorCount; sect++)
-						if ((dt.sectors[sect].flags & Sector.MACRODOS) != 0)
+						if ((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0)
 							timingEntries += Global.sectSize(dt.sectors[sect].id.size) / 16;
 
 					if (timingEntries > 0)
@@ -254,7 +254,7 @@ namespace PastiPackage {
 								sd.dataOffset = 0;	// don't care
 
 							sd.bitPosition = (ushort)(dt.sectors[sect].id.info.startBit / 2);
-							sd.readTime = (ushort)(dt.sectors[sect].data.info.timeLength / 1000);
+							sd.readTime = (ushort)((dt.sectors[sect].data != null) ? (dt.sectors[sect].data.info.timeLength / 1000) : 0);
 							sd.id = new IDField();
 							sd.id.track = dt.sectors[sect].id.track;
 							sd.id.side = dt.sectors[sect].id.head;
@@ -275,9 +275,9 @@ namespace PastiPackage {
 								if (dt.sectors[sect].data.info.crc != 0)
 									fdcFlag |= SectorDesc.CRC_ERR;
 							}	// these two flags are only meaningful if record has bytes
-							if (dt.sectors[sect].data.fuzzy != null)
+							if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null))
 								fdcFlag |= SectorDesc.FUZZY_BITS;
-							if ((dt.sectors[sect].flags & Sector.MACRODOS) != 0)
+							if ((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0)
 								fdcFlag |= SectorDesc.BIT_WIDTH;
 
 							sd.fdcFlags = fdcFlag;
@@ -338,7 +338,7 @@ namespace PastiPackage {
 					// write all sectors data
 					for (int sect = 0; sect < sectorCount; sect++) {
 						start = buffer.Count;
-						if (dt.sectors[sect].data.info.byteCount != 0) {
+						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.info.byteCount != 0)) {
 							if (OPT_SECT && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) !=0)) {
 								if (_infoBox != null) _infoBox.AppendText(String.Format("      Sector {0} {1} bytes already in track data @{2}\n",
 									dt.sectors[sect].id.number, dt.sectors[sect].data.buffer.Bytes.Count, dt.sectors[sect].trackOffset));
@@ -362,7 +362,7 @@ namespace PastiPackage {
 						if (_infoBox != null) _infoBox.AppendText(String.Format("   Writing Timing header Flag=5 size={0} ({1}-{2})\n", 2 * timingEntries + 4, start, buffer.Count - 1));
 						// write timing
 						for (int sect = 0; sect < sectorCount; sect++) {
-							if ((dt.sectors[sect].flags & Sector.MACRODOS) != 0) {
+							if ((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0) {
 								int timingSum = 0;
 								for (int i = 0; i < (dt.sectors[sect].data.buffer.Bytes.Count); i++) {
 									timingSum += (dt.sectors[sect].data.buffer.Bytes[i].bitWidth * 16);

@@ -125,7 +125,7 @@ namespace WD1772Package {
 	public class Sector {
 		public const uint WIDTH_ABOVE = Bit.BIT_01;
 		public const uint WIDTH_BELOW = Bit.BIT_02;
-		public const uint MACRODOS = Bit.BIT_03;
+		public const uint WIDTH_INTRA = Bit.BIT_03;
 		public const uint NO_STD_IDAM = Bit.BIT_04;
 		public const uint BAD_TRK_NUM = Bit.BIT_05;
 		public const uint BAD_HEAD_NUM = Bit.BIT_06;
@@ -252,7 +252,12 @@ namespace WD1772Package {
 				int bit = (bits >> bitInByte) & 0x1;
 				int bitWidth = dt.packedFluxData.bitWidth[currentByte];
 
-				currentTime += bitWidth;
+				//currentTime += bitWidth;
+				if (bit != 0) {
+					int flux = Global.fluxWidth(currentBit, track, side);
+					currentTime += flux;
+				}
+
 				dsr.shiftBitsIn(bit);
 
 				// here we set phase if sectors found in readAddr
@@ -425,7 +430,12 @@ namespace WD1772Package {
 
 				byte bits = Global.Disk[track, side].packedFluxData.packedBits[currentByte];
 				int bit = (bits >> bitInByte) & 0x1;
-				currentTime += Global.Disk[track, side].packedFluxData.bitWidth[currentByte];
+
+				if (bit != 0) {
+					int flux = Global.fluxWidth(currentBit, track, side);
+					currentTime += flux;
+				}
+				//currentTime += Global.Disk[track, side].packedFluxData.bitWidth[currentByte];
 
 				dsr.shiftBitsIn(bit);
 
@@ -531,8 +541,8 @@ namespace WD1772Package {
 			ushort crc = 0;
 			bool idFound = false;
 			bool breakLoop = false;
-			int[] widthOver = { 0, 0, 0, 0 };
-			int[] widthUnder = { 0, 0, 0, 0 };
+			int widthOver = 0;
+			int widthUnder = 0;
 			Phases phase = Phases.p_gap;
 			uint flags = 0;
 			bool p_inner = false;
@@ -565,8 +575,13 @@ namespace WD1772Package {
 
 				byte bits = Global.Disk[track, side].packedFluxData.packedBits[currentByte];
 				int bit = (bits >> bitInByte) & 0x1;
+
 				int bitWidth = Global.Disk[track, side].packedFluxData.bitWidth[currentByte];
-				currentTime += bitWidth;
+				//currentTime += bitWidth;
+				if (bit != 0) {
+					int flux = Global.fluxWidth(currentBit, track, side);
+					currentTime += flux;
+				}
 
 				dsr.shiftBitsIn(bit);
 				if (dsr.DataReady) {
@@ -637,8 +652,8 @@ namespace WD1772Package {
 											byteLeftInBlock = Global.sectSize(sector.id.size) + 3; // AM + 2 CRC + Size
 											phase = Phases.p_data;
 											p_inner = false;
-											widthOver[0] = widthOver[1] = widthOver[2] = widthOver[3] = 0;
-											widthUnder[0] = widthUnder[1] = widthUnder[2] = widthUnder[3] = 0;
+											widthOver = 0;
+											widthUnder = 0;
 
 											data.info.startBit = currentBit - startBit;
 											data.info.startByte = byteCount;
@@ -698,14 +713,14 @@ namespace WD1772Package {
 									data.info.byteCount = byteCount - data.info.startByte - 3;
 									data.info.timeLength = currentTime - data.info.startTime;
 									data.info.bitCount = currentBit - startBit - data.info.startBit;
-									if ((widthOver[0] + widthOver[1] + widthOver[2] + widthOver[3]) > (Global.sectSize(sector.id.size) / 2))
-										flags |= Sector.WIDTH_ABOVE;
-									if ((widthUnder[0] + widthUnder[1] + widthUnder[2] + widthUnder[3]) > (Global.sectSize(sector.id.size) / 2))
-										flags |= Sector.WIDTH_BELOW;
-									if ((widthOver[0] < (Global.sectSize(sector.id.size) / 8)) && (widthOver[3] < (Global.sectSize(sector.id.size) / 8)) &&
-										(widthUnder[0] < (Global.sectSize(sector.id.size) / 8)) && (widthUnder[3] < (Global.sectSize(sector.id.size) / 8)) &&
-										(widthOver[1] > (Global.sectSize(sector.id.size) / 6)) && (widthUnder[2] > (Global.sectSize(sector.id.size) / 6)))
-										flags |= Sector.MACRODOS;
+									if ((widthOver > (Global.sectSize(sector.id.size) / 2)) || (widthUnder > (Global.sectSize(sector.id.size) / 2))) {
+										if (widthOver > (Global.sectSize(sector.id.size) / 2))
+											flags |= Sector.WIDTH_ABOVE;
+										if (widthUnder > (Global.sectSize(sector.id.size) / 2))
+											flags |= Sector.WIDTH_BELOW;
+									}
+									else if ((widthOver > 0) && (widthUnder > 0) && ((widthOver + widthUnder) > (Global.sectSize(sector.id.size) / 4)))
+										flags |= Sector.WIDTH_INTRA;
 									phase = Phases.p_gap;
 									if (idBitPosition >= 0) breakLoop = true;
 									dsr.sectorMode();
@@ -750,9 +765,9 @@ namespace WD1772Package {
 
 								default:
 									data.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
-									int segment = 3 - ((byteLeftInBlock - 3) / (Global.sectSize(sector.id.size) / 4));
-									if (bitWidth > widthUpperLimit) widthOver[segment]++;
-									if (bitWidth < widthLowerLimit) widthUnder[segment]++;
+									//int segment = 3 - ((byteLeftInBlock - 3) / (Global.sectSize(sector.id.size) / 4));
+									if (bitWidth > widthUpperLimit) widthOver++;
+									if (bitWidth < widthLowerLimit) widthUnder++;
 									break;
 							}	// switch
 						}	// DATA Segment

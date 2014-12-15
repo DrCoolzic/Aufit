@@ -197,21 +197,19 @@ namespace Aufit {
 										((buffer.Bytes[i + j].dataByte >= 0xF5) && (buffer.Bytes[i + j].dataByte <= 0xF7) &&
 										 (buffer.Bytes[i + j].phase == Phases.p_gap)) ? Brushes.LightBlue :
 										((buffer.Bytes[i + j].mfmWord == 0x0000) || (buffer.Bytes[i + j].mfmWord == 0xFFFF)) ? Brushes.Coral :
-										(((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ||
-										 ((buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224))) ? Brushes.Yellow :
+										((buffer.Bytes[i + j].mfmWord == 0x4489) || (buffer.Bytes[i + j].mfmWord == 0x5224)) ? Brushes.Yellow :
 										(buffer.Bytes[i + j].phase == Phases.p_data) ? Brushes.LightGreen :
 										(buffer.Bytes[i + j].phase == Phases.p_id) ? Brushes.GreenYellow :
 										Brushes.White,
 									Foreground =
-										((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ? Brushes.Red :
-										(buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224) ? Brushes.Green :
+										(buffer.Bytes[i + j].mfmWord == 0x4489) ? Brushes.Red :
+										(buffer.Bytes[i + j].mfmWord == 0x5224) ? Brushes.Green :
 										(buffer.Bytes[i + j].phase == Phases.p_id) ? Brushes.Blue :
 										(buffer.Bytes[i + j].phase == Phases.p_data) ? Brushes.Black :
 										(buffer.Bytes[i + j].phase == Phases.p_gap) ? Brushes.Black :
 										Brushes.DarkBlue,
 									FontWeight =
-										((buffer.Bytes[i + j].dataByte == 0xA1) && (buffer.Bytes[i + j].mfmWord == 0x4489)) ||
-										((buffer.Bytes[i + j].dataByte == 0xC2) && (buffer.Bytes[i + j].mfmWord == 0x5224)) ||
+										(buffer.Bytes[i + j].mfmWord == 0x4489) || (buffer.Bytes[i + j].mfmWord == 0x5224) ||
 										(buffer.Bytes[i + j].phase == Phases.p_id) ? FontWeights.Bold :
 										FontWeights.Normal,
 									FontStyle =

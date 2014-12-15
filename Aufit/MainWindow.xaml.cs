@@ -649,7 +649,7 @@ namespace Aufit {
 
 
 		private void btSavePictClick(object sender, RoutedEventArgs e) {
-			Global.saveImage(mainGrid);
+			Global.saveImage(mainGrid, 1);
 		}
 
 

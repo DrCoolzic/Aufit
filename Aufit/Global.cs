@@ -497,15 +497,15 @@ public class Global {
 		for (int i = 0; i < revCount; i++) {
 			Global.Disk[track, side].packedFluxDataRev[i].revolutionTime = Global.Disk[track, side].fluxDataRev[i].revolutionTime;
 			int indexStart = Global.Disk[track, side].fluxDataRev[i].firstFluxIndex;
+			int indexEnd = indexStart + Global.Disk[track, side].fluxDataRev[i].fluxCount - 1;
 			int bitWidth = decodeBitWidth[indexStart];
 			int indexPosition = Global.Disk[track, side].fluxDataRev[i].timeToIndex;
+
 			int correction = indexPosition / bitWidth;
 			int bitPosition = decodeBitPosition[indexStart];
-			bitPosition -= correction;
-			Global.Disk[track, side].packedFluxDataRev[i].firstFluxBit = bitPosition;
-			int indexEnd = indexStart + Global.Disk[track, side].fluxDataRev[i].fluxCount - 1;
+			Global.Disk[track, side].packedFluxDataRev[i].firstFluxBit = bitPosition - correction;
 			int bitCount = decodeBitPosition[indexEnd] - decodeBitPosition[indexStart];
-			Global.Disk[track, side].packedFluxDataRev[i].bitCount = bitCount - correction;
+			Global.Disk[track, side].packedFluxDataRev[i].bitCount = bitCount;
 			Global.Disk[track, side].packedFluxDataRev[i].fluxCount = Global.Disk[track, side].fluxDataRev[i].fluxCount;
 		}
 	}
@@ -620,11 +620,11 @@ public class Global {
 	/// Ask where to save a .png image
 	/// </summary>
 	/// <param name="target">Visual to save as png image</param>
-	public static void saveImage(Visual target) {
+	public static void saveImage(Visual target, double scale = 1.5) {
 		SaveFileDialog sfd = new SaveFileDialog();
 		sfd.Filter = "Png file|*.png|All Files|*.*";
 		if (sfd.ShowDialog() == true)
-			savePngFromVisual(target, sfd.FileName);
+			savePngFromVisual(target, sfd.FileName, scale);
 	}
 
 
@@ -635,12 +635,11 @@ public class Global {
 	/// </summary>
 	/// <param name="target">The visual</param>
 	/// <param name="filename">Where to save</param>
-	private static void savePngFromVisual(Visual target, string filename) {
+	private static void savePngFromVisual(Visual target, string filename, double scale) {
 		if (target == null) return;
 
 		Rect bounds = VisualTreeHelper.GetDescendantBounds(target);
 
-		int scale = 3;
 		DrawingVisual dv = new DrawingVisual();
 		using (DrawingContext dc = dv.RenderOpen()) {
 			dv.Transform = new ScaleTransform(scale, scale);
@@ -648,7 +647,7 @@ public class Global {
 			dc.DrawRectangle(vb, null, new Rect(new Point(), bounds.Size));
 		}
 
-		RenderTargetBitmap rtb = new RenderTargetBitmap(scale * (Int32)bounds.Width, scale * (Int32)bounds.Height, 96, 96, PixelFormats.Pbgra32);
+		RenderTargetBitmap rtb = new RenderTargetBitmap((int)(scale * bounds.Width), (int)(scale * bounds.Height), 96, 96, PixelFormats.Pbgra32);
 		rtb.Render(dv);
 
 		PngBitmapEncoder png = new PngBitmapEncoder();

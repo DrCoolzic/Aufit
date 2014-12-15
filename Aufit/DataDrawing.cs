@@ -191,7 +191,7 @@ class DataDrawing {
 				sectorPhasePolygon.Fill = Brushes.Blue;
 			if ((sector.flags & Sector.WIDTH_BELOW) != 0)
 				sectorPhasePolygon.Fill = Brushes.Aqua;
-			if ((sector.flags & Sector.MACRODOS) != 0)
+			if ((sector.flags & Sector.WIDTH_INTRA) != 0)
 				sectorPhasePolygon.Fill = Brushes.Purple;
 			//	plg.Fill = Brushes.BlueViolet;
 
