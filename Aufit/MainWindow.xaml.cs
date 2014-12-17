@@ -285,6 +285,7 @@ namespace Aufit {
 			_dataDrawing.Chart.setDefaultViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, 0, 1);
 			_dataDrawing.drawTrackData(track, side, rev);
 			ButtonMatrix.setButtonBG(track, side);
+
 		}
 
 		////////////////////////
@@ -348,6 +349,40 @@ namespace Aufit {
 
 			if (!readOK)
 				tbFileName.Text = "Sorry could not read correctly the input file";
+
+			BackgroundWorker bgWorker;
+			bgWorker = new BackgroundWorker();
+			bgWorker.DoWork += new DoWorkEventHandler(bgWorker_DoWork);
+			bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bgWorker_RunWorkerCompleted);
+			// Launch background thread to do decode flux.  This will
+			// trigger BackgroundWorker.DoWork().
+			bgWorker.RunWorkerAsync();
+		}
+
+
+		// http://stuff.seans.com/2009/05/21/net-basics-do-work-in-background-thread-to-keep-gui-responsive/
+		void bgWorker_DoWork(object sender, DoWorkEventArgs e) {
+			Task<List<Sector>>[] tasks = new Task<List<Sector>>[168];
+			for (int i = 0; i < 84; i++) {
+				for (int j = 0; j < 2; j++) {
+					tasks[i + j * 84] = Global.decodeAndReadAsync(i, j, Rev);
+				}
+			}
+			Task.WaitAll(tasks);
+		}
+
+
+		void bgWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e) {
+			//if (e.Error != null) {
+			//	MessageBox.Show(e.Error.Message);
+			//}
+			//else {
+				for (int i = 0; i < 84; i++) {
+					for (int j = 0; j < 2; j++) {
+						ButtonMatrix.setButtonBG(i, j);
+					}
+				}
+			//"}
 		}
 
 
@@ -411,7 +446,7 @@ namespace Aufit {
 					fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, track, side);
 					bool streamOK = await ProcessStream.readStreamTrackAsync(fname, track, side);
 					if (streamOK) {
-						Global.mfmDecode(track, side);
+						//Global.mfmDecode(track, side);
 						Global.computeHisto(track, side, 0, infoBox);
 						ButtonMatrix.setButtonBG(track, side);
 					}

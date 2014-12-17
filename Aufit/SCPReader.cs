@@ -251,7 +251,7 @@ namespace SCPReaderPackage {
 					int track = trackAndSide / 2;
 					int side = trackAndSide % 2;
 					
-					Global.mfmDecode(track, side);
+					//Global.mfmDecode(track, side);
 					Global.computeHisto(track, side, 1, infoBox);
 					ButtonMatrix.setButtonBG(track, side);
 				}

@@ -188,7 +188,8 @@ namespace Aufit {
 				else if (dt.track.hasProtections) color = Brushes.Orange;
 			} // processed
 			else // not processed
-			if (Global.Disk[track, side].packedFluxData != null) {
+			//if (Global.Disk[track, side].packedFluxData != null) {
+				if (dt.histoData.histogram != null) {
 				color = (dt.histoData.entropy > Global.UNFORMATED_ENTROPY) ? Brushes.LightGray : Brushes.Lime;
 			}
 			else

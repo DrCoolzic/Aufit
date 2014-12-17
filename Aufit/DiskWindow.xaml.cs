@@ -172,7 +172,7 @@ public partial class DiskWindow : Window {
 		version.Margin = new Thickness(0, 0, 0, 0);
 		version.FontFamily = new FontFamily("Segoe UI");
 		version.BorderThickness = new Thickness(0);
-		version.FontSize = 11;
+		version.FontSize = 10;
 		version.HorizontalContentAlignment = HorizontalAlignment.Center;
 		version.Background = Transparent;
 		version.Foreground = White;
@@ -557,7 +557,7 @@ public partial class DiskWindow : Window {
 
 
 	private void saveImageClick(object sender, RoutedEventArgs e) {
-		Global.saveImage(gridDisk, 1.5);
+		Global.saveImage(gridDisk, 1.0);
 	}
 
 }	// class DiskWindow
