@@ -28,7 +28,7 @@
 
             
             <Button Grid.Column="0" x:Name="btFile" Content="Load image" Click="openFileClick" Height="20" VerticalAlignment="Top" />
-            <TextBox Grid.Column="1" Name="tbFileName" BorderThickness="0" Margin="5,0"/>
+            <TextBox Grid.Column="1" Name="tbFileName" BorderThickness="0" Margin="5,0" Background="Transparent"/>
             <CheckBox Grid.Column="6" x:Name="cbLimitFlux" Content="Limit Flux" Margin="10,0,10,0" VerticalAlignment="Center" 
                       Click="cbLimitClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
             <CheckBox Grid.Column="7" x:Name="cbForceDS" Content="Force DS" Margin="10,0,10,0" VerticalAlignment="Center" 
@@ -45,11 +45,11 @@
             </Grid.ColumnDefinitions>
             <Canvas Grid.Column="0" Name="BM1" ></Canvas>
             <Canvas Grid.Column="1" Name="BM2" />
-            <TabControl  Grid.Column="2" x:Name="tabCtrl" >
-                <TabItem Header="Histogram">
+            <TabControl  Grid.Column="2" x:Name="tabCtrl" Background="Transparent">
+                <TabItem Header="Histogram" Background="Transparent">
                     <Grid Margin="0,0,0,0" x:Name ="histoGrid"  ClipToBounds="True" Background="Transparent" SizeChanged="histoGridSizeChanged">
-                        <Canvas Margin="2" Name="cvTextHisto" ClipToBounds="True" >
-                            <Canvas Name="cvGraphicHisto" ClipToBounds="True"/>
+                        <Canvas Margin="2" Name="cvTextHisto" ClipToBounds="True" Background="Transparent">
+                            <Canvas Name="cvGraphicHisto" ClipToBounds="True" Background="Transparent" />
                         </Canvas>
                         <CheckBox x:Name="cbHistoLog" Grid.Column="2" Content="Logarithmic Scale" Margin="0,15,20,0" VerticalAlignment="Top" 
                       Click="cbHistoLogClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" />
@@ -70,12 +70,12 @@
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
-            <TextBox Grid.Column="0" x:Name="tbFluxInfo" FontFamily="Arial" FontSize="13" Foreground="DarkBlue" FontWeight="Bold" Width="auto" Height="18" BorderThickness="0" />
-            <TextBox Grid.Column="1" Text="Rev" Margin="5,0" BorderThickness="0" Height="20" TextAlignment="Center" HorizontalAlignment="Right"/>
+            <TextBox Grid.Column="0" x:Name="tbFluxInfo" FontFamily="Arial" FontSize="13" Foreground="DarkBlue" FontWeight="Bold" Width="auto" Height="18" BorderThickness="0" Background="Transparent"/>
+            <TextBox Grid.Column="1" Text="Rev" Margin="5,0" BorderThickness="0" Height="20" TextAlignment="Center" HorizontalAlignment="Right" Background="Transparent"/>
             <Button Grid.Column="2" Margin="0" Height="18" Width="18" BorderThickness="0" Background="{x:Null}" Click="minusRevClicked">
                 <Image Source="Ressources/minus.png"/>
             </Button>
-            <TextBox Grid.Column="3" Name="revolution" BorderThickness="0" Text="1" Height="18" Width="18" TextAlignment="Center" HorizontalAlignment="Right"/>
+            <TextBox Grid.Column="3" Name="revolution" BorderThickness="0" Text="1" Height="18" Width="18" TextAlignment="Center" HorizontalAlignment="Right" Background="Transparent"/>
             <Button Grid.Column="4" Margin="0" Height="18" Width="18" Click="plusRevClicked" BorderThickness="0" Background="{x:Null}" >
                 <Image Source="Ressources/plus.png"/>
             </Button>

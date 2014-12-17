@@ -1,3 +1,15 @@
+* V0.5 January xx, 2015 Major rewrite of Aufit internals
+- Fix non working STX for Jupiter master drive, Gunship, P-47
+- This version uses new "packed" data structures to be prepared to interface with IPF lib.
+- now flux samples are in ns and speed correction is done at reading time
+- Completely rewritten FDC module with more clean routines
+- use modified version of the DSR from IPF library thanks to IFW from SPS
+- optimization of STX file using data from track for sector (save space)
+- protections rewritten completely - uses new flags on new DS
+- capability to save pictures of main screen and Disk layout
+- Handle correctly intra sector bit width variation
+- FDC speed improvement: all sector read in one pass in most cases
+
 * V0.4c March 15, 2014 Better sync display, Fix bug Starglider 2 & PoliceQuest 2, Grid splitter clock/flux
 
 - BufferWindow: ready to display clock and MFM data (flags)

@@ -505,7 +505,7 @@ public class Global {
 			int bitPosition = decodeBitPosition[indexStart];
 			Global.Disk[track, side].packedFluxDataRev[i].firstFluxBit = bitPosition - correction;
 			int bitCount = decodeBitPosition[indexEnd] - decodeBitPosition[indexStart];
-			Global.Disk[track, side].packedFluxDataRev[i].bitCount = bitCount;
+			Global.Disk[track, side].packedFluxDataRev[i].bitCount = bitCount + correction;
 			Global.Disk[track, side].packedFluxDataRev[i].fluxCount = Global.Disk[track, side].fluxDataRev[i].fluxCount;
 		}
 	}
@@ -620,7 +620,7 @@ public class Global {
 	/// Ask where to save a .png image
 	/// </summary>
 	/// <param name="target">Visual to save as png image</param>
-	public static void saveImage(Visual target, double scale = 1.5) {
+	public static void saveImage(Visual target, double scale = 1.0) {
 		SaveFileDialog sfd = new SaveFileDialog();
 		sfd.Filter = "Png file|*.png|All Files|*.*";
 		if (sfd.ShowDialog() == true)
@@ -657,6 +657,41 @@ public class Global {
 			png.Save(stm);
 		}
 	}
+
+
+	/// <summary>
+	/// This is an asynchronous version of decodeAndRead()
+	/// </summary>
+	/// <param name="track">The track to read and decode</param>
+	/// <param name="side">The side to read and decode</param>
+	/// <param name="rev">The revolution to read and decode</param>
+	/// <returns>A pointer to the TrackContent structure</returns>
+	public static Task<List<Sector>> decodeAndReadAsync(int track, int side, int rev) {
+		return Task<List<Sector>>.Run(() => decodeAndRead(track, side, rev));
+	}
+
+
+	/// <summary>
+	/// Decode the flux transitions and do all FDC read commands
+	/// </summary>
+	/// <remarks>To display the layout we must make sure the flux are correctly
+	/// decoded and that all the read functions (readTrack(), readAddr(), and 
+	/// readSect() functions are done before we display.</remarks>
+	/// <param name="track">The track to read and decode</param>
+	/// <param name="side">The side to read and decode</param>
+	/// <param name="rev">The revolution to read and decode</param>
+	/// <returns>A pointer to the TrackContent structure</returns>
+	public static List<Sector> decodeAndRead(int track, int side, int rev) {
+		if ((Global.Disk[track, side].fluxData == null) &&
+			(Global.Disk[track, side].packedFluxData == null)) return null;
+		List<Sector> sectors = Global.Disk[track, side].sectors;
+		if (sectors != null) return sectors;
+		Global.mfmDecode(track, side);
+		FDC.fdcRealAll(track, side, rev);
+		sectors = Global.Disk[track, side].sectors;
+		return sectors;
+	}
+
 
 }	// class Global
 }	// Aufit name space

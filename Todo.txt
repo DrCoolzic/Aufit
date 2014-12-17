@@ -1,33 +1,28 @@
+Improvements
+============
 - DONE: Detection of macrodos not good should divide in 4 segment and check width on 2 & 3 (50%)
 - DONE: optimize read sector do everything in one pass if no SWS ==> may move back mfmDecode if read fast enough
 - DONE: in Disk draw add NFA regions ? unformatted in black
 - DONE: store correct phase for byte entered of a wrapped sector
-- optimize for Pasti sector=track ???
+- DONE: optimize for Pasti sector=track ???
 - more optimization when reading stream files?
-- remove bit functions slow
+- DONE: remove bit functions slow
 - display protection with sector (cursor above) ?
 - check DSR for sync detect / IAM / ... ? still not elegant
 - load Aufit by double clicking
 - change UI for tabs
 - DONE? seems to work? display of ID past index todo
-
-
 - disk browser / create / ...
 
-BUG
+BUGS
+====
 - FIXED: SWS air sea disk1 sect 0
-- NFA at end of track stop too soon?
+- FIXED: NFA at end of track stop too soon?
 - FIXED: airborne disk ranger d1 - sector wrap not stop by IDAM => overlap
 - FIXED: computer hit vol 2 D2 some ID missing (id after index)
 - FIXED: comphitvol2 d2 : invalid byte in gaps actually located in data segment wrapped => should fix in read track detection (check in track buffer that it also display correctly)
 - FIXED: time of lore mitsumi track 46 fuzzy mask all 00 ???? ???? 72 ?
 
-
-TESTS
-- NFA
-- SWS
-- protections
-- check Pasti
 
 
 http://dsp.stackexchange.com/questions/736/how-do-i-implement-cross-correlation-to-prove-two-audio-files-are-similar

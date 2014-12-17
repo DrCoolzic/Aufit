@@ -641,7 +641,7 @@ namespace Aufit {
 		private async Task checkProtectionAsync() {
 			for (int side = 0; side < 2; side++)
 				for (int track = 0; track < 84; track++) {
-					await DiskWindow.decodeAndReadAsync(track, side, 1);
+					await Global.decodeAndReadAsync(track, side, 1);
 					Protections.checkProtection(track, side, infoBox);
 					ButtonMatrix.setButtonBG(track, side);
 				}

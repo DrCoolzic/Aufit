@@ -71,6 +71,7 @@ namespace Aufit {
 						tb.BorderThickness = new Thickness(0);
 						tb.FontSize = 11;
 						tb.HorizontalContentAlignment = HorizontalAlignment.Center;
+						tb.Background = Brushes.Transparent;
 						tb.Text = (y - 1).ToString();
 						cv.Children.Add(tb);
 					}
@@ -85,6 +86,7 @@ namespace Aufit {
 								tb.BorderThickness = new Thickness(0);
 								tb.FontSize = 11;
 								tb.VerticalContentAlignment = VerticalAlignment.Center;
+								tb.Background = Brushes.Transparent;
 								tb.Text = (x - 1).ToString();
 								cv.Children.Add(tb);
 							}

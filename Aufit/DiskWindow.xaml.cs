@@ -50,10 +50,15 @@ public partial class DiskWindow : Window {
 	TextBox _tb;
 	Grid _gd;
 	const int halfWindowSize = 300;
-	const double fineLine = 1.5;
-	const double heavyLine = 2.2;
-	const double referenceThickness = 0.4;
-	DoubleCollection referenceDashPattern = new DoubleCollection(new double[2] { 10, 5 });
+	const double fineLine = 1.4;
+	const double heavyLine = 2.1;
+	const double referenceThickness = 0.1;
+	//DoubleCollection referenceDashPattern = new DoubleCollection(new double[2] { 10, 10 });
+	Point center = new Point(halfWindowSize, halfWindowSize);
+	const double rad_max = halfWindowSize - halfWindowSize * 0.02;
+	const double rad_start = halfWindowSize / 4;
+	const double rad_inc = (rad_max - rad_start) / 84;
+
 
 	bool _debugNoAsync = false;
 
@@ -76,7 +81,7 @@ public partial class DiskWindow : Window {
 
 		double startAngle = -0.0001;
 		double stopAngle = Math.PI * 2;
-		Point center = new Point(halfWindowSize, halfWindowSize);
+		//Point center = new Point(halfWindowSize, halfWindowSize);
 		double radius = halfWindowSize; 
 
 		System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
@@ -92,9 +97,9 @@ public partial class DiskWindow : Window {
 		path.Data = pg;
 		cvDisk1.Children.Add(path);
 
-		radius /= 7;
+		radius /= 9;
 		path = new System.Windows.Shapes.Path();
-		path.Fill = Brushes.White;		
+		path.Fill = Brushes.DarkSlateGray;		
 		
 		PathGeometry hole = new PathGeometry();		
 		addArc(hole, startAngle, stopAngle, center, radius);
@@ -102,7 +107,7 @@ public partial class DiskWindow : Window {
 		cvDisk0.Children.Add(path);
 
 		path = new System.Windows.Shapes.Path();
-		path.Fill = Brushes.White;
+		path.Fill = Brushes.DarkSlateGray;
 		path.Data = hole;
 		cvDisk1.Children.Add(path);
 
@@ -111,9 +116,9 @@ public partial class DiskWindow : Window {
 			if ((Global.Disk[track, side].fluxData == null) &&
 				(Global.Disk[track, side].packedFluxData == null)) continue;
 			if (_debugNoAsync)
-				decodeAndRead(track, side, 0);
+				Global.decodeAndRead(track, side, 0);
 			else
-				await decodeAndReadAsync(track, side, 0);
+				await Global.decodeAndReadAsync(track, side, 0);
 			drawDiskTrackLayout(track, side, 0);
 			ButtonMatrix.setButtonBG(track, side);
 		}
@@ -126,48 +131,14 @@ public partial class DiskWindow : Window {
 			if ((Global.Disk[track, side].fluxData == null) &&
 				(Global.Disk[track, side].packedFluxData == null)) continue;
 			if (_debugNoAsync)
-				decodeAndRead(track, side, 0);
+				Global.decodeAndRead(track, side, 0);
 			else
-				await decodeAndReadAsync(track, side, 0);
+				await Global.decodeAndReadAsync(track, side, 0);
 			drawDiskTrackLayout(track, side, 0);
 			ButtonMatrix.setButtonBG(track, side);
 		}
 
 		_tb.Text = message +  " Side 1";
-	}
-
-
-	/// <summary>
-	/// This is an asynchronous version of decodeAndRead()
-	/// </summary>
-	/// <param name="track">The track to read and decode</param>
-	/// <param name="side">The side to read and decode</param>
-	/// <param name="rev">The revolution to read and decode</param>
-	/// <returns>A pointer to the TrackContent structure</returns>
-	public static Task<List<Sector>> decodeAndReadAsync(int track, int side, int rev) {
-		return Task<List<Sector>>.Run(() => decodeAndRead(track, side, rev));
-	}
-
-
-	/// <summary>
-	/// Decode the flux transitions and do all FDC read commands
-	/// </summary>
-	/// <remarks>To display the layout we must make sure the flux are correctly
-	/// decoded and that all the read functions (readTrack(), readAddr(), and 
-	/// readSect() functions are done before we display.</remarks>
-	/// <param name="track">The track to read and decode</param>
-	/// <param name="side">The side to read and decode</param>
-	/// <param name="rev">The revolution to read and decode</param>
-	/// <returns>A pointer to the TrackContent structure</returns>
-	public static List<Sector> decodeAndRead(int track, int side, int rev) {
-		if ((Global.Disk[track, side].fluxData == null) &&
-			(Global.Disk[track, side].packedFluxData == null)) return null;
-		List<Sector> sectors = Global.Disk[track, side].sectors;
-		if (sectors != null) return sectors;
-		Global.mfmDecode(track, side);
-		FDC.fdcRealAll(track, side, rev);
-		sectors = Global.Disk[track, side].sectors;
-		return sectors;
 	}
 
 
@@ -182,21 +153,47 @@ public partial class DiskWindow : Window {
 		List<Sector> sectors = dt.sectors;
 		if (sectors == null) return;
 
-		Point center = new Point(halfWindowSize, halfWindowSize);
-		double rad_max = halfWindowSize - halfWindowSize * 0.03;
-		double rad_start = halfWindowSize / 6;
-		double rad_inc = (rad_max - rad_start) / 84;
 		double radius = rad_max - track * rad_inc;
 		_tb.Text = String.Format("Processing track {0}", track);
 		Line zeroLine = new Line();
-		zeroLine.Stroke = Brushes.White;
+		zeroLine.Stroke = Brushes.LightGray;
 		zeroLine.StrokeThickness = referenceThickness;
-		zeroLine.StrokeDashArray = referenceDashPattern;
+		//zeroLine.StrokeDashArray = referenceDashPattern;
 		zeroLine.X1 = halfWindowSize;
 		zeroLine.Y1 = halfWindowSize;
 		zeroLine.X2 = 2*halfWindowSize;
 		zeroLine.Y2 = halfWindowSize;
 		_gd.Children.Add(zeroLine);
+
+		int startFluxIndex = dt.fluxDataRev[0].firstFluxIndex;
+		int stopFluxIndex = startFluxIndex + dt.fluxDataRev[0].fluxCount;
+		int fluxStartTime = 0;
+		if (dt.histoData.entropy < Global.UNFORMATED_ENTROPY) {
+			int minDisplayWidth = 50000;
+			for (int idx = startFluxIndex; idx < stopFluxIndex; idx++) {
+				int flux = dt.fluxData.fluxValue[idx];
+				if (fluxNotInRange(flux)) {
+					double startAngle = timeAngle(fluxStartTime);
+					int j = idx;
+					int fluxStopTime = fluxStartTime + flux;
+					// try to concatenate to reduce number of arc to draw
+					while ((j < stopFluxIndex) && (fluxNotInRange(dt.fluxData.fluxValue[j])))
+						fluxStopTime += dt.fluxData.fluxValue[j++];
+					if ((fluxStartTime - fluxStopTime) < minDisplayWidth)
+						fluxStopTime = fluxStartTime + minDisplayWidth;
+					double stopAngle = timeAngle(fluxStopTime);
+					System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
+					path.StrokeThickness = heavyLine;
+					PathGeometry pg = new PathGeometry();
+					path.Stroke = Brushes.White;
+					addArc(pg, startAngle, stopAngle, center, radius);
+					path.Data = pg;
+					_gd.Children.Add(path);
+					idx = j;
+				}
+				fluxStartTime += flux;
+			}
+		}
 
 		if ((sectors.Count > 0) || ((sectors.Count == 1) && (sectors[0].data != null))) {
 			for (int i = 0; i < sectors.Count; i++) {
@@ -255,19 +252,6 @@ public partial class DiskWindow : Window {
 			_gd.Children.Add(path);
 		}	// no sector track
 
-		//for (int i = 0; i < dt.track.info.byteCount; i++) {
-		//	double startAngle = byteAngle(i - 1, dt.track.info.byteCount);
-		//	double stopAngle = byteAngle(i, dt.track.info.byteCount);
-		//	if ((dt.track.buffer.Bytes[i].mfmWord == 0) || (dt.track.buffer.Bytes[i].mfmWord == 0xFFFF)) {
-		//		System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
-		//		path.StrokeThickness = heavyLine;
-		//		PathGeometry pg = new PathGeometry();
-		//		path.Stroke = Brushes.Red;
-		//		addArc(pg, startAngle, stopAngle, center, radius);
-		//		path.Data = pg;
-		//		_gd.Children.Add(path);
-		//	}
-		//}
 		for (int i = 0; i < dt.track.info.byteCount; i++) {
 			if ((dt.track.buffer.Bytes[i].mfmWord == 0) || (dt.track.buffer.Bytes[i].mfmWord == 0xFFFF)) {
 				double startAngle = byteAngle(i - 1, dt.track.info.byteCount);
@@ -285,7 +269,18 @@ public partial class DiskWindow : Window {
 				i = j;
 			}
 		}
+
 	}	// End of drawDisk()
+
+
+	private bool fluxNotInRange(int flux) {
+		const int limit = 700;
+		if (((flux > (4000 - limit)) && (flux < (4000 + limit))) ||
+			((flux > (6000 - limit)) && (flux < (6000 + limit))) ||
+			((flux > (8000 - limit)) && (flux < (8000 + limit)))			)
+			return false;
+		return true;
+	}
 
 
 	private void drawArc(Sector sector, Point center, double radius, double startAngle, double stopAngle, Phases phase) {
@@ -489,13 +484,8 @@ public partial class DiskWindow : Window {
 	}
 
 
-	private void saveImageClick0(object sender, RoutedEventArgs e) {
-		Global.saveImage(cvDisk0);
-	}
-
-
-	private void saveImageClick1(object sender, RoutedEventArgs e) {
-		Global.saveImage(cvDisk1);
+	private void saveImageClick(object sender, RoutedEventArgs e) {
+		Global.saveImage(gridDisk, 1.5);
 	}
 
 }	// class DiskWindow
