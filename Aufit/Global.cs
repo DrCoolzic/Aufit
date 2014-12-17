@@ -505,7 +505,7 @@ public class Global {
 			int bitPosition = decodeBitPosition[indexStart];
 			Global.Disk[track, side].packedFluxDataRev[i].firstFluxBit = bitPosition - correction;
 			int bitCount = decodeBitPosition[indexEnd] - decodeBitPosition[indexStart];
-			Global.Disk[track, side].packedFluxDataRev[i].bitCount = bitCount + correction;
+			Global.Disk[track, side].packedFluxDataRev[i].bitCount = bitCount;
 			Global.Disk[track, side].packedFluxDataRev[i].fluxCount = Global.Disk[track, side].fluxDataRev[i].fluxCount;
 		}
 	}

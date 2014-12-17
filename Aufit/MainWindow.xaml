@@ -107,13 +107,23 @@
                 <Canvas Name="cvGraphicData" ClipToBounds="True" Background="Transparent" MouseLeftButtonDown="dataMouseLBD" />
             </Canvas>
         </Grid>
-        <StackPanel Grid.Row="6" Margin="10" Orientation="Horizontal" HorizontalAlignment="Left">
-            <Button Margin="0,0,10,0" Content="Track Buffer" Width="100" Click="btTrackWindowClick" />
-            <Button Margin="0,0,10,0"  Content="Sectors Buffer" Width="100" Click="btSectorWindowClick" />
-            <Button Margin="0,0,10,0"  Content="Disk Layout" Width="100"  Click="btDiskLayoutClick"/>
-            <Button Margin="0,0,10,0"  Content="Save Pict" Width="100"  Click="btSavePictClick"/>
-            <Button Margin="0,0,10,0"  Content="Protections" Width="100" Click="btProtectionClick" />
-            <Button Margin="0,0,10,0"  Content="Write Disk" Width="100"  Click="btWriteDiskClick"/>
-        </StackPanel>
+        <Grid Grid.Row="6" Margin="10" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0"  Margin="0,0,10,0"  Content="Track Buffer" Width="100" Click="btTrackWindowClick" />
+            <Button Grid.Column="1"  Margin="0,0,10,0"  Content="Sectors Buffer" Width="100" Click="btSectorWindowClick" />
+            <Button Grid.Column="2" Margin="0,0,10,0"  Content="Disk Layout" Width="100"  Click="btDiskLayoutClick"/>
+            <Button Grid.Column="3" Margin="0,0,10,0"  Content="Save Pict" Width="100"  Click="btSavePictClick"/>
+            <Button Grid.Column="4" Margin="0,0,10,0"  Content="Protections" Width="100" Click="btProtectionClick" />
+            <Button Grid.Column="5" Margin="0,0,10,0"  Content="Write Disk" Width="100"  Click="btWriteDiskClick"/>
+            <TextBox Grid.Column="6" Margin="0,0,10,0" Name="vNumber" Text="Version" BorderThickness="0"  Background="Transparent" HorizontalAlignment="Right"/>
+        </Grid>
     </Grid>
 </Window>

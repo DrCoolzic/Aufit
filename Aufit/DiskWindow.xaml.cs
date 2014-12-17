@@ -50,15 +50,14 @@ public partial class DiskWindow : Window {
 	TextBox _tb;
 	Grid _gd;
 	const int halfWindowSize = 300;
-	const double fineLine = 1.4;
-	const double heavyLine = 2.1;
+	const double fineLine = 1.0;
+	const double heavyLine = 1.8;
 	const double referenceThickness = 0.1;
 	//DoubleCollection referenceDashPattern = new DoubleCollection(new double[2] { 10, 10 });
 	Point center = new Point(halfWindowSize, halfWindowSize);
-	const double rad_max = halfWindowSize - halfWindowSize * 0.02;
+	const double rad_max = halfWindowSize - halfWindowSize * 0.03;
 	const double rad_start = halfWindowSize / 4;
 	const double rad_inc = (rad_max - rad_start) / 84;
-
 
 	bool _debugNoAsync = false;
 
@@ -75,42 +74,72 @@ public partial class DiskWindow : Window {
 	/// </summary>
 	/// <param name="message">Message to display at end of drawing</param>
 	public async void drawDiskLayout(string message) {
+		Brush Black = new SolidColorBrush(Colors.Black);
+		Black.Freeze();
+		Brush DarkSlateGray = new SolidColorBrush(Colors.DarkSlateGray);
+		DarkSlateGray.Freeze();
+		Brush White = new SolidColorBrush(Colors.White);
+		White.Freeze();
+		Brush Transparent = new SolidColorBrush(Colors.Transparent);
+		Transparent.Freeze();
+
 		int side = 0;
-		_tb = tbDisk0;
+		_tb = tbDisk;
 		_gd = cvDisk0;
 
 		double startAngle = -0.0001;
 		double stopAngle = Math.PI * 2;
-		//Point center = new Point(halfWindowSize, halfWindowSize);
 		double radius = halfWindowSize; 
 
+		// add black filled disk
 		System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
-		path.Fill = Brushes.Black;
-
+		path.Fill = Black;
 		PathGeometry pg = new PathGeometry();
 		addArc(pg, startAngle, stopAngle, center, radius);
 		path.Data = pg;
 		cvDisk0.Children.Add(path);
 
 		path = new System.Windows.Shapes.Path();
-		path.Fill = Brushes.Black;
+		path.Fill = Black;
 		path.Data = pg;
 		cvDisk1.Children.Add(path);
 
+	// add center hole
 		radius /= 9;
 		path = new System.Windows.Shapes.Path();
-		path.Fill = Brushes.DarkSlateGray;		
-		
+		path.Fill = DarkSlateGray;				
 		PathGeometry hole = new PathGeometry();		
 		addArc(hole, startAngle, stopAngle, center, radius);
 		path.Data = hole;
 		cvDisk0.Children.Add(path);
 
 		path = new System.Windows.Shapes.Path();
-		path.Fill = Brushes.DarkSlateGray;
+		path.Fill = DarkSlateGray;
 		path.Data = hole;
 		cvDisk1.Children.Add(path);
 
+		// add side indication
+		TextBox tb = new TextBox();
+		tb.Margin = new Thickness(0, 240, 0, 0);
+		tb.FontFamily = new FontFamily("Segoe UI");
+		tb.BorderThickness = new Thickness(0);
+		tb.FontSize = 11;
+		tb.HorizontalContentAlignment = HorizontalAlignment.Center;
+		tb.Background = Transparent;
+		tb.Foreground = White;
+		tb.Text = "Side 0";
+		cvDisk0.Children.Add(tb);
+
+		tb = new TextBox();
+		tb.Margin = new Thickness(0, 240, 0, 0);
+		tb.FontFamily = new FontFamily("Segoe UI");
+		tb.BorderThickness = new Thickness(0);
+		tb.FontSize = 11;
+		tb.HorizontalContentAlignment = HorizontalAlignment.Center;
+		tb.Background = Transparent;
+		tb.Foreground = White;
+		tb.Text = "Side 1";
+		cvDisk1.Children.Add(tb);
 
 		for (int track = 0; track < 84; track++) {
 			if ((Global.Disk[track, side].fluxData == null) &&
@@ -123,9 +152,7 @@ public partial class DiskWindow : Window {
 			ButtonMatrix.setButtonBG(track, side);
 		}
 
-		_tb.Text = message + " Side 0";
 		side = 1;
-		_tb = tbDisk1;
 		_gd = cvDisk1;
 		for (int track = 0; track < 84; track++) {
 			if ((Global.Disk[track, side].fluxData == null) &&
@@ -137,8 +164,21 @@ public partial class DiskWindow : Window {
 			drawDiskTrackLayout(track, side, 0);
 			ButtonMatrix.setButtonBG(track, side);
 		}
+		_tb.Text = message;
 
-		_tb.Text = message +  " Side 1";
+		TextBox version = new TextBox();
+		version.HorizontalAlignment = System.Windows.HorizontalAlignment.Right;
+		version.VerticalAlignment = System.Windows.VerticalAlignment.Bottom;
+		version.Margin = new Thickness(0, 0, 0, 0);
+		version.FontFamily = new FontFamily("Segoe UI");
+		version.BorderThickness = new Thickness(0);
+		version.FontSize = 11;
+		version.HorizontalContentAlignment = HorizontalAlignment.Center;
+		version.Background = Transparent;
+		version.Foreground = White;
+		version.Text = "Aufit " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+		cvDisk1.Children.Add(version);
+
 	}
 
 
@@ -153,10 +193,26 @@ public partial class DiskWindow : Window {
 		List<Sector> sectors = dt.sectors;
 		if (sectors == null) return;
 
+		Brush LightGray = new SolidColorBrush(Colors.LightGray);
+		LightGray.Freeze();
+		Brush White = new SolidColorBrush(Colors.White);
+		White.Freeze();
+		Brush Black = new SolidColorBrush(Colors.Black);
+		Black.Freeze();
+		Brush Blue = new SolidColorBrush(Colors.Blue);
+		Blue.Freeze();
+		Brush SlateGray = new SolidColorBrush(Colors.SlateGray);
+		SlateGray.Freeze();
+		Brush Yellow = new SolidColorBrush(Colors.Yellow);
+		Yellow.Freeze();
+		Brush Red = new SolidColorBrush(Colors.Red);
+		Red.Freeze();
+
+
 		double radius = rad_max - track * rad_inc;
-		_tb.Text = String.Format("Processing track {0}", track);
+		_tb.Text = String.Format("Processing track {0} Side {1}", track, side);
 		Line zeroLine = new Line();
-		zeroLine.Stroke = Brushes.LightGray;
+		zeroLine.Stroke = LightGray;
 		zeroLine.StrokeThickness = referenceThickness;
 		//zeroLine.StrokeDashArray = referenceDashPattern;
 		zeroLine.X1 = halfWindowSize;
@@ -165,33 +221,35 @@ public partial class DiskWindow : Window {
 		zeroLine.Y2 = halfWindowSize;
 		_gd.Children.Add(zeroLine);
 
-		int startFluxIndex = dt.fluxDataRev[0].firstFluxIndex;
-		int stopFluxIndex = startFluxIndex + dt.fluxDataRev[0].fluxCount;
-		int fluxStartTime = 0;
-		if (dt.histoData.entropy < Global.UNFORMATED_ENTROPY) {
-			int minDisplayWidth = 50000;
-			for (int idx = startFluxIndex; idx < stopFluxIndex; idx++) {
-				int flux = dt.fluxData.fluxValue[idx];
-				if (fluxNotInRange(flux)) {
-					double startAngle = timeAngle(fluxStartTime);
-					int j = idx;
-					int fluxStopTime = fluxStartTime + flux;
-					// try to concatenate to reduce number of arc to draw
-					while ((j < stopFluxIndex) && (fluxNotInRange(dt.fluxData.fluxValue[j])))
-						fluxStopTime += dt.fluxData.fluxValue[j++];
-					if ((fluxStartTime - fluxStopTime) < minDisplayWidth)
-						fluxStopTime = fluxStartTime + minDisplayWidth;
-					double stopAngle = timeAngle(fluxStopTime);
-					System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
-					path.StrokeThickness = heavyLine;
-					PathGeometry pg = new PathGeometry();
-					path.Stroke = Brushes.White;
-					addArc(pg, startAngle, stopAngle, center, radius);
-					path.Data = pg;
-					_gd.Children.Add(path);
-					idx = j;
+		if (dt.fluxData != null) {
+			int startFluxIndex = dt.fluxDataRev[0].firstFluxIndex;
+			int stopFluxIndex = startFluxIndex + dt.fluxDataRev[0].fluxCount;
+			int fluxStartTime = 0;
+			if (dt.histoData.entropy < Global.UNFORMATED_ENTROPY) {
+				int minDisplayWidth = 50000;
+				for (int idx = startFluxIndex; idx < stopFluxIndex; idx++) {
+					int flux = dt.fluxData.fluxValue[idx];
+					if (fluxNotInRange(flux)) {
+						double startAngle = timeAngle(fluxStartTime);
+						int j = idx;
+						int fluxStopTime = fluxStartTime + flux;
+						// try to concatenate to reduce number of arc to draw
+						while ((j < stopFluxIndex) && (fluxNotInRange(dt.fluxData.fluxValue[j])))
+							fluxStopTime += dt.fluxData.fluxValue[j++];
+						if ((fluxStartTime - fluxStopTime) < minDisplayWidth)
+							fluxStopTime = fluxStartTime + minDisplayWidth;
+						double stopAngle = timeAngle(fluxStopTime);
+						System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
+						path.StrokeThickness = heavyLine;
+						PathGeometry pg = new PathGeometry();
+						path.Stroke = White;
+						addArc(pg, startAngle, stopAngle, center, radius);
+						path.Data = pg;
+						_gd.Children.Add(path);
+						idx = j;
+					}
+					fluxStartTime += flux;
 				}
-				fluxStartTime += flux;
 			}
 		}
 
@@ -234,16 +292,16 @@ public partial class DiskWindow : Window {
 			System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
 			path.StrokeThickness = fineLine;
 			PathGeometry pg = new PathGeometry();
-			path.Stroke = Brushes.Black;
+			path.Stroke = Black;
 
 			if ((dt.histoData.hasBitsInBands) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
 				if (dt.track.firstSyncOffset > 0)
-					path.Stroke = Brushes.Blue;
+					path.Stroke = Blue;
 				else
-					path.Stroke = Brushes.Yellow;
+					path.Stroke = Yellow;
 			}	// bits in band found
 			else
-				path.Stroke = Brushes.SlateGray;
+				path.Stroke = SlateGray;
 			
 			double startAngle = - 0.0001;
 			double stopAngle = Math.PI * 2;
@@ -262,7 +320,7 @@ public partial class DiskWindow : Window {
 				System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
 				path.StrokeThickness = heavyLine;
 				PathGeometry pg = new PathGeometry();
-				path.Stroke = Brushes.Red;
+				path.Stroke = Red;
 				addArc(pg, startAngle, stopAngle, center, radius);
 				path.Data = pg;
 				_gd.Children.Add(path);
@@ -284,22 +342,36 @@ public partial class DiskWindow : Window {
 
 
 	private void drawArc(Sector sector, Point center, double radius, double startAngle, double stopAngle, Phases phase) {
+		Brush LightGreen = new SolidColorBrush(Colors.LightGreen);
+		LightGreen.Freeze();
+		Brush Aqua = new SolidColorBrush(Colors.Aqua);
+		Aqua.Freeze();
+		Brush Purple = new SolidColorBrush(Colors.Purple);
+		Purple.Freeze();
+		Brush Orange = new SolidColorBrush(Colors.Orange);
+		Orange.Freeze();
+		Brush Blue = new SolidColorBrush(Colors.Blue);
+		Blue.Freeze();
+		Brush DeepSkyBlue = new SolidColorBrush(Colors.DeepSkyBlue);
+		DeepSkyBlue.Freeze();
+		Brush Yellow = new SolidColorBrush(Colors.Yellow);
+		Yellow.Freeze();
+
 		System.Windows.Shapes.Path idPath = new System.Windows.Shapes.Path();
 		idPath.StrokeThickness = fineLine;
-		idPath.Stroke = Brushes.LightGreen;
-
+		idPath.Stroke = LightGreen;
 		if (phase == Phases.p_id)
-			idPath.Stroke = Brushes.Yellow;
+			idPath.Stroke = Yellow;
 		if (phase == Phases.p_data) {
-			idPath.Stroke = Brushes.DeepSkyBlue;
+			idPath.Stroke = DeepSkyBlue;
 			if ((sector.flags & Sector.WIDTH_ABOVE) != 0)
-				idPath.Stroke = Brushes.Blue;
+				idPath.Stroke = Blue;
 			if ((sector.flags & Sector.WIDTH_BELOW) != 0)
-				idPath.Stroke = Brushes.Aqua;
+				idPath.Stroke = Aqua;
 			if ((sector.flags & Sector.WIDTH_INTRA) != 0)
-				idPath.Stroke = Brushes.Purple;
+				idPath.Stroke = Purple;
 			if ((sector.data.info.crc != 0) || (sector.data.fuzzy != null))
-				idPath.Stroke = Brushes.Orange;
+				idPath.Stroke = Orange;
 		}
 
 		PathGeometry idPg = new PathGeometry();

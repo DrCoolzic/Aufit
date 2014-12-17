@@ -109,6 +109,7 @@ namespace Aufit {
 			// this.DataContext = this;	// needed for property changed event
 			string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 			Title = "Aufit " + version;
+			vNumber.Text = "Aufit " + version;
 		}
 
 
@@ -322,6 +323,7 @@ namespace Aufit {
 			Track = Side = Rev = 0;
 			Global.resetDisk();
 			tbFileName.Text = fileName;
+			_fileName = fileName;
 				
 			string extension = System.IO.Path.GetExtension(fileName);
 
@@ -329,7 +331,7 @@ namespace Aufit {
 				case ".raw":
 					string path = System.IO.Path.GetDirectoryName(fileName);
 					string file = System.IO.Path.GetFileName(fileName);
-					_fileName = file;
+					//_fileName = file;
 					string root = file.Remove(file.Length - 8, 8);
 					if (_debugNoThread)
 						readOK = readAllTracks(path, root);
@@ -350,7 +352,7 @@ namespace Aufit {
 
 
 		private async Task<bool> readSPCFile(string fileName) {
-			_fileName = System.IO.Path.GetFileNameWithoutExtension(fileName);
+			//_fileName = System.IO.Path.GetFileNameWithoutExtension(fileName);
 			bool ok = await SCPReader.readScpAsync(fileName, infoBox);
 			if (ok) {
 				selectAndCheck(0, 0);
