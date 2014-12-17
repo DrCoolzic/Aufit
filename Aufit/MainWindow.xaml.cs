@@ -350,6 +350,13 @@ namespace Aufit {
 			if (!readOK)
 				tbFileName.Text = "Sorry could not read correctly the input file";
 
+			btTrack.IsEnabled = false;
+			btSector.IsEnabled = false;
+			btDisk.IsEnabled = false;
+			btProt.IsEnabled = false;
+			btSave.IsEnabled = false;
+			btWrite.IsEnabled = false;
+
 			BackgroundWorker bgWorker;
 			bgWorker = new BackgroundWorker();
 			bgWorker.DoWork += new DoWorkEventHandler(bgWorker_DoWork);
@@ -362,6 +369,7 @@ namespace Aufit {
 
 		// http://stuff.seans.com/2009/05/21/net-basics-do-work-in-background-thread-to-keep-gui-responsive/
 		void bgWorker_DoWork(object sender, DoWorkEventArgs e) {
+
 			Task<List<Sector>>[] tasks = new Task<List<Sector>>[168];
 			for (int i = 0; i < 84; i++) {
 				for (int j = 0; j < 2; j++) {
@@ -377,6 +385,13 @@ namespace Aufit {
 			//	MessageBox.Show(e.Error.Message);
 			//}
 			//else {
+			btTrack.IsEnabled = true;
+			btSector.IsEnabled = true;
+			btDisk.IsEnabled = true;
+			btProt.IsEnabled = true;
+			btSave.IsEnabled = true;
+			btWrite.IsEnabled = true;
+
 				for (int i = 0; i < 84; i++) {
 					for (int j = 0; j < 2; j++) {
 						ButtonMatrix.setButtonBG(i, j);

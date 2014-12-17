@@ -117,12 +117,12 @@
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0"  Margin="0,0,10,0"  Content="Track Buffer" Width="100" Click="btTrackWindowClick" />
-            <Button Grid.Column="1"  Margin="0,0,10,0"  Content="Sectors Buffer" Width="100" Click="btSectorWindowClick" />
-            <Button Grid.Column="2" Margin="0,0,10,0"  Content="Disk Layout" Width="100"  Click="btDiskLayoutClick"/>
-            <Button Grid.Column="3" Margin="0,0,10,0"  Content="Save Pict" Width="100"  Click="btSavePictClick"/>
-            <Button Grid.Column="4" Margin="0,0,10,0"  Content="Protections" Width="100" Click="btProtectionClick" />
-            <Button Grid.Column="5" Margin="0,0,10,0"  Content="Write Disk" Width="100"  Click="btWriteDiskClick"/>
+            <Button Grid.Column="0" Name="btTrack" Margin="0,0,10,0"  Content="Track Buffer" Width="100" Click="btTrackWindowClick" />
+            <Button Grid.Column="1" Name="btSector" Margin="0,0,10,0"  Content="Sectors Buffer" Width="100" Click="btSectorWindowClick" />
+            <Button Grid.Column="2" Name="btDisk" Margin="0,0,10,0"  Content="Disk Layout" Width="100"  Click="btDiskLayoutClick"/>
+            <Button Grid.Column="3" Name="btSave" Margin="0,0,10,0"  Content="Save Pict" Width="100"  Click="btSavePictClick"/>
+            <Button Grid.Column="4" Name="btProt" Margin="0,0,10,0"  Content="Protections" Width="100" Click="btProtectionClick" />
+            <Button Grid.Column="5" Name="btWrite" Margin="0,0,10,0"  Content="Write Disk" Width="100"  Click="btWriteDiskClick"/>
             <TextBox Grid.Column="6" Margin="0,0,10,0" Name="vNumber" Text="Version" BorderThickness="0"  Background="Transparent" HorizontalAlignment="Right"/>
         </Grid>
     </Grid>
