@@ -3,6 +3,8 @@
 	http://www.atari-forum.com/viewtopic.php?f=102&t=25854&start=525#p263646
 	http://www.atari-forum.com/viewtopic.php?f=102&t=25854&start=250#p248282
 	http://www.atari-forum.com/viewtopic.php?f=102&t=25854&start=275#p248377
+- Drawing disk layout now uses multi-threading
+- now reading and processing of flux data is using heavy multi-threading
 - Added out of band flux display in Disk layout window
 - code and documentation cleaning
 - detection of ID over index on top of data over/beyond index

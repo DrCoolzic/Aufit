@@ -88,7 +88,7 @@ namespace Aufit {
 		/// <summary>
 		/// Initialize the main window
 		/// </summary>
-		public MainWindow() {
+		private MainWindow() {
 			InitializeComponent();
 
 			_fluxDrawing = new FluxDrawing(fluxGrid, cvTextFlux, cvGraphicFlux, this);
@@ -110,6 +110,9 @@ namespace Aufit {
 			string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 			Title = "Aufit " + version;
 			tbVersion.Text = "Aufit " + version;
+
+			this.Loaded += new RoutedEventHandler(container_loaded);
+			//MessageBox.Show(Application.Current.Properties["FileName"].ToString());
 		}
 
 
@@ -140,6 +143,7 @@ namespace Aufit {
 			}
 		}
 		#endregion
+
 
 		#region flux drawing related
 		/// <summary>
@@ -197,7 +201,7 @@ namespace Aufit {
 		#endregion
 
 
-		#region options
+		#region options handlers
 		private void cbHistoLogClick(object sender, RoutedEventArgs e) {
 			Global.computeHisto(Track, Side, Rev, infoBox);
 			_histoDrawing.drawHisto();
@@ -263,7 +267,7 @@ namespace Aufit {
 		/// <summary>
 		/// Display all the charts for the current Track/Side/Rev
 		/// </summary>
-		public void drawAllCharts() {
+		private void drawAllCharts() {
 			int track = Track;
 			int side = Side;
 			int rev = Rev;
@@ -318,8 +322,33 @@ namespace Aufit {
 			processFile(droppedFiles[0]);
 		}
 
+		public static void test(string name) {
+			// use pipe
+			// http://msdn.microsoft.com/en-us/library/bb546085.aspx
+			// http://elegantcode.com/2011/03/02/wpf-advanced-jump-lists-using-a-single-instance-application/
+			// http://danielvaughan.org/post/Enforcing-Single-Instance-WPF-Applications.aspx
+			// http://stackoverflow.com/questions/19147/what-is-the-correct-way-to-create-a-single-instance-application
+			// http://msdn.microsoft.com/en-us/library/ms771662(v=VS.90).aspxv
+			// http://stackoverflow.com/questions/7901007/sending-event-between-2-wpf-windows
+			MessageBox.Show(name + " ***** do not know what to do :(");			
+			//MessageBox.Show("container: " + mainWin.ToString());
+			MessageBox.Show("Fuck");
+			//mainWin.processFile(name);
+		}
 
-		void buttonVisibility(System.Windows.Visibility visibility) {
+
+		private void container_loaded(object sender, RoutedEventArgs e) {
+			if (Application.Current.Properties["FileName"] != null) {
+				string fname = Application.Current.Properties["FileName"].ToString();				
+				FileInfo file = new FileInfo(fname);
+				if (file.Exists) {
+					processFile(fname);
+				}
+			}
+		}
+
+
+		private void buttonVisibility(System.Windows.Visibility visibility) {
 			btTrack.Visibility = visibility;
 			btSector.Visibility = visibility;
 			btDisk.Visibility = visibility;
@@ -338,7 +367,6 @@ namespace Aufit {
 			}
 		}
 
-
 		private async void processFile(string fileName) {
 			bool readOK = false;			
 			Track = Side = Rev = 0;
@@ -347,7 +375,7 @@ namespace Aufit {
 			_fileName = fileName;
 			buttonVisibility(System.Windows.Visibility.Hidden);
 			string extension = System.IO.Path.GetExtension(fileName);
-			tbStatus.Text = "Reading input file(s) - PLEASE WAIT ...";
+			tbStatus.Text = " *** READING INPUT FILE(S) *** PLEASE WAIT ...";
 
 			switch (extension) {
 				case ".raw":
@@ -371,7 +399,7 @@ namespace Aufit {
 			if (!readOK)
 				tbFileName.Text = "Sorry could not read correctly the input file";
 
-			tbStatus.Text = "Processing data - PLEASE WAIT ...";
+			tbStatus.Text = "*** PROCESSING DATA *** PLEASE WAIT ...";
 
 			BackgroundWorker bgWorker;
 			bgWorker = new BackgroundWorker();
@@ -428,7 +456,7 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="path">Path to directory that contains the streams</param>
 		/// <param name="root">Root name expanded with xx.x to create the final name</param>
-		public bool readAllTracksTasks(string path, string root) {
+		private bool readAllTracksTasks(string path, string root) {
 			Task<bool>[] tasks = new Task<bool>[168];
 			for (int i = 0; i < 84; i++) {
 				for (int j = 0; j < 2; j++) {
@@ -461,7 +489,7 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="path">Path to directory that contains the streams</param>
 		/// <param name="root">Root name expanded with xx.x to create the final name</param>
-		public async Task<bool> readAllTracksAsync(string path, string root) {
+		private async Task<bool> readAllTracksAsync(string path, string root) {
 			string fname;
 			infoBox.Clear();
 			infoBox.FontSize = 11;
@@ -497,7 +525,7 @@ namespace Aufit {
 		/// <param name="path"></param>
 		/// <param name="root"></param>
 		/// <returns></returns>
-		public bool readAllTracks(string path, string root) {
+		private bool readAllTracks(string path, string root) {
 			string fname;
 			infoBox.Clear();
 			infoBox.FontSize = 11;
