@@ -109,7 +109,7 @@ namespace Aufit {
 			// this.DataContext = this;	// needed for property changed event
 			string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 			Title = "Aufit " + version;
-			vNumber.Text = "Aufit " + version;
+			tbVersion.Text = "Aufit " + version;
 		}
 
 
@@ -319,14 +319,35 @@ namespace Aufit {
 		}
 
 
+		void buttonVisibility(System.Windows.Visibility visibility) {
+			btTrack.Visibility = visibility;
+			btSector.Visibility = visibility;
+			btDisk.Visibility = visibility;
+			btProt.Visibility = visibility;
+			btSave.Visibility = visibility;
+			btWrite.Visibility = visibility;
+			btFile.Visibility = visibility;
+			progress.Visibility = visibility;
+			if (visibility == System.Windows.Visibility.Visible) {
+				tbStatus.Visibility = System.Windows.Visibility.Hidden;
+				progress.Visibility = System.Windows.Visibility.Hidden;
+			}
+			else {
+				tbStatus.Visibility = System.Windows.Visibility.Visible;
+				progress.Visibility = System.Windows.Visibility.Visible;
+			}
+		}
+
+
 		private async void processFile(string fileName) {
 			bool readOK = false;			
 			Track = Side = Rev = 0;
 			Global.resetDisk();
 			tbFileName.Text = fileName;
 			_fileName = fileName;
-				
+			buttonVisibility(System.Windows.Visibility.Hidden);
 			string extension = System.IO.Path.GetExtension(fileName);
+			tbStatus.Text = "Reading input file(s) - PLEASE WAIT ...";
 
 			switch (extension) {
 				case ".raw":
@@ -350,12 +371,7 @@ namespace Aufit {
 			if (!readOK)
 				tbFileName.Text = "Sorry could not read correctly the input file";
 
-			btTrack.IsEnabled = false;
-			btSector.IsEnabled = false;
-			btDisk.IsEnabled = false;
-			btProt.IsEnabled = false;
-			btSave.IsEnabled = false;
-			btWrite.IsEnabled = false;
+			tbStatus.Text = "Processing data - PLEASE WAIT ...";
 
 			BackgroundWorker bgWorker;
 			bgWorker = new BackgroundWorker();
@@ -369,7 +385,6 @@ namespace Aufit {
 
 		// http://stuff.seans.com/2009/05/21/net-basics-do-work-in-background-thread-to-keep-gui-responsive/
 		void bgWorker_DoWork(object sender, DoWorkEventArgs e) {
-
 			Task<List<Sector>>[] tasks = new Task<List<Sector>>[168];
 			for (int i = 0; i < 84; i++) {
 				for (int j = 0; j < 2; j++) {
@@ -385,12 +400,8 @@ namespace Aufit {
 			//	MessageBox.Show(e.Error.Message);
 			//}
 			//else {
-			btTrack.IsEnabled = true;
-			btSector.IsEnabled = true;
-			btDisk.IsEnabled = true;
-			btProt.IsEnabled = true;
-			btSave.IsEnabled = true;
-			btWrite.IsEnabled = true;
+
+			buttonVisibility(System.Windows.Visibility.Visible);
 
 				for (int i = 0; i < 84; i++) {
 					for (int j = 0; j < 2; j++) {

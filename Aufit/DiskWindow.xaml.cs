@@ -40,6 +40,8 @@ using System.Windows.Shapes;
 using WD1772Package;
 using KFReaderPackage;
 using GlobalPackage;
+using System.Windows.Threading;
+using System.Threading;
 
 
 namespace Aufit {
@@ -104,7 +106,7 @@ public partial class DiskWindow : Window {
 		path.Data = pg;
 		cvDisk1.Children.Add(path);
 
-	// add center hole
+		// add center hole
 		radius /= 9;
 		path = new System.Windows.Shapes.Path();
 		path.Fill = DarkSlateGray;				
@@ -144,11 +146,14 @@ public partial class DiskWindow : Window {
 		for (int track = 0; track < 84; track++) {
 			if ((Global.Disk[track, side].fluxData == null) &&
 				(Global.Disk[track, side].packedFluxData == null)) continue;
-			if (_debugNoAsync)
+			if (_debugNoAsync) {
 				Global.decodeAndRead(track, side, 0);
-			else
+				drawDiskTrackLayout(track, side, 0);
+			}
+			else {
 				await Global.decodeAndReadAsync(track, side, 0);
-			drawDiskTrackLayout(track, side, 0);
+				await drawDiskTrackAsync(track, side, 0);
+			}
 			ButtonMatrix.setButtonBG(track, side);
 		}
 
@@ -157,13 +162,17 @@ public partial class DiskWindow : Window {
 		for (int track = 0; track < 84; track++) {
 			if ((Global.Disk[track, side].fluxData == null) &&
 				(Global.Disk[track, side].packedFluxData == null)) continue;
-			if (_debugNoAsync)
+			if (_debugNoAsync) {
 				Global.decodeAndRead(track, side, 0);
-			else
+				drawDiskTrackLayout(track, side, 0);
+			}
+			else {
 				await Global.decodeAndReadAsync(track, side, 0);
-			drawDiskTrackLayout(track, side, 0);
+				await drawDiskTrackAsync(track, side, 0);
+			}
 			ButtonMatrix.setButtonBG(track, side);
 		}
+
 		_tb.Text = message;
 
 		TextBox version = new TextBox();
@@ -182,151 +191,173 @@ public partial class DiskWindow : Window {
 	}
 
 
+	//void drawAllDiskTrack() {
+	//	Task<bool>[] tasks = new Task<bool>[168];
+	//	for (int i = 0; i < 84; i++) {
+	//		for (int j = 0; j < 2; j++) {
+	//			//if ((Global.Disk[i, j].fluxData == null) && (Global.Disk[i, j].packedFluxData == null)) continue;
+	//			tasks[i + j * 84] = drawDiskTrackAsync(i, j, 0);
+	//		}
+	//	}
+	//	Task.WaitAll(tasks);
+	//}
+
+
+	private Task<bool> drawDiskTrackAsync(int track, int side, int rev) {
+		return Task<bool>.Run(() => drawDiskTrackLayout(track, side, rev));
+	}
+
+
 	/// <summary>
 	/// Draw one track of the FD
 	/// </summary>
 	/// <param name="track">The track to display</param>
 	/// <param name="side">The side of the FD</param>
 	/// <param name="rev">The revolution index</param>
-	public void drawDiskTrackLayout(int track, int side, int rev) {
+	private bool drawDiskTrackLayout(int track, int side, int rev) {
 		 Global.DiskTrack dt = Global.Disk[track, side];
 		List<Sector> sectors = dt.sectors;
-		if (sectors == null) return;
+		if (sectors == null) return false;
 
-		Brush LightGray = new SolidColorBrush(Colors.LightGray);
-		LightGray.Freeze();
-		Brush White = new SolidColorBrush(Colors.White);
-		White.Freeze();
-		Brush Black = new SolidColorBrush(Colors.Black);
-		Black.Freeze();
-		Brush Blue = new SolidColorBrush(Colors.Blue);
-		Blue.Freeze();
-		Brush SlateGray = new SolidColorBrush(Colors.SlateGray);
-		SlateGray.Freeze();
-		Brush Yellow = new SolidColorBrush(Colors.Yellow);
-		Yellow.Freeze();
-		Brush Red = new SolidColorBrush(Colors.Red);
-		Red.Freeze();
+		// http://www.developpez.net/forums/d966615/dotnet/developpement-windows/windows-presentation-foundation/probleme-stathread-wpf/
+		this.Dispatcher.Invoke(DispatcherPriority.Background, (ThreadStart)delegate { 
+
+			Brush LightGray = new SolidColorBrush(Colors.LightGray);
+			LightGray.Freeze();
+			Brush White = new SolidColorBrush(Colors.White);
+			White.Freeze();
+			Brush Black = new SolidColorBrush(Colors.Black);
+			Black.Freeze();
+			Brush Blue = new SolidColorBrush(Colors.Blue);
+			Blue.Freeze();
+			Brush SlateGray = new SolidColorBrush(Colors.SlateGray);
+			SlateGray.Freeze();
+			Brush Yellow = new SolidColorBrush(Colors.Yellow);
+			Yellow.Freeze();
+			Brush Red = new SolidColorBrush(Colors.Red);
+			Red.Freeze();
 
 
-		double radius = rad_max - track * rad_inc;
-		_tb.Text = String.Format("Processing track {0} Side {1}", track, side);
-		Line zeroLine = new Line();
-		zeroLine.Stroke = LightGray;
-		zeroLine.StrokeThickness = referenceThickness;
-		//zeroLine.StrokeDashArray = referenceDashPattern;
-		zeroLine.X1 = halfWindowSize;
-		zeroLine.Y1 = halfWindowSize;
-		zeroLine.X2 = 2*halfWindowSize;
-		zeroLine.Y2 = halfWindowSize;
-		_gd.Children.Add(zeroLine);
+			double radius = rad_max - track * rad_inc;
+			_tb.Text = String.Format("Processing track {0} Side {1}", track, side);
+			Line zeroLine = new Line();
+			zeroLine.Stroke = LightGray;
+			zeroLine.StrokeThickness = referenceThickness;
+			//zeroLine.StrokeDashArray = referenceDashPattern;
+			zeroLine.X1 = halfWindowSize;
+			zeroLine.Y1 = halfWindowSize;
+			zeroLine.X2 = 2*halfWindowSize;
+			zeroLine.Y2 = halfWindowSize;
+			_gd.Children.Add(zeroLine);
 
-		if (dt.fluxData != null) {
-			int startFluxIndex = dt.fluxDataRev[0].firstFluxIndex;
-			int stopFluxIndex = startFluxIndex + dt.fluxDataRev[0].fluxCount;
-			int fluxStartTime = 0;
-			if (dt.histoData.entropy < Global.UNFORMATED_ENTROPY) {
-				int minDisplayWidth = 50000;
-				for (int idx = startFluxIndex; idx < stopFluxIndex; idx++) {
-					int flux = dt.fluxData.fluxValue[idx];
-					if (fluxNotInRange(flux)) {
-						double startAngle = timeAngle(fluxStartTime);
-						int j = idx;
-						int fluxStopTime = fluxStartTime + flux;
-						// try to concatenate to reduce number of arc to draw
-						while ((j < stopFluxIndex) && (fluxNotInRange(dt.fluxData.fluxValue[j])))
-							fluxStopTime += dt.fluxData.fluxValue[j++];
-						if ((fluxStartTime - fluxStopTime) < minDisplayWidth)
-							fluxStopTime = fluxStartTime + minDisplayWidth;
-						double stopAngle = timeAngle(fluxStopTime);
-						System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
-						path.StrokeThickness = heavyLine;
-						PathGeometry pg = new PathGeometry();
-						path.Stroke = White;
-						addArc(pg, startAngle, stopAngle, center, radius);
-						path.Data = pg;
-						_gd.Children.Add(path);
-						idx = j;
+			if (dt.fluxData != null) {
+				int startFluxIndex = dt.fluxDataRev[0].firstFluxIndex;
+				int stopFluxIndex = startFluxIndex + dt.fluxDataRev[0].fluxCount;
+				int fluxStartTime = 0;
+				if (dt.histoData.entropy < Global.UNFORMATED_ENTROPY) {
+					int minDisplayWidth = 50000;
+					for (int idx = startFluxIndex; idx < stopFluxIndex; idx++) {
+						int flux = dt.fluxData.fluxValue[idx];
+						if (fluxNotInRange(flux)) {
+							double startAngle = timeAngle(fluxStartTime);
+							int j = idx;
+							int fluxStopTime = fluxStartTime + flux;
+							// try to concatenate to reduce number of arc to draw
+							while ((j < stopFluxIndex) && (fluxNotInRange(dt.fluxData.fluxValue[j])))
+								fluxStopTime += dt.fluxData.fluxValue[j++];
+							if ((fluxStartTime - fluxStopTime) < minDisplayWidth)
+								fluxStopTime = fluxStartTime + minDisplayWidth;
+							double stopAngle = timeAngle(fluxStopTime);
+							System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
+							path.StrokeThickness = heavyLine;
+							PathGeometry pg = new PathGeometry();
+							path.Stroke = White;
+							addArc(pg, startAngle, stopAngle, center, radius);
+							path.Data = pg;
+							_gd.Children.Add(path);
+							idx = j;
+						}
+						fluxStartTime += flux;
 					}
-					fluxStartTime += flux;
 				}
 			}
-		}
 
-		if ((sectors.Count > 0) || ((sectors.Count == 1) && (sectors[0].data != null))) {
-			for (int i = 0; i < sectors.Count; i++) {
-				Sector sector = sectors[i];
-				double start = 0;
-				double stop = 0;
-				double revolutionTime = (double)Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime;
+			if ((sectors.Count > 0) || ((sectors.Count == 1) && (sectors[0].data != null))) {
+				for (int i = 0; i < sectors.Count; i++) {
+					Sector sector = sectors[i];
+					double start = 0;
+					double stop = 0;
+					double revolutionTime = (double)Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime;
 
-				// draw ID segment
-				start = (double)sector.id.info.startTime;
-				stop = (double)(sector.id.info.startTime + sector.id.info.timeLength);
-				double idStop = stop;
-				drawArc(sector, center, radius, timeAngle(start), timeAngle(stop), Phases.p_id);
+					// draw ID segment
+					start = (double)sector.id.info.startTime;
+					stop = (double)(sector.id.info.startTime + sector.id.info.timeLength);
+					double idStop = stop;
+					drawArc(sector, center, radius, timeAngle(start), timeAngle(stop), Phases.p_id);
 
-				// Draw gap and data if there
-				if (sector.data != null) {
-					start = (double)sector.data.info.startTime;
-					stop = (double)(sector.data.info.startTime + sector.data.info.timeLength);
-					drawArc(sector, center, radius, timeAngle(idStop), timeAngle(start), Phases.p_gap);
+					// Draw gap and data if there
+					if (sector.data != null) {
+						start = (double)sector.data.info.startTime;
+						stop = (double)(sector.data.info.startTime + sector.data.info.timeLength);
+						drawArc(sector, center, radius, timeAngle(idStop), timeAngle(start), Phases.p_gap);
 
-					// if SWS we truncate
-					if (((i + 1) < sectors.Count) && ((double)sectors[i + 1].id.info.startTime < stop))
-						stop = (double)sectors[i + 1].id.info.startTime;
-
-					// if shifted we check to see if need truncate
-					if (stop > revolutionTime) {
 						// if SWS we truncate
-						double shiftedBstop = stop - revolutionTime;
-						if ((double)sectors[0].id.info.startTime < shiftedBstop)
-							shiftedBstop = (double)sectors[0].id.info.startTime;
-						stop = shiftedBstop + revolutionTime;
-					}
-					drawArc(sector, center, radius, timeAngle(start), timeAngle(stop), Phases.p_data);
-				}	// sector has data field
-			}	// all sectors
-		}	// one or more sectors
-		else {
-			System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
-			path.StrokeThickness = fineLine;
-			PathGeometry pg = new PathGeometry();
-			path.Stroke = Black;
+						if (((i + 1) < sectors.Count) && ((double)sectors[i + 1].id.info.startTime < stop))
+							stop = (double)sectors[i + 1].id.info.startTime;
 
-			if ((dt.histoData.hasBitsInBands) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
-				if (dt.track.firstSyncOffset > 0)
-					path.Stroke = Blue;
-				else
-					path.Stroke = Yellow;
-			}	// bits in band found
-			else
-				path.Stroke = SlateGray;
-			
-			double startAngle = - 0.0001;
-			double stopAngle = Math.PI * 2;
-			addArc(pg, startAngle, stopAngle, center, radius);
-			path.Data = pg;
-			_gd.Children.Add(path);
-		}	// no sector track
-
-		for (int i = 0; i < dt.track.info.byteCount; i++) {
-			if ((dt.track.buffer.Bytes[i].mfmWord == 0) || (dt.track.buffer.Bytes[i].mfmWord == 0xFFFF)) {
-				double startAngle = byteAngle(i - 1, dt.track.info.byteCount);
-				int j = i;
-				while ((j < dt.track.info.byteCount) && ((dt.track.buffer.Bytes[j].mfmWord == 0) || (dt.track.buffer.Bytes[j].mfmWord == 0xFFFF)))
-					j++;
-				double stopAngle = byteAngle(j, dt.track.info.byteCount);
+						// if shifted we check to see if need truncate
+						if (stop > revolutionTime) {
+							// if SWS we truncate
+							double shiftedBstop = stop - revolutionTime;
+							if ((double)sectors[0].id.info.startTime < shiftedBstop)
+								shiftedBstop = (double)sectors[0].id.info.startTime;
+							stop = shiftedBstop + revolutionTime;
+						}
+						drawArc(sector, center, radius, timeAngle(start), timeAngle(stop), Phases.p_data);
+					}	// sector has data field
+				}	// all sectors
+			}	// one or more sectors
+			else {
 				System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
-				path.StrokeThickness = heavyLine;
+				path.StrokeThickness = fineLine;
 				PathGeometry pg = new PathGeometry();
-				path.Stroke = Red;
+				path.Stroke = Black;
+
+				if ((dt.histoData.hasBitsInBands) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
+					if (dt.track.firstSyncOffset > 0)
+						path.Stroke = Blue;
+					else
+						path.Stroke = Yellow;
+				}	// bits in band found
+				else
+					path.Stroke = SlateGray;
+			
+				double startAngle = - 0.0001;
+				double stopAngle = Math.PI * 2;
 				addArc(pg, startAngle, stopAngle, center, radius);
 				path.Data = pg;
 				_gd.Children.Add(path);
-				i = j;
+			}	// no sector track
+
+			for (int i = 0; i < dt.track.info.byteCount; i++) {
+				if ((dt.track.buffer.Bytes[i].mfmWord == 0) || (dt.track.buffer.Bytes[i].mfmWord == 0xFFFF)) {
+					double startAngle = byteAngle(i - 1, dt.track.info.byteCount);
+					int j = i;
+					while ((j < dt.track.info.byteCount) && ((dt.track.buffer.Bytes[j].mfmWord == 0) || (dt.track.buffer.Bytes[j].mfmWord == 0xFFFF)))
+						j++;
+					double stopAngle = byteAngle(j, dt.track.info.byteCount);
+					System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
+					path.StrokeThickness = heavyLine;
+					PathGeometry pg = new PathGeometry();
+					path.Stroke = Red;
+					addArc(pg, startAngle, stopAngle, center, radius);
+					path.Data = pg;
+					_gd.Children.Add(path);
+					i = j;
+				}
 			}
-		}
+		});	// dispatcher
+		return true;
 
 	}	// End of drawDisk()
 
