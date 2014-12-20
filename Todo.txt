@@ -16,6 +16,7 @@ Improvements
 
 BUGS
 ====
+- FIXED 0.5.5447.34358: Fire and Forget
 - FIXED: SWS air sea disk1 sect 0
 - FIXED: NFA at end of track stop too soon?
 - FIXED: airborne disk ranger d1 - sector wrap not stop by IDAM => overlap

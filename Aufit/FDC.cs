@@ -626,7 +626,7 @@ namespace WD1772Package {
 												break;
 											}
 											// if we have not yet reach the requested position we ignore
-											if ((currentBit - startBit) < idBitPosition) {
+											if ((currentBit - startBit + 10) < idBitPosition) {
 												dsr.sectorMode();
 												phase = Phases.p_gap;
 												break;
@@ -644,7 +644,7 @@ namespace WD1772Package {
 										// If we have found the right ID field we check that this
 										// Data field is less than 43 bytes apart from the Id
 										// id field is already 7 bytes so 43+7 = 50
-										if (idFound && ((byteCount - sector.id.info.startByte) <= 50)) {
+										if (idFound && ((byteCount - sector.id.info.startByte) <= 60)) {
 											data = new DataField();
 											data.buffer = new TrackBuffer();
 											data.iam = dsr.Data;
@@ -792,6 +792,7 @@ namespace WD1772Package {
 		public static void fdcRealAll(int track, int side, int rev) {
 			if ((Global.Disk[track, side].sectors != null) && (Global.Disk[track, side].sectors.Count > 0))
 				return;
+
 			// non existing track
 			if (Global.Disk[track, side].packedFluxData == null) return;
 

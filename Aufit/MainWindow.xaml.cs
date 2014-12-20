@@ -68,7 +68,7 @@ namespace Aufit {
 		private bool _diskWindowIsOpen = false;
 		private BufferWindow _sectorWindow = null;
 		private bool _sectorWindowIsOpen = false;
-		private string _fileName;
+		//private static string _fileName;
 
 		// current display
 		/// <summary>
@@ -84,11 +84,13 @@ namespace Aufit {
 		/// </summary>
 		public static int Rev { get; set; }
 
+		public static string ImageName { get; set; }
+
 
 		/// <summary>
 		/// Initialize the main window
 		/// </summary>
-		private MainWindow() {
+		public MainWindow() {
 			InitializeComponent();
 
 			_fluxDrawing = new FluxDrawing(fluxGrid, cvTextFlux, cvGraphicFlux, this);
@@ -372,7 +374,7 @@ namespace Aufit {
 			Track = Side = Rev = 0;
 			Global.resetDisk();
 			tbFileName.Text = fileName;
-			_fileName = fileName;
+			ImageName = fileName;
 			buttonVisibility(System.Windows.Visibility.Hidden);
 			string extension = System.IO.Path.GetExtension(fileName);
 			tbStatus.Text = " *** READING INPUT FILE(S) *** PLEASE WAIT ...";
@@ -602,7 +604,6 @@ namespace Aufit {
 			Track = track;
 			Side = side;
 			ButtonMatrix.deselectButton();
-			//ButtonMatrix.selectButton(track, side);
 			drawAllCharts();
 			selectAndCheck(track, side);
 		}
@@ -617,7 +618,7 @@ namespace Aufit {
 		}
 
 		private void sectGridSizeChanged(object sender, SizeChangedEventArgs e) {
-
+			// TODO ?
 		}
 
 		private void dataMouseLBD(object sender, MouseButtonEventArgs e) {
@@ -707,11 +708,10 @@ namespace Aufit {
 
 
 		private void btDiskLayoutClick(object sender, RoutedEventArgs e) {
-//			if (BM1.Visibility == Visibility.Hidden) return;
 			if (_diskWindowIsOpen)
 				_diskWindow.Close();
 
-			string message = String.Format("{0}", _fileName);
+			string message = String.Format("{0}", ImageName);
 			_diskWindow = new DiskWindow();
 			_diskWindow.drawDiskLayout(message);
 			_diskWindow.Closed += new EventHandler(diskWindowClosed);
@@ -781,6 +781,17 @@ namespace Aufit {
 
 		private void cbRecoverClick(object sender, RoutedEventArgs e) {
 			// TODO
+		}
+
+		private void invSaveClick(object sender, RoutedEventArgs e) {
+			SaveFileDialog sfd = new SaveFileDialog();
+			sfd.Filter = "Text file|*.txt|All Files|*.*";
+			if (sfd.ShowDialog() == true)
+				File.WriteAllText(sfd.FileName, infoBox.Text);
+		}
+
+		private void invClearClick(object sender, RoutedEventArgs e) {
+			infoBox.Clear();
 		}
 
 	}

@@ -37,9 +37,12 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+// using System.Windows.Controls.RichTextBox;
 
 using WD1772Package;
 using GlobalPackage;
+using Microsoft.Win32;
+using System.IO;
 
 namespace Aufit {
 	/// <summary>
@@ -62,6 +65,7 @@ namespace Aufit {
 			Global.Disk[track, side].sectors = null;
 			Global.Disk[track, side].track = null;
 			FDC.fdcRealAll(track, side, rev);
+			tbHeader.Text = Aufit.MainWindow.ImageName;
 
 			List<Sector> sectors = Global.Disk[track, side].sectors;
 
@@ -71,8 +75,10 @@ namespace Aufit {
 			displayBuffer.FontWeight = FontWeights.Normal;
 
 			displayBuffer.Inlines.Add(new Run(
-				String.Format("Track {0:D2}.{1} has {2} sectors\n", track, side, sectors.Count)
+				String.Format("Track {0:D2}.{1} has {2} sectors", track, side, sectors.Count)
 				) { FontWeight = FontWeights.Bold });
+			displayBuffer.Inlines.Add(new LineBreak());
+			displayBuffer.Inlines.Add(new LineBreak());
 
 			displayBuffer.Inlines.Add(String.Format("-------------------+---------------------------\n"));
 			displayBuffer.Inlines.Add(String.Format("ID                 | DATA                      \n"));
@@ -126,6 +132,7 @@ namespace Aufit {
 			}
 		}
 
+
 		/// <summary>
 		/// Display the content of the Track Information in a TextBlock
 		/// </summary>
@@ -139,6 +146,7 @@ namespace Aufit {
 			FDC.fdcRealAll(track, side, rev);
 
 			Track tr = Global.Disk[track, side].track;
+			tbHeader.Text = Aufit.MainWindow.ImageName;
 
 			//displayBuffer.FontFamily = new FontFamily("Lucida Console");
 			displayBuffer.FontFamily = new FontFamily("Consolas");
@@ -146,10 +154,10 @@ namespace Aufit {
 			displayBuffer.FontStyle = FontStyles.Normal;
 			displayBuffer.FontWeight = FontWeights.Normal;
 
-			displayBuffer.Inlines.Add(new Run(
-				String.Format("Track {0:D2}.{1} {2} bytes Length {3} µs\n\n",
-					track, side, tr.info.byteCount, tr.info.timeLength / 1000)
-				) { FontWeight = FontWeights.Bold });
+			displayBuffer.Inlines.Add(new Run(String.Format("Track {0:D2}.{1} {2} bytes Length {3} µs",
+				track, side, tr.info.byteCount, tr.info.timeLength / 1000)) { FontWeight = FontWeights.Bold });
+			displayBuffer.Inlines.Add(new LineBreak());
+			displayBuffer.Inlines.Add(new LineBreak());
 
 			TrackBuffer buffer = tr.buffer;
 			drawBuffer(buffer);
@@ -223,7 +231,8 @@ namespace Aufit {
 						displayBuffer.Inlines.Add(String.Format("   "));
 				}	// one more line
 				displayBuffer.Inlines.Add(ascii);
-				displayBuffer.Inlines.Add(String.Format("\n"));
+				//LineBreak lb = new LineBreak();
+				displayBuffer.Inlines.Add(new LineBreak());
 
 				if (displayMFM) {
 					displayBuffer.Inlines.Add("       ");
@@ -231,7 +240,7 @@ namespace Aufit {
 						if ((i + j) < buffer.Bytes.Count)
 							displayBuffer.Inlines.Add(String.Format("{0:X4} ", buffer.Bytes[i + j].mfmWord));
 					}
-					displayBuffer.Inlines.Add("\n");
+					displayBuffer.Inlines.Add(new LineBreak());
 				}
 
 			}	// all lines
@@ -246,6 +255,29 @@ namespace Aufit {
 			//displayBuffer.Inlines.Add(new Run("Code-Behind") { TextDecorations = TextDecorations.Underline, Foreground = Brushes.Blue });
 
 		}
+
+		private void saveClick(object sender, RoutedEventArgs e) {
+			SaveFileDialog dlg = new SaveFileDialog();
+			//dlg.Filter = "Rich Text Format|*.rtf|All files (*.*)|*.*";
+			dlg.Filter = "Text Format|*.txt|All files (*.*)|*.*";
+			if (dlg.ShowDialog() == true) {
+				TextRange range = new TextRange(displayBuffer.ContentStart, displayBuffer.ContentEnd);
+				using (FileStream file = new FileStream(dlg.FileName, FileMode.Create)) {
+					//range.Save(file, System.Windows.DataFormats.Rtf);
+					range.Save(file, System.Windows.DataFormats.Text);
+					file.Close();
+				}
+			}
+
+		}
+
+		// TODO
+		// http://www.c-sharpcorner.com/UploadFile/mahesh/wpf-richtextbox/
+		string ConvertRichTextBoxContentsToString(RichTextBox rtb) {
+			TextRange textRange = new TextRange(rtb.Document.ContentStart, rtb.Document.ContentEnd);
+			return textRange.Text;
+		}
+
 
 	}
 }

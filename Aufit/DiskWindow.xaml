@@ -16,6 +16,11 @@
             <Grid Name="cvDisk1" Margin="0" />
         </Viewbox>
     </Grid>
-    <Button Grid.Column="0" Content="Save picture" Click="saveImageClick" Height="20" Width="100" VerticalAlignment="bottom" HorizontalAlignment="Left"/>
+        <StackPanel Grid.Column="0" VerticalAlignment="bottom" HorizontalAlignment="Left" Orientation="Horizontal">
+            <Button Content="Save" Click="saveImageClick" Height="20" Width="50" Margin="0,0,10,0"/>
+            <RadioButton Name="rbHigh" Content="High" Foreground="White" Margin="0,0,5,0"/>
+            <RadioButton Name="rbMed" Content="Med" IsChecked="True"  Foreground="White" Margin="0,0,5,0"/>
+            <RadioButton Name="rbLow" Content="Low" Foreground="White" Margin="0,0,5,0"/>
+        </StackPanel>
     </Grid>
 </Window>

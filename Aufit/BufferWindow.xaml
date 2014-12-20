@@ -3,9 +3,20 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Buffer Content" Height="800" Width="850">
     <Grid>
-        <ScrollViewer VerticalScrollBarVisibility="Auto" >
-            <TextBlock Name="displayBuffer" Background="Transparent" />
+        <Grid.RowDefinitions>
+            <RowDefinition Height="22"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="100"/>
+            </Grid.ColumnDefinitions>
+            <TextBox Name="tbHeader" Text="Header" FontFamily="Consolas" FontWeight="Bold" FontSize="16" VerticalContentAlignment="Center" FontStyle="Normal"/>
+            <Button Grid.Column="1" Content="Save" Click="saveClick" FontStyle="Normal"/>
+        </Grid>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <TextBlock Name="displayBuffer" Background="Transparent" HorizontalAlignment="Stretch"/>
         </ScrollViewer>
- 
-    </Grid>
+   </Grid>
 </Window>

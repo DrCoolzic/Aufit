@@ -107,7 +107,7 @@ class FluxDrawing {
 	public FluxDrawing(Grid grid, Canvas text, Canvas graphic, MainWindow win) {
 		_fluxChartLayout = new ChartLayout(grid, text, graphic);
 		_win = win;
-		DetailDraw = false;
+		DetailDraw = true;
 		//LimitFlux = true;
 	}
 

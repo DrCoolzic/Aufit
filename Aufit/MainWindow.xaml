@@ -34,7 +34,7 @@
             <CheckBox Grid.Column="7" x:Name="cbForceDS" Content="Force DS" Margin="10,0,10,0" VerticalAlignment="Center" 
                       Click="cbRecoverClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
             <CheckBox Grid.Column="8" x:Name="cbDetail" Content="Detail" Margin="10,0,10,0" VerticalAlignment="Center" Click="cbDetailClick"
-                      FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
+                      FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
         </Grid>
 
         <Grid Grid.Row="1" Name="matrixGrid" Margin="10,10,10,10" Loaded="matrixGridLoaded">
@@ -55,8 +55,12 @@
                       Click="cbHistoLogClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" />
                     </Grid>
                 </TabItem>
-                <TabItem Header="Information">
-                    <TextBox Name="infoBox" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/>
+                <TabItem Header="Information" Background="Transparent">
+                    <Grid>
+                        <TextBox Name="infoBox" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Background="Transparent"/>
+                        <Button Name="btInfSave" Click="invSaveClick" Content="Save" Width="40" Height="18" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,3"></Button>
+                        <Button Name="btInfClear" Click="invClearClick" Content="Clear" Width="40" Height="18" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,60,3"></Button>
+                    </Grid>
                 </TabItem>
             </TabControl>
         </Grid>
