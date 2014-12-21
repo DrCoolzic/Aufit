@@ -588,9 +588,9 @@ public partial class DiskWindow : Window {
 
 
 	private void saveImageClick(object sender, RoutedEventArgs e) {
-		double scale = 0.7;
-		if (rbHigh.IsChecked == true) scale = 2.0;
-		else if (rbMed.IsChecked == true) scale = 1.2;
+		double scale = 0.8;
+		if (rbMed.IsChecked == true) scale = 1.2;
+		else if (rbHigh.IsChecked == true) scale = 2.0;
 		Global.saveImage(gridDisk, scale);
 	}
 

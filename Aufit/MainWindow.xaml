@@ -6,11 +6,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="170"/>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="3*" MinHeight="80"/>
-            <RowDefinition Height="1*" MinHeight="50"/>
-            <RowDefinition Height="1*" />
-            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0">
@@ -21,29 +17,30 @@
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
-            </Grid.ColumnDefinitions>
-
-            
+				<ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>            
             <Button Grid.Column="0" x:Name="btFile" Content="Load image" Click="openFileClick" Height="20" VerticalAlignment="Top" Margin="5,5,0,0" />
             <TextBox Grid.Column="1" Name="tbFileName" BorderThickness="0" Background="Transparent" Margin="5,5,0,0" />
-            <CheckBox Grid.Column="6" x:Name="cbLimitFlux" Content="Limit Flux" Margin="10,0,10,0" VerticalAlignment="Center" 
-                      Click="cbLimitClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
-            <CheckBox Grid.Column="7" x:Name="cbForceDS" Content="Force DS" Margin="10,0,10,0" VerticalAlignment="Center" 
-                      Click="cbRecoverClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
-            <CheckBox Grid.Column="8" x:Name="cbDetail" Content="Detail" Margin="10,0,10,0" VerticalAlignment="Center" Click="cbDetailClick"
-                      FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
+			<TextBox Grid.Column="2" Name="revolution" BorderThickness="0" Text="1" Height="18" Width="18" TextAlignment="Center" 
+				HorizontalAlignment="Right" Background="Transparent"/>
+			<Button Grid.Column="3" Margin="0" Height="18" Width="18" BorderThickness="0" Background="{x:Null}" Click="minusRevClicked">
+				<Image Source="Resources/minus.png"/>
+			</Button>
+			<Button Grid.Column="4" Margin="0" Height="18" Width="18" Click="plusRevClicked" BorderThickness="0" Background="{x:Null}" >
+				<Image Source="Resources/plus.png"/>
+			</Button>
+			<CheckBox Grid.Column="5" x:Name="cbLimitFlux" Content="Limit Flux" Margin="10,0,10,0" VerticalAlignment="Center" 
+				Click="cbLimitClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
+			<Button Grid.Column="6" Name="btSave" Height="20" Margin="0,5,5,0"  Content="Save Pict" Width="60"  Click="btSavePictClick"/>
         </Grid>
 
-        <Grid Grid.Row="1" Name="matrixGrid" Margin="10,10,10,10" Loaded="matrixGridLoaded">
+        <Grid Grid.Row="1" Name="matrixGrid" Margin="5" Loaded="matrixGridLoaded">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="185"/>
                 <ColumnDefinition Width="185"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Canvas Grid.Column="0" Name="BM1" ></Canvas>
+            <Canvas Grid.Column="0" Name="BM1" />
             <Canvas Grid.Column="1" Name="BM2" />
             <TabControl  Grid.Column="2" x:Name="tabCtrl" Background="Transparent">
                 <TabItem Header="Histogram" Background="Transparent">
@@ -65,71 +62,131 @@
             </TabControl>
         </Grid>
 
-        <Grid Grid.Row="2" Margin="10,10,10,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
+		<Grid Grid.Row="2" Margin="5" Height="20" HorizontalAlignment="Right" VerticalAlignment="Top">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="auto"/>
+				<ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
-            <TextBox Grid.Column="0" x:Name="tbFluxInfo" FontFamily="Arial" FontSize="13" Foreground="DarkBlue" FontWeight="Bold" Width="auto" Height="18" BorderThickness="0" Background="Transparent"/>
-            <TextBox Grid.Column="1" Text="Rev" Margin="5,0" BorderThickness="0" Height="20" TextAlignment="Center" HorizontalAlignment="Right" Background="Transparent"/>
-            <Button Grid.Column="2" Margin="0" Height="18" Width="18" BorderThickness="0" Background="{x:Null}" Click="minusRevClicked">
-                <Image Source="Resources/minus.png"/>
-            </Button>
-            <TextBox Grid.Column="3" Name="revolution" BorderThickness="0" Text="1" Height="18" Width="18" TextAlignment="Center" HorizontalAlignment="Right" Background="Transparent"/>
-            <Button Grid.Column="4" Margin="0" Height="18" Width="18" Click="plusRevClicked" BorderThickness="0" Background="{x:Null}" >
-                <Image Source="Resources/plus.png"/>
-            </Button>
-            <!--<Border Grid.Column="1" Grid.ColumnSpan="4" BorderThickness="1" Margin="-2" BorderBrush="Black"></Border>-->
-        </Grid>
+			<ProgressBar Grid.Column="0" Name="progress" Visibility="Hidden" IsIndeterminate="True" Width="200"/>
+			<TextBox Grid.Column="1" BorderThickness="0" Name="tbStatus" FontWeight="Bold" FontSize="14" Visibility="Visible" Margin="10,0,0,0" />
+			<TextBox Grid.Column="2" Margin="10,0,0,0" Name="tbVersion" Text="Version" BorderThickness="0"  Background="Transparent" />
+		</Grid>
 
-        <Grid Grid.Row="3" Margin="10,0,10,0"  x:Name ="fluxGrid"  ClipToBounds="False" Background="Transparent" SizeChanged="fluxGridSizeChanged" >
-            <Canvas Margin="2" Name="cvTextFlux" ClipToBounds="True" Grid.ColumnSpan="2">
-                <Canvas Name="cvGraphicFlux" ClipToBounds="True" Background="Transparent" MouseLeftButtonDown="fluxMouseLBD" MouseWheel="fluxMouseWheel" 
-                            MouseLeftButtonUp="fluxMouseLBU" MouseMove="fluxMouseMove" MouseRightButtonDown="fluxMouseRBDown"/>
-            </Canvas>
-            <StackPanel Grid.Column="5" Margin="10,20,15,0" Orientation="Horizontal" HorizontalAlignment="Right">
-                <CheckBox Grid.Column="8" x:Name="cbA1" Content="A1" Margin="5,0,5,0" VerticalAlignment="Top" 
-                      FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
-                <CheckBox Grid.Column="9" x:Name="cbC2" Content="C2" Margin="5,0,5,0" VerticalAlignment="Top" Click="cbDetailClick"
-                      FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
-            </StackPanel>
-        </Grid>
+        <TabControl  Grid.Row="2" x:Name="tabDisplay" Background="Transparent" Margin="5">
+			<TabItem Header="Track View" Background="Transparent"  Width="100" HorizontalAlignment="Left">
+				<Grid Grid.Row="2">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="auto"/>
+						<RowDefinition Height="3*"/>
+						<RowDefinition Height="*"/>
+						<RowDefinition Height="*"/>
+						<RowDefinition Height="auto"/>
+					</Grid.RowDefinitions>
+
+					<Grid Grid.Row="0" Margin="10,10,10,0">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="auto"/>
+							<ColumnDefinition Width="auto"/>
+							<ColumnDefinition Width="auto"/>
+							<ColumnDefinition Width="auto"/>
+							<ColumnDefinition Width="auto"/>
+							<ColumnDefinition Width="auto"/>
+							<ColumnDefinition Width="auto"/>
+						</Grid.ColumnDefinitions>
+						<TextBox Grid.Column="0" x:Name="tbFluxInfo" FontFamily="Arial" FontSize="13" Foreground="DarkBlue" FontWeight="Bold" Width="auto" Height="18" BorderThickness="0" Background="Transparent"/>
+						<CheckBox Grid.Column="1" x:Name="cbForceDS" Content="Force DS" Margin="10,0,10,0" VerticalAlignment="Center" 
+							  Click="cbRecoverClick" FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
+						<CheckBox Grid.Column="2" x:Name="cbDetail" Content="Detail" Margin="10,0,10,0" VerticalAlignment="Center" Click="cbDetailClick"
+							  FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
+					</Grid>
+
+					<Grid Grid.Row="1" Margin="10,0,10,0"  x:Name ="fluxGrid"  ClipToBounds="False" Background="Transparent" SizeChanged="fluxGridSizeChanged" >
+						<Canvas Margin="2" Name="cvTextFlux" ClipToBounds="True" Grid.ColumnSpan="2">
+							<Canvas Name="cvGraphicFlux" ClipToBounds="True" Background="Transparent" MouseLeftButtonDown="fluxMouseLBD" MouseWheel="fluxMouseWheel" 
+									MouseLeftButtonUp="fluxMouseLBU" MouseMove="fluxMouseMove" MouseRightButtonDown="fluxMouseRBDown"/>
+						</Canvas>
+						<StackPanel Grid.Column="5" Margin="10,20,15,0" Orientation="Horizontal" HorizontalAlignment="Right">
+							<CheckBox Grid.Column="8" x:Name="cbA1" Content="A1" Margin="5,0,5,0" VerticalAlignment="Top" 
+								FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
+							<CheckBox Grid.Column="9" x:Name="cbC2" Content="C2" Margin="5,0,5,0" VerticalAlignment="Top" Click="cbDetailClick"
+								FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
+						</StackPanel>
+					</Grid>
         
-        <GridSplitter Grid.Row="4" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Top" />
-        <Grid Grid.Row="4" Margin="10,0,10,0"  x:Name ="clockGrid"  ClipToBounds="False" SizeChanged="clockGridSizeChanged" >
-            <Canvas Margin="2" x:Name="cvTextClock" ClipToBounds="True">
-                <Canvas x:Name="cvGraphicClock" ClipToBounds="True" />
-            </Canvas>
-        </Grid>
+					<GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Top" />
+					<Grid Grid.Row="2" Margin="10,0,10,0"  x:Name ="clockGrid"  ClipToBounds="False" SizeChanged="clockGridSizeChanged" >
+						<Canvas Margin="2" x:Name="cvTextClock" ClipToBounds="True">
+							<Canvas x:Name="cvGraphicClock" ClipToBounds="True" />
+						</Canvas>
+					</Grid>
 
-        <Grid Grid.Row="5" Margin="10,0,10,0"  x:Name ="dataGrid"  ClipToBounds="False" Background="Transparent" SizeChanged="dataGridSizeChanged" >
-            <Canvas Margin="2" Name="cvTextData" ClipToBounds="True">
-                <Canvas Name="cvGraphicData" ClipToBounds="True" Background="Transparent" MouseLeftButtonDown="dataMouseLBD" />
-            </Canvas>
-        </Grid>
-        <Grid Grid.Row="6" Margin="10" >
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Name="btTrack" Margin="0,0,10,0"  Content="Track Buffer" Width="100" Click="btTrackWindowClick" />
-            <Button Grid.Column="1" Name="btSector" Margin="0,0,10,0"  Content="Sectors Buffer" Width="100" Click="btSectorWindowClick" />
-            <Button Grid.Column="2" Name="btDisk" Margin="0,0,10,0"  Content="Disk Layout" Width="100"  Click="btDiskLayoutClick"/>
-            <Button Grid.Column="3" Name="btSave" Margin="0,0,10,0"  Content="Save Pict" Width="100"  Click="btSavePictClick"/>
-            <Button Grid.Column="4" Name="btProt" Margin="0,0,10,0"  Content="Protections" Width="100" Click="btProtectionClick" />
-            <Button Grid.Column="5" Name="btWrite" Margin="0,0,10,0"  Content="Write Disk" Width="100"  Click="btWriteDiskClick"/>
-            <ProgressBar Grid.Column="0" Grid.ColumnSpan="2" Name="progress" Visibility="Hidden" IsIndeterminate="True"/>
-            <TextBox Grid.Column="2" Grid.ColumnSpan="4" BorderThickness="0" Name="tbStatus" FontWeight="Bold" FontSize="14" Visibility="Hidden" Margin="10,0,0,0" />
-            <TextBox Grid.Column="6" Margin="0,0,10,0" Name="tbVersion" Text="Version" BorderThickness="0"  Background="Transparent" HorizontalAlignment="Right"/>
-        </Grid>
-    </Grid>
+					<Grid Grid.Row="3" Margin="10,0,10,0"  x:Name ="dataGrid"  ClipToBounds="False" Background="Transparent" SizeChanged="dataGridSizeChanged" >
+						<Canvas Margin="2" Name="cvTextData" ClipToBounds="True">
+							<Canvas Name="cvGraphicData" ClipToBounds="True" Background="Transparent" MouseLeftButtonDown="dataMouseLBD" />
+						</Canvas>
+					</Grid>
+
+
+				</Grid>
+			</TabItem>
+            
+			<TabItem Header="Disk View" Width="100" GotFocus="diskViewFocus">
+                <Grid Margin="0" >
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="24"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Background="DarkSlateGray" Name="gridDisk">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Grid.ColumnSpan="2" Name="tbDisk" Width="auto" Height="20" VerticalAlignment="Top" HorizontalAlignment="Center" Background="Transparent" Foreground="White" BorderBrush="Transparent" />
+                        <Viewbox Grid.Column="0"   Stretch="Uniform">
+                            <Grid Name="cvDisk0" Margin="0" />
+                        </Viewbox>
+                        <Viewbox Grid.Column="1" Stretch="Uniform" >
+                            <Grid Name="cvDisk1" Margin="0" />
+                        </Viewbox>
+                    </Grid>
+                    
+                    <Grid Grid.Row="1" >
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="Save Picture" Width="80" Margin="2" VerticalContentAlignment="Center"/>
+                        <!--Click="saveImageClick"-->
+                        <TextBox Grid.Column="1" Text="Resolution: " BorderThickness="0" VerticalContentAlignment="Center"/>
+                        <RadioButton Grid.Column="2" Name="rbHigh" Content="High" Margin="0,0,2,0" VerticalContentAlignment="Center"/>
+                        <RadioButton Grid.Column="3" Name="rbMed" Content="Med" IsChecked="True"  Margin="0,0,2,0" VerticalContentAlignment="Center"/>
+                        <RadioButton Grid.Column="4" Name="rbLow" Content="Low" Margin="0,0,2,0" VerticalContentAlignment="Center"/>
+                        <Button Grid.Column="5" Name="btDisk" Margin="10,2,0,2"  Content="Disk Layout" Width="100"  Click="btDiskLayoutClick" VerticalContentAlignment="Center"/>
+                    </Grid>
+
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Content" Width="100">
+                <StackPanel>
+                    <Button  Name="btTrack" Margin="0,0,10,0"  Content="Track Buffer" Width="100" Click="btTrackWindowClick" HorizontalAlignment="Left"/>
+                    <Button  Name="btSector" Margin="0,0,10,0"  Content="Sectors Buffer" Width="100" Click="btSectorWindowClick" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Analysis" Width="100">
+                <Button Grid.Column="4" Name="btProt" Margin="0,0,10,0"  Content="Protections" Width="100" Click="btProtectionClick" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+			</TabItem>
+			<TabItem Header="Save" Width="100">
+                <Button Grid.Column="5" Name="btWrite" Margin="0,0,10,0"  Content="Write Disk" Width="100"  Click="btWriteDiskClick" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+			</TabItem>
+		</TabControl>
+	</Grid>
 </Window>

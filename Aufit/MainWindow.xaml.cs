@@ -358,7 +358,9 @@ namespace Aufit {
 			btSave.Visibility = visibility;
 			btWrite.Visibility = visibility;
 			btFile.Visibility = visibility;
-			progress.Visibility = visibility;
+			tabDisplay.Visibility = visibility;
+
+
 			if (visibility == System.Windows.Visibility.Visible) {
 				tbStatus.Visibility = System.Windows.Visibility.Hidden;
 				progress.Visibility = System.Windows.Visibility.Hidden;
@@ -378,6 +380,7 @@ namespace Aufit {
 			buttonVisibility(System.Windows.Visibility.Hidden);
 			string extension = System.IO.Path.GetExtension(fileName);
 			tbStatus.Text = " *** READING INPUT FILE(S) *** PLEASE WAIT ...";
+			tabCtrl.SelectedIndex = 1;
 
 			switch (extension) {
 				case ".raw":
@@ -402,6 +405,7 @@ namespace Aufit {
 				tbFileName.Text = "Sorry could not read correctly the input file";
 
 			tbStatus.Text = "*** PROCESSING DATA *** PLEASE WAIT ...";
+			tabCtrl.SelectedIndex = 0;
 
 			BackgroundWorker bgWorker;
 			bgWorker = new BackgroundWorker();
@@ -432,6 +436,7 @@ namespace Aufit {
 			//else {
 
 			buttonVisibility(System.Windows.Visibility.Visible);
+			tabDisplay.SelectedIndex = 0;
 
 				for (int i = 0; i < 84; i++) {
 					for (int j = 0; j < 2; j++) {
@@ -792,6 +797,10 @@ namespace Aufit {
 
 		private void invClearClick(object sender, RoutedEventArgs e) {
 			infoBox.Clear();
+		}
+
+		private void diskViewFocus(object sender, RoutedEventArgs e) {
+			//MessageBox.Show("Disk");
 		}
 
 	}
