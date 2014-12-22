@@ -65,15 +65,8 @@ namespace Aufit {
 
 		private BufferWindow _trackWindow = null;
 		private bool _trackWindowIsOpen = false;
-		//private DiskWindow _diskWindow = null;
-		//private bool _diskWindowIsOpen = false;
 		private BufferWindow _sectorWindow = null;
 		private bool _sectorWindowIsOpen = false;
-		//private static string _fileName;
-
-		//const int diskHalfWindowSize = 300;
-		//const double diskFineLine = 1.0;
-		//const double diskHeavyLine = 1.8;
 
 		// current display
 		/// <summary>
@@ -367,12 +360,11 @@ namespace Aufit {
 			//btProt.Visibility = visibility;
 			//btSave.Visibility = visibility;
 			//btWrite.Visibility = visibility;
-
 			//btFile.Visibility = visibility;
+
 			gridCommand.IsEnabled = enable;
-
+			cbLimitFlux.IsEnabled = enable;
 			tabDisplay.IsEnabled = enable;
-
 
 			if (enable) {
 				tbStatus.Visibility = System.Windows.Visibility.Hidden;
@@ -384,22 +376,22 @@ namespace Aufit {
 			}
 		}
 
+
 		private async void processFile(string fileName) {
 			bool readOK = false;			
 			Track = Side = Rev = 0;
 			Global.resetDisk();
-			tbFileName.Text = fileName;
 			ImageName = fileName;
 			buttonsEnabled(false);
 			string extension = System.IO.Path.GetExtension(fileName);
-			tbStatus.Text = " *** READING INPUT *** PLEASE WAIT ...";
+			tbStatus.Text = " *** READING INPUT - PLEASE WAIT ...";
 			tabCtrl.SelectedIndex = 1;
 
 			switch (extension) {
 				case ".raw":
 					string path = System.IO.Path.GetDirectoryName(fileName);
+					ImageName = path;
 					string file = System.IO.Path.GetFileName(fileName);
-					//_fileName = file;
 					string root = file.Remove(file.Length - 8, 8);
 					if (_debugNoThread)
 						readOK = readAllTracks(path, root);
@@ -414,10 +406,12 @@ namespace Aufit {
 					break;
 			}
 
-			if (!readOK)
+			if (readOK)
+				tbFileName.Text = ImageName;
+			else
 				tbFileName.Text = "Sorry could not read correctly the input file";
 
-			tbStatus.Text = "*** PROCESSING DATA *** PLEASE WAIT ...";
+			tbStatus.Text = "*** PROCESSING DATA - PLEASE WAIT ...";
 			tabCtrl.SelectedIndex = 0;
 			if (_debugNoThread) {
 				for (int i = 0; i < 84; i++) {

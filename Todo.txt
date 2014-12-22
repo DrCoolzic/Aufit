@@ -17,7 +17,7 @@ Improvements
 
 BUGS
 ====
-- Skateball crash Id Not found
+- FIXED 0.5.5469.21424: Skateball crash Id Not found
 - FIXED 0.5.5447.34358: Fire and Forget
 - FIXED: SWS air sea disk1 sect 0
 - FIXED: NFA at end of track stop too soon?

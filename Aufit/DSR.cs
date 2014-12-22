@@ -29,6 +29,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</di
  @author Jean Louis-Guerin & SPS People */
 
 using GlobalPackage;
+using System.Diagnostics;
 
 namespace WD1772Package {
 	/// <summary>
@@ -162,13 +163,6 @@ namespace WD1772Package {
 		}
 
 		/// <summary>
-		/// Last Sync found was an A1 sync mark
-		/// </summary>
-		public bool LastSyncA1 {
-			get { return (_lastSyncFound == SyncType.A1) ? true : false; }
-		}
-
-		/// <summary>
 		/// Sync sequence in progress
 		/// </summary>
 		public bool inSyncSeq {
@@ -271,6 +265,9 @@ namespace WD1772Package {
 				if ((_crcCount & 0xF) == 0) {
 					if ((_crcCount > 48) || ((_decoderFlags & A1_FOUND) != 0)) {
 						if (_crcCount == 48) {
+							//Debug.Assert(_syncSeq == 3, "Invalid Sync seq should be 3");
+							if (_syncSeq != 3)
+								_syncSeq = 3;
 							_decoderFlags &= ~SYNC_DETECTOR_ENABLED;
 						}	// after 3 A1 we disable AM detector
 
@@ -307,14 +304,10 @@ namespace WD1772Package {
 					// set DSR flag if valid data
 					if (_dsrInvalid == 0) {
 						_decoderFlags |= DATA_READY;
-						//if ((_syncSeq == 3) && (!SyncFound) && (_lastSyncFound == SyncType.A1)) {
-						if ((_syncSeq == 3) && (!SyncFound)) {
-							_syncSeq = 0;
+						if ((_syncSeq == 3) && (!SyncFound) && (_lastSyncFound == SyncType.A1)) {
+						//if ((_syncSeq == 3) && (!SyncFound)) {
 							_decoderFlags |= IAM_POSITION;
-							//if (_dsr < 0xF8) {
-							//	_decoderFlags |= (SYNC_DETECTOR_ENABLED | CRC_ENABLED);
-							//	_decoderFlags &= ~CRC_ACTIVE;
-							//}
+							_syncSeq = 0;
 						}
 						else
 							_decoderFlags &= ~IAM_POSITION;

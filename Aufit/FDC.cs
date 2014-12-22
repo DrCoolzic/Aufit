@@ -333,7 +333,7 @@ namespace WD1772Package {
 				if (dsr.DataReady) {
 					byteCount++;
 
-					if (dsr.IAM && dsr.LastSyncA1 && (dt.track.firstSyncOffset == 0)) {
+					if (dsr.IAM && (dt.track.firstSyncOffset == 0)) {
 						Global.Disk[track, side].track.firstSyncOffset = byteCount - 3;
 					}
 					if ((dsr.Data >= 0xF5) && (dsr.Data <= 0xF7) && (phase == Phases.p_gap))
@@ -444,33 +444,31 @@ namespace WD1772Package {
 
 					if (phase != Phases.p_id) {	// not in ID						
 						if (dsr.IAM) {
-							if (dsr.LastSyncA1) {
-								switch (dsr.Data) {
-									case 0xFC:	// IBM IAM
-									case 0xFD:
-									case 0xFE:	// IDAM - start of an ID block
-									case 0xFF:
-										// Found an ID Field so we create a new sector that we add to the list
-										Sector sector = new Sector();
-										Global.Disk[track, side].sectors.Add(sector);
-										// and a new id
-										sector.id = new IdField();
-										sectorCount++;
-										sector.id.iam = dsr.Data;
-										sector.id.info.startBit = currentBit - startBit;
-										sector.id.info.startByte = byteCount;
-										sector.id.info.startTime = currentTime;
-										byteLeftInBlock = 7;
-										phase = Phases.p_id;
-										break;
-									default:
-										// other AM re-enable sync search
-										dsr.sectorMode();
-										break;
-								}	// switch AM
-							}	// IAM after 3 A1 sync seq
-							else dsr.sectorMode();
+							switch (dsr.Data) {
+								case 0xFC:	// IBM IAM
+								case 0xFD:
+								case 0xFE:	// IDAM - start of an ID block
+								case 0xFF:
+									// Found an ID Field so we create a new sector that we add to the list
+									Sector sector = new Sector();
+									Global.Disk[track, side].sectors.Add(sector);
+									// and a new id
+									sector.id = new IdField();
+									sectorCount++;
+									sector.id.iam = dsr.Data;
+									sector.id.info.startBit = currentBit - startBit;
+									sector.id.info.startByte = byteCount;
+									sector.id.info.startTime = currentTime;
+									byteLeftInBlock = 7;
+									phase = Phases.p_id;
+									break;
+								default:
+									// other AM re-enable sync search
+									dsr.sectorMode();
+									break;
+							}	// switch AM
 						}	// IAM
+						//else dsr.sectorMode();
 					}	// not in ID
 					else {	// We are in an ID
 						byteLeftInBlock--;
@@ -590,88 +588,86 @@ namespace WD1772Package {
 					if ((phase != Phases.p_id) && (phase != Phases.p_data)) {
 						// We are in a GAP						
 						if (dsr.IAM) {
-							if (dsr.LastSyncA1) {
-								switch (dsr.Data) {
-									case 0xFC:	// IBM IAM
-									case 0xFD:
-									case 0xFE:	// IDAM - start of an ID block
-									case 0xFF:
-										if (idBitPosition < 0) {
-											// if past index we have no data
-											if (currentTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime) {
-												breakLoop = true;
-												break;
-											}
-											// search the corresponding sector
-											sector = null;
-											foreach(Sector s in Global.Disk[track, side].sectors)
-												if (((currentBit - startBit) - s.id.info.startBit) < 200) {
-													sector = s;
-													break;
-												}
-											Debug.Assert(sector != null, "Id not found in readSect");
-											sector.flags |= Sector.SEC_PROCESSED;
-											flags = 0;
-
-											// ready to read the ID block
-											byteLeftInBlock = 7;
-											phase = Phases.p_id;
-										}	// read multiple sectors
-										else {
-											// if we have already found the requested ID and we find another ID
-											// this means that sector has no Data field. Therefore we should break
-											if (idFound) {
-												phase = Phases.p_id;
-												breakLoop = true;	// don't need to continue
-												break;
-											}
-											// if we have not yet reach the requested position we ignore
-											if ((currentBit - startBit + 10) < idBitPosition) {
-												dsr.sectorMode();
-												phase = Phases.p_gap;
-												break;
-											}
-											// otherwise we need to read the ID block
-											byteLeftInBlock = 7;
-											phase = Phases.p_id;
-										}	// read one sector
-										break;
-
-									case 0xF8:	// DDAM
-									case 0xF9:
-									case 0xFA:
-									case 0xFB:	// DAM - Start of a DATA block
-										// If we have found the right ID field we check that this
-										// Data field is less than 43 bytes apart from the Id
-										// id field is already 7 bytes so 43+7 = 50
-										if (idFound && ((byteCount - sector.id.info.startByte) <= 60)) {
-											data = new DataField();
-											data.buffer = new TrackBuffer();
-											data.iam = dsr.Data;
-											//dataFound = true;
-											byteLeftInBlock = Global.sectSize(sector.id.size) + 3; // AM + 2 CRC + Size
-											phase = Phases.p_data;
-											p_inner = false;
-											widthOver = 0;
-											widthUnder = 0;
-
-											data.info.startBit = currentBit - startBit;
-											data.info.startByte = byteCount;
-											data.info.startTime = currentTime;
+							switch (dsr.Data) {
+								case 0xFC:	// IBM IAM
+								case 0xFD:
+								case 0xFE:	// IDAM - start of an ID block
+								case 0xFF:
+									if (idBitPosition < 0) {
+										// if past index we have no data
+										if (currentTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime) {
+											breakLoop = true;
+											break;
 										}
-										else {
+										// search the corresponding sector
+										sector = null;
+										foreach (Sector s in Global.Disk[track, side].sectors)
+											if (((currentBit - startBit) - s.id.info.startBit) < 200) {
+												sector = s;
+												break;
+											}
+										Debug.Assert(sector != null, "Id not found in readSect",
+											String.Format("Track={0} Side={1} #sect={2}", track, side, Global.Disk[track, side].sectors.Count));
+										sector.flags |= Sector.SEC_PROCESSED;
+										flags = 0;
+
+										// ready to read the ID block
+										byteLeftInBlock = 7;
+										phase = Phases.p_id;
+									}	// read multiple sectors
+									else {
+										// if we have already found the requested ID and we find another ID
+										// this means that sector has no Data field. Therefore we should break
+										if (idFound) {
+											phase = Phases.p_id;
+											breakLoop = true;	// don't need to continue
+											break;
+										}
+										// if we have not yet reach the requested position we ignore
+										if ((currentBit - startBit + 10) < idBitPosition) {
 											dsr.sectorMode();
 											phase = Phases.p_gap;
+											break;
 										}
-										break;	
-							
-									default:
-										// other AM re-enable sync search
+										// otherwise we need to read the ID block
+										byteLeftInBlock = 7;
+										phase = Phases.p_id;
+									}	// read one sector
+									break;
+
+								case 0xF8:	// DDAM
+								case 0xF9:
+								case 0xFA:
+								case 0xFB:	// DAM - Start of a DATA block
+									// If we have found the right ID field we check that this
+									// Data field is less than 43 bytes apart from the Id
+									// id field is already 7 bytes so 43+7 = 50
+									if (idFound && ((byteCount - sector.id.info.startByte) <= 60)) {
+										data = new DataField();
+										data.buffer = new TrackBuffer();
+										data.iam = dsr.Data;
+										//dataFound = true;
+										byteLeftInBlock = Global.sectSize(sector.id.size) + 3; // AM + 2 CRC + Size
+										phase = Phases.p_data;
+										p_inner = false;
+										widthOver = 0;
+										widthUnder = 0;
+
+										data.info.startBit = currentBit - startBit;
+										data.info.startByte = byteCount;
+										data.info.startTime = currentTime;
+									}
+									else {
 										dsr.sectorMode();
-										break;
-								}	// switch AM
-							}	// $C2 Sync + IAM ==> ignore
-							else dsr.sectorMode();
+										phase = Phases.p_gap;
+									}
+									break;
+
+								default:
+									// other AM re-enable sync search
+									dsr.sectorMode();
+									break;
+							}	// switch AM
 						}	// IAM
 					}	// GAP
 					else {

@@ -181,7 +181,7 @@ namespace SCPReaderPackage {
 				Console.WriteLine("Error: {0}", exc.Message);
 				return false;
 			}
-			infobox.Text = String.Format("Processing SCP File {0}", fileName);
+			infobox.Text = String.Format("{0}\n", fileName);
 
 			// read file into buffer
 			byte[] sbuf = new byte[fs.Length];
@@ -210,7 +210,7 @@ namespace SCPReaderPackage {
 			file.identifier += readChar(buffer, ref idx).ToString();	// 0x01
 			file.identifier += readChar(buffer, ref idx).ToString();	// 0x02
 			if (file.identifier != "SCP") {
-				infoBox.AppendText(String.Format(" --- Error: file is not an SCP file"));
+				infoBox.AppendText(String.Format("Error: file is not an SCP file"));
 				return SCPStatus.stsInvalidFile;
 			}
 			file.version = readByte(buffer, ref idx);					// 0x03
@@ -225,7 +225,7 @@ namespace SCPReaderPackage {
 			file.checksum = readInt32(buffer, ref idx);					// 0x0C-0x0F
 
 			string versionString = ((file.version & 0xF0) >> 4).ToString() + "." + (file.version & 0x0F).ToString();
-			infoBox.AppendText(String.Format(" --- V{0} - Type={1:X} - {2} Revolutions - Tracks {3}-{4}\n",
+			infoBox.AppendText(String.Format("V{0} - Type={1:X} - {2} Revolutions - Tracks {3}-{4}\n",
 				versionString, file.diskType, file.revCount, file.firstTrack, file.lastTrack));
 
 			//int checksum = 0;
