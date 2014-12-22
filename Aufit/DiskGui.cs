@@ -20,6 +20,12 @@ namespace Aufit {
 		const int diskHalfWindowSize = 300;
 		const double diskFineLine = 1.0;
 		const double diskHeavyLine = 1.8;
+		const double rad_max = diskHalfWindowSize - diskHalfWindowSize * 0.03;
+		const double rad_start = diskHalfWindowSize / 4;
+		const double rad_inc = (rad_max - rad_start) / 84;
+		Point center = new Point(diskHalfWindowSize, diskHalfWindowSize);
+		int _selectedTrack = -1;
+		int _selectedSide = -1;
 
 		#region DiskLayout
 		private async void btDiskRefresh(object sender, RoutedEventArgs e) {
@@ -38,6 +44,7 @@ namespace Aufit {
 		/// Display the layout of a FD
 		/// </summary>
 		private async Task drawDiskLayout() {
+			//MessageBox.Show(String.Format("{0} {1}", Track, Side));
 			Brush Black = new SolidColorBrush(Colors.Black);
 			Black.Freeze();
 			Brush DarkSlateGray = new SolidColorBrush(Colors.DarkSlateGray);
@@ -46,9 +53,11 @@ namespace Aufit {
 			White.Freeze();
 			Brush Transparent = new SolidColorBrush(Colors.Transparent);
 			Transparent.Freeze();
+			Brush LightGray = new SolidColorBrush(Colors.LightGray);
+			LightGray.Freeze();
 
-			Point center = new Point(diskHalfWindowSize, diskHalfWindowSize);
 			bool _debugNoAsync = false;
+			const double referenceThickness = 0.5;
 
 			double startAngle = -0.0001;
 			double stopAngle = Math.PI * 2;
@@ -61,10 +70,12 @@ namespace Aufit {
 			addArc(pg, startAngle, stopAngle, center, radius);
 			path.Data = pg;
 			cvDisk0.Children.Add(path);
+			Canvas.SetZIndex(path, -1);
 			path = new System.Windows.Shapes.Path();
 			path.Fill = Black;
 			path.Data = pg;
 			cvDisk1.Children.Add(path);
+			Canvas.SetZIndex(path, -1);
 
 			// add center hole
 			radius /= 9;
@@ -101,6 +112,24 @@ namespace Aufit {
 			tb.Text = "Side 1";
 			cvDisk1.Children.Add(tb);
 
+			// draw reference line
+			Line zeroLine = new Line();
+			zeroLine.Stroke = LightGray;
+			zeroLine.StrokeThickness = referenceThickness;
+			zeroLine.X1 = diskHalfWindowSize;
+			zeroLine.Y1 = diskHalfWindowSize;
+			zeroLine.X2 = 2 * diskHalfWindowSize;
+			zeroLine.Y2 = diskHalfWindowSize;
+			cvDisk0.Children.Add(zeroLine);
+			zeroLine = new Line();
+			zeroLine.Stroke = LightGray;
+			zeroLine.StrokeThickness = referenceThickness;
+			zeroLine.X1 = diskHalfWindowSize;
+			zeroLine.Y1 = diskHalfWindowSize;
+			zeroLine.X2 = 2 * diskHalfWindowSize;
+			zeroLine.Y2 = diskHalfWindowSize;
+			cvDisk1.Children.Add(zeroLine);
+
 			// draw all tracks of both side
 			for (int side = 0; side < 2; side++) {
 				Grid grid = (side == 0) ? cvDisk0 : cvDisk1;
@@ -109,11 +138,11 @@ namespace Aufit {
 						(Global.Disk[track, side].packedFluxData == null)) continue;
 					if (_debugNoAsync) {
 						Global.decodeAndRead(track, side, 0);
-						drawDiskTrackLayout(track, side, 0, cvDisk0, center);
+						drawDiskTrackLayout(track, side, 0, cvDisk0);
 					}
 					else {
 						await Global.decodeAndReadAsync(track, side, 0);
-						await drawDiskTrackAsync(track, side, 0, grid, center);
+						await drawDiskTrackAsync(track, side, 0, grid);
 					}
 					ButtonMatrix.setButtonBG(track, 0);
 				}
@@ -135,10 +164,34 @@ namespace Aufit {
 		}
 
 
-		private Task<bool> drawDiskTrackAsync(int track, int side, int rev, Grid grid, Point center) {
-			return Task<bool>.Run(() => drawDiskTrackLayout(track, side, rev, grid, center));
+		private Task<bool> drawDiskTrackAsync(int track, int side, int rev, Grid grid) {
+			return Task<bool>.Run(() => drawDiskTrackLayout(track, side, rev, grid));
 		}
 
+
+		public void drawDiskSelectedTrack(int track, int side) {
+			if (track != -1)
+				drawSelected(_selectedTrack, _selectedSide, Brushes.Black);
+			drawSelected(track, side, Brushes.Gray);
+			_selectedTrack = track;
+			_selectedSide = side;
+		}
+
+
+		private void drawSelected(int track, int side, Brush color) {
+			double radius = rad_max - track * rad_inc;
+			Grid grid = (side == 0) ? cvDisk0 : cvDisk1;
+			Path path = new Path();
+			path.StrokeThickness = diskHeavyLine;
+			PathGeometry pg = new PathGeometry();
+			path.Stroke = color;
+			double startAngle = -0.0001;
+			double stopAngle = Math.PI * 2;
+			addArc(pg, startAngle, stopAngle, center, radius);
+			path.Data = pg;
+			grid.Children.Add(path);
+			Grid.SetZIndex(path, -1);
+		}
 
 		/// <summary>
 		/// Draw one track of the FD
@@ -146,12 +199,8 @@ namespace Aufit {
 		/// <param name="track">The track to display</param>
 		/// <param name="side">The side of the FD</param>
 		/// <param name="rev">The revolution index</param>
-		private bool drawDiskTrackLayout(int track, int side, int rev, Grid grid, Point center) {
-			const double rad_max = diskHalfWindowSize - diskHalfWindowSize * 0.03;
-			const double rad_start = diskHalfWindowSize / 4;
-			const double rad_inc = (rad_max - rad_start) / 84;
+		private bool drawDiskTrackLayout(int track, int side, int rev, Grid grid) {
 
-			const double referenceThickness = 0.1;
 			//DoubleCollection referenceDashPattern = new DoubleCollection(new double[2] { 10, 10 });
 
 			Global.DiskTrack dt = Global.Disk[track, side];
@@ -162,8 +211,6 @@ namespace Aufit {
 			// http://www.developpez.net/forums/d966615/dotnet/developpement-windows/windows-presentation-foundation/probleme-stathread-wpf/
 			this.Dispatcher.Invoke(DispatcherPriority.Background, (ThreadStart)delegate {
 
-				Brush LightGray = new SolidColorBrush(Colors.LightGray);
-				LightGray.Freeze();
 				Brush White = new SolidColorBrush(Colors.White);
 				White.Freeze();
 				Brush Black = new SolidColorBrush(Colors.Black);
@@ -179,17 +226,7 @@ namespace Aufit {
 
 				//_tb.Text = String.Format("Processing track {0} Side {1}", track, side);
 
-				// draw reference line
-				Line zeroLine = new Line();
-				zeroLine.Stroke = LightGray;
-				zeroLine.StrokeThickness = referenceThickness;
-				//zeroLine.StrokeDashArray = referenceDashPattern;
-				zeroLine.X1 = diskHalfWindowSize;
-				zeroLine.Y1 = diskHalfWindowSize;
-				zeroLine.X2 = 2 * diskHalfWindowSize;
-				zeroLine.Y2 = diskHalfWindowSize;
-				grid.Children.Add(zeroLine);
-
+				// flux not in range
 				if (dt.fluxData != null) {
 					int startFluxIndex = dt.fluxDataRev[0].firstFluxIndex;
 					int stopFluxIndex = startFluxIndex + dt.fluxDataRev[0].fluxCount;
@@ -258,10 +295,10 @@ namespace Aufit {
 					}	// all sectors
 				}	// one or more sectors
 				else {
-					System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
+					Path path = new Path();
 					path.StrokeThickness = diskFineLine;
 					PathGeometry pg = new PathGeometry();
-					path.Stroke = Black;
+					//path.Stroke = Black;
 
 					if ((dt.histoData.hasBitsInBands) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
 						if (dt.track.firstSyncOffset > 0)

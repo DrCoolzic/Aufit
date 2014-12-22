@@ -138,8 +138,9 @@ namespace Aufit {
 		private void btMatrixClicked(object sender, RoutedEventArgs e) {
 			Button button = (Button)sender;
 			if (ButtonMatrix.buttonClicked(button)) {
-				drawAllCharts();
-				Protections.checkProtection(Track, Side, infoBox);
+				//drawAllCharts();
+				//Protections.checkProtection(Track, Side, infoBox);
+				selectTrack(Track, Side);
 			}
 		}
 		#endregion
@@ -157,7 +158,7 @@ namespace Aufit {
 
 		private void fluxMouseLBU(object sender, MouseButtonEventArgs e) {
 			// NASTI BUG we receive a mouse up event from Openfiledialog
-			if (!_fluxDrawing.Chart.GraphicCanvas.IsMouseCaptured) 
+			if (!_fluxDrawing.Chart.GraphicCanvas.IsMouseCaptured)
 				return;		// we receive a mouse up event from Openfiledialog !!! Bug?
 
 			_fluxDrawing.mouseLBU(sender, e);
@@ -268,7 +269,6 @@ namespace Aufit {
 		/// Display all the charts for the current Track/Side/Rev
 		/// </summary>
 		private void drawAllCharts() {
-			//if (!tabItemTrack.IsSelected) return;
 			int track = Track;
 			int side = Side;
 			int rev = Rev;
@@ -284,6 +284,8 @@ namespace Aufit {
 			// cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) > 0);
 			cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) < Global.UNFORMATED_ENTROPY);
 			_histoDrawing.drawHisto(track, side, rev);
+
+			if (!tabItemTrack.IsSelected) return;
 
 			_fluxDrawing.setFluxDefault(track, side, rev);
 			_fluxDrawing.drawFlux(track, side, rev);
@@ -304,13 +306,13 @@ namespace Aufit {
 		private bool _debugNoThread = false;
 		// Do we read KF directory using Asynchronous read or as tasks.
 		private bool _readKFAsync = true;
-		
-		
+
+
 		private void openFileClick(object sender, RoutedEventArgs e) {
 			OpenFileDialog ofd = new OpenFileDialog();
 			ofd.Filter = "Aufit|*.scp;*.raw|All Files|*.*";
 
-			bool? ok = ofd.ShowDialog();		
+			bool? ok = ofd.ShowDialog();
 			if (ok == true) {
 				processFile(ofd.FileName);
 			}
@@ -335,7 +337,7 @@ namespace Aufit {
 			// http://stackoverflow.com/questions/19147/what-is-the-correct-way-to-create-a-single-instance-application
 			// http://msdn.microsoft.com/en-us/library/ms771662(v=VS.90).aspxv
 			// http://stackoverflow.com/questions/7901007/sending-event-between-2-wpf-windows
-			MessageBox.Show(name + " ***** do not know what to do :(");			
+			MessageBox.Show(name + " ***** do not know what to do :(");
 			//MessageBox.Show("container: " + mainWin.ToString());
 			MessageBox.Show("Fuck");
 			//mainWin.processFile(name);
@@ -344,7 +346,7 @@ namespace Aufit {
 
 		private void container_loaded(object sender, RoutedEventArgs e) {
 			if (Application.Current.Properties["FileName"] != null) {
-				string fname = Application.Current.Properties["FileName"].ToString();				
+				string fname = Application.Current.Properties["FileName"].ToString();
 				FileInfo file = new FileInfo(fname);
 				if (file.Exists) {
 					processFile(fname);
@@ -378,7 +380,7 @@ namespace Aufit {
 
 
 		private async void processFile(string fileName) {
-			bool readOK = false;			
+			bool readOK = false;
 			Track = Side = Rev = 0;
 			Global.resetDisk();
 			ImageName = fileName;
@@ -386,6 +388,7 @@ namespace Aufit {
 			string extension = System.IO.Path.GetExtension(fileName);
 			tbStatus.Text = " *** READING INPUT - PLEASE WAIT ...";
 			tabCtrl.SelectedIndex = 1;
+			tabDisplay.SelectedIndex = 0;
 
 			switch (extension) {
 				case ".raw":
@@ -396,11 +399,11 @@ namespace Aufit {
 					if (_debugNoThread)
 						readOK = readAllTracks(path, root);
 					else if (_readKFAsync)
-						readOK = await readAllTracksAsync(path, root);							
+						readOK = await readAllTracksAsync(path, root);
 					else
-						readOK =  readAllTracksTasks(path, root);
+						readOK = readAllTracksTasks(path, root);
 					break;
-					
+
 				case ".scp":
 					readOK = await readSPCFile(fileName);
 					break;
@@ -446,20 +449,17 @@ namespace Aufit {
 
 
 		void bgWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e) {
-			//if (e.Error != null) {
-			//	MessageBox.Show(e.Error.Message);
-			//}
-			//else {
+			if (e.Error != null) {
+				MessageBox.Show(e.Error.Message);
+				return;
+			}
 
 			buttonsEnabled(true);
-			tabDisplay.SelectedIndex = 0;
-
-				for (int i = 0; i < 84; i++) {
-					for (int j = 0; j < 2; j++) {
-						ButtonMatrix.setButtonBG(i, j);
-					}
+			for (int i = 0; i < 84; i++) {
+				for (int j = 0; j < 2; j++) {
+					ButtonMatrix.setButtonBG(i, j);
 				}
-			//"}
+			}
 		}
 
 
@@ -467,8 +467,7 @@ namespace Aufit {
 			//_fileName = System.IO.Path.GetFileNameWithoutExtension(fileName);
 			bool ok = await SCPReader.readScpAsync(fileName, infoBox);
 			if (ok) {
-				selectAndCheck(0, 0);
-				drawAllCharts();
+				selectTrack(0, 0);
 			}
 			return ok;
 		}
@@ -498,11 +497,10 @@ namespace Aufit {
 					}
 				}
 			}
-			selectAndCheck(0 , 0);
 			Track = Side = Rev = 0;
 			infoBox.Clear();
 			infoBox.FontSize = 11;
-			drawAllCharts();
+			selectTrack(0, 0);
 			return true;
 		}
 
@@ -624,9 +622,7 @@ namespace Aufit {
 			if (Global.Disk[track, side].fluxData == null) return;
 			Track = track;
 			Side = side;
-			ButtonMatrix.deselectButton();
-			drawAllCharts();
-			selectAndCheck(track, side);
+			selectTrack(track, side);
 		}
 
 
@@ -646,7 +642,7 @@ namespace Aufit {
 
 			if (e.ClickCount > 1) {
 				Point p = e.GetPosition(_dataDrawing.Chart.GraphicCanvas);
-				int pos = (int) _dataDrawing.Chart.WorldPoint(p).X * 1000000;
+				int pos = (int)_dataDrawing.Chart.WorldPoint(p).X * 1000000;
 
 				foreach (Sector sector in Global.Disk[Track, Side].sectors) {
 					int startPos = sector.id.info.startTime;
@@ -654,15 +650,15 @@ namespace Aufit {
 						sector.id.info.startTime + sector.id.info.timeLength;
 					if ((startPos < pos) && (endPos > pos)) {
 						// infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", _dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, indexStart));
-						
+
 						//byte number = Global.Disk[Track, Side].trackContent.sectors[index].addr.number;
 						//SectorContent sect = FDC.findSectorContent(Track, Side, number, Global.Disk[Track, Side].trackContent.sectors[index].startTime);
 						//if (sect == null) return;	// TODO for now we return
 						//TrackBuffer buffer = sect.data;
 
-						string message = String.Format("Sector {0} - {1} bytes IAM={2:X2} {3}={4:X4} {5}\n", 
-							sector.id.number, Global.sectSize(sector.id.size), sector.data.iam, 
-							(sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.crc, 
+						string message = String.Format("Sector {0} - {1} bytes IAM={2:X2} {3}={4:X4} {5}\n",
+							sector.id.number, Global.sectSize(sector.id.size), sector.data.iam,
+							(sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.crc,
 							(sector.data.fuzzy != null) ? "Has fuzzy bits" : "");
 						if (_sectorWindowIsOpen)
 							_sectorWindow.Close();
@@ -748,10 +744,6 @@ namespace Aufit {
 		}
 
 
-		private void selectAndCheck(int track, int side) {
-			ButtonMatrix.selectButton(track, side);
-			Protections.checkProtection(track, side, infoBox);
-		}
 
 		private async void btWriteDiskClick(object sender, RoutedEventArgs e) {
 			SaveFileDialog sfd = new SaveFileDialog();
@@ -759,12 +751,12 @@ namespace Aufit {
 			bool? ok = sfd.ShowDialog();
 			if (ok == true) {
 				await checkProtectionAsync();
-				tbFileName.Text  = sfd.FileName;
+				tbFileName.Text = sfd.FileName;
 				if (Global.DataIncomplete) {
 					MessageBoxResult result = MessageBox.Show(
-						"The image does not contains enough data\nYou should have imaged more revolutions\nDo you still want to proceed?", 
+						"The image does not contains enough data\nYou should have imaged more revolutions\nDo you still want to proceed?",
 						"Incomplete Image Data", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
-					if (result == MessageBoxResult.No) return;				
+					if (result == MessageBoxResult.No) return;
 				}	// incomplete
 				PastiWriter pasti = new PastiWriter(infoBox);
 				//PastiWriter pasti = new PastiWriter();
@@ -819,6 +811,16 @@ namespace Aufit {
 			if (tabItemSave.IsSelected) {
 
 			}
+		}
+
+
+		private void selectTrack(int track, int side) {
+			ButtonMatrix.deselectButton();
+			ButtonMatrix.selectButton(track, side);
+			Protections.checkProtection(track, side, infoBox);
+			drawAllCharts();
+			if (tabItemDisk.IsSelected)
+				drawDiskSelectedTrack(track, side);
 		}
 
 	}

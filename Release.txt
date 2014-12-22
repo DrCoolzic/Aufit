@@ -1,8 +1,14 @@
-* V0.5 January xx, 2015 Major rewrite of Aufit internals
+* V0.6 December 22, 2014 Freeze for Beta release to Brume
+- Beta release
+
+* V0.5 December, 2015 Major rewrite of Aufit internals
 - Fix non working STX for Jupiter master drive, Gunship, P-47
 	http://www.atari-forum.com/viewtopic.php?f=102&t=25854&start=525#p263646
 	http://www.atari-forum.com/viewtopic.php?f=102&t=25854&start=250#p248282
 	http://www.atari-forum.com/viewtopic.php?f=102&t=25854&start=275#p248377
+- Fixed nasty bug in DSR for Skateball game
+- New Disk Layout display design
+- New Main window layout using tabs for: Track view, Disk view, Content, Analysis, Save
 - Specify file/dir to read = from menu, drag and drop, double click
 - Drawing disk layout now uses multi-threading
 - now reading and processing of flux data is using heavy multi-threading
