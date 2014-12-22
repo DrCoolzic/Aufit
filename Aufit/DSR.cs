@@ -311,6 +311,10 @@ namespace WD1772Package {
 						if ((_syncSeq == 3) && (!SyncFound)) {
 							_syncSeq = 0;
 							_decoderFlags |= IAM_POSITION;
+							//if (_dsr < 0xF8) {
+							//	_decoderFlags |= (SYNC_DETECTOR_ENABLED | CRC_ENABLED);
+							//	_decoderFlags &= ~CRC_ACTIVE;
+							//}
 						}
 						else
 							_decoderFlags &= ~IAM_POSITION;

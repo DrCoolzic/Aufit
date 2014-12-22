@@ -90,10 +90,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Page Include="DiskWindow.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -102,15 +98,13 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="DiskGui.cs" />
     <Compile Include="Global.cs" />
     <Compile Include="BezierSpline.cs" />
     <Compile Include="ButtonMatrix.cs" />
     <Compile Include="ChartLayout.cs" />
     <Compile Include="BitWidthDrawing.cs" />
     <Compile Include="DataDrawing.cs" />
-    <Compile Include="DiskWindow.xaml.cs">
-      <DependentUpon>DiskWindow.xaml</DependentUpon>
-    </Compile>
     <Compile Include="DPLL.cs" />
     <Compile Include="DSR.cs" />
     <Compile Include="BufferWindow.xaml.cs">

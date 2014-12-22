@@ -7,15 +7,17 @@ Improvements
 - DONE: optimize for Pasti sector=track ???
 - more optimization when reading stream files?
 - DONE: remove bit functions slow
+- DONE: load Aufit by double clicking
+- change UI for tabs
 - display protection with sector (cursor above) ?
 - check DSR for sync detect / IAM / ... ? still not elegant
-- load Aufit by double clicking
-- change UI for tabs
 - DONE? seems to work? display of ID past index todo
 - disk browser / create / ...
+- double click does not restart Aufit
 
 BUGS
 ====
+- Skateball crash Id Not found
 - FIXED 0.5.5447.34358: Fire and Forget
 - FIXED: SWS air sea disk1 sect 0
 - FIXED: NFA at end of track stop too soon?

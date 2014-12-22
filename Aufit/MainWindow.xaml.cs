@@ -43,6 +43,7 @@ using System.Runtime.InteropServices;
 using System.ComponentModel;
 using System.IO;
 using System.Threading;
+using System.Windows.Threading;
 
 using ChartPackage;
 using KFReaderPackage;
@@ -64,11 +65,15 @@ namespace Aufit {
 
 		private BufferWindow _trackWindow = null;
 		private bool _trackWindowIsOpen = false;
-		private DiskWindow _diskWindow = null;
-		private bool _diskWindowIsOpen = false;
+		//private DiskWindow _diskWindow = null;
+		//private bool _diskWindowIsOpen = false;
 		private BufferWindow _sectorWindow = null;
 		private bool _sectorWindowIsOpen = false;
 		//private static string _fileName;
+
+		//const int diskHalfWindowSize = 300;
+		//const double diskFineLine = 1.0;
+		//const double diskHeavyLine = 1.8;
 
 		// current display
 		/// <summary>
@@ -238,7 +243,7 @@ namespace Aufit {
 			else
 				Rev--;
 
-			revolution.Text = (Rev + 1).ToString();
+			//tbRevolution.Text = "Revolution " + (Rev + 1).ToString() + " / " + RevCount.ToString();
 			Global.computeHisto(Track, Side, Rev, infoBox);
 			_histoDrawing.drawHisto();
 			FDC.releaseTrack(Track, Side);
@@ -257,7 +262,7 @@ namespace Aufit {
 
 			Rev = (Rev + 1) % RevCount;
 
-			revolution.Text = (Rev + 1).ToString();
+			//tbRevolution.Text = "Revolution " + (Rev + 1).ToString() + " / " + RevCount.ToString();
 			Global.computeHisto(Track, Side, Rev, infoBox);
 			_histoDrawing.drawHisto();
 			FDC.releaseTrack(Track, Side);
@@ -270,11 +275,16 @@ namespace Aufit {
 		/// Display all the charts for the current Track/Side/Rev
 		/// </summary>
 		private void drawAllCharts() {
+			//if (!tabItemTrack.IsSelected) return;
 			int track = Track;
 			int side = Side;
 			int rev = Rev;
+			if ((Global.Disk[track, side].fluxDataRev == null) && (Global.Disk[track, side].packedFluxDataRev == null)) return;
 
-			revolution.Text = (rev + 1).ToString();
+			//int RevCount = Global.Disk[track, side].packedFluxDataRev.Count();
+			string revString = (Global.Disk[track, side].fluxDataRev != null) ? Global.Disk[track, side].fluxDataRev.Count().ToString() :
+				((Global.Disk[track, side].packedFluxDataRev != null) ? (Global.Disk[track, side].packedFluxDataRev.Count().ToString()) : "*");
+			tbRevolution.Text = "Rev. " + (Rev + 1).ToString() + "/" + revString;
 			if (Global.Disk[track, side].packedFluxData == null)
 				Global.mfmDecode(track, side);
 
@@ -350,18 +360,21 @@ namespace Aufit {
 		}
 
 
-		private void buttonVisibility(System.Windows.Visibility visibility) {
-			btTrack.Visibility = visibility;
-			btSector.Visibility = visibility;
-			btDisk.Visibility = visibility;
-			btProt.Visibility = visibility;
-			btSave.Visibility = visibility;
-			btWrite.Visibility = visibility;
-			btFile.Visibility = visibility;
-			tabDisplay.Visibility = visibility;
+		private void buttonsEnabled(bool enable) {
+			//btTrack.Visibility = visibility;
+			//btSector.Visibility = visibility;
+			//btDisk.Visibility = visibility;
+			//btProt.Visibility = visibility;
+			//btSave.Visibility = visibility;
+			//btWrite.Visibility = visibility;
+
+			//btFile.Visibility = visibility;
+			gridCommand.IsEnabled = enable;
+
+			tabDisplay.IsEnabled = enable;
 
 
-			if (visibility == System.Windows.Visibility.Visible) {
+			if (enable) {
 				tbStatus.Visibility = System.Windows.Visibility.Hidden;
 				progress.Visibility = System.Windows.Visibility.Hidden;
 			}
@@ -377,9 +390,9 @@ namespace Aufit {
 			Global.resetDisk();
 			tbFileName.Text = fileName;
 			ImageName = fileName;
-			buttonVisibility(System.Windows.Visibility.Hidden);
+			buttonsEnabled(false);
 			string extension = System.IO.Path.GetExtension(fileName);
-			tbStatus.Text = " *** READING INPUT FILE(S) *** PLEASE WAIT ...";
+			tbStatus.Text = " *** READING INPUT *** PLEASE WAIT ...";
 			tabCtrl.SelectedIndex = 1;
 
 			switch (extension) {
@@ -406,14 +419,23 @@ namespace Aufit {
 
 			tbStatus.Text = "*** PROCESSING DATA *** PLEASE WAIT ...";
 			tabCtrl.SelectedIndex = 0;
-
-			BackgroundWorker bgWorker;
-			bgWorker = new BackgroundWorker();
-			bgWorker.DoWork += new DoWorkEventHandler(bgWorker_DoWork);
-			bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bgWorker_RunWorkerCompleted);
-			// Launch background thread to do decode flux.  This will
-			// trigger BackgroundWorker.DoWork().
-			bgWorker.RunWorkerAsync();
+			if (_debugNoThread) {
+				for (int i = 0; i < 84; i++) {
+					for (int j = 0; j < 2; j++) {
+						Global.decodeAndRead(i, j, Rev);
+						ButtonMatrix.setButtonBG(i, j);
+					}
+				}
+			}
+			else {
+				BackgroundWorker bgWorker;
+				bgWorker = new BackgroundWorker();
+				bgWorker.DoWork += new DoWorkEventHandler(bgWorker_DoWork);
+				bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bgWorker_RunWorkerCompleted);
+				// Launch background thread to do decode flux.  This will
+				// trigger BackgroundWorker.DoWork().
+				bgWorker.RunWorkerAsync();
+			}
 		}
 
 
@@ -435,7 +457,7 @@ namespace Aufit {
 			//}
 			//else {
 
-			buttonVisibility(System.Windows.Visibility.Visible);
+			buttonsEnabled(true);
 			tabDisplay.SelectedIndex = 0;
 
 				for (int i = 0; i < 84; i++) {
@@ -667,8 +689,8 @@ namespace Aufit {
 		private void mainWinClosing(object sender, CancelEventArgs e) {
 			if (_trackWindowIsOpen)
 				_trackWindow.Close();
-			if (_diskWindowIsOpen)
-				_diskWindow.Close();
+			//if (_diskWindowIsOpen)
+			//	_diskWindow.Close();
 			if (_sectorWindowIsOpen)
 				_sectorWindow.Close();
 		}
@@ -709,23 +731,6 @@ namespace Aufit {
 			_sectorWindow.Closed += new EventHandler(sectorWindowClosed);
 			_sectorWindowIsOpen = true;
 			_sectorWindow.Show();
-		}
-
-
-		private void btDiskLayoutClick(object sender, RoutedEventArgs e) {
-			if (_diskWindowIsOpen)
-				_diskWindow.Close();
-
-			string message = String.Format("{0}", ImageName);
-			_diskWindow = new DiskWindow();
-			_diskWindow.drawDiskLayout(message);
-			_diskWindow.Closed += new EventHandler(diskWindowClosed);
-			_diskWindowIsOpen = true;
-			_diskWindow.Show();
-		}
-
-		void diskWindowClosed(object sender, EventArgs e) {
-			_diskWindowIsOpen = false;
 		}
 
 
@@ -788,19 +793,38 @@ namespace Aufit {
 			// TODO
 		}
 
-		private void invSaveClick(object sender, RoutedEventArgs e) {
+		private void infoSaveClick(object sender, RoutedEventArgs e) {
 			SaveFileDialog sfd = new SaveFileDialog();
 			sfd.Filter = "Text file|*.txt|All Files|*.*";
 			if (sfd.ShowDialog() == true)
 				File.WriteAllText(sfd.FileName, infoBox.Text);
 		}
 
-		private void invClearClick(object sender, RoutedEventArgs e) {
+		private void infoClearClick(object sender, RoutedEventArgs e) {
 			infoBox.Clear();
 		}
 
-		private void diskViewFocus(object sender, RoutedEventArgs e) {
-			//MessageBox.Show("Disk");
+
+
+
+
+
+		private async void tabDisplaySelectionChanged(object sender, SelectionChangedEventArgs e) {
+			if (tabItemTrack.IsSelected) {
+				drawAllCharts();
+			}
+			if (tabItemDisk.IsSelected) {
+				await diskClearAndDraw();
+			}
+			if (tabItemContent.IsSelected) {
+
+			}
+			if (tabItemAnalysis.IsSelected) {
+
+			}
+			if (tabItemSave.IsSelected) {
+
+			}
 		}
 
 	}
