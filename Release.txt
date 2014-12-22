@@ -1,4 +1,6 @@
 * V0.6 December 22, 2014 Freeze for Beta release to Brume
+- Fix bug sector not found due to unformatted sectors Crossbow D1, RoadBlaster
+- improve Disk View (cursor) & speedup Track View
 - Beta release
 
 * V0.5 December, 2015 Major rewrite of Aufit internals

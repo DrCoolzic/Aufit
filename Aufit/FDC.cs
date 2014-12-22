@@ -601,8 +601,11 @@ namespace WD1772Package {
 										}
 										// search the corresponding sector
 										sector = null;
+										// start position can vary if sector with random noise happen before
 										foreach (Sector s in Global.Disk[track, side].sectors)
-											if (((currentBit - startBit) - s.id.info.startBit) < 200) {
+											// if (((currentBit - startBit) - s.id.info.startBit) < 300) {
+											// if (currentTime - s.id.info.startTime < 16000) {
+											if ((byteCount - s.id.info.startByte) < 30) {
 												sector = s;
 												break;
 											}

@@ -144,7 +144,6 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox Grid.Column="0" Grid.ColumnSpan="2" Name="tbDisk" Width="auto" Height="20" VerticalAlignment="Top" HorizontalAlignment="Center" Background="Transparent" Foreground="White" BorderBrush="Transparent" />
                         <Viewbox Grid.Column="0"   Stretch="Uniform">
                             <Grid Name="cvDisk0" Margin="0" />
                         </Viewbox>
