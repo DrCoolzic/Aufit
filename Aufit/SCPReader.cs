@@ -84,8 +84,8 @@ namespace SCPReaderPackage {
 		/// header to point to the appended data. For simplicity it is recommended that you follow
 		/// the normal image format shown below, with all tracks in sequential order.</remarks>
 		public int[] TrackHeader;
-		/// <summary>After the last byte of track data there will be a timestamp.  
-		/// This timestamp is an ASCII string, ie: 10/15/2013 5:52:30 PM </summary>
+		/// <summary>After the last byte of track data there will be a time-stamp.  
+		/// This time-stamp is an ASCII string, ie: 10/15/2013 5:52:30 PM </summary>
 		public string timeStamp;
 	}
 
@@ -107,10 +107,11 @@ namespace SCPReaderPackage {
 		/// The offset of the first flux data from start of Track Data Header
 		/// </summary>
 		public int fluxOffset;
-		/// <summary>
-		/// The position of the indexStart inside the first flux. has to be computed in SCP file :(
-		/// </summary>
-		public int indexTimePosition;
+
+		///// <summary>
+		///// The position of the indexStart inside the first flux. has to be computed in SCP file :(
+		///// </summary>
+		//public int indexTimePosition;
 	}
 
 	/// <summary>
@@ -310,39 +311,41 @@ namespace SCPReaderPackage {
 
 			// read rev headers
 			ti.revInfo = new RevInfo[revCount];
-			int fluxSize = 0;	// sum all the flux transitions
+			int sumAllFlux = 0;	// sum all the flux transitions
 			for (int i = 0; i < revCount; i++) {
 				ti.revInfo[i] = new RevInfo();
 				ti.revInfo[i].revolutionTime = readInt32(buffer, ref idx);
 				ti.revInfo[i].fluxCount = readInt32(buffer, ref idx);
-				fluxSize += ti.revInfo[i].fluxCount;
+				sumAllFlux += ti.revInfo[i].fluxCount;
 				ti.revInfo[i].fluxOffset = readInt32(buffer, ref idx);
 			}
 
 			// sometimes SCP seems to generate invalid short track at end of disks
 			// we just ignore them
-			if (fluxSize < 1000)
+			if (sumAllFlux < 1000)
 				return SCPStatus.stsOK;
 
 			// create buffer for all flux transitions
 			// note this buffer might be bigger that what is needed because of null entries (NFA)
-			ti.fluxValues = new int[fluxSize];
+			ti.fluxValues = new int[sumAllFlux];
 
 			int[] fluxOffset = new int[revCount];
+			int timeMissingFromFirstRev = 0;
 
-			int revSum = 0;
-			for (int i = 0; i < revCount; i++) {
-				int fluxSum = 0;
+			for (int rev = 0; rev < revCount; rev++) {
+				int revFluxSum = 0;
 				int overflowCount = 0;
-				// set bufferIndex to the offset of the data
-				idx = ti.revInfo[i].fluxOffset + trackHeaderPosition;
-				// now set fluxOffset to offset in the "extracted data buffer"
-				if (i > 0) fluxOffset[i] = fluxOffset[i - 1] + ti.revInfo[i - 1].fluxCount;
-				else fluxOffset[i] = 0;
-				int p = fluxOffset[i];
 
-				for (int j = 0; j < ti.revInfo[i].fluxCount; j++) {
-					int val = buffer[idx++] << 8;	// read next 2 bytes
+				// set bufferIndex to the offset of the data
+				idx = ti.revInfo[rev].fluxOffset + trackHeaderPosition;
+				// now set fluxOffset to offset in the "extracted data buffer"
+				if (rev > 0) fluxOffset[rev] = fluxOffset[rev - 1] + ti.revInfo[rev - 1].fluxCount;
+				else fluxOffset[rev] = 0;
+				int p = fluxOffset[rev];
+
+				for (int j = 0; j < ti.revInfo[rev].fluxCount; j++) {
+					// read next two bytes
+					int val = buffer[idx++] << 8;
 					val += buffer[idx++];
 
 					if (val == 0) {
@@ -351,54 +354,68 @@ namespace SCPReaderPackage {
 					}	// overflow (probably NFA)
 					else {
 						ti.fluxValues[p] += val;
-						fluxSum += ti.fluxValues[p++];
+						revFluxSum += ti.fluxValues[p++];
 					}	// normal
-				}	// all flux
+				}	// all flux in one rev
 
 				// if we had overflow we must remove from number of fluxes
 				if (overflowCount > 0)
-					ti.revInfo[i].fluxCount = ti.revInfo[i].fluxCount - overflowCount;
+					ti.revInfo[rev].fluxCount = ti.revInfo[rev].fluxCount - overflowCount;
 
-				// SCP does not provide the revolutionTime Position so we have to compute it
-				if (i == 0) {
-					int indexTimePosition = ti.revInfo[0].revolutionTime - fluxSum;
-					if (indexTimePosition < 0)
-						indexTimePosition = 0;
-					ti.revInfo[0].indexTimePosition = indexTimePosition;
-					ti.fluxValues[0] += ti.revInfo[0].indexTimePosition;
-				}
-				else
-					// same for all
-					ti.revInfo[i].indexTimePosition = ti.revInfo[0].indexTimePosition;
-				revSum += ti.revInfo[i].revolutionTime;
+				// SCP starts at first flux AFTER index. In case of NFA we miss the end of NFA
+				// located at end of track. In that case the fluxSum != revolution time 
+				if (rev == 0) {
+					timeMissingFromFirstRev = (ti.revInfo[0].revolutionTime - revFluxSum);
+				}	
 			}	// for all revolutions
 
-			double correction = (double)(8000000 * revCount) / revSum;
-			double tick = 25.0 * correction;
+			// Here we compensate the best we can for the missing information from SCP
+			if ((timeMissingFromFirstRev > 30000 / 25) && (revCount > 1)) {
+				int nfa = ti.fluxValues[fluxOffset[1]];
+				for (int rev = 0; rev < revCount; rev++) {
+					int firstOffset = fluxOffset[rev];
+					int lastOffset = firstOffset + ti.revInfo[rev].fluxCount - 1;
+					if (rev == 0) {
+						ti.fluxValues[firstOffset] += nfa - timeMissingFromFirstRev;
+						//ti.fluxValues[lastOffset] += timeMissingFromFirstRev;
+					}
+				}	// all rev
+			}
 
-			// now we transfer to our Global Disk structure
+			// now we transfer to our Global Disk structure. Values are in NS
+			// with correction done on a revolution basis
 			MainWindow.Rev = 0;
 			Global.Disk[track, side].fluxData = new FluxData();
 			Global.Disk[track, side].fluxData.totalFluxCount = ti.fluxValues.Count();
 			Global.Disk[track, side].fluxData.fluxValue = new int[ti.fluxValues.Count()];
-			for (int i = 0; i < ti.fluxValues.Count(); i++) {
-				Debug.Assert(ti.fluxValues[i] > -1, "Invalid negative flux read");
-				int flux = (int)((double)ti.fluxValues[i] * tick);
-				Global.Disk[track, side].fluxData.fluxValue[i] = flux;
-				if (flux > _fluxMax) _fluxMax = flux;
-				if (flux < _fluxMin) _fluxMin = flux;
-			}
+			Global.Disk[track, side].fluxDataRev = new FluxDataRev[revCount];
+			int pos = 0;
+
+			for (int rev = 0; rev < revCount; rev++) {
+				// correction for this rev
+				double tick = 8000000.0 / (double)ti.revInfo[rev].revolutionTime * 25.0;
+				int offset = fluxOffset[rev];
+
+				Global.Disk[track, side].fluxDataRev[rev].revolutionTime = (int)((double)ti.revInfo[rev].revolutionTime * tick);
+				Global.Disk[track, side].fluxDataRev[rev].fluxCount = ti.revInfo[rev].fluxCount;
+				Global.Disk[track, side].fluxDataRev[rev].firstFluxIndex = fluxOffset[rev];
+
+				for (int f = 0; f < ti.revInfo[rev].fluxCount; f++) {
+					int flux = (int)((double)ti.fluxValues[offset + f] * tick);
+					Debug.Assert(flux > 0, "Invalid negative flux read");
+					Global.Disk[track, side].fluxData.fluxValue[pos++] = flux;
+
+
+
+					flux = Global.Disk[track, side].fluxData.fluxValue[offset + f];
+					if (flux > _fluxMax) _fluxMax = flux;
+					if (flux < _fluxMin) _fluxMin = flux;
+				}	// all flux of rev
+			}	// all rev
 
 			Global.Disk[track, side].fluxData.maxFlux = _fluxMax;
 			Global.Disk[track, side].fluxData.minFlux = _fluxMin;
 
-			Global.Disk[track, side].fluxDataRev = new FluxDataRev[revCount];
-			for (int i = 0; i < revCount; i++) {
-				Global.Disk[track, side].fluxDataRev[i].revolutionTime = (int)((double)ti.revInfo[i].revolutionTime * tick);
-				Global.Disk[track, side].fluxDataRev[i].fluxCount = ti.revInfo[i].fluxCount;
-				Global.Disk[track, side].fluxDataRev[i].timeToIndex = (int)((double)ti.revInfo[i].indexTimePosition * tick);
-				Global.Disk[track, side].fluxDataRev[i].firstFluxIndex = fluxOffset[i];
-			}
 			return SCPStatus.stsOK;
 		}
 

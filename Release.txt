@@ -1,9 +1,12 @@
-* V0.6 December 22, 2014 Freeze for Beta release to Brume
+* V0.6 December 2014 Freeze for Beta release to Brume
+- Fix bug NFA not working for Dr. Doom Revenge (now NFA handled at read time)
+- *** NOTE *** SCP file does not provide information about index position in  flux
+	Therefore it is impossible to do something clean when we have NFA over index
 - Fix bug sector not found due to unformatted sectors Crossbow D1, RoadBlaster
 - improve Disk View (cursor) & speedup Track View
 - Beta release
 
-* V0.5 December, 2015 Major rewrite of Aufit internals
+* V0.5 December 2014 Major rewrite of Aufit internals
 - Fix non working STX for Jupiter master drive, Gunship, P-47
 	http://www.atari-forum.com/viewtopic.php?f=102&t=25854&start=525#p263646
 	http://www.atari-forum.com/viewtopic.php?f=102&t=25854&start=250#p248282

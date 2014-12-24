@@ -53,28 +53,48 @@ namespace KFReaderPackage {
 			StreamStatus status = stream.readStream(name);
 			if (status == StreamStatus.sdsOk) {
 				
-				double tick = 1000000000.0 / stream.SampleClock;
-				double revSum = 0;
-				for (int i = 0; i < stream.IndexCount - 1; i++)
-					revSum += (double)(stream.Indexes[i + 1].indexTime) * tick;
-				tick = tick * (1000000000 / revSum);
-
 				Global.Disk[track, side].fluxData = new FluxData();
 				Global.Disk[track, side].fluxData.fluxValue = new int[stream.FluxCount];
-				for (int i = 0; i < stream.FluxCount; i++)
-					Global.Disk[track, side].fluxData.fluxValue[i] = (int)((double)stream.FluxValues[i] * tick);
-
 				Global.Disk[track, side].fluxData.totalFluxCount = stream.FluxCount;
-				Global.Disk[track, side].fluxData.maxFlux = (int)((double)stream.StreamStat.fluxMax * tick);
-				Global.Disk[track, side].fluxData.minFlux = (int)((double)stream.StreamStat.fluxMin * tick);
-
 				Global.Disk[track, side].fluxDataRev = new FluxDataRev[stream.IndexCount - 1];
-				for (int i = 0; i < stream.IndexCount - 1; i++) {
-					Global.Disk[track, side].fluxDataRev[i].revolutionTime = (int)((double)stream.Indexes[i + 1].indexTime * tick);
-					Global.Disk[track, side].fluxDataRev[i].fluxCount = stream.Indexes[i + 1].fluxPosition - stream.Indexes[i].fluxPosition;
-					Global.Disk[track, side].fluxDataRev[i].timeToIndex = (int)((double)stream.Indexes[i].preIndexTime * tick);
-					Global.Disk[track, side].fluxDataRev[i].firstFluxIndex = stream.Indexes[i].fluxPosition;
-				}
+
+				int fluxMin = Int32.MaxValue;
+				int fluxMax = 0;
+				double tick = 1000000000.0 / stream.SampleClock;
+				double sample = tick;
+
+				for (int i = 0; i <= stream.Indexes[0].fluxPosition; i++ )
+					Global.Disk[track, side].fluxData.fluxValue[i] = (int)((double)stream.FluxValues[i] * sample);
+
+				for (int rev = 0; rev < stream.IndexCount - 1; rev++) {
+					sample = 200000000.0 / (double)stream.Indexes[rev + 1].indexTime;
+					Global.Disk[track, side].fluxDataRev[rev].revolutionTime = (int)((double)stream.Indexes[rev + 1].indexTime * sample);
+					Global.Disk[track, side].fluxDataRev[rev].fluxCount = stream.Indexes[rev + 1].fluxPosition - stream.Indexes[rev].fluxPosition;
+					int offset = stream.Indexes[rev].fluxPosition;
+					Global.Disk[track, side].fluxDataRev[rev].firstFluxIndex = offset;
+
+					for (int f = 0; f < Global.Disk[track, side].fluxDataRev[rev].fluxCount; f++) {
+						Global.Disk[track, side].fluxData.fluxValue[offset + f] = (int)((double)stream.FluxValues[offset + f] * sample);
+						if ((double)stream.Indexes[rev].preIndexTime * sample > 10000.0) {
+							// If we have an NFA at border of revolution we split at position of the index.
+							// The pre-index part is added to the last transition and the post-index part
+							// is added to the first transition.
+							if (f == 0)
+								Global.Disk[track, side].fluxData.fluxValue[offset + f] -= (int)((double)stream.Indexes[rev].preIndexTime * sample);
+							else if (f == (Global.Disk[track, side].fluxDataRev[rev].fluxCount - 1))
+								Global.Disk[track, side].fluxData.fluxValue[offset + f] += (int)((double)(stream.Indexes[rev].preIndexTime * sample));
+						}	// NFA
+						int value = Global.Disk[track, side].fluxData.fluxValue[offset + f];
+						if (value > fluxMax) fluxMax = value;
+						if (value < fluxMin) fluxMin = value;
+					}	// all flux in rev
+				}	// all rev
+
+				Global.Disk[track, side].fluxData.maxFlux = fluxMax;
+				Global.Disk[track, side].fluxData.minFlux = fluxMin;
+				//Global.Disk[track, side].fluxData.maxFlux = (int)((double)stream.StreamStat.fluxMax * sample);
+				//Global.Disk[track, side].fluxData.minFlux = (int)((double)stream.StreamStat.fluxMin * sample);
+
 				return true;
 			}	// read correctly
 
@@ -95,4 +115,4 @@ namespace KFReaderPackage {
 		}
 
 	}	// streamProcess Class
-}	// namespace
+}	// name space

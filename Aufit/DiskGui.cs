@@ -18,10 +18,10 @@ namespace Aufit {
 	/// </summary>
 	public partial class MainWindow : Window {
 		const int diskHalfWindowSize = 300;
-		const double diskFineLine = 1.0;
-		const double diskHeavyLine = 1.8;
+		const double diskFineLine = 1.8;
+		const double diskHeavyLine = 2.3;
 		const double rad_max = diskHalfWindowSize - diskHalfWindowSize * 0.03;
-		const double rad_start = diskHalfWindowSize / 4;
+		const double rad_start = diskHalfWindowSize / 6;
 		const double rad_inc = (rad_max - rad_start) / 84;
 		Point center = new Point(diskHalfWindowSize, diskHalfWindowSize);
 		int _selectedTrack = -1;
@@ -92,7 +92,7 @@ namespace Aufit {
 
 			// draw side value
 			TextBox tb = new TextBox();
-			tb.Margin = new Thickness(0, 240, 0, 0);
+			tb.Margin = new Thickness(0, diskHalfWindowSize - 20, 0, 0);
 			tb.FontFamily = new FontFamily("Segoe UI");
 			tb.BorderThickness = new Thickness(0);
 			tb.FontSize = 11;
@@ -102,7 +102,7 @@ namespace Aufit {
 			tb.Text = "Side 0";
 			cvDisk0.Children.Add(tb);
 			tb = new TextBox();
-			tb.Margin = new Thickness(0, 240, 0, 0);
+			tb.Margin = new Thickness(0, diskHalfWindowSize - 20, 0, 0);
 			tb.FontFamily = new FontFamily("Segoe UI");
 			tb.BorderThickness = new Thickness(0);
 			tb.FontSize = 11;
@@ -231,17 +231,19 @@ namespace Aufit {
 					int startFluxIndex = dt.fluxDataRev[0].firstFluxIndex;
 					int stopFluxIndex = startFluxIndex + dt.fluxDataRev[0].fluxCount;
 					int fluxStartTime = 0;
-					if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) && (cbOutOfBand.IsChecked == true)) {
+					if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) && (dt.sectors.Count > 0) && (cbOutOfBand.IsChecked == true)) {
 						int minDisplayWidth = 50000;
-						for (int idx = startFluxIndex; idx < stopFluxIndex; idx++) {
+						for (int idx = startFluxIndex; idx < stopFluxIndex; idx += 1) {
 							int flux = dt.fluxData.fluxValue[idx];
 							if (fluxNotInRange(flux)) {
 								double startAngle = timeAngle(fluxStartTime);
-								int j = idx;
+
+								//int j = idx;
 								int fluxStopTime = fluxStartTime + flux;
-								// try to concatenate to reduce number of arc to draw
-								while ((j < stopFluxIndex) && (fluxNotInRange(dt.fluxData.fluxValue[j])))
-									fluxStopTime += dt.fluxData.fluxValue[j++];
+								//// try to concatenate to reduce number of arc to draw
+								//while ((j < stopFluxIndex) && (fluxNotInRange(dt.fluxData.fluxValue[j])))
+								//	fluxStopTime += dt.fluxData.fluxValue[j++];
+
 								if ((fluxStartTime - fluxStopTime) < minDisplayWidth)
 									fluxStopTime = fluxStartTime + minDisplayWidth;
 								double stopAngle = timeAngle(fluxStopTime);
@@ -252,7 +254,8 @@ namespace Aufit {
 								addArc(pg, startAngle, stopAngle, center, radius);
 								path.Data = pg;
 								grid.Children.Add(path);
-								idx = j;
+
+								//idx = j;
 							}
 							fluxStartTime += flux;
 						}
@@ -317,14 +320,18 @@ namespace Aufit {
 				}	// no sector track
 
 				// draw NFA
-				if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) && (cbDiskNFA.IsChecked == true)) {
-					for (int i = 0; i < dt.track.info.byteCount; i++) {
+				const int NFA_INC = 20;
+				if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) || (cbDiskNFA.IsChecked == true)) {
+					for (int i = 0; i < dt.track.info.byteCount; i += NFA_INC) {
 						if ((dt.track.buffer.Bytes[i].mfmWord == 0) || (dt.track.buffer.Bytes[i].mfmWord == 0xFFFF)) {
-							double startAngle = byteAngle(i - 1, dt.track.info.byteCount);
-							int j = i;
-							while ((j < dt.track.info.byteCount) && ((dt.track.buffer.Bytes[j].mfmWord == 0) || (dt.track.buffer.Bytes[j].mfmWord == 0xFFFF)))
-								j++;
-							double stopAngle = byteAngle(j, dt.track.info.byteCount);
+							double startAngle = byteAngle(i, dt.track.info.byteCount);
+
+							//int j = i;
+							//while ((j < dt.track.info.byteCount) && ((dt.track.buffer.Bytes[j].mfmWord == 0) || (dt.track.buffer.Bytes[j].mfmWord == 0xFFFF)))
+							//	j++;
+							//double stopAngle = byteAngle(j, dt.track.info.byteCount);
+
+							double stopAngle = byteAngle(i + NFA_INC, dt.track.info.byteCount);
 							System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
 							path.StrokeThickness = diskHeavyLine;
 							PathGeometry pg = new PathGeometry();
@@ -332,7 +339,7 @@ namespace Aufit {
 							addArc(pg, startAngle, stopAngle, center, radius);
 							path.Data = pg;
 							grid.Children.Add(path);
-							i = j;
+							//i = j;
 						}
 					}
 				}

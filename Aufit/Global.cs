@@ -60,16 +60,6 @@ public struct FluxDataRev {
 	public int revolutionTime;
 
 	/// <summary>
-	/// The time it takes to get to the index-pulse in the first flux transition. 
-	/// </summary>
-	/// <remarks>
-	/// The time is given in nanoseconds. This is the time from the beginning of the
-	/// first flux transition of a revolution and the index-pulse signal. Note that in 
-	/// case of a no flux area at the beginning of the track this value can be huge.
-	/// </remarks>
-	public int timeToIndex;
-
-	/// <summary>
 	///  Position of the first flux for this revolution. The position is given as
 	///  an index in the FluxValue[] array of the FluxData class.
 	/// </summary>
@@ -499,11 +489,9 @@ public class Global {
 			int indexStart = Global.Disk[track, side].fluxDataRev[i].firstFluxIndex;
 			int indexEnd = indexStart + Global.Disk[track, side].fluxDataRev[i].fluxCount - 1;
 			int bitWidth = decodeBitWidth[indexStart];
-			int indexPosition = Global.Disk[track, side].fluxDataRev[i].timeToIndex;
 
-			int correction = indexPosition / bitWidth;
 			int bitPosition = decodeBitPosition[indexStart];
-			Global.Disk[track, side].packedFluxDataRev[i].firstFluxBit = bitPosition - correction;
+			Global.Disk[track, side].packedFluxDataRev[i].firstFluxBit = bitPosition;
 			int bitCount = decodeBitPosition[indexEnd] - decodeBitPosition[indexStart];
 			Global.Disk[track, side].packedFluxDataRev[i].bitCount = bitCount;
 			Global.Disk[track, side].packedFluxDataRev[i].fluxCount = Global.Disk[track, side].fluxDataRev[i].fluxCount;

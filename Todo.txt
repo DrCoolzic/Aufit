@@ -15,8 +15,11 @@ Improvements
 - disk browser / create / ...
 - double click does not restart Aufit
 
+- Balade au pays de big ben side 1 disk 1 cannot be drawn (OOB)
+
 BUGS
 ====
+- FIXED 0.6.5447.31584: DrDooms missing part in NFA
 - FIXED 0.5.5469.21424: Skateball crash Id Not found
 - FIXED 0.5.5447.34358: Fire and Forget
 - FIXED: SWS air sea disk1 sect 0
