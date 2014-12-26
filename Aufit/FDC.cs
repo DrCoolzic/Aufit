@@ -201,8 +201,8 @@ namespace WD1772Package {
 
 	/// <summary>Emulate some WD1772 FDC Commands</summary>
 	public class FDC {
-		private readonly static int widthUpperLimit = 2060;
-		private readonly static int widthLowerLimit = 1940;
+		private readonly static int widthUpperLimit = 2070;
+		private readonly static int widthLowerLimit = 1930;
 
 		/// <summary>Read a track</summary>
 		/// <remarks>The data placed in the buffer are equivalent to what would 
@@ -759,7 +759,10 @@ namespace WD1772Package {
 										}	// compare all bytes
 										if (fuzzyFound && (sector.data.fuzzy == null))
 											sector.data.fuzzy = fuzzy;
-									} // compare mode
+
+										// TODO if CRC original bad and CRC this one good
+										// we save the good sector in DB for pasti write
+									} // compare mode with data
 									break;
 
 								default:
@@ -800,8 +803,8 @@ namespace WD1772Package {
 
 			readAddr(track, side, rev);
 
-			bool new_mode = true;
-			if (new_mode) {
+			bool NEW_MODE = true;
+			if (NEW_MODE) {
 				if (Global.Disk[track, side].sectors.Count > 0) {
 					readSector(track, side, rev, 0, -1, false);
 					for (int j = 0; j < Global.Disk[track, side].packedFluxDataRev.Count(); j++) {
@@ -823,9 +826,7 @@ namespace WD1772Package {
 						}	// not precessed = SWS
 					}	// check all sectors
 				}	// non empty
-				else
-					new_mode = true;
-			}
+			}	// new mode => faster
 
 			else {
 				for (int i = 0; i < Global.Disk[track, side].sectors.Count; i++) {
@@ -839,7 +840,7 @@ namespace WD1772Package {
 						readSector(track, side, j, sectorNumber, idBitPosition, true);
 					}
 				}
-			}	// old way to be removed
+			}	// old mode => known to work :)
 
 			readTrack(track, side, rev);
 

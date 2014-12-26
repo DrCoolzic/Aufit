@@ -18,8 +18,8 @@ namespace Aufit {
 	/// </summary>
 	public partial class MainWindow : Window {
 		const int diskHalfWindowSize = 300;
-		const double diskFineLine = 1.8;
-		const double diskHeavyLine = 2.3;
+		const double diskFineLine = 1.7;
+		const double diskHeavyLine = 2.7;
 		const double rad_max = diskHalfWindowSize - diskHalfWindowSize * 0.03;
 		const double rad_start = diskHalfWindowSize / 6;
 		const double rad_inc = (rad_max - rad_start) / 84;
@@ -232,7 +232,7 @@ namespace Aufit {
 					int stopFluxIndex = startFluxIndex + dt.fluxDataRev[0].fluxCount;
 					int fluxStartTime = 0;
 					if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) && (dt.sectors.Count > 0) && (cbOutOfBand.IsChecked == true)) {
-						int minDisplayWidth = 50000;
+						int minDisplayWidth = 60000;
 						for (int idx = startFluxIndex; idx < stopFluxIndex; idx += 1) {
 							int flux = dt.fluxData.fluxValue[idx];
 							if (fluxNotInRange(flux)) {
@@ -247,7 +247,7 @@ namespace Aufit {
 								if ((fluxStartTime - fluxStopTime) < minDisplayWidth)
 									fluxStopTime = fluxStartTime + minDisplayWidth;
 								double stopAngle = timeAngle(fluxStopTime);
-								System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
+								Path path = new Path();
 								path.StrokeThickness = diskHeavyLine;
 								PathGeometry pg = new PathGeometry();
 								path.Stroke = White;
@@ -320,7 +320,7 @@ namespace Aufit {
 				}	// no sector track
 
 				// draw NFA
-				const int NFA_INC = 20;
+				const int NFA_INC = 10;
 				if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) || (cbDiskNFA.IsChecked == true)) {
 					for (int i = 0; i < dt.track.info.byteCount; i += NFA_INC) {
 						if ((dt.track.buffer.Bytes[i].mfmWord == 0) || (dt.track.buffer.Bytes[i].mfmWord == 0xFFFF)) {

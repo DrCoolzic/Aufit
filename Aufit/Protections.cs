@@ -26,6 +26,7 @@ namespace Aufit {
 		/// <param name="side">Side Number</param>
 		/// <param name="text">Optional textbox to display protections</param>
 		/// <remarks>We check the following \n
+		/// TODO UPDATE LIST
 		/// Track protections:
 		/// - short track
 		/// - long track

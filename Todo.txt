@@ -8,18 +8,24 @@ Improvements
 - more optimization when reading stream files?
 - DONE: remove bit functions slow
 - DONE: load Aufit by double clicking
-- change UI for tabs
+- DONE: change UI for tabs
 - display protection with sector (cursor above) ?
 - check DSR for sync detect / IAM / ... ? still not elegant
 - DONE? seems to work? display of ID past index todo
 - disk browser / create / ...
-- double click does not restart Aufit
-
-- Balade au pays de big ben side 1 disk 1 cannot be drawn (OOB)
+- double click should not restart Aufit
+- if not raw or scp error unsupported format
+- DONE: Balade au pays de big ben side 1 disk 1 cannot be drawn (OOB)
+- Content display inn main win
+- Analysis display in main win
+- Save display in main win
 
 BUGS
 ====
-- FIXED 0.6.5447.31584: DrDooms missing part in NFA
+- FIXED 0.6.5472.17463: Gunship SCP track 21.0 Bad Fuzzy report first sect
+- FIXED 0.6.5473.16121: Barbarian scp d2 invalid file content error cannot display
+- FIXED 0.6.5472.14614: Kickoff 2 SCP (AF) track 02.0 sector 0 data missing?
+- FIXED 0.6.5471.31584: DrDooms missing part in NFA
 - FIXED 0.5.5469.21424: Skateball crash Id Not found
 - FIXED 0.5.5447.34358: Fire and Forget
 - FIXED: SWS air sea disk1 sect 0
@@ -30,7 +36,8 @@ BUGS
 - FIXED: time of lore mitsumi track 46 fuzzy mask all 00 ???? ???? 72 ?
 
 
-
+Useful information
+==================
 http://dsp.stackexchange.com/questions/736/how-do-i-implement-cross-correlation-to-prove-two-audio-files-are-similar
 http://www.nullskull.com/a/1507/autocorrelation-method-in-c-for-signal-analysis.aspx
 https://pitchtracker.codeplex.com/

@@ -651,11 +651,6 @@ namespace Aufit {
 					if ((startPos < pos) && (endPos > pos)) {
 						// infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", _dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, indexStart));
 
-						//byte number = Global.Disk[Track, Side].trackContent.sectors[index].addr.number;
-						//SectorContent sect = FDC.findSectorContent(Track, Side, number, Global.Disk[Track, Side].trackContent.sectors[index].startTime);
-						//if (sect == null) return;	// TODO for now we return
-						//TrackBuffer buffer = sect.data;
-
 						string message = String.Format("Sector {0} - {1} bytes IAM={2:X2} {3}={4:X4} {5}\n",
 							sector.id.number, Global.sectSize(sector.id.size), sector.data.iam,
 							(sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.crc,

@@ -1,9 +1,12 @@
 * V0.6 December 2014 Freeze for Beta release to Brume
+- FIXED 0.6.5472.17463: Gunship SCP track 21.0 Bad Fuzzy report first sect
+- FIXED 0.6.5473.16121: Barbarian scp d2 invalid file content error cannot display
+- Fix bug Kickoff 2 SCP NFA not decoded correctly (again cant display right info)
 - Fix bug NFA not working for Dr. Doom Revenge (now NFA handled at read time)
 - *** NOTE *** SCP file does not provide information about index position in  flux
 	Therefore it is impossible to do something clean when we have NFA over index
 - Fix bug sector not found due to unformatted sectors Crossbow D1, RoadBlaster
-- improve Disk View (cursor) & speedup Track View
+- improve Disk View (cursor display) & speedup Track View
 - Beta release
 
 * V0.5 December 2014 Major rewrite of Aufit internals

@@ -34,6 +34,7 @@ using System.Threading.Tasks;
 using GlobalPackage;
 using Aufit;
 using System.Windows.Controls;
+using System.Windows;
 
 namespace SCPReaderPackage {
 	/// <summary>
@@ -211,7 +212,6 @@ namespace SCPReaderPackage {
 			file.identifier += readChar(buffer, ref idx).ToString();	// 0x01
 			file.identifier += readChar(buffer, ref idx).ToString();	// 0x02
 			if (file.identifier != "SCP") {
-				infoBox.AppendText(String.Format("Error: file is not an SCP file"));
 				return SCPStatus.stsInvalidFile;
 			}
 			file.version = readByte(buffer, ref idx);					// 0x03
@@ -242,9 +242,21 @@ namespace SCPReaderPackage {
 			for (int trackAndSide = 0; trackAndSide < 166; trackAndSide++) {
 				file.TrackHeader[trackAndSide] = readInt32(buffer, ref idx);
 				if (file.TrackHeader[trackAndSide] != 0) {
-					status = await readSCPTrackAsync(buffer, trackAndSide, file.TrackHeader[trackAndSide], file.revCount, infoBox);
-					if (status != SCPStatus.stsOK) 
+					status = await readSCPTrackAsync(buffer, trackAndSide, file.TrackHeader[trackAndSide], file.revCount);
+					if (status != SCPStatus.stsOK) {
+						switch (status) {											
+							case SCPStatus.stsInvalidTrack:
+								infoBox.AppendText(String.Format("SCP File Error: invalid track header"));
+								break;
+							case SCPStatus.stsFileContent:
+								infoBox.AppendText(String.Format("SCP File Error: inconsistent number of tracks"));
+								break;
+				
+
+						}
 						return status;
+					}
+						
 					if ((trackAndSide < file.firstTrack) || (trackAndSide > file.lastTrack)) {
 						infoBox.Text = String.Format("SCP File Error: inconsistent number of tracks");
 						return SCPStatus.stsFileContent;
@@ -271,8 +283,8 @@ namespace SCPReaderPackage {
 		/// <param name="revCount">Number of revision used</param>
 		/// <param name="infoBox">Text box to display log information</param>
 		/// <returns>The status</returns>
-		public static Task<SCPStatus> readSCPTrackAsync(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount, TextBox infoBox) {
-			return Task<bool>.Run(() => readSCPTrack(buffer, trackSide, trackHeaderPosition, revCount, infoBox));
+		public static Task<SCPStatus> readSCPTrackAsync(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount) {
+			return Task<bool>.Run(() => readSCPTrack(buffer, trackSide, trackHeaderPosition, revCount));
 		}
 
 
@@ -285,7 +297,7 @@ namespace SCPReaderPackage {
 		/// <param name="revCount">Number of revision imaged in the file</param>
 		/// <param name="infoBox">TextBox to display log information</param>
 		/// <returns></returns>
-		private static SCPStatus readSCPTrack(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount, TextBox infoBox) {
+		private static SCPStatus readSCPTrack(byte[] buffer, int trackSide, int trackHeaderPosition, int revCount) {
 			int track = trackSide / 2;
 			int side = trackSide % 2;
 			_fluxMin = Int32.MaxValue;
@@ -298,14 +310,12 @@ namespace SCPReaderPackage {
 			ti.identifier += readChar(buffer, ref idx).ToString();	// 0x01
 			ti.identifier += readChar(buffer, ref idx).ToString();	// 0x02
 			if (ti.identifier != "TRK") {
-				infoBox.AppendText(String.Format("SCP File Error: invalid track header"));
 				return SCPStatus.stsInvalidTrack;
 			}
 			ti.trackSide = readByte(buffer, ref idx);				// 0x03 trackSide
 
 			// check track number
 			if (ti.trackSide != trackSide) {
-				infoBox.AppendText(String.Format("SCP File Error: inconsistent number of tracks"));
 				return SCPStatus.stsFileContent;
 			}
 
@@ -370,17 +380,18 @@ namespace SCPReaderPackage {
 			}	// for all revolutions
 
 			// Here we compensate the best we can for the missing information from SCP
-			if ((timeMissingFromFirstRev > 30000 / 25) && (revCount > 1)) {
-				int nfa = ti.fluxValues[fluxOffset[1]];
+			//if ((timeMissingFromFirstRev > 10000 / 25) && (revCount > 1)) {
+				//int nfa = ti.fluxValues[fluxOffset[1]];
 				for (int rev = 0; rev < revCount; rev++) {
 					int firstOffset = fluxOffset[rev];
-					int lastOffset = firstOffset + ti.revInfo[rev].fluxCount - 1;
+					//int lastOffset = firstOffset + ti.revInfo[rev].fluxCount - 1;
 					if (rev == 0) {
-						ti.fluxValues[firstOffset] += nfa - timeMissingFromFirstRev;
+						ti.fluxValues[firstOffset] += timeMissingFromFirstRev;
+						//MessageBox.Show(String.Format("NFA {0}", timeMissingFromFirstRev * 25));
 						//ti.fluxValues[lastOffset] += timeMissingFromFirstRev;
 					}
 				}	// all rev
-			}
+			//}
 
 			// now we transfer to our Global Disk structure. Values are in NS
 			// with correction done on a revolution basis

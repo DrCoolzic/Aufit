@@ -169,7 +169,7 @@
                         <RadioButton Grid.Column="3" Name="rbMed" Content="Med" IsChecked="True"  Margin="0,0,7,0" VerticalContentAlignment="Center" FlowDirection="RightToLeft"/>
                         <RadioButton Grid.Column="4" Name="rbLow" Content="Low" Margin="0,0,7,0" VerticalContentAlignment="Center" FlowDirection="RightToLeft"/>
                         <CheckBox Grid.Column="5" x:Name="cbOutOfBand" Content="Out of Band" Margin="20,0,10,0" VerticalAlignment="Center" 
-				            FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" Click="btDiskRefresh" />
+				            FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" Click="btDiskRefresh" />
                         <CheckBox Grid.Column="6" x:Name="cbDiskNFA" Content="Unf. NFA" Margin="15,0,10,0" VerticalAlignment="Center" 
 				            FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" Click="btDiskRefresh"/>
                         <Button Grid.Column="7" Name="btDisk" Margin="10,2,0,2"  Content="Refresh" Width="80"  Click="btDiskRefresh" VerticalContentAlignment="Center" HorizontalAlignment="Right"/>
