@@ -413,7 +413,7 @@ namespace SCPReaderPackage {
 
 				for (int f = 0; f < ti.revInfo[rev].fluxCount; f++) {
 					int flux = (int)((double)ti.fluxValues[offset + f] * tick);
-					Debug.Assert(flux > 0, "Invalid negative flux read");
+					Debug.Assert(flux >= 0, "Invalid negative flux read");
 					Global.Disk[track, side].fluxData.fluxValue[pos++] = flux;
 
 

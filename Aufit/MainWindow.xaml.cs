@@ -285,7 +285,11 @@ namespace Aufit {
 			cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) < Global.UNFORMATED_ENTROPY);
 			_histoDrawing.drawHisto(track, side, rev);
 
-			if (!tabItemTrack.IsSelected) return;
+			if (!tabItemTrack.IsSelected) {
+				// still want to read track/id/sector
+				FDC.fdcRealAll(track, side, rev);
+				return;
+			}			
 
 			_fluxDrawing.setFluxDefault(track, side, rev);
 			_fluxDrawing.drawFlux(track, side, rev);

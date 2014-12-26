@@ -22,6 +22,9 @@ Improvements
 
 BUGS
 ====
+- FIXED 0.6.5473.34262: Chicago 90 - compare sector for optimization => no data crash
+- FIXED 0.605473.23814: Chaos Engine SCP D1 negative flux
+- FIXED 0.6.5473.20990: When in Content and change rev number FdcReadAll not called
 - FIXED 0.6.5472.17463: Gunship SCP track 21.0 Bad Fuzzy report first sect
 - FIXED 0.6.5473.16121: Barbarian scp d2 invalid file content error cannot display
 - FIXED 0.6.5472.14614: Kickoff 2 SCP (AF) track 02.0 sector 0 data missing?
@@ -34,6 +37,10 @@ BUGS
 - FIXED: computer hit vol 2 D2 some ID missing (id after index)
 - FIXED: comphitvol2 d2 : invalid byte in gaps actually located in data segment wrapped => should fix in read track detection (check in track buffer that it also display correctly)
 - FIXED: time of lore mitsumi track 46 fuzzy mask all 00 ???? ???? 72 ?
+
+Problem images
+==============
+- SCP Awesome disk 3: 4 rev max
 
 
 Useful information

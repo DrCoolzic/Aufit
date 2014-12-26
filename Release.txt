@@ -1,5 +1,6 @@
 * V0.6 December 2014 Freeze for Beta release to Brume
-- FIXED 0.6.5472.17463: Gunship SCP track 21.0 Bad Fuzzy report first sect
+- FIXED 0.6.5473.34262: Chicago 90 crash
+- FIXED 0.6.5472.17463: Gunship SCP track 21.0 Bad Fuzzy report first sect due to NFA!
 - FIXED 0.6.5473.16121: Barbarian scp d2 invalid file content error cannot display
 - Fix bug Kickoff 2 SCP NFA not decoded correctly (again cant display right info)
 - Fix bug NFA not working for Dr. Doom Revenge (now NFA handled at read time)

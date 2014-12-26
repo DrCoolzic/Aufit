@@ -352,7 +352,7 @@ namespace WD1772Package {
 						nfaCount = 0;
 					}
 
-					if (compareSector) {
+					if (compareSector && (dt.sectors[sectorNumber].data != null)) {
 						if (dsr.Data != dt.sectors[sectorNumber].data.buffer.Bytes[byteInSector].dataByte) {
 							compareSector = false;
 						}
