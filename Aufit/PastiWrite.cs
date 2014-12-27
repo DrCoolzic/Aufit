@@ -169,7 +169,15 @@ namespace PastiPackage {
 
 					// do we need fuzzy record
 					for (int sect = 0; sect < sectorCount; sect++) {
-						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null))
+						// if we recover data from other revolution we disable data in track
+						// as we use recovered data we also disable fuzzy
+						if (dt.sectors[sect].recovered_data != null) {
+							dt.sectors[sect].flags &= ~Sector.SEC_EQ_TRACK;
+							dt.sectors[sect].data.fuzzy = null;
+						}
+
+
+						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].recovered_data == null))
 							tdesc.fuzzyCount += (uint)dt.sectors[sect].data.fuzzy.Count();
 						else if (SIM_FUZZY && (dt.sectors[sect].data.crc != 0) && ((dt.sectors[sect].flags & Sector.WIDTH_ABOVE) != 0)) {
 							// Rob Northen protection we force fuzzy bits if not there
@@ -272,7 +280,7 @@ namespace PastiPackage {
 							else {
 								if (dt.sectors[sect].data.iam != 0xFB)
 									fdcFlag |= SectorDesc.REC_TYPE;
-								if (dt.sectors[sect].data.info.crc != 0)
+								if ((dt.sectors[sect].data.info.crc != 0) && (dt.sectors[sect].recovered_data == null))
 									fdcFlag |= SectorDesc.CRC_ERR;
 							}	// these two flags are only meaningful if record has bytes
 							if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null))
@@ -304,7 +312,7 @@ namespace PastiPackage {
 
 					// write fuzzy mask if needed
 					for (int sect = 0; sect < sectorCount; sect++) {
-						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null)) {
+						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].recovered_data == null)) {
 							start = buffer.Count;
 							for (int i = 0; i < dt.sectors[sect].data.fuzzy.Count(); i++)
 								writeByte(buffer, (byte)~dt.sectors[sect].data.fuzzy[i]);
@@ -344,10 +352,15 @@ namespace PastiPackage {
 									dt.sectors[sect].id.number, dt.sectors[sect].data.buffer.Bytes.Count, dt.sectors[sect].trackOffset));
 							}
 							else {
-								for (int i = 0; i < dt.sectors[sect].data.buffer.Bytes.Count; i++)
-									writeByte(buffer, dt.sectors[sect].data.buffer.Bytes[i].dataByte);
-								if (_infoBox != null) _infoBox.AppendText(String.Format("      Writing Sector {0} {1} bytes ({2}-{3})\n",
-									dt.sectors[sect].id.number, dt.sectors[sect].data.buffer.Bytes.Count, start, buffer.Count - 1));
+								for (int i = 0; i < dt.sectors[sect].data.buffer.Bytes.Count; i++) {
+									if (dt.sectors[sect].recovered_data != null)
+										writeByte(buffer, dt.sectors[sect].recovered_data.buffer.Bytes[i].dataByte);
+									else
+										writeByte(buffer, dt.sectors[sect].data.buffer.Bytes[i].dataByte);
+								}
+								if (_infoBox != null) _infoBox.AppendText(String.Format("      Writing Sector {0} {1} bytes ({2}-{3}) {4}\n",
+									dt.sectors[sect].id.number, dt.sectors[sect].data.buffer.Bytes.Count, start, buffer.Count - 1,
+									(dt.sectors[sect].recovered_data != null) ? "recovered" : ""));
 							}
 						}
 					}

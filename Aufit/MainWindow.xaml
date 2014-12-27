@@ -188,8 +188,47 @@
             <TabItem x:Name="tabItemAnalysis" Header="Analysis" Width="100">
                 <Button Grid.Column="4" Name="btProt" Margin="0,0,10,0"  Content="Protections" Width="100" Click="btProtectionClick" HorizontalAlignment="Left" VerticalAlignment="Top"/>
 			</TabItem>
+            
 			<TabItem x:Name="tabItemSave" Header="Save" Width="100">
-                <Button Grid.Column="5" Name="btWrite" Margin="0,0,10,0"  Content="Write Disk" Width="100"  Click="btWriteDiskClick" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                <Grid Margin="0" >
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="24"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" >
+
+                        <TextBox>
+                        </TextBox>
+                    </Grid>
+
+                    <Grid Grid.Row="1" >
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <!--<Button Grid.Column="0" Content="Save Picture" Width="80" Margin="2" VerticalContentAlignment="Center" Click="saveImageClick"/>
+                        <TextBox Grid.Column="1" Text="Resolution: " BorderThickness="0" VerticalContentAlignment="Center"/>
+                        <RadioButton Grid.Column="2" Name="rbHigh" Content="High" Margin="0,0,7,0" VerticalContentAlignment="Center" FlowDirection="RightToLeft"/>
+                        <RadioButton Grid.Column="3" Name="rbMed" Content="Med" IsChecked="True"  Margin="0,0,7,0" VerticalContentAlignment="Center" FlowDirection="RightToLeft"/>
+                        <RadioButton Grid.Column="4" Name="rbLow" Content="Low" Margin="0,0,7,0" VerticalContentAlignment="Center" FlowDirection="RightToLeft"/>
+                        <CheckBox Grid.Column="5" x:Name="cbOutOfBand" Content="Out of Band" Margin="20,0,10,0" VerticalAlignment="Center" 
+				            FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" Click="btDiskRefresh" />
+                        <CheckBox Grid.Column="6" x:Name="cbDiskNFA" Content="Unf. NFA" Margin="15,0,10,0" VerticalAlignment="Center" 
+				            FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" Click="btDiskRefresh"/>
+                        <Button Grid.Column="7" Name="btDisk" Margin="10,2,0,2"  Content="Refresh" Width="80"  Click="btDiskRefresh" VerticalContentAlignment="Center" HorizontalAlignment="Right"/>-->
+                         <Button Grid.Column="5" Name="btWrite" Margin="0,0,10,0"  Content="Write Disk" Width="100"  Click="btWriteDiskClick" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    </Grid>
+
+                </Grid>
+
+                
 			</TabItem>
 		</TabControl>
 	</Grid>

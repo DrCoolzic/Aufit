@@ -116,6 +116,7 @@ namespace WD1772Package {
 
 		/// <summary>information about the data field </summary>
 		public BlockInfo info = new BlockInfo();
+
 	}
 
 
@@ -156,6 +157,10 @@ namespace WD1772Package {
 
 		/// <summary>the content of the sector start at this track offset</summary>
 		public int trackOffset;
+
+		/// <summary>Pointer to the Recovered Data Field of the sector (can be null)</summary>
+		/// <remarks>If we find fuzzy bytes and good CRC we recover in this field</remarks>
+		public DataField recovered_data;
 	}
 
 
@@ -760,8 +765,11 @@ namespace WD1772Package {
 										if (fuzzyFound && (sector.data.fuzzy == null))
 											sector.data.fuzzy = fuzzy;
 
-										// TODO if CRC original bad and CRC this one good
-										// we save the good sector in DB for pasti write
+										// if we have fuzzy sector and CRC is correct this indicates
+										// that we need to keep the correctly read sector.
+										if (fuzzyFound && (data.info.crc == 0))
+											sector.recovered_data = data;
+
 									} // compare mode with data
 									break;
 
