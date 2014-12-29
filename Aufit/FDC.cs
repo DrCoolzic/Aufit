@@ -408,7 +408,6 @@ namespace WD1772Package {
 		public static void readAddr(int track, int side, int rev) {
 			int startBit = Global.Disk[track, side].packedFluxDataRev[rev].firstFluxBit;
 			int stopBit = startBit + Global.Disk[track, side].packedFluxDataRev[rev].bitCount;
-			int lastBye = Global.Disk[track, side].packedFluxData.packedBits.Count();
 			int sectorCount = 0;
 			int byteLeftInBlock = 0;
 			int currentTime = 0;
@@ -537,7 +536,6 @@ namespace WD1772Package {
 		public static void readSector(int track, int side, int rev, byte sectToRead, int idBitPosition, bool compare) {
 			int startBit = Global.Disk[track, side].packedFluxDataRev[rev].firstFluxBit;
 			int stopBit = startBit + Global.Disk[track, side].packedFluxDataRev[rev].bitCount;
-			int lastBye = Global.Disk[track, side].packedFluxData.packedBits.Count();
 			int byteLeftInBlock = 0;
 			int currentTime = 0;
 			int byteCount = 0;
@@ -551,8 +549,11 @@ namespace WD1772Package {
 			bool p_inner = false;
 
 			Sector sector = null;
-			if (idBitPosition >= 0)
+			if (idBitPosition >= 0) {
 				sector = findSector(track, side, sectToRead, idBitPosition);
+				Debug.Assert(sector == null, "Sector not found in readSector",
+					String.Format("Track {0} Side {1} sector {2}", track, side, sectToRead));
+			}
 
 			DSR dsr = new DSR();
 			dsr.sectorMode();
@@ -599,11 +600,13 @@ namespace WD1772Package {
 								case 0xFE:	// IDAM - start of an ID block
 								case 0xFF:
 									if (idBitPosition < 0) {
-										// if past index we have no data
-										if (currentTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime) {
+										// if not found and past index we have no data (except if very close)
+										int delta = currentTime - Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime;
+										if (delta > 32000) {
 											breakLoop = true;
 											break;
 										}
+
 										// search the corresponding sector
 										sector = null;
 										// start position can vary if sector with random noise happen before
@@ -614,6 +617,8 @@ namespace WD1772Package {
 												sector = s;
 												break;
 											}
+
+										// http://mikaelkrief.wordpress.com/2011/10/26/asp-net-creation-dexception-personnalisee/
 										Debug.Assert(sector != null, "Id not found in readSect",
 											String.Format("Track={0} Side={1} #sect={2}", track, side, Global.Disk[track, side].sectors.Count));
 										sector.flags |= Sector.SEC_PROCESSED;
@@ -698,7 +703,7 @@ namespace WD1772Package {
 											idFound = true;
 									}
 									break;
-								case 0:
+								case 0:	// end of ID block
 									dsr.sectorMode();
 									phase = Phases.p_gap;
 									p_inner = true;

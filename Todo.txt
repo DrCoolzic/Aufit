@@ -20,14 +20,18 @@ Improvements
 - Content display inn main win
 - Analysis display in main win
 - Save display in main win
+- When ID over/past index => fix track display & track buffer
 
 BUGS
 ====
+- FIXED 0.6.5476.33179: Crackdown 2D = KF Sector not found
+- FIXED 0.6.5476.18307: Computer Hits V2 - SCP D2 sector missing on some tracks
+- FIXED 0.6.5476.17402: Crackdown 2D = SCP D1&D2 crash
 - FIXED 0.6.5473.34262: Chicago 90 - compare sector for optimization => no data crash
-- FIXED 0.605473.23814: Chaos Engine SCP D1 negative flux
+- FIXED 0.6.5473.23814: Chaos Engine SCP D1 negative flux
 - FIXED 0.6.5473.20990: When in Content and change rev number FdcReadAll not called
-- FIXED 0.6.5472.17463: Gunship SCP track 21.0 Bad Fuzzy report first sect
 - FIXED 0.6.5473.16121: Barbarian scp d2 invalid file content error cannot display
+- FIXED 0.6.5472.17463: Gunship SCP track 21.0 Bad Fuzzy report first sect
 - FIXED 0.6.5472.14614: Kickoff 2 SCP (AF) track 02.0 sector 0 data missing?
 - FIXED 0.6.5471.31584: DrDooms missing part in NFA
 - FIXED 0.5.5469.21424: Skateball crash Id Not found

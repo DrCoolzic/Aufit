@@ -1,4 +1,7 @@
 * V0.6 December 2014 Freeze for Beta release to Brume
+- FIXED 0.6.5476.33179: Crackdown 2D = KF Sector not found
+- FIXED 0.6.5476.18307: Computer Hits V2 - SCP D2 sector missing on some tracks
+	Crackdown SCP D1&D2 crash
 - Auto-recovery feature added to automatically write good pasti
 - FIXED 0.6.5473.34262: Chicago 90 crash
 - FIXED 0.6.5472.17463: Gunship SCP track 21.0 Bad Fuzzy report first sect due to NFA!

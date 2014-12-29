@@ -196,6 +196,7 @@ namespace SCPReaderPackage {
 			return (status == SCPStatus.stsOK) ? true : false;
 		}
 
+
 		/// <summary>
 		/// Decodes an SCP file read in a buffer
 		/// </summary>
@@ -265,7 +266,7 @@ namespace SCPReaderPackage {
 					int side = trackAndSide % 2;
 					
 					//Global.mfmDecode(track, side);
-					Global.computeHisto(track, side, 1, infoBox);
+					Global.computeHisto(track, side, 0, infoBox);
 					ButtonMatrix.setButtonBG(track, side);
 				}
 			}

@@ -170,17 +170,23 @@ namespace PastiPackage {
 					// do we need fuzzy record
 					for (int sect = 0; sect < sectorCount; sect++) {
 						// if we recover data from other revolution we disable data in track
-						// as we use recovered data we also disable fuzzy
-						if (dt.sectors[sect].recovered_data != null) {
+						if (dt.sectors[sect].recovered_data != null)
 							dt.sectors[sect].flags &= ~Sector.SEC_EQ_TRACK;
+						// recovered or good CRC => no fuzzy
+						if ((dt.sectors[sect].data.fuzzy != null) &&
+							((dt.sectors[sect].recovered_data != null) || ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.info.crc == 0)))) {
 							dt.sectors[sect].data.fuzzy = null;
+							if (_infoBox != null) {
+								_infoBox.AppendText(String.Format("Track {0:D2}.{1:D1} ", trackNum, side));
+								_infoBox.AppendText(String.Format("Reseting fuzzy for sector {0} - CRC={1} Recover={2}\n", sect,
+								(dt.sectors[sect].data.info.crc == 0) ? "Good" : "Bad", (dt.sectors[sect].recovered_data != null) ? "Yes" : "No"));
+							}
 						}
-
 
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].recovered_data == null))
 							tdesc.fuzzyCount += (uint)dt.sectors[sect].data.fuzzy.Count();
 						else if (SIM_FUZZY && (dt.sectors[sect].data.crc != 0) && ((dt.sectors[sect].flags & Sector.WIDTH_ABOVE) != 0)) {
-							// Rob Northen protection we force fuzzy bits if not there
+							// Rob Northen protection we force fuzzy bits if not there ?
 							int dataSize = Global.sectSize(dt.sectors[sect].id.size);
 							dt.sectors[sect].data.fuzzy = new byte[dataSize];
 							for (int i = 0; i < dataSize; i++) {
@@ -283,7 +289,7 @@ namespace PastiPackage {
 								if ((dt.sectors[sect].data.info.crc != 0) && (dt.sectors[sect].recovered_data == null))
 									fdcFlag |= SectorDesc.CRC_ERR;
 							}	// these two flags are only meaningful if record has bytes
-							if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null))
+							if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].data.crc != 0))
 								fdcFlag |= SectorDesc.FUZZY_BITS;
 							if ((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0)
 								fdcFlag |= SectorDesc.BIT_WIDTH;
@@ -312,7 +318,7 @@ namespace PastiPackage {
 
 					// write fuzzy mask if needed
 					for (int sect = 0; sect < sectorCount; sect++) {
-						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].recovered_data == null)) {
+						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].recovered_data == null) && (dt.sectors[sect].data.info.crc != 0)) {
 							start = buffer.Count;
 							for (int i = 0; i < dt.sectors[sect].data.fuzzy.Count(); i++)
 								writeByte(buffer, (byte)~dt.sectors[sect].data.fuzzy[i]);

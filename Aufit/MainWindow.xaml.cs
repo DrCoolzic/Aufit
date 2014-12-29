@@ -390,7 +390,7 @@ namespace Aufit {
 			ImageName = fileName;
 			buttonsEnabled(false);
 			string extension = System.IO.Path.GetExtension(fileName);
-			tbStatus.Text = " *** READING INPUT - PLEASE WAIT ...";
+			tbStatus.Text = " *** READING INPUT ***";
 			tabCtrl.SelectedIndex = 1;
 			tabDisplay.SelectedIndex = 0;
 
@@ -409,16 +409,24 @@ namespace Aufit {
 					break;
 
 				case ".scp":
-					readOK = await readSPCFile(fileName);
+						readOK = await SCPReader.readScpAsync(fileName, infoBox);
+					break;
+
+				default:
+					// TODO
 					break;
 			}
 
-			if (readOK)
+			if (readOK) {
 				tbFileName.Text = ImageName;
-			else
+				selectTrack(0, 0);
+			}
+			else {
 				tbFileName.Text = "Sorry could not read correctly the input file";
+				return;
+			}
 
-			tbStatus.Text = "*** PROCESSING DATA - PLEASE WAIT ...";
+			tbStatus.Text = "*** PROCESSING DATA ***";
 			tabCtrl.SelectedIndex = 0;
 			if (_debugNoThread) {
 				for (int i = 0; i < 84; i++) {
@@ -464,16 +472,6 @@ namespace Aufit {
 					ButtonMatrix.setButtonBG(i, j);
 				}
 			}
-		}
-
-
-		private async Task<bool> readSPCFile(string fileName) {
-			//_fileName = System.IO.Path.GetFileNameWithoutExtension(fileName);
-			bool ok = await SCPReader.readScpAsync(fileName, infoBox);
-			if (ok) {
-				selectTrack(0, 0);
-			}
-			return ok;
 		}
 
 
