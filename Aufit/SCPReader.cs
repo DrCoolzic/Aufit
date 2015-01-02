@@ -252,8 +252,6 @@ namespace SCPReaderPackage {
 							case SCPStatus.stsFileContent:
 								infoBox.AppendText(String.Format("SCP File Error: inconsistent number of tracks"));
 								break;
-				
-
 						}
 						return status;
 					}

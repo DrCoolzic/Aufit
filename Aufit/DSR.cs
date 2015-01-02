@@ -257,6 +257,9 @@ namespace WD1772Package {
 					_syncOverlapCount = 16;	// 16 bits (8 clock + 8 data) must be read before next AM
 					_lastSyncFound = bitsInDetector;
 				}	// Sync found
+				else
+					_syncSeq = 0;
+
 			}	// Sync detection enabled
 
 			// Process CRC if activated

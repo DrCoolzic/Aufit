@@ -279,6 +279,8 @@ public class Bit {
 /// </summary>
 public class Global {
 
+	private static DiskTrack[,] _disk = new DiskTrack[85, 2];
+	private static bool _incompleteData = false;
 
 	/// <summary>
 	/// The entropy crossing value between formatted and unformatted
@@ -290,53 +292,37 @@ public class Global {
 	/// </summary>
 	public const int HISTO_SCALE = 50;
 
-	private static DiskTrack[,] _disk = new DiskTrack[85, 2];
-	private static bool _incompleteData = false;
 
 	/// <summary>Contains information about a track of the floppy disk</summary>
 	public struct DiskTrack {
-		/// <summary>
-		/// Pointer to the FluxData class for this track
-		/// </summary>
+		/// <summary>Pointer to the FluxData class for this track</summary>
 		public FluxData fluxData;
 
-		/// <summary> 
-		/// Array of FluxDataRev structure for this track. 
-		/// There is one entry for each revolution
-		/// </summary>
+		/// <summary>Array of FluxDataRev structure for this track. </summary>
+		/// <remarks>There is one entry for each revolution</remarks>
 		public FluxDataRev[] fluxDataRev;
 
-		/// <summary>
-		/// Pointer to the PackedFluxData class for this track
-		/// </summary>
+		/// <summary>Pointer to the PackedFluxData class for this track</summary>
 		public PackedFluxData packedFluxData;
 
-		/// <summary> 
-		/// Array of PackedFluxDataRev structure for this track. 
-		/// There is one entry for each revolution
-		/// </summary>
+		/// <summary>Array of PackedFluxDataRev structure for this track.</summary>
+		/// <remarks>There is one entry for each revolution</remarks>
 		public PackedFluxDataRev[] packedFluxDataRev;
 
-		/// <summary>
-		/// Histogram / entropy data
-		/// </summary>
+		/// <summary>Histogram & entropy data</summary>
 		public HistoData histoData;
-
 
 		/// <summary>Track Information</summary>
 		public Track track;
 
 		/// <summary>Sectors Information</summary>
-		/// <remarks>This value is set by readSect()</remarks>
 		public List<Sector> sectors;
-
 	}
 
 
-	/// <summary>
-	/// This function is used to re-initialized all disk/track structure. Should be called 
-	/// each time a new FD is read. Hopefully should also free all memory from previous read.
-	/// </summary>
+	/// <summary>This function is used to re-initialized all disk/track structure. </summary>
+	/// <remarks>Should be called each time a new FD is read. Hopefully should also free 
+	/// all memory from previous read.</remarks>
 	public static void resetDisk() {
 		_disk = new DiskTrack[85, 2];
 		_incompleteData = false;
@@ -352,9 +338,7 @@ public class Global {
 	}
 
 
-	/// <summary>
-	/// Return the flux value corresponding to a specific bit.
-	/// </summary>
+	/// <summary>Return the flux value corresponding to a specific bit.</summary>
 	/// <param name="bitPosition">position of the bit in the packed bit array</param>
 	/// <param name="track">The current track</param>
 	/// <param name="side">The current side</param>
@@ -375,7 +359,7 @@ public class Global {
 				testBit >>= 1;
 			}
 			value = dt.fluxData.fluxValue[dt.packedFluxData.firstFluxIndex[packedIndex] + count];
-		}
+		}	// flux exist
 		else {	
 			if (bit == 0) {
 				bit = 8;
@@ -392,7 +376,7 @@ public class Global {
 			}
 		done:
 			value = (count + 1) * dt.packedFluxData.bitWidth[packedIndex];
-		}
+		}	// compute flux
 		return value;
 	}
 
@@ -407,11 +391,8 @@ public class Global {
 	}
 
 
-	/// <summary>
-	/// Decodes the MFM Flux transition into clock/data bits
-	/// </summary>
-	/// <remarks> Fill packed structure and store useful information
-	/// </remarks>
+	/// <summary>Decodes the MFM Flux transition into clock/data bits</summary>
+	/// <remarks> Fill packed structure and store useful information</remarks>
 	public static void mfmDecode(int track, int side) {
 		// if already there nothing to do
 		if (Global.Disk[track, side].packedFluxData != null) return;
@@ -499,9 +480,8 @@ public class Global {
 	}
 
 
-	/// <summary>
-	/// This function fill the histogram _histo array compute the entropy and display information
-	/// </summary>
+	/// <summary>This function fills the histogram array, computes the entropy,
+	/// and display information</summary>
 	/// <param name="track">We compute the histogram for this track</param>
 	/// <param name="side">We compute the histogram for this side</param>
 	/// <param name="rev">We compute the histogram for this revolution</param>
@@ -588,26 +568,23 @@ public class Global {
 	}
 
 
-	/// <summary>
-	/// Return the actual size of the data field of a sector
-	/// </summary>
+	/// <summary>Return the actual size of the data field of a sector</summary>
 	/// <param name="size">encoded size of the sector</param>
 	/// <returns>"decoded size" of the data segment</returns>
-	/// <remarks>
-	/// In the ID field the size of the sector is coded 0=128, 1=256, 2=512, 3=1024
+	/// <remarks>In the ID field the size of the sector is coded 0=128, 1=256, 2=512, 3=1024
 	/// The function returns the decoded value. Only the last 2 bytes are used by
-	/// The WD1772 therefore all other bits are ignored
-	/// </remarks>
+	/// The WD1772 therefore all other bits are ignored.</remarks>
 	public static int sectSize(byte size) {
 		int s;
 		s = 128 << (size & 0x03);
 		return s;
 	}
 
-	/// <summary>
-	/// Ask where to save a .png image
-	/// </summary>
+
+	/// <summary>Ask where to save a .png image</summary>
 	/// <param name="target">Visual to save as png image</param>
+	/// <param name="scale">!the drawing will be scaled using this value
+	/// (default to 1.0 if not provided)</param>
 	public static void saveImage(Visual target, double scale = 1.0) {
 		SaveFileDialog sfd = new SaveFileDialog();
 		sfd.Filter = "Png file|*.png|All Files|*.*";
@@ -617,10 +594,7 @@ public class Global {
 
 
 	// http://mcleodsean.wordpress.com/2008/10/07/bitmap-snapshots-of-wpf-visuals/
-
-	/// <summary>
-	/// Take a visual and save it as a png image
-	/// </summary>
+	/// <summary>Take a visual and save it as a png image</summary>
 	/// <param name="target">The visual</param>
 	/// <param name="filename">Where to save</param>
 	private static void savePngFromVisual(Visual target, string filename, double scale) {
@@ -647,9 +621,7 @@ public class Global {
 	}
 
 
-	/// <summary>
-	/// This is an asynchronous version of decodeAndRead()
-	/// </summary>
+	/// <summary>This is an asynchronous version of decodeAndRead()</summary>
 	/// <param name="track">The track to read and decode</param>
 	/// <param name="side">The side to read and decode</param>
 	/// <param name="rev">The revolution to read and decode</param>
@@ -659,16 +631,11 @@ public class Global {
 	}
 
 
-	/// <summary>
-	/// Decode the flux transitions and do all FDC read commands
-	/// </summary>
-	/// <remarks>To display the layout we must make sure the flux are correctly
-	/// decoded and that all the read functions (readTrack(), readAddr(), and 
-	/// readSect() functions are done before we display.</remarks>
+	/// <summary>Decode the flux transitions and do all FDC read commands</summary>
 	/// <param name="track">The track to read and decode</param>
 	/// <param name="side">The side to read and decode</param>
 	/// <param name="rev">The revolution to read and decode</param>
-	/// <returns>A pointer to the TrackContent structure</returns>
+	/// <returns>A pointer to the list of sectors</returns>
 	public static List<Sector> decodeAndRead(int track, int side, int rev) {
 		if ((Global.Disk[track, side].fluxData == null) &&
 			(Global.Disk[track, side].packedFluxData == null)) return null;

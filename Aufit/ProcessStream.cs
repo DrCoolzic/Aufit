@@ -75,6 +75,9 @@ namespace KFReaderPackage {
 
 					for (int f = 0; f < Global.Disk[track, side].fluxDataRev[rev].fluxCount; f++) {
 						Global.Disk[track, side].fluxData.fluxValue[offset + f] = (int)((double)stream.FluxValues[offset + f] * sample);
+						int value = Global.Disk[track, side].fluxData.fluxValue[offset + f];
+						if (value > fluxMax) fluxMax = value;
+						if (value < fluxMin) fluxMin = value;
 						if ((double)stream.Indexes[rev].preIndexTime * sample > 10000.0) {
 							// If we have an NFA at border of revolution we split at position of the index.
 							// The pre-index part is added to the last transition and the post-index part
@@ -84,9 +87,6 @@ namespace KFReaderPackage {
 							else if (f == (Global.Disk[track, side].fluxDataRev[rev].fluxCount - 1))
 								Global.Disk[track, side].fluxData.fluxValue[offset + f] += (int)((double)(stream.Indexes[rev].preIndexTime * sample));
 						}	// NFA
-						int value = Global.Disk[track, side].fluxData.fluxValue[offset + f];
-						if (value > fluxMax) fluxMax = value;
-						if (value < fluxMin) fluxMin = value;
 					}	// all flux in rev
 				}	// all rev
 

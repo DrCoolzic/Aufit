@@ -423,6 +423,7 @@ namespace Aufit {
 			}
 			else {
 				tbFileName.Text = "Sorry could not read correctly the input file";
+				buttonsEnabled(true);
 				return;
 			}
 
@@ -748,15 +749,14 @@ namespace Aufit {
 			bool? ok = sfd.ShowDialog();
 			if (ok == true) {
 				await checkProtectionAsync();
-				tbFileName.Text = sfd.FileName;
+				//tbFileName.Text = sfd.FileName;
 				if (Global.DataIncomplete) {
 					MessageBoxResult result = MessageBox.Show(
-						"The image does not contains enough data\nYou should have imaged more revolutions\nDo you still want to proceed?",
+						"The disk contains shifted tracks and you are on the last revolution\nThe output file will be incorrect\nDo you still want to proceed?",
 						"Incomplete Image Data", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
 					if (result == MessageBoxResult.No) return;
 				}	// incomplete
-				PastiWriter pasti = new PastiWriter(infoBox);
-				//PastiWriter pasti = new PastiWriter();
+				PastiWriter pasti = new PastiWriter(tbSaveImage);
 				pasti.writePasti(sfd.FileName, cbForceDS.IsChecked.Value);
 			}
 		}
@@ -815,6 +815,9 @@ namespace Aufit {
 			ButtonMatrix.deselectButton();
 			ButtonMatrix.selectButton(track, side);
 			Protections.checkProtection(track, side, infoBox);
+			//Global.computeHisto(Track, Side, Rev, infoBox);
+			//_histoDrawing.drawHisto();
+			FDC.releaseTrack(Track, Side);
 			drawAllCharts();
 			if (tabItemDisk.IsSelected)
 				drawDiskSelectedTrack(track, side);

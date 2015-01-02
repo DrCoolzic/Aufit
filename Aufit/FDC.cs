@@ -418,17 +418,15 @@ namespace WD1772Package {
 			DSR dsr = new DSR();
 			dsr.sectorMode();
 
-			// We read from the beginning to end of a track looking only for ID field (in current revolution).
-			// If the end of track happen in the middle of an ID field we continue with data from the next revolution.
-			for (int currentBit = startBit; (currentBit < stopBit) || (phase == Phases.p_id) || dsr.inSyncSeq; currentBit++) {
+			// We read from the beginning to end of a track looking only for ID fields (in current revolution).
+			// If the end of track happen in the middle of an ID field or a sync sequence we continue with 
+			// flux from the next revolution. To catch marginal sync seq we search an extra 3 bytes.
+			for (int currentBit = startBit; (currentBit < (stopBit + 48)) || (phase == Phases.p_id) || dsr.inSyncSeq; currentBit++) {
 				int currentByte = currentBit / 8;
 				int bitInByte = currentBit % 8;
 
+				// break immediately if we are beyond buffer
 				if (currentByte == Global.Disk[track, side].packedFluxData.packedBits.Count()) {
-					// We have reach the end of the buffer while reading an ID
-					if (Global.Disk[track, side].packedFluxDataRev.Count() == 1)
-						// we have a shifted track with only 1 rev !
-						Global.DataIncomplete = true;
 					break;
 				}
 
@@ -547,11 +545,12 @@ namespace WD1772Package {
 			Phases phase = Phases.p_gap;
 			uint flags = 0;
 			bool p_inner = false;
+			int id_found = 0;
 
 			Sector sector = null;
 			if (idBitPosition >= 0) {
 				sector = findSector(track, side, sectToRead, idBitPosition);
-				Debug.Assert(sector == null, "Sector not found in readSector",
+				Debug.Assert(sector != null, "Sector not found in readSector",
 					String.Format("Track {0} Side {1} sector {2}", track, side, sectToRead));
 			}
 
@@ -561,18 +560,20 @@ namespace WD1772Package {
 
 			// we normally loop from start to stop for the specified revolution.
 			// However we continue if we are in the middle of ID, Inner GAP, or DATA field
-			for (int currentBit = startBit; (currentBit < stopBit) || (phase != Phases.p_gap) || p_inner || dsr.inSyncSeq; currentBit++) {
+			// we also continue until we find same number of id as in readAddr()
+			for (int currentBit = startBit; 
+				(currentBit < stopBit) || (phase != Phases.p_gap) || p_inner || (id_found < Global.Disk[track, side].sectors.Count) || dsr.inSyncSeq; 
+				currentBit++) {
 				if (breakLoop) break;
 
 				int currentByte = currentBit / 8;
 				int bitInByte = currentBit % 8;
 
 				if (currentByte == Global.Disk[track, side].packedFluxData.packedBits.Count()) {
-				//// we cannot access beyond buffer. If this happen with only one revolution it
-				//// indicates that we do not have enough data. If this happen in the last revolution
-				//// the data for this revolution will be recovered incorrectly.
-					if (Global.Disk[track, side].packedFluxDataRev.Count() == 1)
-						// we have a shifted track with only 1 rev !
+					// We have reach the end of the buffer while reading an ID
+					// This indicates that we do not have enough information on this
+					// rev to produce output file.
+					if (!compare)
 						Global.DataIncomplete = true;
 					break;
 				}
@@ -707,6 +708,7 @@ namespace WD1772Package {
 									dsr.sectorMode();
 									phase = Phases.p_gap;
 									p_inner = true;
+									id_found++;
 									break;
 								default:
 									break;
@@ -813,6 +815,7 @@ namespace WD1772Package {
 
 			if (Global.Disk[track, side].sectors == null)
 				Global.Disk[track, side].sectors = new List<Sector>();
+			Global.DataIncomplete = false;
 
 			readAddr(track, side, rev);
 

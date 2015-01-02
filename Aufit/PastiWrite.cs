@@ -39,7 +39,7 @@ using Aufit;
 namespace PastiPackage {
 	/// <summary>Pasti Writer Class</summary>
 	class PastiWriter {
-		TextBox _infoBox;
+		TextBox _saveImageBox;
 
 		// when set to true the track data header contains sync position
 		readonly bool TRK_SYNC = false;
@@ -50,12 +50,14 @@ namespace PastiPackage {
 		// when set to true we simulate fuzzy bits on Rob Northen ?
 		readonly bool SIM_FUZZY = false;
 
+		readonly bool _debug = false;
+
 
 		/// <summary>Constructor</summary>
 		/// <param name="tb">TextBox used to display write information (debug information)</param>
-		/// <remarks>TextBox parameter can be ignored (normal case). Setting it is used for debug purpose</remarks>
-		public PastiWriter(TextBox tb = null) {
-			_infoBox = tb;
+		/// <remarks>TextBox parameter: where to display info</remarks>
+		public PastiWriter(TextBox tb) {
+			_saveImageBox = tb;
 		}
 
 
@@ -67,9 +69,15 @@ namespace PastiPackage {
 		public bool writePasti(string fileName, bool forceDs) {
 			FileStream fs;
 
+			_saveImageBox.Clear();
+			_saveImageBox.ScrollToHome();
+			_saveImageBox.FontFamily = new FontFamily("Consolas");
+			_saveImageBox.FontSize = 12;
+			_saveImageBox.AppendText(String.Format("Writing stx file {0}\n", fileName));
+
 			// encode file into buffer
 			List<byte> sbuf = new List<byte>();
-			bool status = encodePasti(sbuf, forceDs);
+			encodePasti(sbuf, forceDs);
 
 			try {
 				fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.Read);
@@ -79,8 +87,9 @@ namespace PastiPackage {
 				return false;
 			}
 			fs.Write(sbuf.ToArray(), 0, sbuf.Count);
+			_saveImageBox.AppendText(String.Format("Writing completed"));
 			fs.Close();
-			return status;		
+			return true;		
 		}
 
 
@@ -89,7 +98,7 @@ namespace PastiPackage {
 		/// </summary>
 		/// <param name="buffer">Contains the data to be written to Pasti file</param>
 		/// <returns>Always returns true!</returns>
-		private bool encodePasti(List<byte> buffer, bool forceDs) {
+		private void encodePasti(List<byte> buffer, bool forceDs) {
 			int start = 0;
 			byte trackCount = 0;
 			int sideCount = 1;	// single sided
@@ -104,11 +113,14 @@ namespace PastiPackage {
 					}
 			}
 
+
 			// number of track descriptor
 			for (int side = 0; side < sideCount; side++)
 				for (int track = 0; track < 84; track++)
 					if (Global.Disk[track, side].track != null)
 						trackCount++;
+
+			_saveImageBox.AppendText(String.Format("{0} Sided Diskette with a total of {1} tracks\n", (sideCount == 1) ? "Single" : "Double", trackCount));
 				
 			FileDesc fd = new FileDesc();
 			fd.version = 3;
@@ -128,12 +140,10 @@ namespace PastiPackage {
 			writeByte(buffer, fd.revision);			// revision
 			writeInt32(buffer, 0);					// reserved 2
 
-			if (_infoBox != null) _infoBox.Clear();
-			if (_infoBox != null) _infoBox.ScrollToHome();
-			if (_infoBox != null) _infoBox.FontFamily = new FontFamily("Consolas");
-			if (_infoBox != null) _infoBox.FontSize = 12;
-			if (_infoBox != null) _infoBox.AppendText(fd.ToString());
-			if (_infoBox != null) _infoBox.AppendText(String.Format(" - ({0}-{1})\n", start, buffer.Count-1));
+			if (_debug) {
+				_saveImageBox.AppendText(fd.ToString());
+				_saveImageBox.AppendText(String.Format(" - ({0}-{1})\n", start, buffer.Count - 1));
+			}
 						
 			// Write all track records
 			for (int trackNum = 0; trackNum < 84; trackNum++) {
@@ -173,12 +183,12 @@ namespace PastiPackage {
 						if (dt.sectors[sect].recovered_data != null)
 							dt.sectors[sect].flags &= ~Sector.SEC_EQ_TRACK;
 						// recovered or good CRC => no fuzzy
-						if ((dt.sectors[sect].data.fuzzy != null) &&
-							((dt.sectors[sect].recovered_data != null) || ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.info.crc == 0)))) {
+						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) &&
+							((dt.sectors[sect].recovered_data != null) || (dt.sectors[sect].data.info.crc == 0))) {
 							dt.sectors[sect].data.fuzzy = null;
-							if (_infoBox != null) {
-								_infoBox.AppendText(String.Format("Track {0:D2}.{1:D1} ", trackNum, side));
-								_infoBox.AppendText(String.Format("Reseting fuzzy for sector {0} - CRC={1} Recover={2}\n", sect,
+							if (_debug) {
+								_saveImageBox.AppendText(String.Format("Track {0:D2}.{1:D1} ", trackNum, side));
+								_saveImageBox.AppendText(String.Format("Reseting fuzzy for sector {0} - CRC={1} Recover={2}\n", sect,
 								(dt.sectors[sect].data.info.crc == 0) ? "Good" : "Bad", (dt.sectors[sect].recovered_data != null) ? "Yes" : "No"));
 							}
 						}
@@ -241,8 +251,10 @@ namespace PastiPackage {
 					writeByte(buffer, tdesc.trackNumber);
 					writeByte(buffer, tdesc.trackType);
 
-					if (_infoBox != null) _infoBox.AppendText(tdesc.ToString());
-					if (_infoBox != null) _infoBox.AppendText(String.Format(" ({0}-{1})\n", start, buffer.Count - 1));
+					if (_debug) {
+						_saveImageBox.AppendText(tdesc.ToString());
+						_saveImageBox.AppendText(String.Format(" ({0}-{1})\n", start, buffer.Count - 1));
+					}
 
 					// write sector descriptor if needed
 					if (needSectorDesc) {
@@ -286,13 +298,17 @@ namespace PastiPackage {
 							else {
 								if (dt.sectors[sect].data.iam != 0xFB)
 									fdcFlag |= SectorDesc.REC_TYPE;
-								if ((dt.sectors[sect].data.info.crc != 0) && (dt.sectors[sect].recovered_data == null))
+								if ((dt.sectors[sect].data.info.crc != 0) && (dt.sectors[sect].recovered_data == null)) 
 									fdcFlag |= SectorDesc.CRC_ERR;
 							}	// these two flags are only meaningful if record has bytes
 							if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].data.crc != 0))
 								fdcFlag |= SectorDesc.FUZZY_BITS;
 							if ((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0)
 								fdcFlag |= SectorDesc.BIT_WIDTH;
+
+							if (((fdcFlag & SectorDesc.CRC_ERR) != 0) && ((fdcFlag & SectorDesc.FUZZY_BITS) == 0))
+								_saveImageBox.AppendText(String.Format("CRC error on non fuzzy sector {0} track {1:D2}.{2:D1}. Check image quality\n",
+										dt.sectors[sect].id.number, trackNum, side));
 
 							sd.fdcFlags = fdcFlag;
 							sd.reserved = 0;
@@ -311,8 +327,10 @@ namespace PastiPackage {
 							writeByte(buffer, sd.fdcFlags);
 							writeByte(buffer, sd.reserved);
 
-							if (_infoBox != null) _infoBox.AppendText(sd.ToString());
-							if (_infoBox != null) _infoBox.AppendText(String.Format(" ({0}-{1})\n", start, buffer.Count - 1));
+							if (_debug) {
+								_saveImageBox.AppendText(sd.ToString());
+								_saveImageBox.AppendText(String.Format(" ({0}-{1})\n", start, buffer.Count - 1));
+							}
 						}
 					}
 
@@ -322,15 +340,18 @@ namespace PastiPackage {
 							start = buffer.Count;
 							for (int i = 0; i < dt.sectors[sect].data.fuzzy.Count(); i++)
 								writeByte(buffer, (byte)~dt.sectors[sect].data.fuzzy[i]);
-							if (_infoBox != null) _infoBox.AppendText(String.Format("   Writing Fuzzy {0} bytes for sector {1} ({2}-{3})\n",
+							if (_debug) _saveImageBox.AppendText(String.Format("   Writing Fuzzy {0} bytes for sector {1} ({2}-{3})\n",
 								dt.sectors[sect].data.fuzzy.Count(), dt.sectors[sect].id.number, start, buffer.Count - 1));
+							else
+								_saveImageBox.AppendText(String.Format("Found fuzzy sector {0} on track {1:D2}.{2:D1}\n",
+										dt.sectors[sect].id.number, trackNum, side));
 						}	// fuzzy found
 					}	// all sect
 
 
 					// the track data are located after the sector descriptor records & fuzzy record
 					int track_data_start = buffer.Count; // store the position of data in track record
-					if (_infoBox != null) _infoBox.AppendText(String.Format("   Start of Track data {0}\n", track_data_start));
+					if (_debug) _saveImageBox.AppendText(String.Format("   Start of Track data {0}\n", track_data_start));
 
 					// write track data if needed
 					if (needTrackData) {
@@ -344,7 +365,7 @@ namespace PastiPackage {
 						if ((dt.track.info.byteCount % 2) != 0)
 							writeByte(buffer, 0xFF);
 
-						if (_infoBox != null) _infoBox.AppendText(String.Format("      Writing Track {0}{1} bytes SyncPos={2} ({3}-{4})\n",
+						if (_debug) _saveImageBox.AppendText(String.Format("      Writing Track {0}{1} bytes SyncPos={2} ({3}-{4})\n",
 							dt.track.info.byteCount + ((TRK_SYNC) ? 4 : 2), ((dt.track.info.byteCount % 2) != 0) ? "(+1)" : "",
 							dt.track.firstSyncOffset, start, buffer.Count - 1));
 					}
@@ -354,7 +375,7 @@ namespace PastiPackage {
 						start = buffer.Count;
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.info.byteCount != 0)) {
 							if (OPT_SECT && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) !=0)) {
-								if (_infoBox != null) _infoBox.AppendText(String.Format("      Sector {0} {1} bytes already in track data @{2}\n",
+								if (_debug) _saveImageBox.AppendText(String.Format("      Sector {0} {1} bytes already in track data @{2}\n",
 									dt.sectors[sect].id.number, dt.sectors[sect].data.buffer.Bytes.Count, dt.sectors[sect].trackOffset));
 							}
 							else {
@@ -364,9 +385,14 @@ namespace PastiPackage {
 									else
 										writeByte(buffer, dt.sectors[sect].data.buffer.Bytes[i].dataByte);
 								}
-								if (_infoBox != null) _infoBox.AppendText(String.Format("      Writing Sector {0} {1} bytes ({2}-{3}) {4}\n",
+								if (_debug) 
+									_saveImageBox.AppendText(String.Format("      Writing Sector {0} {1} bytes ({2}-{3}) {4}\n",
 									dt.sectors[sect].id.number, dt.sectors[sect].data.buffer.Bytes.Count, start, buffer.Count - 1,
 									(dt.sectors[sect].recovered_data != null) ? "recovered" : ""));
+								else if (dt.sectors[sect].recovered_data != null) {
+									_saveImageBox.AppendText(String.Format("Recovered Sector {0} on track {1:D2}.{2:D1}\n", 
+										dt.sectors[sect].id.number, trackNum, side));
+								}
 							}
 						}
 					}
@@ -378,7 +404,7 @@ namespace PastiPackage {
 						start = buffer.Count;
 						writeInt16(buffer, 0x05);
 						writeInt16(buffer, (ushort)(2 * timingEntries + 4));
-						if (_infoBox != null) _infoBox.AppendText(String.Format("   Writing Timing header Flag=5 size={0} ({1}-{2})\n", 2 * timingEntries + 4, start, buffer.Count - 1));
+						if (_debug) _saveImageBox.AppendText(String.Format("   Writing Timing header Flag=5 size={0} ({1}-{2})\n", 2 * timingEntries + 4, start, buffer.Count - 1));
 						// write timing
 						for (int sect = 0; sect < sectorCount; sect++) {
 							if ((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0) {
@@ -393,8 +419,11 @@ namespace PastiPackage {
 									}
 								}
 								start = buffer.Count;
-								if (_infoBox != null) _infoBox.AppendText(String.Format("   Writing Timing {0} values for sector {1} ({2}-{3})\n",
+								if (_debug) _saveImageBox.AppendText(String.Format("   Writing Timing {0} values for sector {1} ({2}-{3})\n",
 									dt.sectors[sect].data.buffer.Bytes.Count, dt.sectors[sect].id.number, start, buffer.Count - 1));
+								else
+									_saveImageBox.AppendText(String.Format("Writing timing information for sector {0} on track {1:D2}.{2:D1}\n",
+										dt.sectors[sect].id.number, trackNum, side));
 							}	// timing found
 						}	// all sect
 					}
@@ -403,8 +432,6 @@ namespace PastiPackage {
 						String.Format("Track {0} Current pointer position = {1} next track = {2}", tdesc.trackNumber, buffer.Count, startTrackRecord + tdesc.recordSize));
 				} // for all tracks
 			}	// for all side
-
-			return true;
 
 		}	// encode pasti
 
