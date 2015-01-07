@@ -29,14 +29,15 @@ namespace Aufit {
 
 		#region DiskLayout
 		private async void btDiskRefresh(object sender, RoutedEventArgs e) {
-			await diskClearAndDraw();
+			diskClear();
+			await drawDiskLayout();
 		}
 
 
-		private async Task diskClearAndDraw() {
+		private void diskClear() {
 			cvDisk0.Children.Clear();
 			cvDisk1.Children.Clear();
-			await drawDiskLayout();
+
 		}
 
 
@@ -44,7 +45,8 @@ namespace Aufit {
 		/// Display the layout of a FD
 		/// </summary>
 		private async Task drawDiskLayout() {
-			//MessageBox.Show(String.Format("{0} {1}", Track, Side));
+			if (cvDisk0.Children.Count > 0) return;
+
 			Brush Black = new SolidColorBrush(Colors.Black);
 			Black.Freeze();
 			Brush DarkSlateGray = new SolidColorBrush(Colors.DarkSlateGray);
@@ -224,8 +226,6 @@ namespace Aufit {
 				Brush Red = new SolidColorBrush(Colors.Red);
 				Red.Freeze();
 
-				//_tb.Text = String.Format("Processing track {0} Side {1}", track, side);
-
 				// flux not in range
 				if (dt.fluxData != null) {
 					int startFluxIndex = dt.fluxDataRev[0].firstFluxIndex;
@@ -233,20 +233,18 @@ namespace Aufit {
 					int fluxStartTime = 0;
 					if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) && (dt.sectors.Count > 0) && (cbOutOfBand.IsChecked == true)) {
 						int minDisplayWidth = 60000;
+						int lastStop = 0;
 						for (int idx = startFluxIndex; idx < stopFluxIndex; idx += 1) {
 							int flux = dt.fluxData.fluxValue[idx];
 							if (fluxNotInRange(flux)) {
 								double startAngle = timeAngle(fluxStartTime);
+								if (fluxStartTime < lastStop) continue;
 
-								//int j = idx;
 								int fluxStopTime = fluxStartTime + flux;
-								//// try to concatenate to reduce number of arc to draw
-								//while ((j < stopFluxIndex) && (fluxNotInRange(dt.fluxData.fluxValue[j])))
-								//	fluxStopTime += dt.fluxData.fluxValue[j++];
-
 								if ((fluxStartTime - fluxStopTime) < minDisplayWidth)
 									fluxStopTime = fluxStartTime + minDisplayWidth;
 								double stopAngle = timeAngle(fluxStopTime);
+								lastStop = fluxStopTime;
 								Path path = new Path();
 								path.StrokeThickness = diskHeavyLine;
 								PathGeometry pg = new PathGeometry();
@@ -254,9 +252,7 @@ namespace Aufit {
 								addArc(pg, startAngle, stopAngle, center, radius);
 								path.Data = pg;
 								grid.Children.Add(path);
-
-								//idx = j;
-							}
+							}	// out of band
 							fluxStartTime += flux;
 						}
 					}
@@ -325,7 +321,6 @@ namespace Aufit {
 					for (int i = 0; i < dt.track.info.byteCount; i += NFA_INC) {
 						if ((dt.track.buffer.Bytes[i].mfmWord == 0) || (dt.track.buffer.Bytes[i].mfmWord == 0xFFFF)) {
 							double startAngle = byteAngle(i, dt.track.info.byteCount);
-
 							//int j = i;
 							//while ((j < dt.track.info.byteCount) && ((dt.track.buffer.Bytes[j].mfmWord == 0) || (dt.track.buffer.Bytes[j].mfmWord == 0xFFFF)))
 							//	j++;

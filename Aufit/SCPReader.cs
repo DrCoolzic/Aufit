@@ -394,7 +394,7 @@ namespace SCPReaderPackage {
 
 			// now we transfer to our Global Disk structure. Values are in NS
 			// with correction done on a revolution basis
-			MainWindow.Rev = 0;
+			MainWindow.CurrentRev = 0;
 			Global.Disk[track, side].fluxData = new FluxData();
 			Global.Disk[track, side].fluxData.totalFluxCount = ti.fluxValues.Count();
 			Global.Disk[track, side].fluxData.fluxValue = new int[ti.fluxValues.Count()];

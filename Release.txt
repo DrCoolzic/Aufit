@@ -1,4 +1,6 @@
-* V0.6 December 2014 Freeze for Beta release to Brume
+* V0.7 January 2015
+- Added auto safe mode (safe but slower mode) when sector not found + Analysis GUI + Speed DiskGui + Bug fixes
+- Fix DSR bug on sync seq, FDC detect sync at edge of index + bug fixes
 - FIXED 0.6.5476.33179: Crackdown 2D = KF Sector not found
 - FIXED 0.6.5476.18307: Computer Hits V2 - SCP D2 sector missing on some tracks
 	Crackdown SCP D1&D2 crash
@@ -12,6 +14,8 @@
 	Therefore it is impossible to do something clean when we have NFA over index
 - Fix bug sector not found due to unformatted sectors Crossbow D1, RoadBlaster
 - improve Disk View (cursor display) & speedup Track View
+
+* V0.6 December 2014 Freeze for Beta release to Brume
 - Beta release
 
 * V0.5 December 2014 Major rewrite of Aufit internals

@@ -62,8 +62,7 @@ namespace Aufit {
 		/// </summary>
 		public void drawSectorBuffer(int track, int side, int rev) {
 			// Force reread
-			Global.Disk[track, side].sectors = null;
-			Global.Disk[track, side].track = null;
+			FDC.resetTrack(track, side);
 			FDC.fdcRealAll(track, side, rev);
 			tbHeader.Text = Aufit.MainWindow.ImageName;
 
@@ -141,8 +140,7 @@ namespace Aufit {
 		/// <param name="rev">Revolution number</param>
 		public void drawTrackBuffer(int track, int side, int rev) {
 			// Force reread
-			Global.Disk[track, side].sectors = null;
-			Global.Disk[track, side].track = null;
+			FDC.resetTrack(track, side);
 			FDC.fdcRealAll(track, side, rev);
 
 			Track tr = Global.Disk[track, side].track;

@@ -56,4 +56,9 @@ http://www.nullskull.com/a/1507/autocorrelation-method-in-c-for-signal-analysis.
 https://pitchtracker.codeplex.com/
 Convolution, polynomial multiplication, and FIR digital filtering are all the same operation. 
 http://paulbourke.net/miscellaneous/correlate/
+http://www.wpf-tutorial.com/list-controls/combobox-control/
 
+http://www.c-sharpcorner.com/UploadFile/puranindia/creating-your-own-exception-classes-in-C-Sharp/
+http://www.dotnetperls.com/exception
+http://www.developpez.net/forums/d642949/dotnet/langages/csharp/csharp-classe-exception-personnalise-ne-catch-erreurs/
+// http://mikaelkrief.wordpress.com/2011/10/26/asp-net-creation-dexception-personnalisee/

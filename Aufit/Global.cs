@@ -280,7 +280,6 @@ public class Bit {
 public class Global {
 
 	private static DiskTrack[,] _disk = new DiskTrack[85, 2];
-	private static bool _incompleteData = false;
 
 	/// <summary>
 	/// The entropy crossing value between formatted and unformatted
@@ -317,6 +316,10 @@ public class Global {
 
 		/// <summary>Sectors Information</summary>
 		public List<Sector> sectors;
+
+		/// <summary>Image has shifted track and some data are missing</summary>
+		/// <remarks>This happen on the last revolution</remarks>
+		public bool hasIncompleteData;
 	}
 
 
@@ -325,16 +328,6 @@ public class Global {
 	/// all memory from previous read.</remarks>
 	public static void resetDisk() {
 		_disk = new DiskTrack[85, 2];
-		_incompleteData = false;
-	}
-
-
-	/// <summary>Set to true if we do not have enough data</summary>
-	/// <remarks>This usually happen if we need more than one revolution to get all
-	/// data. For example if we have data over index.</remarks>
-	public static bool DataIncomplete {
-		get { return _incompleteData; }
-		set { _incompleteData = value; }
 	}
 
 

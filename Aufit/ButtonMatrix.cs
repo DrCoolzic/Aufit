@@ -215,8 +215,8 @@ namespace Aufit {
 				int track = 10 * x + y;
 				if (Global.Disk[track, z].fluxData == null) return false;
 				deselectButton();
-				MainWindow.Track = track;
-				MainWindow.Side = z;
+				MainWindow.CurrentTrack = track;
+				MainWindow.CurrentSide = z;
 				selectButton(track, z);
 			}
 			return (tuple != null);

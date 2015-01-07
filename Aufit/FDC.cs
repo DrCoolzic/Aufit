@@ -34,6 +34,7 @@ using System.Windows.Media;
 using KFReaderPackage;
 using GlobalPackage;
 using Aufit;
+using System.Windows.Controls;
 
 namespace WD1772Package {
 	/// <summary>Different phases of a sector: ID, Gap, Data</summary>
@@ -137,7 +138,6 @@ namespace WD1772Package {
 		public const uint DUP_SEC_NUM = Bit.BIT_11;
 		public const uint LONG_SECT = Bit.BIT_12;
 		public const uint SHORT_SECT = Bit.BIT_13;
-		public const uint SECTOR_SEQ = Bit.BIT_14;
 
 		public const uint SEC_EQ_TRACK = Bit.BIT_31;
 		public const uint SEC_PROCESSED = Bit.BIT_32;
@@ -170,7 +170,8 @@ namespace WD1772Package {
 		public const uint LONG_TRACK = Bit.BIT_02;
 		public const uint DATA_TRACK = Bit.BIT_03;
 		public const uint BAD_DATA_GAP = Bit.BIT_04;
-
+		public const uint SECTOR_SEQ = Bit.BIT_05;
+		public const uint NOT_STD_SIZ = Bit.BIT_06;
 		public const uint NO_FLUX_AREA = Bit.BIT_07;
 		public const uint DATA_OVER_IDX = Bit.BIT_08;
 		public const uint DATA_AFTER_IDX = Bit.BIT_09;
@@ -196,11 +197,27 @@ namespace WD1772Package {
 		/// </summary>
 		public int firstSyncOffset = 0;
 
-		/// <summary>
-		/// Protection(s) detected for this track
-		/// </summary>
+		/// <summary>Protection(s) detected for this track</summary>
 		public bool hasProtections = false;
 
+	}
+
+	/// <summary>
+	/// We raise an exception if a sector is not found in readSector()
+	/// </summary>
+	public class SectorNotFoundException : Exception {
+		public SectorNotFoundException() : base() { }
+		public SectorNotFoundException(string message) : base(message) { }
+		public SectorNotFoundException(string message, Exception e) : base(message, e) { }
+
+		private static string _ExceptionMessage;
+		public static string ExceptionMessage {
+			get { return _ExceptionMessage; }
+			set { _ExceptionMessage += value + "\n"; }
+		}
+		public static void resetException() {
+			_ExceptionMessage = null;
+		}
 	}
 
 
@@ -384,6 +401,8 @@ namespace WD1772Package {
 				}	// data ready
 
 			}	// for all bits
+			if (nfaCount > 8)
+				Global.Disk[track, side].track.flags |= Track.NO_FLUX_AREA;
 
 			Global.Disk[track, side].track.info.byteCount = byteCount;
 			Global.Disk[track, side].track.info.timeLength = currentTime;
@@ -427,6 +446,8 @@ namespace WD1772Package {
 
 				// break immediately if we are beyond buffer
 				if (currentByte == Global.Disk[track, side].packedFluxData.packedBits.Count()) {
+					if ((phase == Phases.p_id) || dsr.inSyncSeq)
+						Global.Disk[track, side].hasIncompleteData = true;
 					break;
 				}
 
@@ -574,7 +595,7 @@ namespace WD1772Package {
 					// This indicates that we do not have enough information on this
 					// rev to produce output file.
 					if (!compare)
-						Global.DataIncomplete = true;
+						Global.Disk[track, side].hasIncompleteData = true;
 					break;
 				}
 
@@ -614,14 +635,20 @@ namespace WD1772Package {
 										foreach (Sector s in Global.Disk[track, side].sectors)
 											// if (((currentBit - startBit) - s.id.info.startBit) < 300) {
 											// if (currentTime - s.id.info.startTime < 16000) {
-											if ((byteCount - s.id.info.startByte) < 30) {
+											if ((byteCount - s.id.info.startByte) < 32) {
 												sector = s;
 												break;
 											}
 
-										// http://mikaelkrief.wordpress.com/2011/10/26/asp-net-creation-dexception-personnalisee/
-										Debug.Assert(sector != null, "Id not found in readSect",
-											String.Format("Track={0} Side={1} #sect={2}", track, side, Global.Disk[track, side].sectors.Count));
+										if (sector == null) {
+											throw new SectorNotFoundException(
+												String.Format("*** Sector not found exception T{0:D2}.{1:D1} Sect={2} *** switching to safe mode", 
+												track, side, Global.Disk[track, side].sectors.Count));
+										}
+										
+										//Debug.Assert(sector != null, "Id not found in readSect",
+										//	String.Format("Track={0} Side={1} #sect={2}", track, side, Global.Disk[track, side].sectors.Count));
+
 										sector.flags |= Sector.SEC_PROCESSED;
 										flags = 0;
 
@@ -745,9 +772,10 @@ namespace WD1772Package {
 										int size = sector.data.info.byteCount;
 										// We check that size is same otherwise we probably have a shifted track
 										if (data.info.byteCount < size) {
+											// TODO ???
 											// to check fuzzy bits on shifted track we need at least 3 rev
-											if (Global.Disk[track, side].packedFluxDataRev.Count() < 3)
-												Global.DataIncomplete = true;
+											//if (Global.Disk[track, side].packedFluxDataRev.Count() < 3)
+											//	Global.DataIncomplete = true;
 											size = data.info.byteCount;
 										}
 										//	//Debug.Assert(sref.buffer.Bytes.Count == sect.buffer.Bytes.Count, "Possible truncation",
@@ -815,12 +843,13 @@ namespace WD1772Package {
 
 			if (Global.Disk[track, side].sectors == null)
 				Global.Disk[track, side].sectors = new List<Sector>();
-			Global.DataIncomplete = false;
 
 			readAddr(track, side, rev);
 
-			bool NEW_MODE = true;
-			if (NEW_MODE) {
+			//bool NEW_MODE = true;
+			//if (NEW_MODE) {
+			// we still have some cases not handled correctly with new mode
+			try {
 				if (Global.Disk[track, side].sectors.Count > 0) {
 					readSector(track, side, rev, 0, -1, false);
 					for (int j = 0; j < Global.Disk[track, side].packedFluxDataRev.Count(); j++) {
@@ -828,6 +857,7 @@ namespace WD1772Package {
 						readSector(track, side, j, 0, -1, true);
 					}
 					// check SWS
+					// TODO if included sector is at start of track not detected
 					foreach (Sector sector in Global.Disk[track, side].sectors) {
 						if ((sector.flags & Sector.SEC_PROCESSED) == 0) {
 							sector.flags |= Sector.SEC_IN_SEC;
@@ -842,10 +872,16 @@ namespace WD1772Package {
 						}	// not precessed = SWS
 					}	// check all sectors
 				}	// non empty
-			}	// new mode => faster
+			}
+			// else {
+			catch (SectorNotFoundException e) {
+				SectorNotFoundException.ExceptionMessage = e.Message;
 
-			else {
 				for (int i = 0; i < Global.Disk[track, side].sectors.Count; i++) {
+					// in recover we delete things we might have already found
+					Global.Disk[track, side].sectors[i].data = null;
+					Global.Disk[track, side].sectors[i].recovered_data = null;
+
 					byte sectorNumber = Global.Disk[track, side].sectors[i].id.number;
 					int idBitPosition = Global.Disk[track, side].sectors[i].id.info.startBit;
 					readSector(track, side, rev, sectorNumber, idBitPosition, false);
@@ -856,7 +892,7 @@ namespace WD1772Package {
 						readSector(track, side, j, sectorNumber, idBitPosition, true);
 					}
 				}
-			}	// old mode => known to work :)
+			}
 
 			readTrack(track, side, rev);
 
@@ -868,9 +904,10 @@ namespace WD1772Package {
 		/// </summary>
 		/// <param name="track">The track number</param>
 		/// <param name="side">The side number</param>
-		public static void releaseTrack(int track, int side) {
+		public static void resetTrack(int track, int side) {
 			Global.Disk[track, side].sectors = null;
 			Global.Disk[track, side].track = null;
+			Global.Disk[track, side].hasIncompleteData = false;
 		}
 
 		/// <summary>

@@ -74,18 +74,18 @@ namespace Aufit {
 			if (dt.track.info.byteCount < 6062) {
 				dt.track.flags |= Track.SHORT_TRACK;
 				dt.track.hasProtections = true;
-				writeInfo(info, String.Format("is a short Track of {0} bytes", dt.track.info.byteCount));
+				writeInfo(info, String.Format("is a short Track of {0} bytes (SHT)", dt.track.info.byteCount));
 			}
 			if (dt.track.info.byteCount > 6437) {
 				dt.track.flags |= Track.LONG_TRACK;
 				dt.track.hasProtections = true;
-				writeInfo(info, String.Format("is a long Track of {0} bytes", dt.track.info.byteCount));
+				writeInfo(info, String.Format("is a long Track of {0} bytes (LGT)", dt.track.info.byteCount));
 			}
 
 			// Bad data byte in GAP
 			if ((dt.track.flags & Track.BAD_DATA_GAP) != 0) {
 				dt.track.hasProtections = true;
-				writeInfo(info, "invalid bytes in GAP");
+				writeInfo(info, "invalid data in GAP (IDG)");
 			}
 
 			if (dt.sectors.Count > 0) {
@@ -93,30 +93,30 @@ namespace Aufit {
 				if (lastSector.id.info.startByte > dt.track.info.byteCount) {
 					dt.track.flags |= Track.ID_AFTER_IDX;
 					dt.track.hasProtections = true;
-					writeInfo(info, "Shifted track: Id Beyond Index");
+					writeInfo(info, "is a shifted track: Id Beyond Index (IDI)");
 				}
 				else if ((lastSector.id.info.startByte + lastSector.id.info.byteCount) > dt.track.info.byteCount) {
 					dt.track.flags |= Track.ID_OVER_IDX;
 					dt.track.hasProtections = true;
-					writeInfo(info, "Shifted track: Id Over Index");
+					writeInfo(info, "Is a shifted track: Id Over Index (IOI)");
 				}
 				else if (lastSector.data != null) {
 					if (lastSector.data.info.startByte > dt.track.info.byteCount) {
 						dt.track.flags |= Track.DATA_AFTER_IDX;
 						dt.track.hasProtections = true;
-						writeInfo(info, "Shifted track: Data Beyond Index");
+						writeInfo(info, "Is a shifted track: Data Beyond Index (DBI)");
 					}
 					else if ((lastSector.data.info.startByte + lastSector.data.info.byteCount) > dt.track.info.byteCount) {
 						dt.track.flags |= Track.DATA_OVER_IDX;
 						dt.track.hasProtections = true;
-						writeInfo(info, "Shifted track: Data over Index");
+						writeInfo(info, "Is a shifted track: Data over Index (DOI)");
 					}
 				}
 
 				// NFA
 				if ((dt.track.flags & Track.NO_FLUX_AREA) != 0) {
 					dt.track.hasProtections = true;
-					writeInfo(info, "Has No Flux Area");
+					writeInfo(info, "has No Flux Area (NFA)");
 				}
 
 			}
@@ -129,17 +129,27 @@ namespace Aufit {
 				info.sect = dt.sectors[secIndex].id.number;
 
 				// sector normal sequence = normally sec num = index + 1
+				// detected on sector but is a track protection
 				if (dt.sectors[secIndex].id.number != (secIndex + 1)) {
-					dt.sectors[secIndex].flags |= Sector.SECTOR_SEQ;
+					dt.track.flags |= Track.SECTOR_SEQ;
 					//writeInfo(info, "Index non sequentially numbered");
 				}
+
+
+				// normal sector size is 512
+				// detected on sector but is a track protection
+				if ((dt.sectors[secIndex].id.size & 0x3) != 2) {
+					dt.track.flags |= Track.NOT_STD_SIZ;
+					//writeInfo(info, "Sector size is not 512 bytes (SSZ)");
+				}
+
 
 				// Duplicate sector number
 				for (int comp = secIndex + 1; comp < dt.sectors.Count; comp++) {
 					if (dt.sectors[secIndex].id.number == dt.sectors[comp].id.number) {
 						dt.sectors[secIndex].flags |= Sector.DUP_SEC_NUM;
 						dt.track.hasProtections = true;
-						writeInfo(info, "duplicated");
+						writeInfo(info, "duplicated sector (DSN)");
 					}
 				}
 
@@ -147,67 +157,67 @@ namespace Aufit {
 				if (dt.sectors[secIndex].id.iam != 0xFE) {
 					dt.sectors[secIndex].flags |= Sector.NO_STD_IDAM;
 					dt.track.hasProtections = true;
-					writeInfo(info, String.Format("non standard IDAM {0:X2}", dt.sectors[secIndex].id.iam));
+					writeInfo(info, String.Format("non standard IDAM {0:X2} (NSI)", dt.sectors[secIndex].id.iam));
 				}
 
 				// invalid track number
 				if (dt.sectors[secIndex].id.track != track) {
 					dt.sectors[secIndex].flags |= Sector.BAD_TRK_NUM;
 					dt.track.hasProtections = true;
-					writeInfo(info, String.Format("track number {0} does not match", dt.sectors[secIndex].id.track));
+					writeInfo(info, String.Format("invalid track number {0} (ITN)", dt.sectors[secIndex].id.track));
 				}
 
 				// invalid side value
 				if (dt.sectors[secIndex].id.head > 1) {
 					dt.sectors[secIndex].flags |= Sector.BAD_HEAD_NUM;
 					dt.track.hasProtections = true;
-					writeInfo(info, String.Format("invalid head/side {0} value", dt.sectors[secIndex].id.head));
+					writeInfo(info, String.Format("invalid head/side number {0} (IHN)", dt.sectors[secIndex].id.head));
 				}
 
 				// invalid sector number
 				if (dt.sectors[secIndex].id.number > 0xF4) {
 					dt.sectors[secIndex].flags |= Sector.BAD_SEC_NUM;
 					dt.track.hasProtections = true;
-					writeInfo(info, String.Format("invalid sector number {0}", dt.sectors[secIndex].id.number));
+					writeInfo(info, String.Format("invalid sector number {0} (ISN)", dt.sectors[secIndex].id.number));
 				}
 
 				// invalid size value
 				if (dt.sectors[secIndex].id.size > 3) {
 					dt.sectors[secIndex].flags |= Sector.BAD_SEC_LEN;
 					dt.track.hasProtections = true;
-					writeInfo(info, String.Format("invalid sector size {0}", dt.sectors[secIndex].id.size));
+					writeInfo(info, String.Format("invalid sector length {0} (ISL)", dt.sectors[secIndex].id.size));
 				}
 
 				// ID CRC error
 				if (dt.sectors[secIndex].id.info.crc != 0) {
 					dt.track.hasProtections = true;
-					writeInfo(info, "CRC error in id field");
+					writeInfo(info, "invalid ID field CRC (IIC)");
 				}
 
 				// sector within sector
 				if ((dt.sectors[secIndex].flags & Sector.SEC_IN_SEC) != 0) {
 					dt.track.hasProtections = true;
-					writeInfo(info, "sector within sector");
+					writeInfo(info, "sector within sector (SWS)");
 				}
 
 				if (dt.sectors[secIndex].data != null) {
 					// Data CRC Error
 					if (dt.sectors[secIndex].data.info.crc != 0) {
 						dt.track.hasProtections = true;
-						writeInfo(info, "has CRC error in data field");
+						writeInfo(info, "invalid DATA field CRC (IDC)");
 					}
 
 					// fuzzy bits
 					if (dt.sectors[secIndex].data.fuzzy != null) {
 						dt.track.hasProtections = true;
-						writeInfo(info, "has fuzzy bits");
+						writeInfo(info, "has fuzzy bytes");
 					}
 
 					// non standard DAM
 					if (dt.sectors[secIndex].data.iam != 0xFB) {
 						dt.sectors[secIndex].flags |= Sector.NO_STD_DAM;
 						dt.track.hasProtections = true;
-						writeInfo(info, String.Format("non standard DAM {0:X2}", dt.sectors[secIndex].data.iam));
+						writeInfo(info, String.Format("non standard DAM {0:X2} (NSD)", dt.sectors[secIndex].data.iam));
 					}
 
 					// long sector ( 4000 * 8) + 3%
@@ -215,7 +225,7 @@ namespace Aufit {
 							((dt.track.flags & Track.SHORT_TRACK) == 0)) {
 						dt.sectors[secIndex].flags |= Sector.LONG_SECT;
 						dt.track.hasProtections = true;
-						writeInfo(info, String.Format("long sector {0:F2} µs", (double)dt.sectors[secIndex].data.info.timeLength / 1000.0));
+						writeInfo(info, String.Format("long sector {0:F2} µs (LGS)", (double)dt.sectors[secIndex].data.info.timeLength / 1000.0));
 					}
 
 					// short sector ( 4000 * 8) - 3%
@@ -223,19 +233,19 @@ namespace Aufit {
 							((dt.track.flags & Track.LONG_TRACK) == 0)) {
 						dt.sectors[secIndex].flags |= Sector.SHORT_SECT;
 						dt.track.hasProtections = true;
-						writeInfo(info, String.Format("short sector {0:F2} µs", (double)dt.sectors[secIndex].data.info.timeLength / 1000.0));
+						writeInfo(info, String.Format("short sector {0:F2} µs (SHS)", (double)dt.sectors[secIndex].data.info.timeLength / 1000.0));
 					}
 
 					// Check intra sector bit width variation
 					if ((dt.sectors[secIndex].flags & Sector.WIDTH_INTRA) != 0) {
 						dt.track.hasProtections = true;
-						writeInfo(info, "Intra sector bit width variation");
+						writeInfo(info, "Sector bit width variation (SBV)");
 					}
 
 				}	// sector has no data
 				else {
 					dt.track.hasProtections = true;
-					writeInfo(info, "sector with no data");
+					writeInfo(info, "sector with no data (SND)");
 				}
 
 			}	// for all sectors
