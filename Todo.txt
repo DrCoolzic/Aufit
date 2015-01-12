@@ -62,3 +62,12 @@ http://www.c-sharpcorner.com/UploadFile/puranindia/creating-your-own-exception-c
 http://www.dotnetperls.com/exception
 http://www.developpez.net/forums/d642949/dotnet/langages/csharp/csharp-classe-exception-personnalise-ne-catch-erreurs/
 // http://mikaelkrief.wordpress.com/2011/10/26/asp-net-creation-dexception-personnalisee/
+
+http://msdn.microsoft.com/en-us/magazine/cc163328.aspx
+http://www.beingdeveloper.com/use-dispatcher-in-wpf-to-build-responsive-applications/
+http://miteshsureja.blogspot.fr/2011/04/how-to-use-backgroundworker-to-update.html
+http://blog.yojimbocorp.com/2012/05/22/using-task-for-responsive-ui-in-wpf/
+http://stuff.seans.com/2009/05/21/net-basics-do-work-in-background-thread-to-keep-gui-responsive/
+http://www.developpez.net/forums/d966615/dotnet/developpement-windows/windows-presentation-foundation/probleme-stathread-wpf/
+//			this.Dispatcher.Invoke(DispatcherPriority.Background, (ThreadStart)delegate {
+

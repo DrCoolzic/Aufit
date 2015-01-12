@@ -177,11 +177,28 @@
                 </Grid>
             </TabItem>
 
-            <TabItem x:Name="tabItemContent" Header="Content" Width="100">
-                <StackPanel>
-                    <Button  Name="btTrack" Margin="0,0,10,0"  Content="Track Buffer" Width="100" Click="btTrackWindowClick" HorizontalAlignment="Left"/>
-                    <Button  Name="btSector" Margin="0,0,10,0"  Content="Sectors Buffer" Width="100" Click="btSectorWindowClick" HorizontalAlignment="Left"/>
-                </StackPanel>
+            <TabItem x:Name="tabItemContent" Header="Data View" Width="100">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="auto"/>                   
+                    </Grid.RowDefinitions>
+                    <FlowDocumentScrollViewer Margin="0" Grid.Row="0" ScrollViewer.VerticalScrollBarVisibility="Auto" Name="fdViewer" />
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Margin="0,0,5,0" Content="Save" Width="80" Click="bufferSaveClick" HorizontalAlignment="Left"/>
+                        <CheckBox Grid.Column="1" Name="cbMFM" Content=" MFM"  FlowDirection="RightToLeft" HorizontalAlignment="Left" VerticalContentAlignment="Center"/>
+                        <Button Grid.Column="2" Margin="0,0,5,0" Content="Layout" Width="80" Click="btLayoutClick" />
+                        <Button Grid.Column="3" Margin="0,0,5,0" Content="Track" Width="80" Click="btTrackClick" />
+                        <Button Grid.Column="4" Margin="0,0,5,0" Content="Sectors" Width="80" Click="btSectorClick" />
+                    </Grid>
+                </Grid>
             </TabItem>
 
             <TabItem x:Name="tabItemAnalysis" Header="Analysis" Width="100">
@@ -192,19 +209,17 @@
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0" >
-                        <TextBox BorderThickness="0" VerticalScrollBarVisibility="Auto" Margin="2" Name="tbAnalysis" FontFamily="Consolas" FontSize="12" />
-                        <Button Name="btAnaSave" Click="anaSaveClick" Content="Save" Width="40" Height="18" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,20,3"></Button>
-                        <Button Name="btAnaClear" Click="anaClearClick" Content="Clear" Width="40" Height="18" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,60,3"></Button>
-
+                        <TextBox BorderThickness="0" VerticalScrollBarVisibility="Auto" Margin="2" Name="tbAnalysis" FontFamily="Consolas" FontSize="15" />
                     </Grid>
 
                     <Grid Grid.Row="1" >
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="auto"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="4" Name="btProt" Margin="0,0,10,0"  Content="Protections" Width="100" 
-                                Click="btProtectionClick" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                        <Button Grid.Column="0" Name="btAnaSave" Margin="0,0,5,0" Content="Save" Click="anaSaveClick" Width="80" />
+                        <Button Grid.Column="2" Name="btProt" Margin="0,0,5,0"  Content="Protections" Click="btProtectionClick" Width="80" />
                     </Grid>
                 </Grid>
 			</TabItem>
@@ -217,7 +232,7 @@
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0" >
-                        <TextBox BorderThickness="0" VerticalScrollBarVisibility="Auto" Margin="5" Name="tbSaveImage" FontFamily="Consolas" FontSize="12" />
+                        <TextBox BorderThickness="0" VerticalScrollBarVisibility="Auto" Margin="5" Name="tbSaveImage" FontFamily="Consolas" FontSize="15" />
                     </Grid>
 
                     <Grid Grid.Row="1" >

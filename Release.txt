@@ -1,4 +1,7 @@
-* V0.7 January 2015
+* V0.8 January 2015 - Data View
+- Buffer Windows are gone replaced by the Data View tab with better functionalities.
+
+* V0.7 January 2015 - Auto recovery - Improve Disk view - Lots of bug fix - Auto safe mode for really bad images
 - Added auto safe mode (safe but slower mode) when sector not found + Analysis GUI + Speed DiskGui + Bug fixes
 - Fix DSR bug on sync seq, FDC detect sync at edge of index + bug fixes
 - FIXED 0.6.5476.33179: Crackdown 2D = KF Sector not found

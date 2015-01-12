@@ -63,10 +63,10 @@ namespace Aufit {
 		private BitWidthDrawing _clockDrawing = null;
 		private DataDrawing _dataDrawing = null;
 
-		private BufferWindow _trackWindow = null;
-		private bool _trackWindowIsOpen = false;
-		private BufferWindow _sectorWindow = null;
-		private bool _sectorWindowIsOpen = false;
+		//private BufferWindow _trackWindow = null;
+		//private bool _trackWindowIsOpen = false;
+		//private BufferWindow _sectorWindow = null;
+		//private bool _sectorWindowIsOpen = false;
 
 		// current display
 		/// <summary>
@@ -386,6 +386,8 @@ namespace Aufit {
 			tbAnalysis.Clear();
 			SectorNotFoundException.resetException();
 			diskClear();
+			_view = DataView.None;
+			fdViewer.Document = null;
 
 			ImageName = fileName;
 			guiEnable(false);
@@ -442,6 +444,7 @@ namespace Aufit {
 				BackgroundWorker bgWorker;
 				bgWorker = new BackgroundWorker();
 				bgWorker.DoWork += new DoWorkEventHandler(bgWorkerDecodeAndReadAll);
+				//bgWorker.ProgressChanged += new ProgressChangedEventHandler(xxx)
 				bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bgWorkerDecodeAndReadCompleted);
 				// Launch background thread to do decode flux.  This will trigger BackgroundWorker.DoWork().
 				bgWorker.RunWorkerAsync();
@@ -660,15 +663,16 @@ namespace Aufit {
 							sector.id.number, Global.sectSize(sector.id.size), sector.data.iam,
 							(sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.crc,
 							(sector.data.fuzzy != null) ? "Has fuzzy bits" : "");
-						if (_sectorWindowIsOpen)
-							_sectorWindow.Close();
+						// TODO
+						//if (_sectorWindowIsOpen)
+						//	_sectorWindow.Close();
 
-						_sectorWindow = new BufferWindow();
-						_sectorWindow.drawBuffer(sector.data.buffer, message);
+						//_sectorWindow = new BufferWindow();
+						//_sectorWindow.drawBuffer(sector.data.buffer, message);
 
-						_sectorWindow.Closed += new EventHandler(sectorWindowClosed);
-						_sectorWindowIsOpen = true;
-						_sectorWindow.Show();
+						//_sectorWindow.Closed += new EventHandler(sectorWindowClosed);
+						//_sectorWindowIsOpen = true;
+						//_sectorWindow.Show();
 
 					}
 				}
@@ -677,50 +681,12 @@ namespace Aufit {
 
 
 		private void mainWinClosing(object sender, CancelEventArgs e) {
-			if (_trackWindowIsOpen)
-				_trackWindow.Close();
+			//if (_trackWindowIsOpen)
+			//	_trackWindow.Close();
 			//if (_diskWindowIsOpen)
 			//	_diskWindow.Close();
-			if (_sectorWindowIsOpen)
-				_sectorWindow.Close();
-		}
-
-
-		void trackWindowClosed(object sender, EventArgs e) {
-			_trackWindowIsOpen = false;
-		}
-
-
-		private void btTrackWindowClick(object sender, RoutedEventArgs e) {
-			//if (Global.Disk[Track, Side].trackContent == null) return;
-			if (Global.Disk[CurrentTrack, CurrentSide].track == null) return;
-			if (_trackWindowIsOpen)
-				_trackWindow.Close();
-
-			_trackWindow = new BufferWindow();
-			_trackWindow.drawTrackBuffer(CurrentTrack, CurrentSide, CurrentRev);
-			_trackWindow.Closed += new EventHandler(trackWindowClosed);
-			_trackWindowIsOpen = true;
-			_trackWindow.Show();
-		}
-
-
-		void sectorWindowClosed(object sender, EventArgs e) {
-			_sectorWindowIsOpen = false;
-		}
-
-
-		private void btSectorWindowClick(object sender, EventArgs e) {
-			//if (Global.Disk[Track, Side].trackContent == null) return;
-			if (Global.Disk[CurrentTrack, CurrentSide].sectors == null) return;
-			if (_sectorWindowIsOpen)
-				_sectorWindow.Close();
-
-			_sectorWindow = new BufferWindow();
-			_sectorWindow.drawSectorBuffer(CurrentTrack, CurrentSide, CurrentRev);
-			_sectorWindow.Closed += new EventHandler(sectorWindowClosed);
-			_sectorWindowIsOpen = true;
-			_sectorWindow.Show();
+			//if (_sectorWindowIsOpen)
+			//	_sectorWindow.Close();
 		}
 
 
@@ -760,11 +726,12 @@ namespace Aufit {
 			await checkProtectionAsync();
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {
-					hasProtection |= Global.Disk[track, side].track.hasProtections;
+					if (Global.Disk[track, side].track != null) {
+						hasProtection |= Global.Disk[track, side].track.hasProtections;
+						hasSpecialNeed |= (((Global.Disk[track, side].track.flags & Track.NOT_STD_SIZ) == 0) ||
+							((Global.Disk[track, side].track.flags & Track.SECTOR_SEQ) == 0));
+					}
 					hasIncompleteData |= Global.Disk[track, side].hasIncompleteData;
-
-					hasSpecialNeed |= (((Global.Disk[track, side].track.flags & Track.NOT_STD_SIZ) == 0) ||
-						((Global.Disk[track, side].track.flags & Track.SECTOR_SEQ) == 0));
 				}	// all tracks
 			}	// all sides
 
@@ -858,6 +825,20 @@ namespace Aufit {
 			Protections.checkProtection(track, side, infoBox);
 			if (tabItemDisk.IsSelected)
 				drawDiskSelectedTrack(track, side);
+
+			if (tabItemContent.IsSelected) {
+				switch (_view) {
+					case DataView.Track:
+						drawTrackBuffer(track, side, CurrentRev);
+						break;
+					case DataView.Sector:
+						drawSectorBuffer(track, side, CurrentRev);
+						break;
+					case DataView.Layout:
+						drawLayout(track, side, CurrentRev);
+						break;
+				}
+			}
 		}
 
 		private void anaSaveClick(object sender, RoutedEventArgs e) {
@@ -867,9 +848,6 @@ namespace Aufit {
 				File.WriteAllText(sfd.FileName, tbAnalysis.Text);
 		}
 
-		private void anaClearClick(object sender, RoutedEventArgs e) {
-			tbAnalysis.Clear();
-		}
 
 		//MessageBoxResult result = MessageBox.Show(
 		//	"The disk contains shifted tracks and you are on the last revolution\nIt is not possible to produce a correct output file",
