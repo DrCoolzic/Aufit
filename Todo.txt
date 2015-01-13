@@ -71,3 +71,4 @@ http://stuff.seans.com/2009/05/21/net-basics-do-work-in-background-thread-to-kee
 http://www.developpez.net/forums/d966615/dotnet/developpement-windows/windows-presentation-foundation/probleme-stathread-wpf/
 //			this.Dispatcher.Invoke(DispatcherPriority.Background, (ThreadStart)delegate {
 
+https://robindotnet.wordpress.com/2013/02/24/windows-8-and-clickonce-the-definitive-answer-2/

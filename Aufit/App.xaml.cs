@@ -16,7 +16,6 @@ namespace Aufit {
 	public partial class App : Application {
 		// http://blogs.msdn.com/b/avip/archive/2008/10/27/wpf-supporting-command-line-arguments-and-file-extensions.aspx
 
-		//Mutex myMutex;
 
 		protected override void OnStartup(StartupEventArgs e) {
 			//make sure an argument is passed
@@ -35,6 +34,12 @@ namespace Aufit {
 
 			base.OnStartup(e);
 		}
+
+		// used to save size and position
+		private void Application_Exit(object sender, ExitEventArgs e) {
+			Aufit.Properties.Settings.Default.Save();
+		}
+
 
 	}
 

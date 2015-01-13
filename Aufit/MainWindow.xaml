@@ -1,7 +1,12 @@
 ﻿<Window x:Class="Aufit.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Height="800" Width="1100" Closing="mainWinClosing" AllowDrop="True" Drop="fileDrop">
+        xmlns:jlg="clr-namespace:Aufit"
+        Height="{jlg:SettingBinding Height}"
+        Width="{jlg:SettingBinding Width}"
+        Left="{jlg:SettingBinding Left}"
+        Top="{jlg:SettingBinding Top}" 
+        Closing="mainWinClosing" AllowDrop="True" Drop="fileDrop">
     <Grid Name="mainGrid" KeyDown="keyDown">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -74,7 +79,7 @@
 		</Grid>
 
         <TabControl  Grid.Row="2" x:Name="tabDisplay" Background="Transparent" Margin="5" SelectionChanged="tabDisplaySelectionChanged">
-			<TabItem x:Name="tabItemTrack" Header="Track View" Background="Transparent"  Width="100" HorizontalAlignment="Left">
+			<TabItem x:Name="tabItemTrack" Header="Track View" Background="Transparent"  Width="80" HorizontalAlignment="Left">
 				<Grid Grid.Row="2">
 					<Grid.RowDefinitions>
 						<RowDefinition Height="auto"/>
@@ -131,7 +136,7 @@
 				</Grid>
 			</TabItem>
             
-			<TabItem x:Name="tabItemDisk" Header="Disk View" Width="100">
+			<TabItem x:Name="tabItemDisk" Header="Disk View" Width="80">
                 <Grid Margin="0" >
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -177,7 +182,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem x:Name="tabItemContent" Header="Data View" Width="100">
+            <TabItem x:Name="tabItemContent" Header="Data View" Width="80">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -201,7 +206,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem x:Name="tabItemAnalysis" Header="Analysis" Width="100">
+            <TabItem x:Name="tabItemAnalysis" Header="Analysis" Width="80">
                 <Grid Margin="0" >
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -224,7 +229,7 @@
                 </Grid>
 			</TabItem>
             
-			<TabItem x:Name="tabItemSave" Header="Save Image" Width="100">
+			<TabItem x:Name="tabItemSave" Header="Save Image" Width="80">
                 <Grid Margin="0" >
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>

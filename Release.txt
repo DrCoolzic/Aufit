@@ -1,4 +1,7 @@
 * V0.8 January 2015 - Data View
+- removed file association create too many problems
+- Save Window size and position
+- Test Click once publishing
 - Buffer Windows are gone replaced by the Data View tab with better functionalities.
 
 * V0.7 January 2015 - Auto recovery - Improve Disk view - Lots of bug fix - Auto safe mode for really bad images
