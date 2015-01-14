@@ -876,6 +876,7 @@ namespace WD1772Package {
 			// else {
 			catch (SectorNotFoundException e) {
 				SectorNotFoundException.ExceptionMessage = e.Message;
+				
 
 				for (int i = 0; i < Global.Disk[track, side].sectors.Count; i++) {
 					// in recover we delete things we might have already found
@@ -895,7 +896,6 @@ namespace WD1772Package {
 			}
 
 			readTrack(track, side, rev);
-
 			Protections.checkProtection(track, side);
 		}
 

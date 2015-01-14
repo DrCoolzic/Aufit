@@ -388,11 +388,12 @@ namespace Aufit {
 			diskClear();
 			_view = DataView.None;
 			fdViewer.Document = null;
+			redDot.Visibility = System.Windows.Visibility.Hidden;
 
 			ImageName = fileName;
 			guiEnable(false);
 			string extension = System.IO.Path.GetExtension(fileName);
-			tbStatus.Text = " *** READING INPUT ***";
+			tbStatus.Text = "READING IMAGE";
 			tabCtrl.SelectedIndex = 1;
 			tabDisplay.SelectedIndex = 0;
 
@@ -430,7 +431,7 @@ namespace Aufit {
 				return;
 			}
 
-			tbStatus.Text = "*** PROCESSING DATA ***";
+			tbStatus.Text = "PROCESSING DATA";
 			tabCtrl.SelectedIndex = 0;
 			if (_debugNoThread) {
 				for (int i = 0; i < 84; i++) {
@@ -477,7 +478,11 @@ namespace Aufit {
 					ButtonMatrix.setButtonBG(i, j);
 				}
 			}
-			infoBox.AppendText(SectorNotFoundException.ExceptionMessage);
+			string message = SectorNotFoundException.ExceptionMessage;
+			if (message != null) {
+				infoBox.AppendText(message);
+				redDot.Visibility = System.Windows.Visibility.Visible;
+			}			
 		}
 
 
@@ -782,20 +787,6 @@ namespace Aufit {
 		}
 
 
-		private void infoSaveClick(object sender, RoutedEventArgs e) {
-			SaveFileDialog sfd = new SaveFileDialog();
-			sfd.Filter = "Text file|*.txt|All Files|*.*";
-			if (sfd.ShowDialog() == true)
-				File.WriteAllText(sfd.FileName, infoBox.Text);
-		}
-
-		private void infoClearClick(object sender, RoutedEventArgs e) {
-			infoBox.Clear();
-		}
-
-
-
-
 
 
 		private async void tabDisplaySelectionChanged(object sender, SelectionChangedEventArgs e) {
@@ -841,11 +832,37 @@ namespace Aufit {
 			}
 		}
 
+
 		private void anaSaveClick(object sender, RoutedEventArgs e) {
 			SaveFileDialog sfd = new SaveFileDialog();
 			sfd.Filter = "Text file|*.txt|All Files|*.*";
 			if (sfd.ShowDialog() == true)
 				File.WriteAllText(sfd.FileName, tbAnalysis.Text);
+		}
+
+
+		private void tabHistoInfoChanged(object sender, SelectionChangedEventArgs e) {
+			if (tabItemInfo.IsSelected) {
+				btInfClear.Visibility = System.Windows.Visibility.Visible;
+				btInfSave.Visibility = System.Windows.Visibility.Visible;
+			}
+			else {
+				btInfClear.Visibility = System.Windows.Visibility.Hidden;
+				btInfSave.Visibility = System.Windows.Visibility.Hidden;
+			}
+		}
+
+
+		private void infoSaveClick(object sender, RoutedEventArgs e) {
+			SaveFileDialog sfd = new SaveFileDialog();
+			sfd.Filter = "Text file|*.txt|All Files|*.*";
+
+			if (sfd.ShowDialog() == true)
+				File.WriteAllText(sfd.FileName, infoBox.Text);
+		}
+
+		private void infoClearClick(object sender, RoutedEventArgs e) {
+			infoBox.Clear();
 		}
 
 

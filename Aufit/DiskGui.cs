@@ -27,8 +27,7 @@ namespace Aufit {
 		int _selectedTrack = -1;
 		int _selectedSide = -1;
 
-		#region DiskLayout
-		private async void btDiskRefresh(object sender, RoutedEventArgs e) {
+		private async void btDiskRedraw(object sender, RoutedEventArgs e) {
 			diskClear();
 			await drawDiskLayout();
 		}
@@ -37,7 +36,6 @@ namespace Aufit {
 		private void diskClear() {
 			cvDisk0.Children.Clear();
 			cvDisk1.Children.Clear();
-
 		}
 
 
@@ -59,7 +57,7 @@ namespace Aufit {
 			LightGray.Freeze();
 
 			bool _debugNoAsync = false;
-			const double referenceThickness = 0.5;
+			const double referenceThickness = 0.8;
 
 			double startAngle = -0.0001;
 			double stopAngle = Math.PI * 2;
@@ -115,9 +113,11 @@ namespace Aufit {
 			cvDisk1.Children.Add(tb);
 
 			// draw reference line
+			//DoubleCollection referenceDashPattern = new DoubleCollection(new double[2] { 10, 2 });
 			Line zeroLine = new Line();
 			zeroLine.Stroke = LightGray;
 			zeroLine.StrokeThickness = referenceThickness;
+			//zeroLine.StrokeDashArray = referenceDashPattern;
 			zeroLine.X1 = diskHalfWindowSize;
 			zeroLine.Y1 = diskHalfWindowSize;
 			zeroLine.X2 = 2 * diskHalfWindowSize;
@@ -126,6 +126,7 @@ namespace Aufit {
 			zeroLine = new Line();
 			zeroLine.Stroke = LightGray;
 			zeroLine.StrokeThickness = referenceThickness;
+			//zeroLine.StrokeDashArray = referenceDashPattern;
 			zeroLine.X1 = diskHalfWindowSize;
 			zeroLine.Y1 = diskHalfWindowSize;
 			zeroLine.X2 = 2 * diskHalfWindowSize;
@@ -203,7 +204,7 @@ namespace Aufit {
 		/// <param name="rev">The revolution index</param>
 		private bool drawDiskTrackLayout(int track, int side, int rev, Grid grid) {
 
-			//DoubleCollection referenceDashPattern = new DoubleCollection(new double[2] { 10, 10 });
+
 
 			Global.DiskTrack dt = Global.Disk[track, side];
 			List<Sector> sectors = dt.sectors;
@@ -441,6 +442,6 @@ namespace Aufit {
 			else if (rbHigh.IsChecked == true) scale = 2.0;
 			Global.saveImage(gridDisk, scale);
 		}
-		#endregion
+
 	}
 }
