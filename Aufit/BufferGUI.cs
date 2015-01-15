@@ -208,7 +208,7 @@ namespace Aufit {
 						sector.data.iam, sector.data.info.byteCount, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000,
 						sector.data.crc, (sector.data.info.crc == 0) ? " Good" : " Bad", 
 						(sector.data.fuzzy != null) ? " Fuzzy sector" : ""));
-					drawBuffer(sector.data.buffer, p);
+					drawBuffer(sector.data.buffer, p, sector.data.info.startByte);
 
 					if (sector.data.fuzzy != null) {
 						p.Inlines.Add(String.Format("\nSector {0} Contains Fuzzy bytes\n", sector.id.number));
@@ -276,11 +276,11 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="buffer">The buffer to display</param>
 		/// <param name="message">an optional message to display before the buffer</param>
-		public void drawBuffer(TrackBuffer buffer, Paragraph p) {
+		public void drawBuffer(TrackBuffer buffer, Paragraph p, int startPos = 0) {
 
 			for (int i = 0; i < buffer.Bytes.Count; i += 16) {
 				// display position
-				p.Inlines.Add(new Run(String.Format("{0:D5}  ", i)));
+				p.Inlines.Add(new Run(String.Format("{0:D5}  ", i + startPos)));
 
 				// display bitWidth
 				p.Inlines.Add(new Run(
