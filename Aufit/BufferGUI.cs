@@ -117,31 +117,48 @@ namespace Aufit {
 			currentRow.Cells.Add(new TableCell(new Paragraph(new Run("Fuzzy"))));
 			currentRow.Cells.Add(new TableCell(new Paragraph(new Run("Bytes"))));
 
-			int cri = 2;
-			foreach (Sector sector in dt.sectors) {
+			for (int sect = 0; sect < dt.sectors.Count; sect++ ) {
 				tab.RowGroups[0].Rows.Add(new TableRow());
-				currentRow = tab.RowGroups[0].Rows[cri++];
+				currentRow = tab.RowGroups[0].Rows[sect+2];
 
 				currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-					String.Format("{0:D}", sector.id.number)))));
+					String.Format("{0:D}", dt.sectors[sect].id.number)))));
 				currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-					String.Format("{0:D}", sector.id.info.startTime / 1000)))));
+					String.Format("{0:D}", dt.sectors[sect].id.info.startTime / 1000)))));
 				currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-					String.Format("{0}", (sector.id.info.crc == 0) ? "OK" : "BAD")))));
+					String.Format("{0}", (dt.sectors[sect].id.info.crc == 0) ? "OK" : "BAD")))));
 
-				currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-					String.Format("{0:D}", sector.data.info.startByte - (sector.id.info.startByte + sector.id.info.byteCount))))));
+				if (dt.sectors[sect].data != null) {
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+						String.Format("{0:D}", dt.sectors[sect].data.info.startByte - (dt.sectors[sect].id.info.startByte + dt.sectors[sect].id.info.byteCount) - 3)
+						))));
 
-				currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-					String.Format("{0:D}", sector.data.info.byteCount)))));
-				currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-					String.Format("{0:D}", sector.data.info.startTime / 1000)))));
-				currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-					String.Format("{0:D}", sector.data.info.timeLength / 1000)))));
-				currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-					String.Format("{0}", (sector.data.info.crc == 0) ? "OK" : "BAD")))));
-				currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-					String.Format("{0}", (sector.data.fuzzy != null) ? "Yes" : "No")))));
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+						String.Format("{0:D}", dt.sectors[sect].data.info.byteCount)))));
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+						String.Format("{0:D}", dt.sectors[sect].data.info.startTime / 1000)))));
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+						String.Format("{0:D}", dt.sectors[sect].data.info.timeLength / 1000)))));
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+						String.Format("{0}", (dt.sectors[sect].data.info.crc == 0) ? "OK" : "BAD")))));
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+						String.Format("{0}", (dt.sectors[sect].data.fuzzy != null) ? "Yes" : "No")))));
+
+					if (sect < (dt.sectors.Count - 1)) {
+						currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+						String.Format("{0:D}", dt.sectors[sect + 1].id.info.startByte - (dt.sectors[sect].data.info.startByte + dt.sectors[sect].data.info.byteCount) - 6)
+						))));
+					}
+				}
+				else {
+					if (sect < (dt.sectors.Count - 1)) {
+						currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+						String.Format("{0:D}", dt.sectors[sect + 1].id.info.startByte - (dt.sectors[sect].id.info.startByte + dt.sectors[sect].id.info.byteCount) - 3)
+						))));
+					}
+
+				}
+
 			}
 			doc.Blocks.Add(tab);
 			fdViewer.Document = doc;

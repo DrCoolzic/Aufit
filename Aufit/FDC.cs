@@ -465,7 +465,7 @@ namespace WD1772Package {
 				if (dsr.DataReady) {
 					byteCount++;
 
-					if (phase != Phases.p_id) {	// not in ID						
+					if ((phase != Phases.p_id) && (phase != Phases.p_data)) {	// not in ID or DATA					
 						if (dsr.IAM) {
 							switch (dsr.Data) {
 								case 0xFC:	// IBM IAM
@@ -485,6 +485,20 @@ namespace WD1772Package {
 									byteLeftInBlock = 7;
 									phase = Phases.p_id;
 									break;
+
+								case 0xF8:	// DDAM
+								case 0xF9:
+								case 0xFA:
+								case 0xFB:	// DAM - Start of a DATA block
+									// Found a DATA field: we only re-enable the AM detector at end of data block so bytes are counted properly
+									if (sectorCount > 1) {
+										byteLeftInBlock = Global.sectSize(Global.Disk[track, side].sectors[sectorCount - 1].id.size) + 3; // AM + 2 CRC + Size
+										phase = Phases.p_data;
+									}	// found an id
+									else
+										dsr.sectorMode();
+									break;
+
 								default:
 									// other AM re-enable sync search
 									dsr.sectorMode();
@@ -492,28 +506,39 @@ namespace WD1772Package {
 							}	// switch AM
 						}	// IAM
 						//else dsr.sectorMode();
-					}	// not in ID
-					else {	// We are in an ID
+					}	// not in ID or DATA
+					else {	// We are in an ID or data
 						byteLeftInBlock--;
-						switch (byteLeftInBlock) {
-							case 6: Global.Disk[track, side].sectors[sectorCount - 1].id.track = dsr.Data; break;
-							case 5: Global.Disk[track, side].sectors[sectorCount - 1].id.head = dsr.Data; break;
-							case 4: Global.Disk[track, side].sectors[sectorCount - 1].id.number = dsr.Data; break;
-							case 3: Global.Disk[track, side].sectors[sectorCount - 1].id.size = dsr.Data; break;
-							case 2: Global.Disk[track, side].sectors[sectorCount - 1].id.crc = dsr.Data; break;
-							case 1: Global.Disk[track, side].sectors[sectorCount - 1].id.crc += (ushort)(dsr.Data << 8);
-								crc = dsr.CRC;
-								break;
-							case 0:	// end of ID block
-								Global.Disk[track, side].sectors[sectorCount - 1].id.info.byteCount = byteCount - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startByte;
-								Global.Disk[track, side].sectors[sectorCount - 1].id.info.crc = crc;
-								Global.Disk[track, side].sectors[sectorCount - 1].id.info.timeLength = currentTime - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startTime;
-								Global.Disk[track, side].sectors[sectorCount - 1].id.info.bitCount = currentBit - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startBit - startBit;
-								phase = Phases.p_gap;
-								dsr.sectorMode();	// we re-enable sync
-								break;
-						}					
-					} // we are in ID
+						if (phase == Phases.p_id) {
+							switch (byteLeftInBlock) {
+								case 6: Global.Disk[track, side].sectors[sectorCount - 1].id.track = dsr.Data; break;
+								case 5: Global.Disk[track, side].sectors[sectorCount - 1].id.head = dsr.Data; break;
+								case 4: Global.Disk[track, side].sectors[sectorCount - 1].id.number = dsr.Data; break;
+								case 3: Global.Disk[track, side].sectors[sectorCount - 1].id.size = dsr.Data; break;
+								case 2: Global.Disk[track, side].sectors[sectorCount - 1].id.crc = dsr.Data; break;
+								case 1: Global.Disk[track, side].sectors[sectorCount - 1].id.crc += (ushort)(dsr.Data << 8);
+									crc = dsr.CRC;
+									break;
+								case 0:	// end of ID block
+									Global.Disk[track, side].sectors[sectorCount - 1].id.info.byteCount = byteCount - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startByte;
+									Global.Disk[track, side].sectors[sectorCount - 1].id.info.crc = crc;
+									Global.Disk[track, side].sectors[sectorCount - 1].id.info.timeLength = currentTime - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startTime;
+									Global.Disk[track, side].sectors[sectorCount - 1].id.info.bitCount = currentBit - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startBit - startBit;
+									phase = Phases.p_gap;
+									dsr.sectorMode();	// we re-enable sync
+									break;
+							}
+						}	// ID
+						else {
+							switch (byteLeftInBlock) {
+								case 0:	// end of DATA block
+									phase = Phases.p_gap;
+									dsr.sectorMode();
+									break;
+							}
+						}	// DATA
+
+					} // we are in ID or DATA
 				}	// one byte ready
 			}	// for all bit
 

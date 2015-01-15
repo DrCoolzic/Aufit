@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 using WD1772Package;
 using GlobalPackage;
+using System.ComponentModel;
 
 namespace Aufit {
 	/// <summary>
@@ -27,9 +28,10 @@ namespace Aufit {
 		int _selectedTrack = -1;
 		int _selectedSide = -1;
 
-		private async void btDiskRedraw(object sender, RoutedEventArgs e) {
+
+		private void btDiskRedraw(object sender, RoutedEventArgs e) {
 			diskClear();
-			await drawDiskLayout();
+			drawDiskLayout();
 		}
 
 
@@ -42,7 +44,11 @@ namespace Aufit {
 		/// <summary>
 		/// Display the layout of a FD
 		/// </summary>
-		private async Task drawDiskLayout() {
+		//private async Task drawDiskLayout() {
+		private async void drawDiskLayout() {
+			bool _debugNoAsync = false;
+			bool bgWokerFlag = true;
+
 			if (cvDisk0.Children.Count > 0) return;
 
 			Brush Black = new SolidColorBrush(Colors.Black);
@@ -56,9 +62,7 @@ namespace Aufit {
 			Brush LightGray = new SolidColorBrush(Colors.LightGray);
 			LightGray.Freeze();
 
-			bool _debugNoAsync = false;
 			const double referenceThickness = 0.8;
-
 			double startAngle = -0.0001;
 			double stopAngle = Math.PI * 2;
 			double radius = diskHalfWindowSize;
@@ -133,24 +137,6 @@ namespace Aufit {
 			zeroLine.Y2 = diskHalfWindowSize;
 			cvDisk1.Children.Add(zeroLine);
 
-			// draw all tracks of both side
-			for (int side = 0; side < 2; side++) {
-				Grid grid = (side == 0) ? cvDisk0 : cvDisk1;
-				for (int track = 0; track < 84; track++) {
-					if ((Global.Disk[track, side].fluxData == null) &&
-						(Global.Disk[track, side].packedFluxData == null)) continue;
-					if (_debugNoAsync) {
-						Global.decodeAndRead(track, side, 0);
-						drawDiskTrackLayout(track, side, 0, cvDisk0);
-					}
-					else {
-						await Global.decodeAndReadAsync(track, side, 0);
-						await drawDiskTrackAsync(track, side, 0, grid);
-					}
-					ButtonMatrix.setButtonBG(track, 0);
-				}
-			}
-
 			// display Aufit version (nice for picture)
 			TextBox version = new TextBox();
 			version.HorizontalAlignment = System.Windows.HorizontalAlignment.Right;
@@ -164,11 +150,49 @@ namespace Aufit {
 			version.Foreground = White;
 			version.Text = "Aufit " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 			cvDisk1.Children.Add(version);
+
+			if (bgWokerFlag) {
+				BackgroundWorker bw = new BackgroundWorker();
+				bw.DoWork += new DoWorkEventHandler(bwDrawAllDiskTrack);
+				// bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bgWorkerDecodeAndReadCompleted);
+				bw.RunWorkerAsync();
+			}
+			else {
+				// draw all tracks of both side
+				for (int side = 0; side < 2; side++) {
+					Grid grid = (side == 0) ? cvDisk0 : cvDisk1;
+					for (int track = 0; track < 84; track++) {
+						if ((Global.Disk[track, side].fluxData == null) &&
+							(Global.Disk[track, side].packedFluxData == null)) continue;
+						if (_debugNoAsync) {
+							Global.decodeAndRead(track, side, 0);
+							drawDiskTrackLayout(track, side, 0, cvDisk0);
+						}
+						else {
+							await Global.decodeAndReadAsync(track, side, 0);
+							await drawDiskTrackLayoutAsync(track, side, 0, grid);
+						}
+						ButtonMatrix.setButtonBG(track, 0);
+					}	// all tracks
+				}	// all sides
+
+			}
+			
 		}
 
 
-		private Task<bool> drawDiskTrackAsync(int track, int side, int rev, Grid grid) {
-			return Task<bool>.Run(() => drawDiskTrackLayout(track, side, rev, grid));
+		void bwDrawAllDiskTrack(object sender, DoWorkEventArgs e) {
+			Task<bool>[] tasks = new Task<bool>[168];
+				for (int j = 0; j < 2; j++) {			
+					Grid grid = (j == 0) ? cvDisk0 : cvDisk1;					
+					for (int i = 0; i < 84; i++) {
+
+					if ((Global.Disk[i, j].fluxData == null) &&
+						(Global.Disk[i, j].packedFluxData == null)) continue;
+
+					tasks[i + j * 84] = drawDiskTrackLayoutAsync(i, j, 0, grid);
+				}
+			}
 		}
 
 
@@ -196,6 +220,12 @@ namespace Aufit {
 			Grid.SetZIndex(path, -1);
 		}
 
+
+		private Task<bool> drawDiskTrackLayoutAsync(int track, int side, int rev, Grid grid) {
+			return Task<bool>.Run(() => drawDiskTrackLayout(track, side, rev, grid));
+		}
+
+
 		/// <summary>
 		/// Draw one track of the FD
 		/// </summary>
@@ -203,31 +233,28 @@ namespace Aufit {
 		/// <param name="side">The side of the FD</param>
 		/// <param name="rev">The revolution index</param>
 		private bool drawDiskTrackLayout(int track, int side, int rev, Grid grid) {
-
-
-
 			Global.DiskTrack dt = Global.Disk[track, side];
 			List<Sector> sectors = dt.sectors;
 			if (sectors == null) return false;
 			double radius = rad_max - track * rad_inc;
+			Brush White = new SolidColorBrush(Colors.White);
+			White.Freeze();
+			Brush Black = new SolidColorBrush(Colors.Black);
+			Black.Freeze();
+			Brush Blue = new SolidColorBrush(Colors.Blue);
+			Blue.Freeze();
+			Brush SlateGray = new SolidColorBrush(Colors.SlateGray);
+			SlateGray.Freeze();
+			Brush Yellow = new SolidColorBrush(Colors.Yellow);
+			Yellow.Freeze();
+			Brush Red = new SolidColorBrush(Colors.Red);
+			Red.Freeze();
 
 			// http://www.developpez.net/forums/d966615/dotnet/developpement-windows/windows-presentation-foundation/probleme-stathread-wpf/
 			this.Dispatcher.Invoke(DispatcherPriority.Background, (ThreadStart)delegate {
 
-				Brush White = new SolidColorBrush(Colors.White);
-				White.Freeze();
-				Brush Black = new SolidColorBrush(Colors.Black);
-				Black.Freeze();
-				Brush Blue = new SolidColorBrush(Colors.Blue);
-				Blue.Freeze();
-				Brush SlateGray = new SolidColorBrush(Colors.SlateGray);
-				SlateGray.Freeze();
-				Brush Yellow = new SolidColorBrush(Colors.Yellow);
-				Yellow.Freeze();
-				Brush Red = new SolidColorBrush(Colors.Red);
-				Red.Freeze();
-
 				// flux not in range
+				int notInRangeCount = 0;
 				if (dt.fluxData != null) {
 					int startFluxIndex = dt.fluxDataRev[0].firstFluxIndex;
 					int stopFluxIndex = startFluxIndex + dt.fluxDataRev[0].fluxCount;
@@ -238,6 +265,11 @@ namespace Aufit {
 						for (int idx = startFluxIndex; idx < stopFluxIndex; idx += 1) {
 							int flux = dt.fluxData.fluxValue[idx];
 							if (fluxNotInRange(flux)) {
+								if (notInRangeCount++ > 150) {
+									//cbOutOfBand.IsChecked = false;
+									break;
+								}
+									
 								double startAngle = timeAngle(fluxStartTime);
 								if (fluxStartTime < lastStop) continue;
 
@@ -259,6 +291,7 @@ namespace Aufit {
 					}
 				}
 
+				// draw sectors arcs
 				if ((sectors.Count > 0) || ((sectors.Count == 1) && (sectors[0].data != null))) {
 					for (int i = 0; i < sectors.Count; i++) {
 						Sector sector = sectors[i];
@@ -317,16 +350,16 @@ namespace Aufit {
 				}	// no sector track
 
 				// draw NFA
-				const int NFA_INC = 10;
+				int NFA_INC = 1;
+				int nfaCount = 0;
 				if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) || (cbDiskNFA.IsChecked == true)) {
 					for (int i = 0; i < dt.track.info.byteCount; i += NFA_INC) {
 						if ((dt.track.buffer.Bytes[i].mfmWord == 0) || (dt.track.buffer.Bytes[i].mfmWord == 0xFFFF)) {
+							if (nfaCount++ > 50) {
+								NFA_INC += 10;
+								nfaCount = 0;
+							}
 							double startAngle = byteAngle(i, dt.track.info.byteCount);
-							//int j = i;
-							//while ((j < dt.track.info.byteCount) && ((dt.track.buffer.Bytes[j].mfmWord == 0) || (dt.track.buffer.Bytes[j].mfmWord == 0xFFFF)))
-							//	j++;
-							//double stopAngle = byteAngle(j, dt.track.info.byteCount);
-
 							double stopAngle = byteAngle(i + NFA_INC, dt.track.info.byteCount);
 							System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
 							path.StrokeThickness = diskHeavyLine;
@@ -335,7 +368,6 @@ namespace Aufit {
 							addArc(pg, startAngle, stopAngle, center, radius);
 							path.Data = pg;
 							grid.Children.Add(path);
-							//i = j;
 						}
 					}
 				}
@@ -409,7 +441,6 @@ namespace Aufit {
 			bool isLargeArc = false;
 
 			if ((stop - start) > Math.PI) isLargeArc = true;
-			//if (stop > start) isLargeArc = false;
 			ArcSegment aseg = new ArcSegment(stopPoint, new Size(radius, radius), 0, isLargeArc, direction, true);
 			PathFigure pf = new PathFigure();
 			pf.IsClosed = false;

@@ -789,12 +789,12 @@ namespace Aufit {
 
 
 
-		private async void tabDisplaySelectionChanged(object sender, SelectionChangedEventArgs e) {
+		private void tabDisplaySelectionChanged(object sender, SelectionChangedEventArgs e) {
 			if (tabItemTrack.IsSelected) {
 				drawAllCharts();
 			}
 			if (tabItemDisk.IsSelected) {
-				await drawDiskLayout();
+				drawDiskLayout();
 			}
 			if (tabItemContent.IsSelected) {
 

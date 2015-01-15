@@ -72,3 +72,11 @@ http://www.developpez.net/forums/d966615/dotnet/developpement-windows/windows-pr
 //			this.Dispatcher.Invoke(DispatcherPriority.Background, (ThreadStart)delegate {
 
 https://robindotnet.wordpress.com/2013/02/24/windows-8-and-clickonce-the-definitive-answer-2/
+
+http://jaylee.org/post/2012/06/18/CSharp-5-0-Async-Tips-and-Tricks-Part-1.aspx
+http://jaylee.org/post/2012/07/08/c-sharp-async-tips-and-tricks-part-2-async-void.aspx
+http://jaylee.org/post/2012/09/29/C-Async-Tips-and-Tricks-Part-3-Tasks-and-the-Synchronization-Context.aspx
+http://jaylee.org/post/2013/04/16/Cancellation-with-Async-Fsharp-Csharp-and-the-Reactive-Extensions.aspx
+http://www.codeproject.com/Tips/457235/WPF-with-Asynchrony-Part
+
+http://www.dreamincode.net/forums/topic/246911-c%23-multi-threading-in-a-gui-environment/
