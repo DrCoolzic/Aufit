@@ -164,6 +164,7 @@ class FluxDrawing {
 
 		DSR dsr = new DSR();
 		dsr.SyncDetectEnable = true;
+		Line syncLine;
 
 		for (int bitPosition = startBit; bitPosition < stopBit; bitPosition++) {
 			int currentByte = bitPosition / 8;
@@ -172,33 +173,33 @@ class FluxDrawing {
 			int bit = (bits >> currentBitInByte) & 0x1;
 			dsr.shiftBitsIn(bit);
 
+			// add sync bars
+			if ((dsr.MFM == 0x4489) && (_win.cbA1.IsChecked.Value)) {
+				syncLine = new Line();
+				syncLine.Stroke = Brushes.Red;
+				syncLine.StrokeThickness = 1;
+				syncLine.X1 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
+				syncLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
+				syncLine.X2 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
+				syncLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
+				_fluxChartLayout.GraphicCanvas.Children.Add(syncLine);
+			}
+
+			if ((dsr.MFM == 0x5224) && (_win.cbC2.IsChecked.Value)) {
+				syncLine = new Line();
+				syncLine.Stroke = Brushes.Blue;
+				syncLine.StrokeThickness = 0.5;
+				syncLine.X1 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
+				syncLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
+				syncLine.X2 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
+				syncLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
+				_fluxChartLayout.GraphicCanvas.Children.Add(syncLine);
+			}
+
 			if (bit == 0) continue;
 			int flux = Global.fluxWidth(bitPosition, track, side);
 			currentTime += flux;
 			fluxCount++;
-
-			// add sync bar
-			if (dsr.SyncFound) {
-				Line syncLine = new Line();
-				if ((dsr.A1Found) && (_win.cbA1.IsChecked.Value)) {
-					syncLine.Stroke = Brushes.Red;
-					syncLine.StrokeThickness = 1;
-					syncLine.X1 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
-					syncLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
-					syncLine.X2 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
-					syncLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
-					_fluxChartLayout.GraphicCanvas.Children.Add(syncLine);
-				}
-				else if ((dsr.C2Found) && (_win.cbC2.IsChecked.Value)) {
-					syncLine.Stroke = Brushes.Blue;
-					syncLine.StrokeThickness = 0.5;
-					syncLine.X1 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
-					syncLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
-					syncLine.X2 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
-					syncLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
-					_fluxChartLayout.GraphicCanvas.Children.Add(syncLine);
-				}
-			}
 
 			if (fluxCount % SpeedUp != 0) continue;
 			if (!_fluxChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)flux / 1000.0)) continue;

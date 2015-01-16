@@ -24,6 +24,9 @@ Improvements
 
 BUGS
 ====
+- Fixed 0.8.5494.22146: FDC: reposition the id start byte in readSect because of id+data.
+	DSR: Fixed stupid _syncSeq reset: now done when byte ready and not sync!
+	FluxDrawing: Sync drawing now directly uses the MFM value (display bug)
 - FIXED 0.6.5477.28591: KCS Level 2 SCP bad image => buttons not re-enabled
 - FIXED 0.6.5476.33179: Crackdown 2D = KF Sector not found
 - FIXED 0.6.5476.18307: Computer Hits V2 - SCP D2 sector missing on some tracks

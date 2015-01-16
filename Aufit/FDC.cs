@@ -646,18 +646,15 @@ namespace WD1772Package {
 												track, side, Global.Disk[track, side].sectors.Count));
 										}
 										
-										// correct value here
-										sector.id.info.startBit = currentBit - startBit;
+										// correct start byte value here
 										sector.id.info.startByte = byteCount;
-										sector.id.info.startTime = currentTime;
-
 										sector.flags |= Sector.SEC_PROCESSED;
 										flags = 0;
 
 										// ready to read the ID block
 										byteLeftInBlock = 7;
 										phase = Phases.p_id;
-									}	// read multiple sectors
+									}	// read multiple sectors mode
 									else {
 										// if we have already found the requested ID and we find another ID
 										// this means that sector has no Data field. Therefore we should break
@@ -672,10 +669,16 @@ namespace WD1772Package {
 											phase = Phases.p_gap;
 											break;
 										}
+
 										// otherwise we need to read the ID block
 										byteLeftInBlock = 7;
 										phase = Phases.p_id;
-									}	// read one sector
+
+										// correct start byte value here
+										sector.id.info.startByte = byteCount;
+										sector.flags |= Sector.SEC_PROCESSED;
+										flags = 0;
+									}	// read one sector mode
 									break;
 
 								case 0xF8:	// DDAM

@@ -260,18 +260,19 @@ namespace Aufit {
 					int stopFluxIndex = startFluxIndex + dt.fluxDataRev[0].fluxCount;
 					int fluxStartTime = 0;
 					if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) && (dt.sectors.Count > 0) && (cbOutOfBand.IsChecked == true)) {
-						int minDisplayWidth = 60000;
+						int minDisplayWidth = 100000;
 						int lastStop = 0;
 						for (int idx = startFluxIndex; idx < stopFluxIndex; idx += 1) {
 							int flux = dt.fluxData.fluxValue[idx];
 							if (fluxNotInRange(flux)) {
+									
+								double startAngle = timeAngle(fluxStartTime);
+								if (fluxStartTime < lastStop) continue;
+
 								if (notInRangeCount++ > 150) {
 									//cbOutOfBand.IsChecked = false;
 									break;
 								}
-									
-								double startAngle = timeAngle(fluxStartTime);
-								if (fluxStartTime < lastStop) continue;
 
 								int fluxStopTime = fluxStartTime + flux;
 								if ((fluxStartTime - fluxStopTime) < minDisplayWidth)

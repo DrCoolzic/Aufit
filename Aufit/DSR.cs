@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</di
  The original sources can be found at http://www.kryoflux.com/?page=download. The
  <b>FdcShiftBit</b> function is located in the CapsEFDC.cpp file.
  
- @author Jean Louis-Guerin & SPS People */
+ @author Jean Louis-Guerin & SPS People for the shiftBitsIn function */
 
 using GlobalPackage;
 using System.Diagnostics;
@@ -50,6 +50,7 @@ namespace WD1772Package {
 
 		/// <summary>Bit used in the _decoderFlags to indicates that C2 is found</summary>
 		const uint C2_FOUND = Bit.BIT_04;
+
 		const uint CRC_ENABLED = Bit.BIT_05;
 		const uint CRC_ACTIVE = Bit.BIT_06;
 		const uint IAM_POSITION = Bit.BIT_07;
@@ -96,7 +97,6 @@ namespace WD1772Package {
 		ushort _crc;
 		int _crcCount;
 
-	
 
 		#region properties
 		/// <summary>This property indicates if the AM detection is enabled (true) or disabled (false)</summary>
@@ -191,7 +191,7 @@ namespace WD1772Package {
 		/// </summary>
 		/// <param name="bit">The bit to shift in 0 or 1</param>
 		/// <remarks>
-		/// One bit is shifted inside the MFM AM detector for detection of the
+		/// One bit is shifted inside the sync detector for detection of the
 		/// Sync Marks. The bit shifted in are clock/data bits from a FDC stream
 		/// in MFM format. The data bit is shifted in the Data Shift Register (DSR)
 		/// and when a byte is ready it is made available. The distinction between
@@ -213,21 +213,17 @@ namespace WD1772Package {
 			// Check for Address Mark only if detection enabled
 			if ((_decoderFlags & SYNC_DETECTOR_ENABLED) != 0) {
 				SyncType bitsInDetector = SyncType.No;
-				// Check if AM detector content is an Address Mark
 				switch (_syncDetector & 0xFFFF) {
 					case 0x4489:
 						// detect A1 only if it does not overlap with a previous A1 AM
 						if ((_syncOverlapCount == 0) || (_lastSyncFound != SyncType.A1)) {
 							bitsInDetector = SyncType.A1;
 							_decoderFlags |= A1_FOUND;
-							if ((_decoderFlags & CRC_ENABLED) != 0) {
-								// if CRC not yet active - activate
-								if ((_decoderFlags & CRC_ACTIVE) == 0) {
-									_decoderFlags |= CRC_ACTIVE;
-									_crc = 0xFFFF;		// reset CRC
-									_crcCount = 16;
-								}	// start CRC computation on first A1
-							}	// CRC enabled
+							if (((_decoderFlags & CRC_ENABLED) != 0) && ((_decoderFlags & CRC_ACTIVE) == 0)) {
+								_decoderFlags |= CRC_ACTIVE;
+								_crc = 0xFFFF;		// reset CRC
+								_crcCount = 16;
+							}	// if CRC not yet active - activate
 						}
 						break;
 					case 0x5224:
@@ -257,9 +253,6 @@ namespace WD1772Package {
 					_syncOverlapCount = 16;	// 16 bits (8 clock + 8 data) must be read before next AM
 					_lastSyncFound = bitsInDetector;
 				}	// Sync found
-				else
-					_syncSeq = 0;
-
 			}	// Sync detection enabled
 
 			// Process CRC if activated
@@ -268,9 +261,8 @@ namespace WD1772Package {
 				if ((_crcCount & 0xF) == 0) {
 					if ((_crcCount > 48) || ((_decoderFlags & A1_FOUND) != 0)) {
 						if (_crcCount == 48) {
-							//Debug.Assert(_syncSeq == 3, "Invalid Sync seq should be 3");
-							if (_syncSeq != 3)
-								_syncSeq = 3;
+							Debug.Assert(_syncSeq == 3, "Invalid _syncSeq should be 3 - Hit continue to repair");
+							if (_syncSeq != 3) _syncSeq = 3;
 							_decoderFlags &= ~SYNC_DETECTOR_ENABLED;
 						}	// after 3 A1 we disable AM detector
 
@@ -281,16 +273,12 @@ namespace WD1772Package {
 							if ((_syncDetector & mask) != 0)
 								value |= 1;
 						}
-
-						// update CRC
 						_crc = updateCRC(value, _crc);
 
 					}	// A1 or following bytes
 					else
-						// reset CRC process if less than 3 consecutive A1 detected
-						_decoderFlags &= ~CRC_ACTIVE;
+						_decoderFlags &= ~CRC_ACTIVE;	// reset CRC activation if less than 3 consecutive A1 detected
 				}	// every 16 bits
-
 				_crcCount++;
 			}	// CRC active
 
@@ -306,14 +294,14 @@ namespace WD1772Package {
 					_dsrBitCount = 0;	// reset count
 					// set DSR flag if valid data
 					if (_dsrInvalid == 0) {
+						bool syncFound = ((_decoderFlags & (A1_FOUND + C2_FOUND)) != 0);
 						_decoderFlags |= DATA_READY;
-						if ((_syncSeq == 3) && (!SyncFound) && (_lastSyncFound == SyncType.A1)) {
-						//if ((_syncSeq == 3) && (!SyncFound)) {
+						if ((_syncSeq == 3) && (!syncFound) && (_lastSyncFound == SyncType.A1))
 							_decoderFlags |= IAM_POSITION;
-							_syncSeq = 0;
-						}
 						else
 							_decoderFlags &= ~IAM_POSITION;
+						if (!syncFound && (_syncSeq > 0))
+							_syncSeq = 0;
 					}
 					else
 						_dsrInvalid--;
@@ -323,6 +311,7 @@ namespace WD1772Package {
 				_dataDelay--;
 
 		}	// end of dsrShiftBitIn()
+
 
 		/// <summary>
 		/// Sets the right flags to read a track
@@ -334,6 +323,7 @@ namespace WD1772Package {
 			_decoderFlags |= SYNC_DETECTOR_ENABLED;
 			_decoderFlags &= ~CRC_ENABLED;
 		}
+
 
 		/// <summary>
 		/// Sets the right flags to read an ID or DATA segment of a sector
@@ -347,6 +337,7 @@ namespace WD1772Package {
 			_decoderFlags |= (SYNC_DETECTOR_ENABLED | CRC_ENABLED);
 			_decoderFlags &= ~CRC_ACTIVE;
 		}
+
 
 		/// <summary>
 		/// Update the CRC with the character provided

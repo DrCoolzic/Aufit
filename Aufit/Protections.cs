@@ -74,12 +74,12 @@ namespace Aufit {
 			if (dt.track.info.byteCount < 6062) {
 				dt.track.flags |= Track.SHORT_TRACK;
 				dt.track.hasProtections = true;
-				writeInfo(info, String.Format("is a short Track of {0} bytes (SHT)", dt.track.info.byteCount));
+				writeInfo(info, String.Format("is a short track with {0} bytes (SHT)", dt.track.info.byteCount));
 			}
 			if (dt.track.info.byteCount > 6437) {
 				dt.track.flags |= Track.LONG_TRACK;
 				dt.track.hasProtections = true;
-				writeInfo(info, String.Format("is a long Track of {0} bytes (LGT)", dt.track.info.byteCount));
+				writeInfo(info, String.Format("is a long track with {0} bytes (LGT)", dt.track.info.byteCount));
 			}
 
 			// Bad data byte in GAP
@@ -93,23 +93,23 @@ namespace Aufit {
 				if (lastSector.id.info.startByte > dt.track.info.byteCount) {
 					dt.track.flags |= Track.ID_AFTER_IDX;
 					dt.track.hasProtections = true;
-					writeInfo(info, "is a shifted track: Id Beyond Index (IDI)");
+					writeInfo(info, "shifted track: Id Beyond Index (IDI)");
 				}
 				else if ((lastSector.id.info.startByte + lastSector.id.info.byteCount) > dt.track.info.byteCount) {
 					dt.track.flags |= Track.ID_OVER_IDX;
 					dt.track.hasProtections = true;
-					writeInfo(info, "Is a shifted track: Id Over Index (IOI)");
+					writeInfo(info, "shifted track: Id Over Index (IOI)");
 				}
 				else if (lastSector.data != null) {
 					if (lastSector.data.info.startByte > dt.track.info.byteCount) {
 						dt.track.flags |= Track.DATA_AFTER_IDX;
 						dt.track.hasProtections = true;
-						writeInfo(info, "Is a shifted track: Data Beyond Index (DBI)");
+						writeInfo(info, "shifted track: Data Beyond Index (DBI)");
 					}
 					else if ((lastSector.data.info.startByte + lastSector.data.info.byteCount) > dt.track.info.byteCount) {
 						dt.track.flags |= Track.DATA_OVER_IDX;
 						dt.track.hasProtections = true;
-						writeInfo(info, "Is a shifted track: Data over Index (DOI)");
+						writeInfo(info, "shifted track: Data over Index (DOI)");
 					}
 				}
 
@@ -191,7 +191,7 @@ namespace Aufit {
 				// ID CRC error
 				if (dt.sectors[secIndex].id.info.crc != 0) {
 					dt.track.hasProtections = true;
-					writeInfo(info, "invalid ID field CRC (IIC)");
+					writeInfo(info, "invalid ID CRC (IIC)");
 				}
 
 				// sector within sector
@@ -204,13 +204,13 @@ namespace Aufit {
 					// Data CRC Error
 					if (dt.sectors[secIndex].data.info.crc != 0) {
 						dt.track.hasProtections = true;
-						writeInfo(info, "invalid DATA field CRC (IDC)");
+						writeInfo(info, "invalid DATA CRC (IDC)");
 					}
 
 					// fuzzy bits
 					if (dt.sectors[secIndex].data.fuzzy != null) {
 						dt.track.hasProtections = true;
-						writeInfo(info, "has fuzzy bytes");
+						writeInfo(info, "fuzzy sector (FZS)");
 					}
 
 					// non standard DAM
@@ -239,7 +239,7 @@ namespace Aufit {
 					// Check intra sector bit width variation
 					if ((dt.sectors[secIndex].flags & Sector.WIDTH_INTRA) != 0) {
 						dt.track.hasProtections = true;
-						writeInfo(info, "Sector bit width variation (SBV)");
+						writeInfo(info, "sector bit-rate variation (SBV)");
 					}
 
 				}	// sector has no data
@@ -255,9 +255,9 @@ namespace Aufit {
 
 		private static void writeInfo(PInfo info, string message) {
 			if (info.text == null) return;
-			info.text.AppendText(String.Format("Track {0:D2}.{1}", info.track, info.side));
+			info.text.AppendText(String.Format("T{0:D2}.{1}", info.track, info.side));
 			if (info.sect != -1)
-				info.text.AppendText(String.Format(" Sect {0}", info.sect));
+				info.text.AppendText(String.Format(" S{0}", info.sect));
 			info.text.AppendText(String.Format(" {0}\n", message));
 			info.text.ScrollToEnd();
 		}

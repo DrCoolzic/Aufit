@@ -130,7 +130,7 @@ namespace Aufit {
 
 				if (dt.sectors[sect].data != null) {
 					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-						String.Format("{0:D}", dt.sectors[sect].data.info.startByte - (dt.sectors[sect].id.info.startByte + dt.sectors[sect].id.info.byteCount) - 3)
+						String.Format("{0:D}", dt.sectors[sect].data.info.startByte - (dt.sectors[sect].id.info.startByte + dt.sectors[sect].id.info.byteCount))
 						))));
 
 					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
@@ -146,14 +146,14 @@ namespace Aufit {
 
 					if (sect < (dt.sectors.Count - 1)) {
 						currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-						String.Format("{0:D}", dt.sectors[sect + 1].id.info.startByte - (dt.sectors[sect].data.info.startByte + dt.sectors[sect].data.info.byteCount) - 6)
+						String.Format("{0:D}", dt.sectors[sect + 1].id.info.startByte - (dt.sectors[sect].data.info.startByte + dt.sectors[sect].data.info.byteCount + 3))
 						))));
 					}
 				}
 				else {
 					if (sect < (dt.sectors.Count - 1)) {
 						currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-						String.Format("{0:D}", dt.sectors[sect + 1].id.info.startByte - (dt.sectors[sect].id.info.startByte + dt.sectors[sect].id.info.byteCount) - 3)
+						String.Format("{0:D}", dt.sectors[sect + 1].id.info.startByte - (dt.sectors[sect].id.info.startByte + dt.sectors[sect].id.info.byteCount))
 						))));
 					}
 
@@ -312,7 +312,7 @@ namespace Aufit {
 										Brushes.White,
 									Foreground =
 										(buffer.Bytes[i + j].mfmWord == 0x4489) ? Brushes.Red :
-										(buffer.Bytes[i + j].mfmWord == 0x5224) ? Brushes.Green :
+										(buffer.Bytes[i + j].mfmWord == 0x5224) ? Brushes.Navy :
 										(buffer.Bytes[i + j].phase == Phases.p_id) ? Brushes.Blue :
 										(buffer.Bytes[i + j].phase == Phases.p_data) ? Brushes.Black :
 										(buffer.Bytes[i + j].phase == Phases.p_gap) ? Brushes.Black :
