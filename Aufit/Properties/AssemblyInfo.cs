@@ -12,7 +12,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("DrCoolZic")]
 [assembly: AssemblyProduct("Atari Universal File Image Tool")]
-[assembly: AssemblyCopyright("© Copyright DrCoolZic")]
+[assembly: AssemblyCopyright("© Copyright 2014-2015 DrCoolZic")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -55,5 +55,5 @@ using System.Windows;
 // [assembly: AssemblyVersion("0.5.1.0")]
 
 // number of day since 2000 - number second since midnight / 2
-[assembly: AssemblyVersion("0.8.*")]
+[assembly: AssemblyVersion("0.9.*")]
 //[assembly: AssemblyFileVersion("0.5.1")]

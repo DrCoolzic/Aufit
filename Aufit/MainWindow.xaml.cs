@@ -53,6 +53,23 @@ using GlobalPackage;
 using PastiPackage;
 
 namespace Aufit {
+	//http://www.thomaslevesque.com/2008/11/18/wpf-binding-to-application-settings-using-a-markup-extension/
+	public class SettingBindingExtension : Binding {
+		public SettingBindingExtension() {
+			Initialize();
+		}
+
+		public SettingBindingExtension(string path)
+			: base(path) {
+			Initialize();
+		}
+
+		private void Initialize() {
+			this.Source = Aufit.Properties.Settings.Default;
+			this.Mode = BindingMode.TwoWay;
+		}
+	}
+
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>

@@ -74,7 +74,6 @@ namespace Aufit {
 			p.Inlines.Add(new Run(
 				String.Format("Track {0:D2}.{1} {2} bytes has {3} sectors", track, side, dt.track.info.byteCount, dt.sectors.Count)
 				) { FontWeight = FontWeights.Bold });
-			p.Inlines.Add(new LineBreak());
 			doc.Blocks.Add(p);
 
 			Table tab = new Table();
@@ -112,7 +111,7 @@ namespace Aufit {
 			currentRow.Cells.Add(new TableCell(new Paragraph(new Run("Bytes"))));
 			currentRow.Cells.Add(new TableCell(new Paragraph(new Run("Size"))));
 			currentRow.Cells.Add(new TableCell(new Paragraph(new Run("Position"))));
-			currentRow.Cells.Add(new TableCell(new Paragraph(new Run("Time"))));
+			currentRow.Cells.Add(new TableCell(new Paragraph(new Run("Length"))));
 			currentRow.Cells.Add(new TableCell(new Paragraph(new Run("CRC"))));
 			currentRow.Cells.Add(new TableCell(new Paragraph(new Run("Fuzzy"))));
 			currentRow.Cells.Add(new TableCell(new Paragraph(new Run("Bytes"))));
@@ -204,29 +203,34 @@ namespace Aufit {
 					p.Inlines.Add("DATA Field: ");
 					if (sector.data.info.byteCount != Global.sectSize(sector.id.size))
 						p.Inlines.Add(" *** Incomplete *** ");
-					p.Inlines.Add(String.Format("IAM={0:X2} {1} bytes start at {2}µs length {3} µs  CRC={4:X4}{5}{6}\n",
+					p.Inlines.Add(String.Format("IAM={0:X2} {1} bytes start at {2}µs length {3} µs  CRC={4:X4}{5}{6}",
 						sector.data.iam, sector.data.info.byteCount, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000,
-						sector.data.crc, (sector.data.info.crc == 0) ? " Good" : " Bad", 
+						sector.data.crc, (sector.data.info.crc == 0) ? " Good" : " Bad",
 						(sector.data.fuzzy != null) ? " Fuzzy sector" : ""));
+					p.Inlines.Add(new LineBreak());
 					drawBuffer(sector.data.buffer, p, sector.data.info.startByte);
 
 					if (sector.data.fuzzy != null) {
-						p.Inlines.Add(String.Format("\nSector {0} Contains Fuzzy bytes\n", sector.id.number));
+						p.Inlines.Add(new LineBreak());
+						p.Inlines.Add(String.Format("Sector {0} Contains Fuzzy bytes", sector.id.number));
+						p.Inlines.Add(new LineBreak());
 						for (int line = 0; line < sector.data.fuzzy.Count() / 16; line++) {
-							p.Inlines.Add(String.Format("{0:D4} ", line * 16));
+							p.Inlines.Add(String.Format("{0:D4} ", line * 16 + sector.data.info.startByte));
 							for (int col = 0; col < 16; col++) {
 								p.Inlines.Add(new Run(
 									String.Format("{0:X2} ", sector.data.fuzzy[(line * 16) + col])) {
 										FontWeight = (sector.data.fuzzy[(line * 16) + col] == 0) ? FontWeights.Normal : FontWeights.Bold
 									});
 							}
-							p.Inlines.Add("\n");
+							p.Inlines.Add(new LineBreak());
 						}
 					}
 				}
-				else
-					p.Inlines.Add(" *** Sector has no data ***\n");
-				p.Inlines.Add("\n");
+				else {
+					p.Inlines.Add(" *** Sector has no data ***");
+					p.Inlines.Add(new LineBreak());
+				}
+				p.Inlines.Add(new LineBreak());
 			}
 
 			doc.Blocks.Add(p);
@@ -262,6 +266,7 @@ namespace Aufit {
 			p = new Paragraph(new Run(String.Format("Track {0:D2}.{1} {2} bytes Length {3} µs",
 				track, side, tr.info.byteCount, tr.info.timeLength / 1000)) { FontWeight = FontWeights.Bold });
 			p.Margin = new Thickness(0);
+			p.Inlines.Add(new LineBreak());
 			p.Inlines.Add(new LineBreak());
 			doc.Blocks.Add(p);
 

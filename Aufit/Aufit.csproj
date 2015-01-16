@@ -137,7 +137,6 @@
     <Compile Include="PastiWrite.cs" />
     <Compile Include="Protections.cs" />
     <Compile Include="SCPReader.cs" />
-    <Compile Include="SettingBindingExtension.cs" />
     <Compile Include="TrackBuffer.cs" />
     <Compile Include="FDC.cs" />
     <Compile Include="FluxDrawing.cs" />

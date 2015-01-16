@@ -1,3 +1,6 @@
+* V0.9 January 2015 Beta Release
+- 0.9.5494.33550
+
 * V0.8 January 2015 - Data View
 - Bug fix: DSR + FDC (see todo)
 - GUI cleaning + Bug fixes (GAP - FDC) 
