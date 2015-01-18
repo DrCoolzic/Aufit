@@ -264,7 +264,8 @@ namespace WD1772Package {
 			bool hasData = false;
 			int byteInSector = 0;
 			bool compareSector = false;
-
+			bool equal = false;
+			bool firstByte = false;
 
 			// We read from the beginning to end of a track looking with AM decoder on all time
 			for (int currentBit = startBit; (currentBit < stopBit); currentBit++) {
@@ -334,21 +335,28 @@ namespace WD1772Package {
 					} // need to compute values
 
 					// set phase
-					if (currentTime >= nextIdStartTime)
-						phase = Phases.p_id;
-					if (currentTime >= nextIdStopTime) {
-						if (hasData == false) {
-							sectorNumber = (sectorNumber + 1) % sectorCount;
-							compute = true;
-						}
-						phase = Phases.p_gap;
-					}
-					if (currentTime >= nextDataStartTime)
+					if (currentTime >= nextDataStartTime) {
+						if (phase != Phases.p_data)
+							firstByte = true;
 						phase = Phases.p_data;
+					}
+					else {
+						if (currentTime >= nextIdStartTime)
+							phase = Phases.p_id;
+						if (currentTime >= nextIdStopTime) {
+							if (hasData == false) {
+								sectorNumber = (sectorNumber + 1) % sectorCount;
+								compute = true;
+							}
+							phase = Phases.p_gap;
+						}
+					}
+
 					if (currentTime >= nextDataStopTime) {
 						phase = Phases.p_gap;
 						sectorNumber = (sectorNumber + 1) % sectorCount;
 						compute = true;
+						compareSector = false;
 					}
 				}	// we use sectors info
 
@@ -376,26 +384,27 @@ namespace WD1772Package {
 
 					if (compareSector && (dt.sectors[sectorNumber].data != null)) {
 						if (dsr.Data != dt.sectors[sectorNumber].data.buffer.Bytes[byteInSector].dataByte) {
+							equal = false;
+						}
+
+						if (byteInSector == (dt.sectors[sectorNumber].data.buffer.Bytes.Count - 1)) {
+							if (equal)
+								dt.sectors[sectorNumber].flags |= Sector.SEC_EQ_TRACK;
 							compareSector = false;
 						}
-						else {
-							if (byteInSector == (dt.sectors[sectorNumber].data.buffer.Bytes.Count -1)) {
-								dt.sectors[sectorNumber].flags |= Sector.SEC_EQ_TRACK;
-								compareSector = false;
-							}
-							byteInSector++;
-						}
+						byteInSector++;
 					}
 
 					// check if sector content is same as track
-					if (!compareSector && (sectorNumber >= 0) && (phase == Phases.p_data)) {
+					if (!compareSector && (sectorNumber >= 0) && (phase == Phases.p_data) && firstByte) {						
 						if (dsr.Data == dt.sectors[sectorNumber].data.iam) {
 							dt.sectors[sectorNumber].trackOffset = byteCount + 1;
 							byteInSector = 0;
 							compareSector = true;
+							equal = true;
+							firstByte = false;
 						}
 					}
-
 
 					Global.Disk[track, side].track.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
 				}	// data ready

@@ -248,18 +248,28 @@
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
                         </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Content="Output Format:" VerticalContentAlignment="Center"/>
-                        <ComboBox Grid.Column="1" Margin="5" Name="cbOutputFormat" Width="80">
+                        <TextBox Grid.Column="0" Text="Output Format:" VerticalContentAlignment="Center" Height="20" BorderThickness="0" IsTabStop="False" Focusable="False"/>
+                        <ComboBox Grid.Column="1" Margin="5,0,0,0" Name="cbOutputFormat" Width="80" Height="20">
                             <ComboBoxItem IsSelected="True">STX</ComboBoxItem>
                             <ComboBoxItem>ST</ComboBoxItem>
                             <ComboBoxItem>MSA</ComboBoxItem>
                             <ComboBoxItem>DIM</ComboBoxItem>
                         </ComboBox>
-                        <CheckBox Grid.Column="2" x:Name="cbForceDS" Content="Force DS" Margin="10,0,10,0" VerticalAlignment="Center" 
+                        <CheckBox Grid.Column="2" x:Name="cbForceDS" Content="Force DS" Margin="5,0,0,0" VerticalAlignment="Center" 
 							  FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
-                        <Button Grid.Column="3" Name="btWrite" Margin="10,5,10,5"  Content="Write Image" Width="80"  Click="btWriteDiskClick" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+                        <CheckBox Grid.Column="3" x:Name="cbOptimize" Content="Optimize" Margin="5,0,0,0" VerticalAlignment="Center" 
+							  FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
+                        <CheckBox Grid.Column="4" x:Name="cbDebug" Content="Debug" Margin="5,0,0,0" VerticalAlignment="Center" 
+							  FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
+                        <Button Grid.Column="5" Margin="0,0,5,0"  Content="Clear content" Width="80"  Click="btWriteClearClick" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+                        <Button Grid.Column="6" Margin="0,0,5,0"  Content="Save content" Width="80"  Click="btWriteSaveClick" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+                        <Button Grid.Column="7" Margin="0,0,5,0"  Content="Write Image" Width="80"  Click="btWriteDiskClick" HorizontalAlignment="Right" VerticalAlignment="Top"/>
                     </Grid>
                 </Grid>
             </TabItem>

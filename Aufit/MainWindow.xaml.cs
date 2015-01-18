@@ -742,37 +742,13 @@ namespace Aufit {
 
 		private async void btWriteDiskClick(object sender, RoutedEventArgs e) {
 			SaveFileDialog sfd = new SaveFileDialog();
-			bool hasProtection = false;
-			bool hasIncompleteData = false;
-			bool hasSpecialNeed = false;
-			await checkProtectionAsync();
-			for (int side = 0; side < 2; side++) {
-				for (int track = 0; track < 84; track++) {
-					if (Global.Disk[track, side].track != null) {
-						hasProtection |= Global.Disk[track, side].track.hasProtections;
-						hasSpecialNeed |= (((Global.Disk[track, side].track.flags & Track.NOT_STD_SIZ) == 0) ||
-							((Global.Disk[track, side].track.flags & Track.SECTOR_SEQ) == 0));
-					}
-					hasIncompleteData |= Global.Disk[track, side].hasIncompleteData;
-				}	// all tracks
-			}	// all sides
-
-			tbSaveImage.Clear();
-			tbSaveImage.ScrollToHome();
-
-			if (hasProtection) {
-				tbSaveImage.AppendText("Protections found on disk image\n");
-			}	// protections
-			if (hasSpecialNeed) {
-				tbSaveImage.AppendText("Cant be written as ST file\n");
-			}	// special
-
-			if (hasIncompleteData) {
-				MessageBox.Show(
-					"The disk contains shifted tracks and you are on the last revolution\nIt is not possible to produce a correct output file",
-					"Incomplete Data");
-				return;
-			}	// incomplete data
+			uint flags = 0;
+			if (cbForceDS.IsChecked.Value == true)
+				flags |= Global.FORCE_DS;
+			if (cbOptimize.IsChecked.Value == true)
+				flags |= Global.OPTIMIZE;
+			if (cbDebug.IsChecked.Value == true)
+				flags |= Global.DEBUG;
 
 			switch (((ComboBoxItem)cbOutputFormat.SelectedItem).Content.ToString()) {
 				case "STX":
@@ -781,7 +757,7 @@ namespace Aufit {
 
 						tbSaveImage.AppendText(String.Format("Writing file {0}\n", sfd.FileName));
 						PastiWriter pasti = new PastiWriter(tbSaveImage);
-						pasti.writePasti(sfd.FileName, cbForceDS.IsChecked.Value);
+						pasti.writePasti(sfd.FileName, flags);
 					}
 					break;
 
@@ -806,7 +782,7 @@ namespace Aufit {
 
 
 
-		private void tabDisplaySelectionChanged(object sender, SelectionChangedEventArgs e) {
+		private async void tabDisplaySelectionChanged(object sender, SelectionChangedEventArgs e) {
 			if (tabItemTrack.IsSelected) {
 				drawAllCharts();
 			}
@@ -820,7 +796,38 @@ namespace Aufit {
 
 			}
 			if (tabItemSave.IsSelected) {
+				bool hasProtection = false;
+				bool hasIncompleteData = false;
+				bool hasSpecialNeed = false;
 
+				await checkProtectionAsync();
+				for (int side = 0; side < 2; side++) {
+					for (int track = 0; track < 84; track++) {
+						if (Global.Disk[track, side].track != null) {
+							hasProtection |= Global.Disk[track, side].track.hasProtections;
+							hasSpecialNeed |= (((Global.Disk[track, side].track.flags & Track.NOT_STD_SIZ) == 0) ||
+								((Global.Disk[track, side].track.flags & Track.SECTOR_SEQ) == 0));
+						}
+						hasIncompleteData |= Global.Disk[track, side].hasIncompleteData;
+					}	// all tracks
+				}	// all sides
+
+				tbSaveImage.Clear();
+				tbSaveImage.ScrollToHome();
+
+				if (hasProtection) {
+					tbSaveImage.AppendText("Protections found on disk image\n");
+				}	// protections
+				if (hasSpecialNeed) {
+					tbSaveImage.AppendText("Cant be written as ST file\n");
+				}	// special
+
+				if (hasIncompleteData) {
+					MessageBox.Show(
+						"The disk contains shifted tracks and you are on the last revolution\nIt is not possible to produce a correct output file",
+						"Incomplete Data");
+					return;
+				}	// incomplete data
 			}
 		}
 
@@ -882,6 +889,17 @@ namespace Aufit {
 			infoBox.Clear();
 		}
 
+		private void btWriteClearClick(object sender, RoutedEventArgs e) {
+			tbSaveImage.Clear();
+		}
+
+		private void btWriteSaveClick(object sender, RoutedEventArgs e) {
+			SaveFileDialog sfd = new SaveFileDialog();
+			sfd.Filter = "Text file|*.txt|All Files|*.*";
+
+			if (sfd.ShowDialog() == true)
+				File.WriteAllText(sfd.FileName, tbSaveImage.Text);
+		}
 
 		//MessageBoxResult result = MessageBox.Show(
 		//	"The disk contains shifted tracks and you are on the last revolution\nIt is not possible to produce a correct output file",

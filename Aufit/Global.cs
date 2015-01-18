@@ -281,6 +281,10 @@ public class Global {
 
 	private static DiskTrack[,] _disk = new DiskTrack[85, 2];
 
+	public const uint FORCE_DS = Bit.BIT_01;
+	public const uint OPTIMIZE = Bit.BIT_02;
+	public const uint DEBUG = Bit.BIT_03;
+
 	/// <summary>
 	/// The entropy crossing value between formatted and unformatted
 	/// </summary>

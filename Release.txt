@@ -1,5 +1,5 @@
-* V0.9 January 2015 Beta Release
-- 0.9.5494.33550
+* V0.9 January 2015 Beta Release 0.9.5494.33550
+- 0.9.5496.32925: Fix Pasti write optimization not working with certain disk like Elvira & eliminator
 
 * V0.8 January 2015 - Data View
 - Bug fix: DSR + FDC (see todo)

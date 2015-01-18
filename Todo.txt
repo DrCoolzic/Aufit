@@ -24,6 +24,8 @@ Improvements
 
 BUGS
 ====
+- Fixed 0.9.5496.32925: Pasti write optimization not working with certain disk like Elvira & eliminator
+- Fixed 0.9.5494.34756: ECO by Ocean T77.0 79.0 one sector - button not displayed correctly
 - Fixed 0.8.5494.22146: FDC: reposition the id start byte in readSect because of id+data.
 	DSR: Fixed stupid _syncSeq reset: now done when byte ready and not sync!
 	FluxDrawing: Sync drawing now directly uses the MFM value (display bug)

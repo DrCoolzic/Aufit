@@ -182,8 +182,10 @@ namespace Aufit {
 						else
 							color = Brushes.Yellow;
 					}	// bits in band found
-					else
-						color = Brushes.SlateGray;
+					else {
+						if (dt.sectors.Count == 0)
+							color = Brushes.SlateGray;
+					}
 				} // abnormally low sector count
 				else if (dt.track.hasProtections) color = Brushes.Orange;
 			} // processed

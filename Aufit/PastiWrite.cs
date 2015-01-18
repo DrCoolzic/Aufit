@@ -44,13 +44,10 @@ namespace PastiPackage {
 		// when set to true the track data header contains sync position
 		readonly bool TRK_SYNC = false;
 
-		// when set to true we try to use track data for sector
-		readonly bool OPT_SECT = true;
-
 		// when set to true we simulate fuzzy bits on Rob Northen ?
 		readonly bool SIM_FUZZY = false;
 
-		readonly bool _debug = false;
+		bool _debug = false;
 
 
 		/// <summary>Constructor</summary>
@@ -66,12 +63,14 @@ namespace PastiPackage {
 		/// <param name="forceDs">When set to true this force writing Pasti 
 		/// information for a Double sided floppy disk</param>
 		/// <returns>True if succeeds; false if fails</returns>
-		public bool writePasti(string fileName, bool forceDs) {
+		public bool writePasti(string fileName, uint flags) {
 			FileStream fs;
+
+			_debug = ((flags & Global.DEBUG) != 0) ? true : false;
 
 			// encode file into buffer
 			List<byte> sbuf = new List<byte>();
-			encodePasti(sbuf, forceDs);
+			encodePasti(sbuf, flags);
 
 			try {
 				fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.Read);
@@ -91,10 +90,13 @@ namespace PastiPackage {
 		/// </summary>
 		/// <param name="buffer">Contains the data to be written to Pasti file</param>
 		/// <returns>Always returns true!</returns>
-		private void encodePasti(List<byte> buffer, bool forceDs) {
+		private void encodePasti(List<byte> buffer, uint  flags) {
 			int start = 0;
 			byte trackCount = 0;
 			int sideCount = 1;	// single sided
+
+			bool forceDs = ((flags & Global.FORCE_DS) != 0) ? true : false;
+			bool optimize = ((flags & Global.OPTIMIZE) != 0) ? true : false;
 
 			// check for double sided - we check that we have some sectors on side 1
 			if (forceDs) sideCount = 2;
@@ -119,7 +121,7 @@ namespace PastiPackage {
 			fd.version = 3;
 			fd.revision = 2;
 			fd.trackCount = trackCount;
-			fd.tool = 0x0AA;						// written with Aufit Tool
+			fd.tool = 0x0AF;						// written with Aufit Tool
 
 			writeByte(buffer, (byte)'R');			// File header
 			writeByte(buffer, (byte)'S');
@@ -229,7 +231,7 @@ namespace PastiPackage {
 					for (int sect = 0; sect < sectorCount; sect++) {
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.buffer.Bytes.Count != 0)) {
 							// we do not add up if we can use the info in track
-							if (!OPT_SECT || !needTrackData || ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) == 0))
+							if (!optimize || !needTrackData || ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) == 0))
 								tdesc.recordSize += (uint)dt.sectors[sect].data.buffer.Bytes.Count;
 						}
 					}
@@ -261,7 +263,7 @@ namespace PastiPackage {
 							if ((dt.sectors[sect].data != null) && ((dt.sectors[sect].data.buffer.Bytes.Count) != 0)) {
 								
 								// we check to see if we already have the same content in track data
-								if (OPT_SECT && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) != 0))
+								if (optimize && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) != 0))
 									// TODO Why +1 ? already done in readTrack?
 									sd.dataOffset = (uint)dt.sectors[sect].trackOffset + 1;
 								else {
@@ -299,8 +301,8 @@ namespace PastiPackage {
 							if ((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0)
 								fdcFlag |= SectorDesc.BIT_WIDTH;
 
-							if (((fdcFlag & SectorDesc.CRC_ERR) != 0) && ((fdcFlag & SectorDesc.FUZZY_BITS) == 0))
-								_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} CRC error on non fuzzy sector {2}. Check image quality\n",
+							if (((fdcFlag & SectorDesc.CRC_ERR) != 0) && ((fdcFlag & SectorDesc.FUZZY_BITS) == 0) && ((fdcFlag & SectorDesc.SECT_RNF) != 0))
+								_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} S{2} CRC error on non fuzzy sector. Check image quality\n",
 										trackNum, side, dt.sectors[sect].id.number));
 
 							sd.fdcFlags = fdcFlag;
@@ -367,7 +369,7 @@ namespace PastiPackage {
 					for (int sect = 0; sect < sectorCount; sect++) {
 						start = buffer.Count;
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.info.byteCount != 0)) {
-							if (OPT_SECT && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) !=0)) {
+							if (optimize && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) !=0)) {
 								if (_debug) _saveImageBox.AppendText(String.Format("      Sector {0} {1} bytes already in track data @{2}\n",
 									dt.sectors[sect].id.number, dt.sectors[sect].data.buffer.Bytes.Count, dt.sectors[sect].trackOffset));
 							}

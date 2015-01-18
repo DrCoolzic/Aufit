@@ -15,7 +15,7 @@
     <WarningLevel>4</WarningLevel>
     <TargetFrameworkProfile />
     <IsWebBootstrapper>true</IsWebBootstrapper>
-    <PublishUrl>ftp://info-coach.fr/atari/software/pc-projects/_aufit/</PublishUrl>
+    <PublishUrl>ftp://info-coach.fr/atari/software/pc-projects/_aufit/Publish/</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Web</InstallFrom>
     <UpdateEnabled>true</UpdateEnabled>
@@ -25,13 +25,13 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <InstallUrl>http://info-coach.fr/atari/software/pc-projects/_aufit/</InstallUrl>
+    <InstallUrl>http://info-coach.fr/atari/software/pc-projects/_aufit/Publish/</InstallUrl>
     <TargetCulture>en-US</TargetCulture>
     <ProductName>Aufit</ProductName>
     <PublisherName>DrCoolZic</PublisherName>
     <CreateWebPageOnPublish>true</CreateWebPageOnPublish>
     <WebPage>publish.htm</WebPage>
-    <ApplicationRevision>6</ApplicationRevision>
+    <ApplicationRevision>7</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
