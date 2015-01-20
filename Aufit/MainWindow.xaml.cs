@@ -100,6 +100,7 @@ namespace Aufit {
 		public static int CurrentRev { get; set; }
 
 		public static string ImageName { get; set; }
+		public static string DirectoryName { get; set; }
 
 
 		/// <summary>
@@ -418,6 +419,7 @@ namespace Aufit {
 				case ".raw":
 					string path = System.IO.Path.GetDirectoryName(fileName);
 					ImageName = path;
+					DirectoryName = path;
 					string file = System.IO.Path.GetFileName(fileName);
 					string root = file.Remove(file.Length - 8, 8);
 					if (_debugNoThread)
@@ -429,7 +431,8 @@ namespace Aufit {
 					break;
 
 				case ".scp":
-						readOK = await SCPReader.readScpAsync(fileName, infoBox);
+					DirectoryName = System.IO.Path.GetDirectoryName(ImageName);
+					readOK = await SCPReader.readScpAsync(fileName, infoBox);
 					break;
 
 				default:
@@ -740,8 +743,11 @@ namespace Aufit {
 
 
 
-		private async void btWriteDiskClick(object sender, RoutedEventArgs e) {
+		private void btWriteDiskClick(object sender, RoutedEventArgs e) {
 			SaveFileDialog sfd = new SaveFileDialog();
+			sfd.InitialDirectory = DirectoryName;
+			sfd.RestoreDirectory = true;
+
 			uint flags = 0;
 			if (cbForceDS.IsChecked.Value == true)
 				flags |= Global.FORCE_DS;
@@ -859,6 +865,9 @@ namespace Aufit {
 
 		private void anaSaveClick(object sender, RoutedEventArgs e) {
 			SaveFileDialog sfd = new SaveFileDialog();
+			sfd.InitialDirectory = DirectoryName;
+			sfd.RestoreDirectory = true;
+
 			sfd.Filter = "Text file|*.txt|All Files|*.*";
 			if (sfd.ShowDialog() == true)
 				File.WriteAllText(sfd.FileName, tbAnalysis.Text);
@@ -879,6 +888,9 @@ namespace Aufit {
 
 		private void infoSaveClick(object sender, RoutedEventArgs e) {
 			SaveFileDialog sfd = new SaveFileDialog();
+			sfd.InitialDirectory = DirectoryName;
+			sfd.RestoreDirectory = true;
+
 			sfd.Filter = "Text file|*.txt|All Files|*.*";
 
 			if (sfd.ShowDialog() == true)
@@ -895,6 +907,9 @@ namespace Aufit {
 
 		private void btWriteSaveClick(object sender, RoutedEventArgs e) {
 			SaveFileDialog sfd = new SaveFileDialog();
+			sfd.InitialDirectory = DirectoryName;
+			sfd.RestoreDirectory = true;
+
 			sfd.Filter = "Text file|*.txt|All Files|*.*";
 
 			if (sfd.ShowDialog() == true)

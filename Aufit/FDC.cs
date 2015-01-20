@@ -177,6 +177,7 @@ namespace WD1772Package {
 		public const uint DATA_AFTER_IDX = Bit.BIT_09;
 		public const uint ID_OVER_IDX = Bit.BIT_10;
 		public const uint ID_AFTER_IDX = Bit.BIT_11;
+		public const uint HIDDEN_DATA = Bit.BIT_12;
 		// SYNC_IN_DATA ???
 		// hidden data in track ?
 		// invalid sync seq

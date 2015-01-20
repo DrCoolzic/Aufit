@@ -144,6 +144,24 @@ namespace Aufit {
 					writeInfo(info, "has No Flux Area (NFA)");
 				}
 
+				// check "dragonflight protection"
+				if (dt.sectors.Count > 0) {
+					bool dragonflight = false;
+					for (int i = 0; i < dt.sectors[0].id.info.startByte; i++) {
+						if ((dt.track.buffer.Bytes[i].dataByte == 0x0B) &&
+							(dt.track.buffer.Bytes[i + 1].dataByte == 0xCD) &&
+							(dt.track.buffer.Bytes[i + 2].dataByte == 0xB4) &&
+							(dt.track.buffer.Bytes[i + 3].dataByte == 0xF7)) {
+							dragonflight = true;
+							break;
+						}
+					}
+					if (dragonflight) {
+						dt.track.flags |= Track.HIDDEN_DATA;
+						dt.track.hasProtections = true;
+						writeInfo(info, "hidden data in GAP (dragonflight)");
+					}
+				}
 			}
 
 			//////////////////////
