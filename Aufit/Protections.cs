@@ -171,11 +171,11 @@ namespace Aufit {
 
 				info.sect = dt.sectors[secIndex].id.number;
 
-				// sector normal sequence = normally sec num = index + 1
+				// for ST format the sector must be in range 1-n
 				// detected on sector but is a track protection
-				if (dt.sectors[secIndex].id.number != (secIndex + 1)) {
-					dt.track.flags |= Track.SECTOR_SEQ;
-					//writeInfo(info, "Index non sequentially numbered");
+				if (dt.sectors[secIndex].id.number > dt.sectors.Count) {
+					dt.track.flags |= Track.SECTOR_ST;
+					//writeInfo(info, String.Format("index not in range 1-{0} (SNR)", dt.sectors[secIndex].id.number));
 				}
 
 

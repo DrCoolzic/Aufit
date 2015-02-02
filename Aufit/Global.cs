@@ -284,6 +284,7 @@ public class Global {
 	public const uint FORCE_DS = Bit.BIT_01;
 	public const uint OPTIMIZE = Bit.BIT_02;
 	public const uint DEBUG = Bit.BIT_03;
+	public const uint SYNC_HEAD = Bit.BIT_04;
 
 	/// <summary>
 	/// The entropy crossing value between formatted and unformatted

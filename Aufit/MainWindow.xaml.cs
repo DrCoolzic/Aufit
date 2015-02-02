@@ -51,6 +51,7 @@ using WD1772Package;
 using SCPReaderPackage;
 using GlobalPackage;
 using PastiPackage;
+using StdFormatPackage;
 
 namespace Aufit {
 	//http://www.thomaslevesque.com/2008/11/18/wpf-binding-to-application-settings-using-a-markup-extension/
@@ -101,6 +102,9 @@ namespace Aufit {
 
 		public static string ImageName { get; set; }
 		public static string DirectoryName { get; set; }
+		public bool HasIncompleteData { get; set; }
+		public bool HasProtection { get; set; }
+		public bool STIncompatible { get; set; }
 
 
 		/// <summary>
@@ -407,6 +411,7 @@ namespace Aufit {
 			_view = DataView.None;
 			fdViewer.Document = null;
 			redDot.Visibility = System.Windows.Visibility.Hidden;
+			tbSaveImage.Clear();
 
 			ImageName = fileName;
 			guiEnable(false);
@@ -706,12 +711,6 @@ namespace Aufit {
 
 
 		private void mainWinClosing(object sender, CancelEventArgs e) {
-			//if (_trackWindowIsOpen)
-			//	_trackWindow.Close();
-			//if (_diskWindowIsOpen)
-			//	_diskWindow.Close();
-			//if (_sectorWindowIsOpen)
-			//	_sectorWindow.Close();
 		}
 
 
@@ -755,15 +754,38 @@ namespace Aufit {
 				flags |= Global.OPTIMIZE;
 			if (cbDebug.IsChecked.Value == true)
 				flags |= Global.DEBUG;
+			if (cbSync.IsChecked.Value == true)
+				flags |= Global.SYNC_HEAD;
+
 
 			switch (((ComboBoxItem)cbOutputFormat.SelectedItem).Content.ToString()) {
 				case "STX":
 					sfd.Filter = "Pasti file|*.stx|All Files|*.*";
 					if (sfd.ShowDialog() == true) {
-
-						tbSaveImage.AppendText(String.Format("Writing file {0}\n", sfd.FileName));
+						tbSaveImage.Clear();
+						tbSaveImage.AppendText(String.Format("Writing STX file {0}\n", sfd.FileName));
 						PastiWriter pasti = new PastiWriter(tbSaveImage);
 						pasti.writePasti(sfd.FileName, flags);
+					}
+					break;
+
+				case "ST":
+					sfd.Filter = "ST file|*.st|All Files|*.*";
+					if (sfd.ShowDialog() == true) {
+						tbSaveImage.Clear();
+						tbSaveImage.AppendText(String.Format("Writing ST file {0}\n", sfd.FileName));
+						StdWriter st = new StdWriter(tbSaveImage);
+						st.writeStd(sfd.FileName, flags, FileType.ST);
+					}
+					break;
+
+				case "MSA":
+					sfd.Filter = "MSA file|*.msa|All Files|*.*";
+					if (sfd.ShowDialog() == true) {
+						tbSaveImage.Clear();
+						tbSaveImage.AppendText(String.Format("Writing MSA file {0}\n", sfd.FileName));
+						StdWriter st = new StdWriter(tbSaveImage);
+						st.writeStd(sfd.FileName, flags, FileType.MSA);
 					}
 					break;
 
@@ -796,45 +818,54 @@ namespace Aufit {
 				drawDiskLayout();
 			}
 			if (tabItemContent.IsSelected) {
-
+				if ((Global.Disk[CurrentTrack, CurrentSide].track != null) && (fdViewer.Document == null))
+					drawLayout(CurrentTrack, CurrentSide, CurrentRev);
 			}
+
 			if (tabItemAnalysis.IsSelected) {
 
 			}
+
 			if (tabItemSave.IsSelected) {
-				bool hasProtection = false;
-				bool hasIncompleteData = false;
-				bool hasSpecialNeed = false;
-
-				await checkProtectionAsync();
-				for (int side = 0; side < 2; side++) {
-					for (int track = 0; track < 84; track++) {
-						if (Global.Disk[track, side].track != null) {
-							hasProtection |= Global.Disk[track, side].track.hasProtections;
-							hasSpecialNeed |= (((Global.Disk[track, side].track.flags & Track.NOT_STD_SIZ) == 0) ||
-								((Global.Disk[track, side].track.flags & Track.SECTOR_SEQ) == 0));
-						}
-						hasIncompleteData |= Global.Disk[track, side].hasIncompleteData;
-					}	// all tracks
-				}	// all sides
-
-				tbSaveImage.Clear();
-				tbSaveImage.ScrollToHome();
-
-				if (hasProtection) {
-					tbSaveImage.AppendText("Protections found on disk image\n");
-				}	// protections
-				if (hasSpecialNeed) {
-					tbSaveImage.AppendText("Cant be written as ST file\n");
-				}	// special
-
-				if (hasIncompleteData) {
-					MessageBox.Show(
-						"The disk contains shifted tracks and you are on the last revolution\nIt is not possible to produce a correct output file",
-						"Incomplete Data");
-					return;
-				}	// incomplete data
+				await checkWriteImage();
 			}
+		}
+
+		private async Task checkWriteImage() {
+			await checkProtectionAsync();
+			cbDIM.IsEnabled = true;
+			cbST.IsEnabled = true;
+			cbMSA.IsEnabled = true;
+			for (int side = 0; side < 2; side++) {
+				for (int track = 0; track < 84; track++) {
+					if (Global.Disk[track, side].track != null) {
+						HasProtection |= Global.Disk[track, side].track.hasProtections;
+						STIncompatible |= (((Global.Disk[track, side].track.flags & Track.NOT_STD_SIZ) != 0) ||
+							((Global.Disk[track, side].track.flags & Track.SECTOR_ST) != 0));
+					}
+					HasIncompleteData |= Global.Disk[track, side].hasIncompleteData;
+				}	// all tracks
+			}	// all sides
+
+			//tbSaveImage.Clear();
+			//tbSaveImage.ScrollToHome();
+
+			if (HasProtection) {
+				tbSaveImage.AppendText("Protections found on disk image\n");
+			}	// protections
+			if (STIncompatible) {
+				tbSaveImage.AppendText("Can be written with STX format\n");
+				cbMSA.IsEnabled = false;
+				cbST.IsEnabled = false;
+			}	// special
+			else
+				tbSaveImage.AppendText("Can be written with STX / ST / MSA file\n");
+
+			if (HasIncompleteData) {
+				MessageBox.Show(
+					"The disk contains shifted tracks and you are on the last revolution\nIt is not possible to produce a correct output file",
+					"Incomplete Data");
+			}	// incomplete data
 		}
 
 
@@ -901,8 +932,9 @@ namespace Aufit {
 			infoBox.Clear();
 		}
 
-		private void btWriteClearClick(object sender, RoutedEventArgs e) {
+		private async void btWriteClearClick(object sender, RoutedEventArgs e) {
 			tbSaveImage.Clear();
+			await checkWriteImage();
 		}
 
 		private void btWriteSaveClick(object sender, RoutedEventArgs e) {
@@ -915,6 +947,7 @@ namespace Aufit {
 			if (sfd.ShowDialog() == true)
 				File.WriteAllText(sfd.FileName, tbSaveImage.Text);
 		}
+
 
 		//MessageBoxResult result = MessageBox.Show(
 		//	"The disk contains shifted tracks and you are on the last revolution\nIt is not possible to produce a correct output file",

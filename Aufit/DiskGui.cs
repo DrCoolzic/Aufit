@@ -70,10 +70,9 @@ namespace Aufit {
 		/// <summary>
 		/// Display the layout of a FD
 		/// </summary>
-		//private async Task drawDiskLayout() {
 		private async void drawDiskLayout() {
 			bool _debugNoAsync = false;
-			bool bgWokerFlag = true;
+			bool bgWokerFlag = false;
 
 			if (cvDisk0.Children.Count > 0) return;
 
@@ -93,32 +92,37 @@ namespace Aufit {
 			double stopAngle = Math.PI * 2;
 			double radius = diskHalfWindowSize;
 
-			// add black filled disk
+			// add filled disk
+			SolidColorBrush disk_color = new SolidColorBrush();
+			disk_color.Color = Color.FromArgb(0xFF, 0x70, 0x70, 0x70);
 			System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
-			path.Fill = Black;
+			path.Fill = disk_color;
 			PathGeometry pg = new PathGeometry();
 			addArc(pg, startAngle, stopAngle, center, radius);
 			path.Data = pg;
 			cvDisk0.Children.Add(path);
 			Canvas.SetZIndex(path, -1);
 			path = new System.Windows.Shapes.Path();
-			path.Fill = Black;
+			path.Fill = disk_color;
 			path.Data = pg;
 			cvDisk1.Children.Add(path);
 			Canvas.SetZIndex(path, -1);
 
 			// add center hole
+			SolidColorBrush bg_color = new SolidColorBrush();
+			bg_color.Color = Color.FromArgb(0xFF, 0x90, 0x90, 0x90);
 			radius /= 9;
 			path = new System.Windows.Shapes.Path();
-			path.Fill = DarkSlateGray;
+			path.Fill = bg_color;
 			PathGeometry hole = new PathGeometry();
 			addArc(hole, startAngle, stopAngle, center, radius);
 			path.Data = hole;
 			cvDisk0.Children.Add(path);
 			path = new System.Windows.Shapes.Path();
-			path.Fill = DarkSlateGray;
+			path.Fill = bg_color;
 			path.Data = hole;
 			cvDisk1.Children.Add(path);
+			//#FFA0A4B8
 
 			// draw side value
 			TextBox tb = new TextBox();

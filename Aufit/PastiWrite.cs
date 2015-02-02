@@ -42,12 +42,13 @@ namespace PastiPackage {
 		TextBox _saveImageBox;
 
 		// when set to true the track data header contains sync position
-		readonly bool TRK_SYNC = false;
+		bool _trkSync = false;
 
 		// when set to true we simulate fuzzy bits on Rob Northen ?
 		readonly bool SIM_FUZZY = false;
 
 		bool _debug = false;
+
 
 
 		/// <summary>Constructor</summary>
@@ -67,6 +68,7 @@ namespace PastiPackage {
 			FileStream fs;
 
 			_debug = ((flags & Global.DEBUG) != 0) ? true : false;
+			_trkSync = ((flags & Global.SYNC_HEAD) != 0) ? true : false;
 
 			// encode file into buffer
 			List<byte> sbuf = new List<byte>();
@@ -205,7 +207,7 @@ namespace PastiPackage {
 					// do we have track data
 					if (trackNeedTrackData(dt)) {
 						needTrackData = true;
-						if (TRK_SYNC) {
+						if (_trkSync) {
 							tdesc.trackFlags |= TrackDesc.TRK_IMAGE | TrackDesc.TRK_SYNC;
 							tdesc.recordSize += 4;	// header
 						}
@@ -255,7 +257,7 @@ namespace PastiPackage {
 					if (needSectorDesc) {
 						uint startSectorOffset = 0;
 						if (needTrackData)
-							startSectorOffset = (uint)(dt.track.info.byteCount + (dt.track.info.byteCount % 2) + (TRK_SYNC ? 4 : 2));
+							startSectorOffset = (uint)(dt.track.info.byteCount + (dt.track.info.byteCount % 2) + (_trkSync ? 4 : 2));
 						for (int sect = 0; sect < sectorCount; sect++) {
 							SectorDesc sd = new SectorDesc();
 
@@ -351,7 +353,7 @@ namespace PastiPackage {
 					// write track data if needed
 					if (needTrackData) {
 						start = buffer.Count;
-						if (TRK_SYNC)
+						if (_trkSync)
 							writeInt16(buffer, (ushort)(dt.track.firstSyncOffset));
 						writeInt16(buffer, (ushort)dt.track.info.byteCount);
 						for (int i = 0; i < dt.track.info.byteCount; i++)
@@ -361,7 +363,7 @@ namespace PastiPackage {
 							writeByte(buffer, 0xFF);
 
 						if (_debug) _saveImageBox.AppendText(String.Format("      Writing Track {0}{1} bytes SyncPos={2} ({3}-{4})\n",
-							dt.track.info.byteCount + ((TRK_SYNC) ? 4 : 2), ((dt.track.info.byteCount % 2) != 0) ? "(+1)" : "",
+							dt.track.info.byteCount + ((_trkSync) ? 4 : 2), ((dt.track.info.byteCount % 2) != 0) ? "(+1)" : "",
 							dt.track.firstSyncOffset, start, buffer.Count - 1));
 					}
 

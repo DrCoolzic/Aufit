@@ -196,7 +196,7 @@ namespace Aufit {
 				p.Inlines.Add(new Run(String.Format("Sector {0}", sector.id.number)) 
 					{ Background = Brushes.LightGray, FontWeight = FontWeights.Bold });
 				p.Inlines.Add(new LineBreak());
-				p.Inlines.Add(String.Format("ID Field: IDAM={0:X2} - Track={1} Side={2} Sect={3} Size={4} CRC={5:X4} {6}", sector.id.iam,
+				p.Inlines.Add(String.Format("ID Field: IDAM={0:X2} T={1:X2} H={2:X2} N={3:X2} S={4:X2} CRC={5:X4} {6}", sector.id.iam,
 					sector.id.track, sector.id.head, sector.id.number, sector.id.size, sector.id.crc, (sector.id.info.crc == 0) ? "Good" : "Bad"));
 				p.Inlines.Add(new LineBreak());
 				if (sector.data != null) {

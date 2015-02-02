@@ -145,7 +145,7 @@
                         <RowDefinition Height="24"/>
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0" Background="DarkSlateGray" Name="gridDisk">
+                    <Grid Grid.Row="0" Background="#FF909090" Name="gridDisk">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
@@ -250,6 +250,7 @@
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>
@@ -257,9 +258,9 @@
                         <TextBox Grid.Column="0" Text="Output Format:" VerticalContentAlignment="Center" Height="20" BorderThickness="0" IsTabStop="False" Focusable="False"/>
                         <ComboBox Grid.Column="1" Margin="5,0,0,0" Name="cbOutputFormat" Width="80" Height="20">
                             <ComboBoxItem IsSelected="True">STX</ComboBoxItem>
-                            <ComboBoxItem>ST</ComboBoxItem>
-                            <ComboBoxItem>MSA</ComboBoxItem>
-                            <ComboBoxItem>DIM</ComboBoxItem>
+                            <ComboBoxItem Name="cbST"> ST</ComboBoxItem>
+                            <ComboBoxItem Name="cbMSA">MSA</ComboBoxItem>
+                            <ComboBoxItem Name="cbDIM">DIM</ComboBoxItem>
                         </ComboBox>
                         <CheckBox Grid.Column="2" x:Name="cbForceDS" Content="Force DS" Margin="5,0,0,0" VerticalAlignment="Center" 
 							  FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
@@ -267,9 +268,11 @@
 							  FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="True" />
                         <CheckBox Grid.Column="4" x:Name="cbDebug" Content="Debug" Margin="5,0,0,0" VerticalAlignment="Center" 
 							  FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
-                        <Button Grid.Column="5" Margin="0,0,5,0"  Content="Clear content" Width="80"  Click="btWriteClearClick" HorizontalAlignment="Right" VerticalAlignment="Top"/>
-                        <Button Grid.Column="6" Margin="0,0,5,0"  Content="Save content" Width="80"  Click="btWriteSaveClick" HorizontalAlignment="Right" VerticalAlignment="Top"/>
-                        <Button Grid.Column="7" Margin="0,0,5,0"  Content="Write Image" Width="80"  Click="btWriteDiskClick" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+                        <CheckBox Grid.Column="5" x:Name="cbSync" Content="WriteSync" Margin="5,0,0,0" VerticalAlignment="Center" 
+							  FlowDirection="RightToLeft" HorizontalAlignment="Right" IsChecked="False" />
+                        <Button Grid.Column="6" Margin="0,0,5,0"  Content="Clear content" Width="80"  Click="btWriteClearClick" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+                        <Button Grid.Column="7" Margin="0,0,5,0"  Content="Save content" Width="80"  Click="btWriteSaveClick" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+                        <Button Grid.Column="8" Margin="0,0,5,0"  Content="Write Image" Width="80"  Click="btWriteDiskClick" HorizontalAlignment="Right" VerticalAlignment="Top"/>
                     </Grid>
                 </Grid>
             </TabItem>

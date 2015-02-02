@@ -170,7 +170,7 @@ namespace WD1772Package {
 		public const uint LONG_TRACK = Bit.BIT_02;
 		public const uint DATA_TRACK = Bit.BIT_03;
 		public const uint BAD_DATA_GAP = Bit.BIT_04;
-		public const uint SECTOR_SEQ = Bit.BIT_05;
+		public const uint SECTOR_ST = Bit.BIT_05;
 		public const uint NOT_STD_SIZ = Bit.BIT_06;
 		public const uint NO_FLUX_AREA = Bit.BIT_07;
 		public const uint DATA_OVER_IDX = Bit.BIT_08;
@@ -935,9 +935,16 @@ namespace WD1772Package {
 		/// <returns></returns>
 		public static Sector findSector(int track, int side, int num, int idBitPosition) {
 			List<Sector> sectors = Global.Disk[track, side].sectors;
-			foreach (Sector sector in sectors)
-				if ((sector.id.number == num) && (sector.id.info.startBit == idBitPosition))
-					return sector;
+			foreach (Sector sector in sectors) {
+				if (idBitPosition < 0) {
+					if (sector.id.number == num)
+						return sector;
+				}
+				else {
+					if ((sector.id.number == num) && (sector.id.info.startBit == idBitPosition))
+						return sector;
+				}
+			}
 			return null;
 		}
 	}
