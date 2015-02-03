@@ -53,6 +53,9 @@ namespace Aufit {
 		Point center = new Point(diskHalfWindowSize, diskHalfWindowSize);
 		int _selectedTrack = -1;
 		int _selectedSide = -1;
+		Brush disk_background = new SolidColorBrush(Colors.DarkGray);
+		Brush disk_color = new SolidColorBrush(Colors.DimGray);
+		Brush reference_line = new SolidColorBrush(Colors.MediumBlue);
 
 
 		private void btDiskRedraw(object sender, RoutedEventArgs e) {
@@ -87,14 +90,12 @@ namespace Aufit {
 			Brush LightGray = new SolidColorBrush(Colors.LightGray);
 			LightGray.Freeze();
 
-			const double referenceThickness = 0.8;
+			const double referenceThickness = 0.5;
 			double startAngle = -0.0001;
 			double stopAngle = Math.PI * 2;
 			double radius = diskHalfWindowSize;
 
 			// add filled disk
-			SolidColorBrush disk_color = new SolidColorBrush();
-			disk_color.Color = Color.FromArgb(0xFF, 0x70, 0x70, 0x70);
 			System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
 			path.Fill = disk_color;
 			PathGeometry pg = new PathGeometry();
@@ -109,23 +110,21 @@ namespace Aufit {
 			Canvas.SetZIndex(path, -1);
 
 			// add center hole
-			SolidColorBrush bg_color = new SolidColorBrush();
-			bg_color.Color = Color.FromArgb(0xFF, 0x90, 0x90, 0x90);
 			radius /= 9;
 			path = new System.Windows.Shapes.Path();
-			path.Fill = bg_color;
+			path.Fill = disk_background;
 			PathGeometry hole = new PathGeometry();
 			addArc(hole, startAngle, stopAngle, center, radius);
 			path.Data = hole;
 			cvDisk0.Children.Add(path);
 			path = new System.Windows.Shapes.Path();
-			path.Fill = bg_color;
+			path.Fill = disk_background;
 			path.Data = hole;
 			cvDisk1.Children.Add(path);
-			//#FFA0A4B8
 
 			// draw side value
 			TextBox tb = new TextBox();
+			tb.IsReadOnly = true;
 			tb.Margin = new Thickness(0, diskHalfWindowSize - 20, 0, 0);
 			tb.FontFamily = new FontFamily("Segoe UI");
 			tb.BorderThickness = new Thickness(0);
@@ -136,6 +135,7 @@ namespace Aufit {
 			tb.Text = "Side 0";
 			cvDisk0.Children.Add(tb);
 			tb = new TextBox();
+			tb.IsReadOnly = true;
 			tb.Margin = new Thickness(0, diskHalfWindowSize - 20, 0, 0);
 			tb.FontFamily = new FontFamily("Segoe UI");
 			tb.BorderThickness = new Thickness(0);
@@ -149,7 +149,7 @@ namespace Aufit {
 			// draw reference line
 			//DoubleCollection referenceDashPattern = new DoubleCollection(new double[2] { 10, 2 });
 			Line zeroLine = new Line();
-			zeroLine.Stroke = LightGray;
+			zeroLine.Stroke = reference_line;
 			zeroLine.StrokeThickness = referenceThickness;
 			//zeroLine.StrokeDashArray = referenceDashPattern;
 			zeroLine.X1 = diskHalfWindowSize;
@@ -158,7 +158,7 @@ namespace Aufit {
 			zeroLine.Y2 = diskHalfWindowSize;
 			cvDisk0.Children.Add(zeroLine);
 			zeroLine = new Line();
-			zeroLine.Stroke = LightGray;
+			zeroLine.Stroke = reference_line;
 			zeroLine.StrokeThickness = referenceThickness;
 			//zeroLine.StrokeDashArray = referenceDashPattern;
 			zeroLine.X1 = diskHalfWindowSize;
@@ -228,8 +228,8 @@ namespace Aufit {
 
 		public void drawDiskSelectedTrack(int track, int side) {
 			if (track != -1)
-				drawSelected(_selectedTrack, _selectedSide, Brushes.Black);
-			drawSelected(track, side, Brushes.Gray);
+				drawSelected(_selectedTrack, _selectedSide, disk_color);
+			drawSelected(track, side, disk_background);
 			_selectedTrack = track;
 			_selectedSide = side;
 		}
@@ -239,7 +239,7 @@ namespace Aufit {
 			double radius = rad_max - track * rad_inc;
 			Grid grid = (side == 0) ? cvDisk0 : cvDisk1;
 			Path path = new Path();
-			path.StrokeThickness = diskHeavyLine;
+			path.StrokeThickness = diskHeavyLine - 0.3;
 			PathGeometry pg = new PathGeometry();
 			path.Stroke = color;
 			double startAngle = -0.0001;
@@ -284,13 +284,13 @@ namespace Aufit {
 			this.Dispatcher.Invoke(DispatcherPriority.Background, (ThreadStart)delegate {
 
 				// flux not in range
-				int notInRangeCount = 0;
+				//int notInRangeCount = 0;
 				if (dt.fluxData != null) {
 					int startFluxIndex = dt.fluxDataRev[0].firstFluxIndex;
 					int stopFluxIndex = startFluxIndex + dt.fluxDataRev[0].fluxCount;
 					int fluxStartTime = 0;
 					if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) && (dt.sectors.Count > 0) && (cbOutOfBand.IsChecked == true)) {
-						int minDisplayWidth = 100000;
+						int minDisplayWidth = 250000;
 						int lastStop = 0;
 						for (int idx = startFluxIndex; idx < stopFluxIndex; idx += 1) {
 							int flux = dt.fluxData.fluxValue[idx];
@@ -299,10 +299,10 @@ namespace Aufit {
 								double startAngle = timeAngle(fluxStartTime);
 								if (fluxStartTime < lastStop) continue;
 
-								if (notInRangeCount++ > 150) {
-									//cbOutOfBand.IsChecked = false;
-									break;
-								}
+								//if (notInRangeCount++ > 150) {
+								//	cbOutOfBand.IsChecked = false;
+								//	break;
+								//}
 
 								int fluxStopTime = fluxStartTime + flux;
 								if ((fluxStartTime - fluxStopTime) < minDisplayWidth)
@@ -371,7 +371,7 @@ namespace Aufit {
 							path.Stroke = Yellow;
 					}	// bits in band found
 					else
-						path.Stroke = SlateGray;
+						path.Stroke = Brushes.DarkSlateGray;
 
 					double startAngle = -0.0001;
 					double stopAngle = Math.PI * 2;
