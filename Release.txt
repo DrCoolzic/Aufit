@@ -1,4 +1,13 @@
-* 
+* 0.9.5515.16391 Publish Feb 06, 2015
+- Improved display of OOB and NFA in Disk View
+- Added display of Sync Marks in Disk view
+- Aufit Update check done after program started (requires two run to update)
+
+* 0.9.5512.16391 Publish Feb 03, 2015
+- All checkbox and radio buttons are displayed LeftToroght!
+- Now Aufit checks forupdate at start time (not so good)
+- fix color problem in disk view
+
 * 0.9.5511.25059 Publish Feb 02, 2015
 - Added MSA format
 - Added ST format

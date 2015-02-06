@@ -833,7 +833,6 @@ namespace Aufit {
 
 		private async Task checkWriteImage() {
 			await checkProtectionAsync();
-			cbDIM.IsEnabled = true;
 			cbST.IsEnabled = true;
 			cbMSA.IsEnabled = true;
 			for (int side = 0; side < 2; side++) {

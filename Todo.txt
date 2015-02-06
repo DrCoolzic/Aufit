@@ -1,9 +1,9 @@
 Improvements
 ============
-- data view MFM checkbox changed => redisplay
-- add clear button in save image - auto clear? - recheck
-- support for ST format
-- support MSA format
+- DONE: data view MFM checkbox changed => redisplay
+- DONE: add clear/save content button in save image
+- DONE: support for ST format
+- DONE: support MSA format
 - Add capability to save text in rtf or text format with check box
 - DONE: Auto-recovery for sector
 - DONE: Detection of macrodos not good should divide in 4 segment and check width on 2 & 3 (50%)
@@ -17,14 +17,14 @@ Improvements
 - DONE: change UI for tabs
 - display protection with sector (cursor above) ?
 - check DSR for sync detect / IAM / ... ? still not elegant
-- DONE? seems to work? display of ID past index todo
+- DONE seems to work? display of ID past index
 - disk browser / create / ...
 - double click should not restart Aufit
-- if not raw or scp error unsupported format
+- DONE: if not raw or scp error unsupported format
 - DONE: Balade au pays de big ben side 1 disk 1 cannot be drawn (OOB)
-- Content display inn main win
+- DONE: Content display in main win
 - Analysis display in main win
-- Save display in main win
+- DONE: Save display in main win
 - When ID over/past index => fix track display & track buffer
 
 BUGS

@@ -180,7 +180,7 @@ namespace Aufit {
 						if (dt.track.firstSyncOffset > 0)
 							color = Brushes.Blue;
 						else
-							color = Brushes.Yellow;
+							color = Brushes.LightBlue;
 					}	// bits in band found
 					else {
 						if (dt.sectors.Count == 0)
