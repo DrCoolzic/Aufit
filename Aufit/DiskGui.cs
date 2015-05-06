@@ -75,8 +75,6 @@ namespace Aufit {
 		/// </summary>
 		private async void drawDiskLayout() {
 			bool _debugNoAsync = false;
-			bool bgWokerFlag = false;
-
 			if (cvDisk0.Children.Count > 0) return;
 
 			Brush Black = new SolidColorBrush(Colors.Black);
@@ -102,6 +100,7 @@ namespace Aufit {
 			addArc(pg, startAngle, stopAngle, center, radius);
 			path.Data = pg;
 			cvDisk0.Children.Add(path);
+
 			Canvas.SetZIndex(path, -1);
 			path = new System.Windows.Shapes.Path();
 			path.Fill = disk_color;
@@ -117,6 +116,7 @@ namespace Aufit {
 			addArc(hole, startAngle, stopAngle, center, radius);
 			path.Data = hole;
 			cvDisk0.Children.Add(path);
+
 			path = new System.Windows.Shapes.Path();
 			path.Fill = disk_background;
 			path.Data = hole;
@@ -134,6 +134,7 @@ namespace Aufit {
 			tb.Foreground = White;
 			tb.Text = "Side 0";
 			cvDisk0.Children.Add(tb);
+
 			tb = new TextBox();
 			tb.IsReadOnly = true;
 			tb.Margin = new Thickness(0, diskHalfWindowSize - 20, 0, 0);
@@ -172,57 +173,51 @@ namespace Aufit {
 			version.HorizontalAlignment = System.Windows.HorizontalAlignment.Right;
 			version.VerticalAlignment = System.Windows.VerticalAlignment.Bottom;
 			version.Margin = new Thickness(0, 0, 0, 0);
+			version.Padding = new Thickness(5);
 			version.FontFamily = new FontFamily("Segoe UI");
 			version.BorderThickness = new Thickness(0);
-			version.FontSize = 10;
+			version.FontSize = 11;
 			version.HorizontalContentAlignment = HorizontalAlignment.Center;
-			version.Background = Transparent;
-			version.Foreground = White;
+			version.Background = White;
+			version.Foreground = Black;
 			version.Text = "Aufit " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 			cvDisk1.Children.Add(version);
 
-			if (bgWokerFlag) {
-				BackgroundWorker bw = new BackgroundWorker();
-				bw.DoWork += new DoWorkEventHandler(bwDrawAllDiskTrack);
-				// bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bgWorkerDecodeAndReadCompleted);
-				bw.RunWorkerAsync();
-			}
-			else {
-				// draw all tracks of both side
-				for (int side = 0; side < 2; side++) {
-					Grid grid = (side == 0) ? cvDisk0 : cvDisk1;
-					for (int track = 0; track < 84; track++) {
-						if ((Global.Disk[track, side].fluxData == null) &&
-							(Global.Disk[track, side].packedFluxData == null)) continue;
-						if (_debugNoAsync) {
-							Global.decodeAndRead(track, side, 0);
-							drawDiskTrackLayout(track, side, 0, cvDisk0);
-						}
-						else {
-							await Global.decodeAndReadAsync(track, side, 0);
-							await drawDiskTrackLayoutAsync(track, side, 0, grid);
-						}
-						ButtonMatrix.setButtonBG(track, 0);
-					}	// all tracks
-				}	// all sides
-
-			}
-			
-		}
+			TextBox info = new TextBox();
+			info.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
+			info.VerticalAlignment = System.Windows.VerticalAlignment.Top;
+			info.Margin = new Thickness(0, 0, 0, 0);
+			info.Padding = new Thickness(5);
+			info.FontFamily = new FontFamily("Segoe UI");
+			info.BorderThickness = new Thickness(0);
+			info.FontSize = 13;
+			info.HorizontalContentAlignment = HorizontalAlignment.Center;
+			info.Background = White;
+			info.Foreground = Black;
+			info.Text = String.Format("Side 0, {0} Tracks", 0);
+			cvDisk0.Children.Add(info);
 
 
-		void bwDrawAllDiskTrack(object sender, DoWorkEventArgs e) {
-			Task<bool>[] tasks = new Task<bool>[168];
-				for (int j = 0; j < 2; j++) {			
-					Grid grid = (j == 0) ? cvDisk0 : cvDisk1;					
-					for (int i = 0; i < 84; i++) {
+			// draw all tracks of both side
+			for (int side = 0; side < 2; side++) {
+				int trackCount = 1;
+				Grid grid = (side == 0) ? cvDisk0 : cvDisk1;
+				for (int track = 0; track < 84; track++) {
+					if ((Global.Disk[track, side].fluxData == null) &&
+						(Global.Disk[track, side].packedFluxData == null)) continue;
+					info.Text = String.Format("Side 0, {0} Tracks", trackCount++);
+					if (_debugNoAsync) {
+						Global.decodeAndRead(track, side, 0);
+						drawDiskTrackLayout(track, side, 0, cvDisk0);
+					}
+					else {
+						await Global.decodeAndReadAsync(track, side, 0);
+						await drawDiskTrackLayoutAsync(track, side, 0, grid);
+					}
+					ButtonMatrix.setButtonBG(track, 0);
+				}	// all tracks
+			}	// all sides
 
-					if ((Global.Disk[i, j].fluxData == null) &&
-						(Global.Disk[i, j].packedFluxData == null)) continue;
-
-					tasks[i + j * 84] = drawDiskTrackLayoutAsync(i, j, 0, grid);
-				}
-			}
 		}
 
 
@@ -364,7 +359,7 @@ namespace Aufit {
 						flux = Global.fluxWidth(currentBit, track, side);
 						currentTime += flux;
 						if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) && (dt.sectors.Count > 0) && (cbOutOfBand.IsChecked == true) &&
-								(fluxNotInRange(flux)) && (currentTime > lastOobStopTime)) {
+								(Global.fluxNotInRange(flux)) && (currentTime > lastOobStopTime)) {
 							lastOobStopTime = currentTime + minDisplayWidth;
 							double startAngle = timeAngle(currentTime);
 							double stopAngle = timeAngle(lastOobStopTime);
@@ -416,16 +411,6 @@ namespace Aufit {
 			});	// dispatcher
 			return true;
 		}	// End of drawDisk()
-
-
-		private bool fluxNotInRange(int flux) {
-			const int limit = 700;
-			if (((flux > (4000 - limit)) && (flux < (4000 + limit))) ||
-				((flux > (6000 - limit)) && (flux < (6000 + limit))) ||
-				((flux > (8000 - limit)) && (flux < (8000 + limit))))
-				return false;
-			return true;
-		}
 
 
 		private void drawArc(Sector sector, Point center, double radius, double startAngle, double stopAngle, Phases phase, Grid grid) {

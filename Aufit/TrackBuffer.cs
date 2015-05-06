@@ -57,6 +57,7 @@ namespace Aufit {
 
 			/// <summary>Current Phase (id / inner gap / data / outer gap</summary>
 			public Phases phase;
+
 		}
 
 
@@ -95,4 +96,6 @@ namespace Aufit {
 		}
 	
 	}
+
+
 }

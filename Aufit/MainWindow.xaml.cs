@@ -832,6 +832,7 @@ namespace Aufit {
 		}
 
 		private async Task checkWriteImage() {
+			if (tbSaveImage.Text.Length != 0) return;
 			await checkProtectionAsync();
 			cbST.IsEnabled = true;
 			cbMSA.IsEnabled = true;
@@ -850,10 +851,11 @@ namespace Aufit {
 			//tbSaveImage.ScrollToHome();
 
 			if (HasProtection) {
-				tbSaveImage.AppendText("Protections found on disk image\n");
+				tbSaveImage.AppendText("Protections found on disk\n");
 			}	// protections
-			if (STIncompatible) {
-				tbSaveImage.AppendText("Can be written with STX format\n");
+
+			if (STIncompatible || HasProtection) {
+				tbSaveImage.AppendText("Can only be written with STX format\n");
 				cbMSA.IsEnabled = false;
 				cbST.IsEnabled = false;
 			}	// special

@@ -147,19 +147,49 @@ namespace Aufit {
 				// check "dragonflight protection"
 				if (dt.sectors.Count > 0) {
 					bool dragonflight = false;
-					for (int i = 0; i < dt.sectors[0].id.info.startByte; i++) {
+					bool jupiterMasterdrive = false;
+					int start = 0;
+
+					for (int i = start; i < dt.sectors[0].id.info.startByte; i++) {
+						if ((dt.track.buffer.Bytes[i].dataByte == 0x00) &&
+							(dt.track.buffer.Bytes[i + 1].dataByte == 0x1C) &&
+							(dt.track.buffer.Bytes[i + 2].dataByte == 0x92) &&
+							(dt.track.buffer.Bytes[i + 3].dataByte == 0x10) &&
+							(dt.track.buffer.Bytes[i + 4].dataByte == 0x90) &&
+							(dt.track.buffer.Bytes[i + 5].dataByte == 0xC2)) {
+								jupiterMasterdrive = true;
+								start = i + 6;
+								break;
+						}
+					}
+
+					for (int i = start; i < dt.sectors[0].id.info.startByte; i++) {
 						if ((dt.track.buffer.Bytes[i].dataByte == 0x0B) &&
 							(dt.track.buffer.Bytes[i + 1].dataByte == 0xCD) &&
 							(dt.track.buffer.Bytes[i + 2].dataByte == 0xB4) &&
 							(dt.track.buffer.Bytes[i + 3].dataByte == 0xF7)) {
-							dragonflight = true;
-							break;
+								dragonflight = true;
+								start = i + 4;
+								break;
 						}
 					}
-					if (dragonflight) {
+
+					if (jupiterMasterdrive && !
+						((dt.track.buffer.Bytes[start].dataByte == 0x00) &&
+						(dt.track.buffer.Bytes[start + 1].dataByte == 0xDE) &&
+						(dt.track.buffer.Bytes[start + 2].dataByte == 0xAD) &&
+						(dt.track.buffer.Bytes[start + 3].dataByte == 0xC0) &&
+						(dt.track.buffer.Bytes[start + 4].dataByte == 0xDE)))
+						jupiterMasterdrive = false;
+						
+
+					if (dragonflight || jupiterMasterdrive) {
 						dt.track.flags |= Track.HIDDEN_DATA;
 						dt.track.hasProtections = true;
-						writeInfo(info, "hidden data in GAP (dragonflight)");
+						if (jupiterMasterdrive)
+							writeInfo(info, "hidden data in GAP (HDG) - Jupiter Masterdrive");
+						else
+							writeInfo(info, "hidden data in GAP (HDG) - Dragonflight");
 					}
 				}
 			}

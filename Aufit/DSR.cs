@@ -29,6 +29,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</di
  @author Jean Louis-Guerin & SPS People for the shiftBitsIn function */
 
 using GlobalPackage;
+using System;
 using System.Diagnostics;
 
 namespace WD1772Package {
@@ -37,23 +38,20 @@ namespace WD1772Package {
 	/// </summary>
 	public class DSR {
 
-		enum SyncType { No, A1, C2 }
+		enum SyncType { None, A1, C2 }
 
-		/// <summary>Bit used in the _decoderFlags for the Address Mark detector enabled</summary>
-		const uint SYNC_DETECTOR_ENABLED = Bit.BIT_01;
+		/// <summary>These flags store WD1772 states</summary>
+		[Flags] private enum DecoderFlags {
+			None = 0,
+			SyncDetectorEnabled = 0x01,
+			DataReady = 0x02,
+			A1Found = 0x04,
+			C2Found = 0x08,
+			CrcEnabled = 0x10,
+			CrcActive = 0x20,
+			IamPosition = 0x40
+		}
 
-		/// <summary>Bit used in the _decoderFlags to indicates that DSR data are available</summary>
-		const uint DATA_READY = Bit.BIT_02;
-
-		/// <summary>Bit used in the _decoderFlags to indicates that A1 is found</summary>
-		const uint A1_FOUND = Bit.BIT_03;
-
-		/// <summary>Bit used in the _decoderFlags to indicates that C2 is found</summary>
-		const uint C2_FOUND = Bit.BIT_04;
-
-		const uint CRC_ENABLED = Bit.BIT_05;
-		const uint CRC_ACTIVE = Bit.BIT_06;
-		const uint IAM_POSITION = Bit.BIT_07;
 
 		/// <summary>AM Detector</summary>
 		/// <remarks>The _syncDetector is a 16 bits wide shift register that accumulates directly 
@@ -70,7 +68,7 @@ namespace WD1772Package {
 		int _dsr;
 
 		/// <summary>Stores the various decoder Flags</summary>
-		uint _decoderFlags;
+		DecoderFlags _decoderFlags;
 
 		/// <summary>Indicates the distance of the next data bit</summary>
 		/// <remarks>A value of 0 indicates we just read a clock bit in the _amDetector and that
@@ -101,10 +99,10 @@ namespace WD1772Package {
 		#region properties
 		/// <summary>This property indicates if the AM detection is enabled (true) or disabled (false)</summary>
 		public bool SyncDetectEnable {
-			get { return ((_decoderFlags & SYNC_DETECTOR_ENABLED) != 0); }
+			get { return _decoderFlags.HasFlag(DecoderFlags.SyncDetectorEnabled); }
 			set {
-				if (value) _decoderFlags |= SYNC_DETECTOR_ENABLED;
-				else _decoderFlags &= ~SYNC_DETECTOR_ENABLED;
+				if (value) _decoderFlags |= DecoderFlags.SyncDetectorEnabled;
+				else _decoderFlags &= ~DecoderFlags.SyncDetectorEnabled;
 			}
 		}
 
@@ -112,24 +110,24 @@ namespace WD1772Package {
 		/// This property is set to true if the last decoded character is an AM (A1 or C2)
 		/// </summary>
 		public bool SyncFound {
-			get { return ((_decoderFlags & (A1_FOUND + C2_FOUND)) != 0); }
+			get { return (_decoderFlags.HasFlag(DecoderFlags.A1Found) || _decoderFlags.HasFlag(DecoderFlags.C2Found)); }
 		}
 
 		/// <summary>The last decoded byte is an A1 Sync </summary>
 		public bool A1Found {
-			get { return ((_decoderFlags & A1_FOUND) != 0); }
+			get { return _decoderFlags.HasFlag(DecoderFlags.A1Found); }
 		}
 
 		/// <summary>The last decoded byte is an C2 Sync </summary>
 		public bool C2Found {
-			get { return ((_decoderFlags & C2_FOUND) != 0); }
+			get { return _decoderFlags.HasFlag(DecoderFlags.C2Found); }
 		}
 
 		/// <summary>
 		/// This property indicates if a character is ready to be read from the DSR using the Data property
 		/// </summary>
 		public bool DataReady {
-			get { return ((_decoderFlags & DATA_READY) != 0); }
+			get { return _decoderFlags.HasFlag(DecoderFlags.DataReady); }
 		}
 
 		/// <summary>
@@ -159,7 +157,7 @@ namespace WD1772Package {
 		/// Set to true for one byte after a sequence of three consecutive sync marks
 		/// </summary>
 		public bool IAM {
-			get { return ((_decoderFlags & IAM_POSITION) != 0); }
+			get { return _decoderFlags.HasFlag(DecoderFlags.IamPosition); }
 		}
 
 		/// <summary>
@@ -176,8 +174,8 @@ namespace WD1772Package {
 			_syncDetector = 0;
 			_dsr = 0;
 			_syncOverlapCount = 0;
-			_decoderFlags = 0;
-			_lastSyncFound = SyncType.No;
+			_decoderFlags = DecoderFlags.None;
+			_lastSyncFound = SyncType.None;
 			_dataDelay = 0;
 			_dsrInvalid = 0;
 			_dsrBitCount = 0;
@@ -206,21 +204,20 @@ namespace WD1772Package {
 			// decrement AM overlap count
 			if (_syncOverlapCount != 0) _syncOverlapCount--;
 
-			if ((_decoderFlags & DATA_READY) != 0)
-				_decoderFlags &= ~(A1_FOUND | C2_FOUND);
-			_decoderFlags &= ~DATA_READY;
+			if (_decoderFlags.HasFlag(DecoderFlags.DataReady))
+				_decoderFlags &= ~(DecoderFlags.A1Found | DecoderFlags.C2Found | DecoderFlags.DataReady);
 
 			// Check for Address Mark only if detection enabled
-			if ((_decoderFlags & SYNC_DETECTOR_ENABLED) != 0) {
-				SyncType bitsInDetector = SyncType.No;
+			if ((_decoderFlags.HasFlag(DecoderFlags.SyncDetectorEnabled))) {
+				SyncType bitsInDetector = SyncType.None;
 				switch (_syncDetector & 0xFFFF) {
 					case 0x4489:
 						// detect A1 only if it does not overlap with a previous A1 AM
 						if ((_syncOverlapCount == 0) || (_lastSyncFound != SyncType.A1)) {
 							bitsInDetector = SyncType.A1;
-							_decoderFlags |= A1_FOUND;
-							if (((_decoderFlags & CRC_ENABLED) != 0) && ((_decoderFlags & CRC_ACTIVE) == 0)) {
-								_decoderFlags |= CRC_ACTIVE;
+							_decoderFlags |= DecoderFlags.A1Found;
+							if (_decoderFlags.HasFlag(DecoderFlags.CrcEnabled) && !_decoderFlags.HasFlag(DecoderFlags.CrcActive)) {
+								_decoderFlags |= DecoderFlags.CrcActive;
 								_crc = 0xFFFF;		// reset CRC
 								_crcCount = 16;
 							}	// if CRC not yet active - activate
@@ -228,12 +225,12 @@ namespace WD1772Package {
 						break;
 					case 0x5224:
 						bitsInDetector = SyncType.C2;
-						_decoderFlags |= C2_FOUND;
+						_decoderFlags |= DecoderFlags.C2Found;
 						break;
 				}	// detect AM
 
 				// process Sync if detected
-				if (bitsInDetector != SyncType.No) {
+				if (bitsInDetector != SyncType.None) {
 					_dataDelay = 1;	// we have just read the last data bit of an AM
 					_syncSeq++;
 					if (_lastSyncFound != bitsInDetector)
@@ -256,14 +253,14 @@ namespace WD1772Package {
 			}	// Sync detection enabled
 
 			// Process CRC if activated
-			if ((_decoderFlags & CRC_ACTIVE) != 0) {
+			if (_decoderFlags.HasFlag(DecoderFlags.CrcActive)) {
 				// process every 16 bits
 				if ((_crcCount & 0xF) == 0) {
-					if ((_crcCount > 48) || ((_decoderFlags & A1_FOUND) != 0)) {
+					if ((_crcCount > 48) || _decoderFlags.HasFlag(DecoderFlags.A1Found)) {
 						if (_crcCount == 48) {
 							//Debug.Assert(_syncSeq == 3, "Invalid _syncSeq should be 3 - Hit continue to repair");
 							if (_syncSeq != 3) _syncSeq = 3;
-							_decoderFlags &= ~SYNC_DETECTOR_ENABLED;
+							_decoderFlags &= ~DecoderFlags.SyncDetectorEnabled;
 						}	// after 3 A1 we disable AM detector
 
 						// select data bits for CRC source byte value; needed without separate clock and data shifters
@@ -277,7 +274,7 @@ namespace WD1772Package {
 
 					}	// A1 or following bytes
 					else
-						_decoderFlags &= ~CRC_ACTIVE;	// reset CRC activation if less than 3 consecutive A1 detected
+						_decoderFlags &= ~DecoderFlags.CrcActive;	// reset CRC activation if less than 3 consecutive A1 detected
 				}	// every 16 bits
 				_crcCount++;
 			}	// CRC active
@@ -294,12 +291,13 @@ namespace WD1772Package {
 					_dsrBitCount = 0;	// reset count
 					// set DSR flag if valid data
 					if (_dsrInvalid == 0) {
-						bool syncFound = ((_decoderFlags & (A1_FOUND + C2_FOUND)) != 0);
-						_decoderFlags |= DATA_READY;
+						bool syncFound = _decoderFlags.HasFlag(DecoderFlags.A1Found) || _decoderFlags.HasFlag(DecoderFlags.C2Found);
+						//_decoderFlags |= DATA_READY;
+						_decoderFlags |= DecoderFlags.DataReady;
 						if ((_syncSeq == 3) && (!syncFound) && (_lastSyncFound == SyncType.A1))
-							_decoderFlags |= IAM_POSITION;
+							_decoderFlags |= DecoderFlags.IamPosition;
 						else
-							_decoderFlags &= ~IAM_POSITION;
+							_decoderFlags &= ~DecoderFlags.IamPosition;
 						if (!syncFound && (_syncSeq > 0))
 							_syncSeq = 0;
 					}
@@ -320,8 +318,8 @@ namespace WD1772Package {
 		/// In track mode the Sync Detector is always on and no CRC is computed
 		/// </remarks>
 		public void trackMode() {
-			_decoderFlags |= SYNC_DETECTOR_ENABLED;
-			_decoderFlags &= ~CRC_ENABLED;
+			_decoderFlags |= DecoderFlags.SyncDetectorEnabled;
+			_decoderFlags &= ~DecoderFlags.CrcEnabled;
 		}
 
 
@@ -334,8 +332,8 @@ namespace WD1772Package {
 		/// reading each and every ID / DATA fields as the flags are resets after the sync
 		/// </remarks>
 		public void sectorMode() {
-			_decoderFlags |= (SYNC_DETECTOR_ENABLED | CRC_ENABLED);
-			_decoderFlags &= ~CRC_ACTIVE;
+			_decoderFlags |= DecoderFlags.SyncDetectorEnabled | DecoderFlags.CrcEnabled;
+			_decoderFlags &= ~DecoderFlags.CrcActive;
 		}
 
 

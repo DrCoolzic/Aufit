@@ -1,3 +1,6 @@
+* 0.9
+- Miscellaneous bug fixes + added some protections check, display splice ==> commit before modif Autorun
+
 * 0.9.5515.16391 Publish Feb 06, 2015
 - Improved display of OOB and NFA in Disk View
 - Added display of Sync Marks in Disk view

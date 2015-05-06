@@ -173,6 +173,38 @@ class DataDrawing {
 			_dataChartLayout.GraphicCanvas.Children.Add(sectorBorderPolygon);
 
 		}	// all sectors
+
+		Global.DiskTrack dt = Global.Disk[track, side];
+		int startBit = dt.packedFluxDataRev[rev].firstFluxBit;
+		int stopBit = startBit + dt.packedFluxDataRev[rev].bitCount;
+		int currentTime = 0;
+
+		for (int bitPosition = startBit; bitPosition < stopBit; bitPosition++) {
+			int currentByte = bitPosition / 8;
+			int currentBitInByte = bitPosition % 8;
+			byte bits = dt.packedFluxData.packedBits[currentByte];
+			int bit = (bits >> currentBitInByte) & 0x1;
+			//dsr.shiftBitsIn(bit);
+
+
+			if (bit == 0) continue;
+			int flux = Global.fluxWidth(bitPosition, track, side);
+			currentTime += flux;
+
+			if (((flux > 8500) || (flux < 3700)) && (dt.sectors.Count > 0)) {
+				Line splice = new Line();
+				DoubleCollection dashPattern = new DoubleCollection(new double[2] { 2, 2 });
+				splice.Stroke = Brushes.Black;
+				splice.StrokeThickness = 1;
+				splice.StrokeDashArray = dashPattern;
+				splice.X1 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
+				splice.Y1 = _dataChartLayout.NormY(_dataChartLayout.Ymin);
+				splice.X2 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
+				splice.Y2 = _dataChartLayout.NormY(_dataChartLayout.Ymax);
+				_dataChartLayout.GraphicCanvas.Children.Add(splice);
+			}
+		}
+
 	}
 
 

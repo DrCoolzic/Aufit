@@ -129,7 +129,7 @@ namespace Aufit {
 
 				if (dt.sectors[sect].data != null) {
 					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-						String.Format("{0:D}", dt.sectors[sect].data.info.startByte - (dt.sectors[sect].id.info.startByte + dt.sectors[sect].id.info.byteCount))
+						String.Format("{0:D}", dt.sectors[sect].data.info.startByte - (dt.sectors[sect].id.info.startByte + dt.sectors[sect].id.info.byteCount) - 3)
 						))));
 
 					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
@@ -145,14 +145,22 @@ namespace Aufit {
 
 					if (sect < (dt.sectors.Count - 1)) {
 						currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-						String.Format("{0:D}", dt.sectors[sect + 1].id.info.startByte - (dt.sectors[sect].data.info.startByte + dt.sectors[sect].data.info.byteCount + 3))
+						String.Format("{0:D}", dt.sectors[sect + 1].id.info.startByte - (dt.sectors[sect].data.info.startByte + dt.sectors[sect].data.info.byteCount + 6))
+						))));
+					}
+					else {
+						currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+							String.Format("{0:D}", 
+							((dt.sectors[sect].data.info.startByte + dt.sectors[sect].data.info.byteCount) < dt.track.info.byteCount) ?
+							dt.track.info.byteCount - (dt.sectors[sect].data.info.startByte + dt.sectors[sect].data.info.byteCount) + dt.sectors[0].id.info.startByte - 6 :
+							dt.sectors[0].id.info.startByte - 6 - ((dt.sectors[sect].data.info.startByte + dt.sectors[sect].data.info.byteCount) - dt.track.info.byteCount))
 						))));
 					}
 				}
 				else {
 					if (sect < (dt.sectors.Count - 1)) {
 						currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-						String.Format("{0:D}", dt.sectors[sect + 1].id.info.startByte - (dt.sectors[sect].id.info.startByte + dt.sectors[sect].id.info.byteCount))
+						String.Format("{0:D}", dt.sectors[sect + 1].id.info.startByte - (dt.sectors[sect].id.info.startByte + dt.sectors[sect].id.info.byteCount - 3))
 						))));
 					}
 

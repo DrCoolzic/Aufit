@@ -49,11 +49,11 @@ namespace WD1772Package {
 	/// Store information about a block of data read from track.
 	/// /// </summary>
 	public struct BlockInfo {
-		/// <summary>Number of bytes in the block</summary> 
-		public int byteCount;
-
 		/// <summary>First byte of the block</summary> 
 		public int startByte;
+
+		/// <summary>Number of bytes in the block</summary> 
+		public int byteCount;
 
 		/// <summary>First bit of the block</summary> 
 		public int startBit;
@@ -364,7 +364,7 @@ namespace WD1772Package {
 				if (dsr.DataReady) {
 					byteCount++;
 
-					if (dsr.IAM && (dt.track.firstSyncOffset == 0)) {
+					if (dsr.IAM && (dsr.Data == 0xFE) && (dt.track.firstSyncOffset == 0)) {
 						Global.Disk[track, side].track.firstSyncOffset = byteCount - 3;
 					}
 					if ((dsr.Data >= 0xF5) && (dsr.Data <= 0xF7) && (phase == Phases.p_gap))

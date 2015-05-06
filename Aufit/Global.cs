@@ -585,6 +585,8 @@ public class Global {
 	/// (default to 1.0 if not provided)</param>
 	public static void saveImage(Visual target, double scale = 1.0) {
 		SaveFileDialog sfd = new SaveFileDialog();
+		sfd.InitialDirectory = Aufit.MainWindow.DirectoryName;
+		sfd.RestoreDirectory = true;
 		sfd.Filter = "Png file|*.png|All Files|*.*";
 		if (sfd.ShowDialog() == true)
 			savePngFromVisual(target, sfd.FileName, scale);
@@ -644,6 +646,18 @@ public class Global {
 		sectors = Global.Disk[track, side].sectors;
 		return sectors;
 	}
+
+
+
+	public static bool fluxNotInRange(int flux) {
+		const int limit = 700;
+		if (((flux > (4000 - limit)) && (flux < (4000 + limit))) ||
+			((flux > (6000 - limit)) && (flux < (6000 + limit))) ||
+			((flux > (8000 - limit)) && (flux < (8000 + limit))))
+			return false;
+		return true;
+	}
+
 
 
 }	// class Global
