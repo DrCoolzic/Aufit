@@ -58,9 +58,9 @@ namespace Aufit {
 		Brush reference_line = new SolidColorBrush(Colors.MediumBlue);
 
 
-		private void btDiskRedraw(object sender, RoutedEventArgs e) {
+		private async void btDiskRedraw(object sender, RoutedEventArgs e) {
 			diskClear();
-			drawDiskLayout();
+			await drawDiskLayout();
 		}
 
 
@@ -73,9 +73,9 @@ namespace Aufit {
 		/// <summary>
 		/// Display the layout of a FD
 		/// </summary>
-		private async void drawDiskLayout() {
+		private async Task<bool> drawDiskLayout() {
 			bool _debugNoAsync = false;
-			if (cvDisk0.Children.Count > 0) return;
+			if (cvDisk0.Children.Count > 0) return false;
 
 			Brush Black = new SolidColorBrush(Colors.Black);
 			Black.Freeze();
@@ -183,29 +183,29 @@ namespace Aufit {
 			version.Text = "Aufit " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 			cvDisk1.Children.Add(version);
 
-			TextBox info = new TextBox();
-			info.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
-			info.VerticalAlignment = System.Windows.VerticalAlignment.Top;
-			info.Margin = new Thickness(0, 0, 0, 0);
-			info.Padding = new Thickness(5);
-			info.FontFamily = new FontFamily("Segoe UI");
-			info.BorderThickness = new Thickness(0);
-			info.FontSize = 13;
-			info.HorizontalContentAlignment = HorizontalAlignment.Center;
-			info.Background = White;
-			info.Foreground = Black;
-			info.Text = String.Format("Side 0, {0} Tracks", 0);
-			cvDisk0.Children.Add(info);
+			//TextBox info = new TextBox();
+			//info.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
+			//info.VerticalAlignment = System.Windows.VerticalAlignment.Top;
+			//info.Margin = new Thickness(0, 0, 0, 0);
+			//info.Padding = new Thickness(5);
+			//info.FontFamily = new FontFamily("Segoe UI");
+			//info.BorderThickness = new Thickness(0);
+			//info.FontSize = 13;
+			//info.HorizontalContentAlignment = HorizontalAlignment.Center;
+			//info.Background = White;
+			//info.Foreground = Black;
+			//info.Text = String.Format("Side 0, {0} Tracks", 0);
+			//cvDisk0.Children.Add(info);
 
 
 			// draw all tracks of both side
 			for (int side = 0; side < 2; side++) {
-				int trackCount = 1;
+				//int trackCount = 1;
 				Grid grid = (side == 0) ? cvDisk0 : cvDisk1;
 				for (int track = 0; track < 84; track++) {
 					if ((Global.Disk[track, side].fluxData == null) &&
 						(Global.Disk[track, side].packedFluxData == null)) continue;
-					info.Text = String.Format("Side 0, {0} Tracks", trackCount++);
+					//info.Text = String.Format("Side 0, {0} Tracks", trackCount++);
 					if (_debugNoAsync) {
 						Global.decodeAndRead(track, side, 0);
 						drawDiskTrackLayout(track, side, 0, cvDisk0);
@@ -218,6 +218,7 @@ namespace Aufit {
 				}	// all tracks
 			}	// all sides
 
+			return true;
 		}
 
 
@@ -498,7 +499,7 @@ namespace Aufit {
 			double scale = 0.8;
 			if (rbMed.IsChecked == true) scale = 1.2;
 			else if (rbHigh.IsChecked == true) scale = 2.0;
-			Global.saveImage(gridDisk, scale);
+			Global.saveImage(gridDisk, scale, ".disk_view.png", true);
 		}
 
 	}

@@ -80,6 +80,7 @@ namespace Aufit {
 		private HistoDrawing _histoDrawing = null;
 		private BitWidthDrawing _clockDrawing = null;
 		private DataDrawing _dataDrawing = null;
+		private bool _modeAuto = false;
 
 		//private BufferWindow _trackWindow = null;
 		//private bool _trackWindowIsOpen = false;
@@ -337,25 +338,25 @@ namespace Aufit {
 		private bool _readKFAsync = true;
 
 
-		private void openFileClick(object sender, RoutedEventArgs e) {
+		private async void openFileClick(object sender, RoutedEventArgs e) {
 			OpenFileDialog ofd = new OpenFileDialog();
 			ofd.Filter = "Aufit|*.scp;*.raw|All Files|*.*";
 
 			bool? ok = ofd.ShowDialog();
 			if (ok == true) {
-				processFile(ofd.FileName);
+				await processFile(ofd.FileName);
 			}
 		}
 
 
-		private void fileDrop(object sender, DragEventArgs e) {
+		private async void fileDrop(object sender, DragEventArgs e) {
 			string[] droppedFiles = null;
 			if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
 				droppedFiles = e.Data.GetData(DataFormats.FileDrop, true) as string[];
 			}
 
 			if ((null == droppedFiles) || (!droppedFiles.Any())) { return; }
-			processFile(droppedFiles[0]);
+			await processFile(droppedFiles[0]);
 		}
 
 
@@ -374,13 +375,56 @@ namespace Aufit {
 		}
 
 
-		private void container_loaded(object sender, RoutedEventArgs e) {
+		private async void container_loaded(object sender, RoutedEventArgs e) {
+			string suffix = "aufit";
+			if (Application.Current.Properties["Suffix"] != null) {
+				suffix = (string)Application.Current.Properties["Suffix"];
+			}
+
 			if (Application.Current.Properties["FileName"] != null) {
 				string fname = Application.Current.Properties["FileName"].ToString();
 				FileInfo file = new FileInfo(fname);
 				if (file.Exists) {
-					processFile(fname);
+					await processFile(fname);
 				}
+			}
+
+			if (Application.Current.Properties["DiskView"] != null) {
+				_modeAuto = true;
+				tabDisplay.SelectedIndex = 1;
+				await drawDiskLayout();
+				Global.saveImage(gridDisk, 1.2, ".disk_view." + suffix + ".png", false);
+			}
+
+			if (Application.Current.Properties["Protections"] != null) {
+				_modeAuto = true;
+				tabDisplay.SelectedIndex = 3;
+				tbAnalysis.Clear();
+				tbAnalysis.AppendText(String.Format("Protection analysis for {0}\n\n", ImageName));
+				await checkProtectionAsync(tbAnalysis);
+				string fileName = Aufit.MainWindow.ImageName + ".protections."+ suffix + ".txt";
+				File.WriteAllText(fileName, tbAnalysis.Text);
+			}
+
+			if (Application.Current.Properties["SaveImage"] != null) {
+				_modeAuto = true;
+				tabDisplay.SelectedIndex = 4;
+				string fileName = Aufit.MainWindow.ImageName + ".image." + suffix + ".stx";
+				uint flags = 0;
+				flags |= Global.OPTIMIZE;
+				//flags |= Global.FORCE_DS;
+				//flags |= Global.DEBUG;
+				//flags |= Global.SYNC_HEAD;
+				tbSaveImage.Clear();
+				tbSaveImage.AppendText(String.Format("Writing STX file {0}\n", fileName));
+				PastiWriter pasti = new PastiWriter(tbSaveImage);
+				pasti.writePasti(fileName, flags);
+				tbSaveImage.AppendText(String.Format("Image {0} write completed", fileName));
+			}
+			if (_modeAuto) {
+				string fileName = Aufit.MainWindow.ImageName + "." + suffix + ".done";
+				File.Create(fileName).Dispose();
+				this.Close();
 			}
 		}
 
@@ -401,7 +445,7 @@ namespace Aufit {
 		}
 
 
-		private async void processFile(string fileName) {
+		private async Task<bool> processFile(string fileName) {
 			bool readOK = false;
 			CurrentTrack = CurrentSide = CurrentRev = 0;
 			Global.resetDisk();
@@ -412,8 +456,7 @@ namespace Aufit {
 			fdViewer.Document = null;
 			redDot.Visibility = System.Windows.Visibility.Hidden;
 			tbSaveImage.Clear();
-
-			ImageName = fileName;
+			
 			guiEnable(false);
 			string extension = System.IO.Path.GetExtension(fileName);
 			tbStatus.Text = "READING IMAGE";
@@ -423,8 +466,9 @@ namespace Aufit {
 			switch (extension) {
 				case ".raw":
 					string path = System.IO.Path.GetDirectoryName(fileName);
-					ImageName = path;
-					DirectoryName = path;
+					string parent = System.IO.Path.GetDirectoryName(path);
+					ImageName = path + ".raw";
+					DirectoryName = parent;
 					string file = System.IO.Path.GetFileName(fileName);
 					string root = file.Remove(file.Length - 8, 8);
 					if (_debugNoThread)
@@ -436,6 +480,7 @@ namespace Aufit {
 					break;
 
 				case ".scp":
+					ImageName = fileName;					
 					DirectoryName = System.IO.Path.GetDirectoryName(ImageName);
 					readOK = await SCPReader.readScpAsync(fileName, infoBox);
 					break;
@@ -443,7 +488,7 @@ namespace Aufit {
 				default:
 					tbFileName.Text = "Sorry input file is an unknown format";
 					guiEnable(true);
-					return;
+					return false;
 			}
 
 			if (readOK) {
@@ -453,7 +498,7 @@ namespace Aufit {
 			else {
 				tbFileName.Text = "Sorry could not read correctly the input file";
 				guiEnable(true);
-				return;
+				return false;
 			}
 
 			tbStatus.Text = "PROCESSING DATA";
@@ -475,6 +520,7 @@ namespace Aufit {
 				// Launch background thread to do decode flux.  This will trigger BackgroundWorker.DoWork().
 				bgWorker.RunWorkerAsync();
 			}
+			return true;
 		}
 
 
@@ -726,18 +772,18 @@ namespace Aufit {
 		}
 
 
-		private async Task checkProtectionAsync() {
+		private async Task checkProtectionAsync(TextBox tb) {
 			for (int side = 0; side < 2; side++)
 				for (int track = 0; track < 84; track++) {
 					await Global.decodeAndReadAsync(track, side, 1);
-					Protections.checkProtection(track, side, infoBox);
+					Protections.checkProtection(track, side, tb);
 					ButtonMatrix.setButtonBG(track, side);
 				}
 		}
 
 
 		private void btSavePictClick(object sender, RoutedEventArgs e) {
-			Global.saveImage(mainGrid, 1);
+			Global.saveImage(mainGrid, 1, "track_view", true);
 		}
 
 
@@ -811,11 +857,13 @@ namespace Aufit {
 
 
 		private async void tabDisplaySelectionChanged(object sender, SelectionChangedEventArgs e) {
+			if (_modeAuto) return;
+
 			if (tabItemTrack.IsSelected) {
 				drawAllCharts();
 			}
 			if (tabItemDisk.IsSelected) {
-				drawDiskLayout();
+				await drawDiskLayout();
 			}
 			if (tabItemContent.IsSelected) {
 				if ((Global.Disk[CurrentTrack, CurrentSide].track != null) && (fdViewer.Document == null))
@@ -833,7 +881,7 @@ namespace Aufit {
 
 		private async Task checkWriteImage() {
 			if (tbSaveImage.Text.Length != 0) return;
-			await checkProtectionAsync();
+			await checkProtectionAsync(infoBox);
 			cbST.IsEnabled = true;
 			cbMSA.IsEnabled = true;
 			for (int side = 0; side < 2; side++) {

@@ -583,12 +583,17 @@ public class Global {
 	/// <param name="target">Visual to save as png image</param>
 	/// <param name="scale">!the drawing will be scaled using this value
 	/// (default to 1.0 if not provided)</param>
-	public static void saveImage(Visual target, double scale = 1.0) {
+	public static void saveImage(Visual target, double scale, string name, bool ask) {
 		SaveFileDialog sfd = new SaveFileDialog();
 		sfd.InitialDirectory = Aufit.MainWindow.DirectoryName;
-		sfd.RestoreDirectory = true;
-		sfd.Filter = "Png file|*.png|All Files|*.*";
-		if (sfd.ShowDialog() == true)
+		sfd.FileName = Aufit.MainWindow.ImageName + name;
+		if (ask) {
+			sfd.RestoreDirectory = true;
+			sfd.Filter = "Png file|*.png|All Files|*.*";
+			if (sfd.ShowDialog() == true)
+				savePngFromVisual(target, sfd.FileName, scale);
+		}
+		else
 			savePngFromVisual(target, sfd.FileName, scale);
 	}
 
