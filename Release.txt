@@ -1,5 +1,11 @@
-* 0.9
-- Miscellaneous bug fixes + added some protections check, display splice ==> commit before modif Autorun
+* Aufit 1.0.5607.30063 & BatchAufit 1.0.5609.30951
+- Added detection of Jupiter Masterdrive & Dragonflight protections
+- Added display of out of band transitions in track data graph
+- disk graphic view now contains image name & Aufit version
+- Miscellaneous bug fixes
+- Added auto run feature to allow batch usage of Aufit
+  line arg: -disk_view, -protections, -save_image, -scale x.x, suffix zz
+- New project BatchAufit to run Aufit in batch mode
 
 * 0.9.5515.16391 Publish Feb 06, 2015
 - Improved display of OOB and NFA in Disk View
@@ -8,7 +14,7 @@
 
 * 0.9.5512.16391 Publish Feb 03, 2015
 - All checkbox and radio buttons are displayed LeftToroght!
-- Now Aufit checks forupdate at start time (not so good)
+- Now Aufit checks for update at start time (not so good)
 - fix color problem in disk view
 
 * 0.9.5511.25059 Publish Feb 02, 2015

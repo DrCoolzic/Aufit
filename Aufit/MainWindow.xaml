@@ -144,20 +144,32 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="24"/>
                     </Grid.RowDefinitions>
-
-                    <Grid Grid.Row="0" Name="gridDisk">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Viewbox Grid.Column="0"   Stretch="Uniform">
-                            <Grid Name="cvDisk0" Margin="0" />
-                        </Viewbox>
-                        <Viewbox Grid.Column="1" Stretch="Uniform" >
-                            <Grid Name="cvDisk1" Margin="0" />
-                        </Viewbox>
+                    <Grid Grid.Row="0" Name="gridImageView">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0" >
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Viewbox Grid.Column="0"   Stretch="Uniform">
+                                <Grid Name="cvDisk0" Margin="0" />
+                            </Viewbox>
+                            <Viewbox Grid.Column="1" Stretch="Uniform" >
+                                <Grid Name="cvDisk1" Margin="0" />
+                            </Viewbox>
+                        </Grid>
+                        <Grid Grid.Row="1" Background="Transparent" Margin="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" Name="tbImageName"  BorderThickness="0" Background="Transparent" FontFamily="Segoe UI" FontSize="12"/>
+                            <TextBox Grid.Column="1" Name="tbImageVersion" BorderThickness="0" Background="Transparent" FontFamily="Segoe UI" FontSize="12"/>
+                        </Grid>
                     </Grid>
-
                     <Grid Grid.Row="1" >
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="auto"/>
@@ -171,7 +183,7 @@
                             <ColumnDefinition Width="auto"/>
                         </Grid.ColumnDefinitions>
                         
-                        <TextBox Grid.Column="0" Text="Resolution: " BorderThickness="0" VerticalContentAlignment="Center"/>
+                        <TextBox Grid.Column="0" Text="Resolution: " BorderThickness="0" VerticalContentAlignment="Center" Background="Transparent"/>
                         <RadioButton Grid.Column="1" Name="rbHigh" Content="High" Margin="0,0,7,0" VerticalContentAlignment="Center"/>
                         <RadioButton Grid.Column="2" Name="rbMed" Content="Med" IsChecked="True"  Margin="0,0,7,0" VerticalContentAlignment="Center"/>
                         <RadioButton Grid.Column="3" Name="rbLow" Content="Low" Margin="0,0,7,0" VerticalContentAlignment="Center"/>

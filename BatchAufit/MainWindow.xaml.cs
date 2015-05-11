@@ -31,18 +31,61 @@ namespace BatchAufit {
 		private int _count = 0;
 		private int _done = 0;
 		private List<FileToProcess> _fileToProcessList = null;
+		private bool _run = false;
 
 		public MainWindow() {
 			InitializeComponent();
+			string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+			Title = "BatchAufit " + version;
+
 		}
 
 
-		private void RootDirectoryClicked(object sender, RoutedEventArgs e) {
+		void ProcessDir(DirectoryInfo di, string suffix) {
+			foreach (FileInfo fi in di.GetFiles()) {
+				string fileToTest;
+				FileToProcess ftp = new FileToProcess();
+				ftp.Name = fi.FullName;
+
+				if ((fi.Extension == ".scp") || (fi.Extension == ".raw")) {
+					if (fi.Extension == ".scp")
+						fileToTest = fi.FullName + "." + suffix + ".done";
+					else
+						fileToTest = fi.Directory + ".raw." + suffix + ".done";
+					if (File.Exists(fileToTest)) {
+						ftp.Done = true;
+						_done++;
+					}
+					else ftp.Done = false;
+					_count++;
+					_fileToProcessList.Add(ftp);
+					if (fi.Extension == ".raw") break;
+				}
+			}
+		}
+
+
+		// https://support.microsoft.com/fr-fr/kb/303974
+		// http://stackoverflow.com/questions/929276/how-to-recursively-list-all-the-files-in-a-directory-in-c/929418#929418
+		private async Task<bool> ProcessSubDir(string sDir) {
+			foreach (string d in Directory.GetDirectories(sDir)) {
+				string ai = System.IO.Path.Combine(sDir, "aufit.ignore.txt");
+				if (File.Exists(ai))
+					return false;
+				string suffix = tbSuffix.Text;
+				DirectoryInfo di = new DirectoryInfo(d);
+				await Task.Run(() => ProcessDir(di, suffix));
+				await ProcessSubDir(d);
+			}
+			return true;
+		}
+
+
+		private async void RootDirectoryClicked(object sender, RoutedEventArgs e) {
 			VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
 			dialog.Description = "Please select a folder.";
 			dialog.UseDescriptionForTitle = true;
 			if ((bool)dialog.ShowDialog(this)) {
-				tbAction.Text = "Scanning Directory";
 				pbProgress.Visibility = System.Windows.Visibility.Visible;
 				tbResult.Clear();
 				_count = 0;
@@ -51,94 +94,81 @@ namespace BatchAufit {
 				string selectedDir = dialog.SelectedPath;
 				tbRootDirName.Text = selectedDir;
 				DirectoryInfo di = new DirectoryInfo(selectedDir);
-				ProcessDir(di);
-				ProcessSubDir(selectedDir);
-				tbAction.Text = "Waiting ...";
+				ProcessDir(di, tbSuffix.Text);
+				await ProcessSubDir(selectedDir);
 				pbProgress.Visibility = System.Windows.Visibility.Hidden;
-			}
-		}
-
-
-		// https://support.microsoft.com/fr-fr/kb/303974
-		// http://stackoverflow.com/questions/929276/how-to-recursively-list-all-the-files-in-a-directory-in-c/929418#929418
-		void ProcessSubDir(string sDir) {
-			foreach (string d in Directory.GetDirectories(sDir)) {
-				DirectoryInfo di = new DirectoryInfo(d);
-				ProcessDir(di);
-				ProcessSubDir(d);
-			}
-		}
-
-
-		void ProcessDir(DirectoryInfo di) {
-			foreach (FileInfo fi in di.GetFiles()) {
-				string fileToTest;
-				FileToProcess ftp = new FileToProcess();
-				ftp.Name = fi.FullName;
-
-				if ((fi.Extension == ".scp") || (fi.Extension == ".raw")) {
-					if (fi.Extension == ".scp")
-						fileToTest = fi.FullName + "." + tbSuffix.Text + ".done";
-					else
-						fileToTest = fi.Directory + ".raw." + tbSuffix.Text + ".done";
-					if (File.Exists(fileToTest)) {
-						ftp.Done = true;
-						_done++;
-					}
-					else ftp.Done = false;
-					_count++;
-					tbTotal.Text = _count.ToString();
-					tbDone.Text = _done.ToString();
-					_fileToProcessList.Add(ftp);
+				tbTotal.Text = _count.ToString();
+				tbDone.Text = _done.ToString();
+				foreach (FileToProcess ftp in _fileToProcessList) {
 					tbResult.AppendText(ftp.Name);
 					tbResult.AppendText(ftp.Done ? " - Already Done\n" : " - To Do\n");
-					if (fi.Extension == ".raw") break;
 				}
 			}
 		}
 
 
-		private void btStartClicked(object sender, RoutedEventArgs e) {
-			ProcessStartInfo startInfo = new ProcessStartInfo();
-			string startDir = AppDomain.CurrentDomain.BaseDirectory;
-			startInfo.FileName = startDir + "\\Aufit.exe";
+		private void StartAufitAndWait(string arguments) {
+			Process p = new Process();
+			p.StartInfo.FileName = AppDomain.CurrentDomain.BaseDirectory + "\\Aufit.exe";
+			p.StartInfo.Arguments = arguments;
+			p.Start();
+			p.WaitForExit();
+		}
 
-			string arguments = "-suffix ";
-			arguments += tbSuffix.Text;
-			arguments += " ";
-			if (cbDiskView.IsChecked == true)
-				arguments += "-disk_view ";
-			if (cbProt.IsChecked == true)
-				arguments += "-protections ";
-			if (cbSave.IsChecked == true)
-				arguments += "-save_image ";
 
+		private async void btStartClicked(object sender, RoutedEventArgs e) {
+			if (_fileToProcessList == null) return;
+			_run = true;
+			string arguments = "-suffix " + tbSuffix.Text + " " + "-scale " + tbSCale.Text + " ";
+			if (cbDiskView.IsChecked == true) arguments += "-disk_view ";
+			if (cbProt.IsChecked == true) arguments += "-protections ";
+			if (cbSave.IsChecked == true) arguments += "-save_image ";
+			pbProgress.IsIndeterminate = false;
+			pbProgress.Minimum = 0;
+			pbProgress.Maximum = _count;
+			pbProgress.Visibility = System.Windows.Visibility.Visible;
+			pbProgress.Value = _done;
 			foreach (FileToProcess ftp in _fileToProcessList) {
-				if (ftp.Done) {
-					tbResult.AppendText("Skipped " + ftp.Name);
-				}
+				if (ftp.Done)
+					tbResult.AppendText("Skipping " + ftp.Name + "\n");
 				else {
-					tbResult.AppendText("Processed " + ftp.Name);
+					tbResult.AppendText("Processing " + ftp.Name + "\n");
 					string full = arguments + "\"" + ftp.Name + "\"";
-					startInfo.Arguments = full;
-					Process p = new Process();
-					p.StartInfo = startInfo;
-					p.Start();
-					p.WaitForExit();
+					await Task.Run(() => StartAufitAndWait(full));
 					ftp.Done = true;
 					_done++;
 					tbDone.Text = _done.ToString();
+					pbProgress.Value = _done;
 				}
-				tbResult.AppendText("\n");
+				if (!_run) break;
 			}
+			pbProgress.Visibility = System.Windows.Visibility.Hidden;
+			_run = false;
 		}
 
-		private void btStopClicked(object sender, RoutedEventArgs e) {
 
+		//// http://stackoverflow.com/questions/17180500/wpf-application-starting-process-with-waitforexit-on-ui-thread
+		//Task StartAndWaitProcess(string arguments) {
+		//	Process p = new Process();
+		//	p.StartInfo.FileName = AppDomain.CurrentDomain.BaseDirectory + "\\Aufit.exe";
+		//	p.StartInfo.Arguments = arguments;
+		//	p.EnableRaisingEvents = true;
+		//	var tcs = new TaskCompletionSource<bool>();
+		//	p.Exited += (sender, args) => { tcs.SetResult(true); p.Dispose(); };
+		//	Task.Factory.StartNew(() => p.Start());
+		//	return tcs.Task;
+		//}
+
+
+		private void btStopClicked(object sender, RoutedEventArgs e) {
+			if (!_run) return;
+			_run = false;
+			tbResult.AppendText("Batch Processing will stop at completion of current Aufit run\n");
 		}
 
 
 		private void btCleanClick(object sender, RoutedEventArgs e) {
+			if (_fileToProcessList == null) return;
 			string baseName;
 			foreach (FileToProcess ftp in _fileToProcessList) {
 				if (ftp.Done) {
@@ -163,6 +193,13 @@ namespace BatchAufit {
 				tbResult.AppendText("\n");
 			}
 		}
+
+		private void btExitClick(object sender, RoutedEventArgs e) {
+			this.Close();
+		}
+
+
 	}
+
 
 }

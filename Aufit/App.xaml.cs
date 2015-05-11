@@ -35,6 +35,18 @@ namespace Aufit {
 				else if (e.Args[i] == "-suffix") {
 					if ((i++ + 1) < e.Args.Length)
 						this.Properties["Suffix"] = e.Args[i];
+					else {
+						MessageBox.Show("Invalid suffix arguments");
+						Application.Current.Shutdown();
+					}
+				}
+				else if (e.Args[i] == "-scale") {
+					if ((i++ + 1) < e.Args.Length)
+						this.Properties["Scale"] = e.Args[i];
+					else {
+						MessageBox.Show("Invalid scale arguments");
+						Application.Current.Shutdown();
+					}
 				}
 				else
 					this.Properties["FileName"] = e.Args[i];

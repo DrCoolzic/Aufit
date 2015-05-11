@@ -52,6 +52,7 @@ using SCPReaderPackage;
 using GlobalPackage;
 using PastiPackage;
 using StdFormatPackage;
+using System.Globalization;
 
 namespace Aufit {
 	//http://www.thomaslevesque.com/2008/11/18/wpf-binding-to-application-settings-using-a-markup-extension/
@@ -378,6 +379,7 @@ namespace Aufit {
 		private async void container_loaded(object sender, RoutedEventArgs e) {
 			string suffix = "aufit";
 			if (Application.Current.Properties["Suffix"] != null) {
+				_modeAuto = true;
 				suffix = (string)Application.Current.Properties["Suffix"];
 			}
 
@@ -393,7 +395,12 @@ namespace Aufit {
 				_modeAuto = true;
 				tabDisplay.SelectedIndex = 1;
 				await drawDiskLayout();
-				Global.saveImage(gridDisk, 1.2, ".disk_view." + suffix + ".png", false);
+				double scale = 1.2;
+				if (Application.Current.Properties["Scale"] != null) {
+					string s = Application.Current.Properties["Scale"].ToString();
+					scale = Double.Parse(s, CultureInfo.InvariantCulture);
+				}
+				Global.saveImage(gridImageView, scale, ".disk_view." + suffix + ".png", false);
 			}
 
 			if (Application.Current.Properties["Protections"] != null) {
