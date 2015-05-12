@@ -100,9 +100,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Batch-File.ico" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="batch.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

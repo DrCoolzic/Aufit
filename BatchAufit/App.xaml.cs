@@ -18,3 +18,7 @@ namespace BatchAufit {
 	}
 
 }
+
+// How to: Publish Multiple Projects in a Solution
+// https://msdn.microsoft.com/en-US/library/ms404233(v=vs.100).aspx
+// https://www.google.fr/webhp?sourceid=chrome-instant&ion=1&espv=2&ie=UTF-8#q=visual+studio+Publish+Multiple+Projects+in+a+Solution

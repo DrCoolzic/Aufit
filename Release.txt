@@ -1,3 +1,8 @@
+* Aufit 1.0.5610.31219 & BatchAufit 1.0.5610.31593
+- last analyzed image is saved when program exit so can be directly re-analyzed with reload button
+- added reload button to reload last image analyzed
+- remove usage of .done files by batchAufit
+
 * Aufit 1.0.5607.30063 & BatchAufit 1.0.5609.30951
 - Added detection of Jupiter Masterdrive & Dragonflight protections
 - Added display of out of band transitions in track data graph

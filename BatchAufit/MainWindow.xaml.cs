@@ -43,16 +43,19 @@ namespace BatchAufit {
 
 		void ProcessDir(DirectoryInfo di, string suffix) {
 			foreach (FileInfo fi in di.GetFiles()) {
-				string fileToTest;
+				string baseName;
 				FileToProcess ftp = new FileToProcess();
 				ftp.Name = fi.FullName;
 
 				if ((fi.Extension == ".scp") || (fi.Extension == ".raw")) {
 					if (fi.Extension == ".scp")
-						fileToTest = fi.FullName + "." + suffix + ".done";
+						baseName = fi.FullName;
 					else
-						fileToTest = fi.Directory + ".raw." + suffix + ".done";
-					if (File.Exists(fileToTest)) {
+						baseName = fi.Directory + ".raw";
+
+					if ((File.Exists(baseName + ".disk_view." + suffix + ".png")) ||
+						(File.Exists(baseName + ".image." + suffix + ".stx")) ||
+						(File.Exists(baseName + ".protections." + suffix + ".txt"))) {
 						ftp.Done = true;
 						_done++;
 					}

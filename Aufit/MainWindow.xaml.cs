@@ -137,6 +137,7 @@ namespace Aufit {
 
 			this.Loaded += new RoutedEventHandler(container_loaded);
 			//MessageBox.Show(Application.Current.Properties["FileName"].ToString());
+			tbFileName.Text = Aufit.Properties.Settings.Default.ImageName;
 		}
 
 
@@ -341,12 +342,20 @@ namespace Aufit {
 
 		private async void openFileClick(object sender, RoutedEventArgs e) {
 			OpenFileDialog ofd = new OpenFileDialog();
+			//ofd.FileName = Aufit.Properties.Settings.Default.ImageName;
 			ofd.Filter = "Aufit|*.scp;*.raw|All Files|*.*";
 
 			bool? ok = ofd.ShowDialog();
 			if (ok == true) {
+				Aufit.Properties.Settings.Default.ImageName = ofd.FileName;
 				await processFile(ofd.FileName);
 			}
+		}
+
+
+		private async void reloadClick(object sender, RoutedEventArgs e) {
+			tbFileName.Text = Aufit.Properties.Settings.Default.ImageName;
+			await processFile(Aufit.Properties.Settings.Default.ImageName);
 		}
 
 
@@ -429,8 +438,8 @@ namespace Aufit {
 				tbSaveImage.AppendText(String.Format("Image {0} write completed", fileName));
 			}
 			if (_modeAuto) {
-				string fileName = Aufit.MainWindow.ImageName + "." + suffix + ".done";
-				File.Create(fileName).Dispose();
+				//string fileName = Aufit.MainWindow.ImageName + "." + suffix + ".done";
+				//File.Create(fileName).Dispose();
 				this.Close();
 			}
 		}
