@@ -1,3 +1,13 @@
+* Aufit 1.0.5612.16387 & BatchAufit 1.0.5612.25552 Aufit batch mode workaround + Improved batch program
+- DiskGui commented setButtonBG ??? seems to improve batch mode - need investigation
+- MainWindow sleep 2s before changing tab seems to improve batch mode ???
+- BatchAufit MainWin
+   + added reload button  last directory used saved and used by reload
+   + added button to save log file
+   + log now includes: start time, elapsed time, and cpu time + processed, succeeded, failed ...
+   + visible part of log file is now always last line
+   On a multiple processor system, this value would include time spent on each processor, if the thread used more than one processor.
+
 * Aufit 1.0.5610.31219 & BatchAufit 1.0.5610.31593
 - last analyzed image is saved when program exit so can be directly re-analyzed with reload button
 - added reload button to reload last image analyzed

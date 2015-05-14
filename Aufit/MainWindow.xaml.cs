@@ -402,6 +402,7 @@ namespace Aufit {
 
 			if (Application.Current.Properties["DiskView"] != null) {
 				_modeAuto = true;
+				Thread.Sleep(2000);
 				tabDisplay.SelectedIndex = 1;
 				await drawDiskLayout();
 				double scale = 1.2;

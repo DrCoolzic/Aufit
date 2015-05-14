@@ -24,6 +24,13 @@ namespace BatchAufit {
 		public bool Done;
 	}
 
+	struct ProcessInfo {
+		public int exitCode;
+		public DateTime exitTime;
+		public DateTime strartTime;
+		public TimeSpan processorTime;
+	}
+
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
@@ -37,7 +44,8 @@ namespace BatchAufit {
 			InitializeComponent();
 			string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 			Title = "BatchAufit " + version;
-
+			tbRootDirName.Text = Properties.Settings.Default.RootDirName;
+			tbMaxProcessTime.Text = Properties.Settings.Default.MaxProcessTime.ToString();
 		}
 
 
@@ -89,40 +97,64 @@ namespace BatchAufit {
 			dialog.Description = "Please select a folder.";
 			dialog.UseDescriptionForTitle = true;
 			if ((bool)dialog.ShowDialog(this)) {
-				pbProgress.Visibility = System.Windows.Visibility.Visible;
-				tbResult.Clear();
-				_count = 0;
-				_done = 0;
-				_fileToProcessList = new List<FileToProcess>();
 				string selectedDir = dialog.SelectedPath;
+				Properties.Settings.Default.RootDirName = selectedDir;
+				Properties.Settings.Default.Save();
 				tbRootDirName.Text = selectedDir;
-				DirectoryInfo di = new DirectoryInfo(selectedDir);
-				ProcessDir(di, tbSuffix.Text);
-				await ProcessSubDir(selectedDir);
-				pbProgress.Visibility = System.Windows.Visibility.Hidden;
-				tbTotal.Text = _count.ToString();
-				tbDone.Text = _done.ToString();
-				foreach (FileToProcess ftp in _fileToProcessList) {
-					tbResult.AppendText(ftp.Name);
-					tbResult.AppendText(ftp.Done ? " - Already Done\n" : " - To Do\n");
-				}
+				await ProcessDir(selectedDir);
 			}
 		}
 
 
-		private void StartAufitAndWait(string arguments) {
+		private async Task ProcessDir(string selectedDir) {
+			pbProgress.IsIndeterminate = true;
+			pbProgress.Visibility = System.Windows.Visibility.Visible;
+			tbResult.Clear();
+			_count = 0;
+			_done = 0;
+			_fileToProcessList = new List<FileToProcess>();
+			DirectoryInfo di = new DirectoryInfo(selectedDir);
+			ProcessDir(di, tbSuffix.Text);
+			await ProcessSubDir(selectedDir);
+			pbProgress.Visibility = System.Windows.Visibility.Hidden;
+			tbTotal.Text = _count.ToString();
+			tbDone.Text = _done.ToString();
+			foreach (FileToProcess ftp in _fileToProcessList) {
+				tbResult.AppendText((ftp.Done ? "Done - " : "ToDo - ") + ftp.Name + "\n");
+			}
+			tbResult.ScrollToEnd();
+		}
+
+
+		private async void ReloadClicked(object sender, RoutedEventArgs e) {
+			if (!Directory.Exists(Properties.Settings.Default.RootDirName)) return;
+			await ProcessDir(Properties.Settings.Default.RootDirName);
+		}
+
+
+		private ProcessInfo StartAufitAndWait(string arguments) {
 			Process p = new Process();
+			ProcessInfo pi = new ProcessInfo();
 			p.StartInfo.FileName = AppDomain.CurrentDomain.BaseDirectory + "\\Aufit.exe";
 			p.StartInfo.Arguments = arguments;
 			p.Start();
-			p.WaitForExit();
+			int pt = Properties.Settings.Default.MaxProcessTime;
+			if (pt != -1) pt *= 1000;
+			bool done = p.WaitForExit(pt);
+			if (!done) p.Kill();
+			pi.exitCode = p.ExitCode;
+			pi.exitTime = p.ExitTime;
+			pi.strartTime = p.StartTime;
+			pi.processorTime = p.TotalProcessorTime;
+			return pi;
 		}
 
 
 		private async void btStartClicked(object sender, RoutedEventArgs e) {
+			
 			if (_fileToProcessList == null) return;
 			_run = true;
-			string arguments = "-suffix " + tbSuffix.Text + " " + "-scale " + tbSCale.Text + " ";
+			string arguments = "-suffix " + tbSuffix.Text + " " + "-scale " + tbScale.Text + " ";
 			if (cbDiskView.IsChecked == true) arguments += "-disk_view ";
 			if (cbProt.IsChecked == true) arguments += "-protections ";
 			if (cbSave.IsChecked == true) arguments += "-save_image ";
@@ -131,20 +163,46 @@ namespace BatchAufit {
 			pbProgress.Maximum = _count;
 			pbProgress.Visibility = System.Windows.Visibility.Visible;
 			pbProgress.Value = _done;
+			int processed = 0;
+			int succeed = 0;
+			int failed = 0;
+			TimeSpan elapsed = new TimeSpan(0);
+			TimeSpan cpu = new TimeSpan(0);
+			TimeSpan maxElapsed = new TimeSpan();
 			foreach (FileToProcess ftp in _fileToProcessList) {
-				if (ftp.Done)
-					tbResult.AppendText("Skipping " + ftp.Name + "\n");
-				else {
+				if (!ftp.Done) {
+					ProcessInfo pi = new ProcessInfo();
 					tbResult.AppendText("Processing " + ftp.Name + "\n");
 					string full = arguments + "\"" + ftp.Name + "\"";
-					await Task.Run(() => StartAufitAndWait(full));
-					ftp.Done = true;
-					_done++;
-					tbDone.Text = _done.ToString();
-					pbProgress.Value = _done;
+					await Task.Run(() => pi = StartAufitAndWait(full));
+					processed++;
+					TimeSpan elap = pi.exitTime - pi.strartTime;					
+					cpu += pi.processorTime;
+
+					if (pi.exitCode == 0) {
+						if (elap > maxElapsed) maxElapsed = elap;
+						elapsed += elap;
+						tbResult.AppendText("   Succeed - ");
+						ftp.Done = true;
+						_done++;
+						tbDone.Text = _done.ToString();
+						pbProgress.Value = _done;
+						succeed++;
+					}
+					else {
+						tbResult.AppendText("   Failed=" + pi.exitCode.ToString() + " - ");
+						failed++;
+					}
+					tbResult.AppendText(" Started at " + pi.strartTime.ToString());
+					tbResult.AppendText(String.Format(" - Time elapsed={0:F2}s CPU={1:F2}s\n",
+						elap.TotalSeconds, pi.processorTime.TotalSeconds));
+					tbResult.ScrollToEnd();
 				}
 				if (!_run) break;
 			}
+			tbResult.AppendText(String.Format("***** {0} images processed - ({1} succeeded, {2} failed) *****\n", processed, succeed, failed));
+			tbResult.AppendText(String.Format("      Time elapsed = {0:F2}s (Max={1:F2}s Avg={2:F2}s) - CPU = {3:F2}s\n",
+				elapsed.TotalSeconds, maxElapsed.TotalSeconds, maxElapsed.TotalSeconds / succeed, cpu.TotalSeconds));
 			pbProgress.Visibility = System.Windows.Visibility.Hidden;
 			_run = false;
 		}
@@ -166,7 +224,8 @@ namespace BatchAufit {
 		private void btStopClicked(object sender, RoutedEventArgs e) {
 			if (!_run) return;
 			_run = false;
-			tbResult.AppendText("Batch Processing will stop at completion of current Aufit run\n");
+			tbResult.AppendText("   Stop Requested - Waiting for Aufit to finish\n");
+			tbResult.ScrollToEnd();
 		}
 
 
@@ -182,23 +241,40 @@ namespace BatchAufit {
 					else
 						baseName = ftp.Name;
 					tbResult.AppendText("Cleaned " + baseName);
+					tbResult.AppendText("\n");
 					File.Delete(baseName + ".disk_view." + tbSuffix.Text + ".png");
 					File.Delete(baseName + ".image." + tbSuffix.Text + ".stx");
 					File.Delete(baseName + ".protections." + tbSuffix.Text + ".txt");
-					File.Delete(baseName + "." + tbSuffix.Text + ".done");
 					ftp.Done = false;
 					_done--;
 					tbDone.Text = _done.ToString();
-				}
-				else {
-					tbResult.AppendText("Already clean " + ftp.Name);
-				}
-				tbResult.AppendText("\n");
+				}                                                 
+				tbResult.ScrollToEnd();
 			}
 		}
 
 		private void btExitClick(object sender, RoutedEventArgs e) {
 			this.Close();
+		}
+
+
+		private void SaveLogClicked(object sender, RoutedEventArgs e) {
+			SaveFileDialog sfd = new SaveFileDialog();
+			sfd.InitialDirectory = Properties.Settings.Default.RootDirName;
+			sfd.RestoreDirectory = true;
+			sfd.Filter = "Log file|*.txt|All Files|*.*";
+			if (sfd.ShowDialog() == true)
+				File.WriteAllText(sfd.FileName, tbResult.Text);
+		}
+
+		private void MaxProcessTimeChanged(object sender, TextChangedEventArgs e) {
+			if (tbMaxProcessTime == null) return;
+			if (tbMaxProcessTime.Text == "") return;
+			try {
+				Properties.Settings.Default.MaxProcessTime = int.Parse(tbMaxProcessTime.Text);
+				Properties.Settings.Default.Save();
+			}
+			catch { }
 		}
 
 

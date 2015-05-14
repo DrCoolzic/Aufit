@@ -187,7 +187,8 @@ namespace Aufit {
 						await Global.decodeAndReadAsync(track, side, 0);
 						await drawDiskTrackLayoutAsync(track, side, 0, grid);
 					}
-					ButtonMatrix.setButtonBG(track, 0);
+					// TODO below commented because fails in batch mode for certain files???
+					//ButtonMatrix.setButtonBG(track, 0);
 				}	// all tracks
 			}	// all sides
 

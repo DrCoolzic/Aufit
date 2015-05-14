@@ -22,5 +22,29 @@ namespace BatchAufit.Properties {
                 return defaultInstance;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string RootDirName {
+            get {
+                return ((string)(this["RootDirName"]));
+            }
+            set {
+                this["RootDirName"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("-1")]
+        public int MaxProcessTime {
+            get {
+                return ((int)(this["MaxProcessTime"]));
+            }
+            set {
+                this["MaxProcessTime"] = value;
+            }
+        }
     }
 }
