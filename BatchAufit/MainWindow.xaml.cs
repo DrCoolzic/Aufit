@@ -176,8 +176,8 @@ namespace BatchAufit {
 					string full = arguments + "\"" + ftp.Name + "\"";
 					await Task.Run(() => pi = StartAufitAndWait(full));
 					processed++;
-					TimeSpan elap = pi.exitTime - pi.strartTime;					
 					cpu += pi.processorTime;
+					TimeSpan elap = pi.exitTime - pi.strartTime;
 
 					if (pi.exitCode == 0) {
 						if (elap > maxElapsed) maxElapsed = elap;

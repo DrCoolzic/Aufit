@@ -334,7 +334,7 @@ namespace Aufit {
 						flux = Global.fluxWidth(currentBit, track, side);
 						currentTime += flux;
 						if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) && (dt.sectors.Count > 0) && (cbOutOfBand.IsChecked == true) &&
-								(Global.fluxNotInRange(flux)) && (currentTime > lastOobStopTime)) {
+								(Global.fluxOutOfBand(flux)) && (currentTime > lastOobStopTime)) {
 							lastOobStopTime = currentTime + minDisplayWidth;
 							double startAngle = timeAngle(currentTime);
 							double stopAngle = timeAngle(lastOobStopTime);

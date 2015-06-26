@@ -117,7 +117,7 @@ class DataDrawing {
 			sectorBorderPolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.8));
 
 			TextBox tb = new TextBox();
-			tb.Text = String.Format("ID Field (T={0} H={1} N={2} S={3} CRC={4:X4}) - Start @ Bit={5} Time={6:F2} ms",
+			tb.Text = String.Format("ID Field (T={0} H={1} S={2} L={3} CRC={4:X4}) - Start @ Bit={5} Time={6:F2} ms",
 				sector.id.track, sector.id.head, sector.id.number, sector.id.size, sector.id.crc,
 				sector.id.info.startBit, bstart);
 			sectorInfoPanel.Children.Add(tb);
@@ -178,6 +178,7 @@ class DataDrawing {
 		int startBit = dt.packedFluxDataRev[rev].firstFluxBit;
 		int stopBit = startBit + dt.packedFluxDataRev[rev].bitCount;
 		int currentTime = 0;
+		PhaseSector ps = new PhaseSector(dt, dt.packedFluxDataRev[rev].revolutionTime);
 
 		for (int bitPosition = startBit; bitPosition < stopBit; bitPosition++) {
 			int currentByte = bitPosition / 8;
@@ -186,12 +187,12 @@ class DataDrawing {
 			int bit = (bits >> currentBitInByte) & 0x1;
 			//dsr.shiftBitsIn(bit);
 
-
 			if (bit == 0) continue;
 			int flux = Global.fluxWidth(bitPosition, track, side);
 			currentTime += flux;
+			ps.computePhaseAndSector(currentTime);
 
-			if (((flux > 8500) || (flux < 3700)) && (dt.sectors.Count > 0)) {
+			if (((flux > 8300) || (flux < 3700)) && (dt.sectors.Count > 0) && (ps.Phase == Phases.p_gap)) {
 				Line splice = new Line();
 				DoubleCollection dashPattern = new DoubleCollection(new double[2] { 2, 2 });
 				splice.Stroke = Brushes.Black;

@@ -161,10 +161,10 @@ namespace WD1772Package {
 		}
 
 		/// <summary>
-		/// Sync sequence in progress
+		/// Sync sequence count
 		/// </summary>
-		public bool inSyncSeq {
-			get { return (_syncSeq > 0);  }
+		public int SyncSeq {
+			get { return _syncSeq;  }
 		}
 
 		#endregion properties
@@ -258,7 +258,7 @@ namespace WD1772Package {
 				if ((_crcCount & 0xF) == 0) {
 					if ((_crcCount > 48) || _decoderFlags.HasFlag(DecoderFlags.A1Found)) {
 						if (_crcCount == 48) {
-							//Debug.Assert(_syncSeq == 3, "Invalid _syncSeq should be 3 - Hit continue to repair");
+							// Debug.Assert(_syncSeq == 3, "Invalid _syncSeq should be 3 - Hit continue to repair");
 							if (_syncSeq != 3) _syncSeq = 3;
 							_decoderFlags &= ~DecoderFlags.SyncDetectorEnabled;
 						}	// after 3 A1 we disable AM detector

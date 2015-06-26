@@ -1,5 +1,10 @@
 Improvements
 ============
+- detect slow moving clock variation for possible recover
+- detect track data and non Atari sector data
+- decomposed track in 10? parts and compute entropy => find hidden data in unformatted track (e.g.power drift disk b t01.0)
+- entropy for sector => unformatted sector
+
 - DONE: data view MFM checkbox changed => redisplay
 - DONE: add clear/save content button in save image
 - DONE: support for ST format
@@ -79,7 +84,6 @@ http://miteshsureja.blogspot.fr/2011/04/how-to-use-backgroundworker-to-update.ht
 http://blog.yojimbocorp.com/2012/05/22/using-task-for-responsive-ui-in-wpf/
 http://stuff.seans.com/2009/05/21/net-basics-do-work-in-background-thread-to-keep-gui-responsive/
 http://www.developpez.net/forums/d966615/dotnet/developpement-windows/windows-presentation-foundation/probleme-stathread-wpf/
-//			this.Dispatcher.Invoke(DispatcherPriority.Background, (ThreadStart)delegate {
 
 https://robindotnet.wordpress.com/2013/02/24/windows-8-and-clickonce-the-definitive-answer-2/
 

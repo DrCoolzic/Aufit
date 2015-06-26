@@ -1,3 +1,8 @@
+- invalid bytes in GAP (changed from 10 to 5)
+- out of band transitions in track data graph is displayed only into gap
+- cleaned protection messages
+- added ISS (sync seq) protection detection
+
 * Aufit 1.0.5612.16387 & BatchAufit 1.0.5612.25552 Aufit batch mode workaround + Improved batch program
 - DiskGui commented setButtonBG ??? seems to improve batch mode - need investigation
 - MainWindow sleep 2s before changing tab seems to improve batch mode ???

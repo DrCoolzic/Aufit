@@ -654,7 +654,7 @@ public class Global {
 
 
 
-	public static bool fluxNotInRange(int flux) {
+	public static bool fluxOutOfBand(int flux) {
 		const int limit = 700;
 		if (((flux > (4000 - limit)) && (flux < (4000 + limit))) ||
 			((flux > (6000 - limit)) && (flux < (6000 + limit))) ||
@@ -663,7 +663,126 @@ public class Global {
 		return true;
 	}
 
-
-
 }	// class Global
+
+public class PhaseSector {
+	// ugly
+	public bool compareSector;
+	public bool firstByte;
+
+	private int _sectorNumber;
+	private Phases _phase;
+	private bool _hasData;
+	private bool _needToCompute;
+	private int _nextIdStartTime;
+	private int _nextIdStopTime;
+	private int _nextDataStartTime;
+	private int _nextDataStopTime;
+	private Global.DiskTrack _dt;
+	private int _revolutionTime;
+
+	public Phases Phase {
+		get { return _phase; }
+	}
+
+	public int SectorNumber {
+		get { return _sectorNumber; }
+	}
+
+	public PhaseSector(Global.DiskTrack dt, int revolutionTime) {
+		compareSector = false;
+		firstByte = false;
+
+		_sectorNumber = -1;
+		_phase = Phases.p_gap;
+		_needToCompute = true;
+		_nextIdStartTime = int.MaxValue;
+		_nextIdStopTime = int.MaxValue;
+		_nextDataStartTime = int.MaxValue;
+		_nextDataStopTime = int.MaxValue;
+		_hasData = false;
+		_dt = dt;
+		_revolutionTime = revolutionTime;
+	}
+
+	public void computePhaseAndSector(int currentTime) {
+		if ((_dt.sectors != null) && (_dt.sectors.Count > 0)) {
+			if (_needToCompute) {
+				// here we test if last sector has data that wraps
+				if ((_sectorNumber == -1) && (_dt.sectors[_dt.sectors.Count - 1].data != null)) {
+					int dataStartTime = _dt.sectors[_dt.sectors.Count - 1].data.info.startTime;
+					int dataStopTime = dataStartTime + _dt.sectors[_dt.sectors.Count - 1].data.info.timeLength;
+					if ((dataStartTime > _revolutionTime) || (dataStopTime > _revolutionTime)) {
+						if (dataStartTime > _revolutionTime)
+							_nextDataStartTime = dataStartTime - _revolutionTime;
+						else
+							_nextDataStartTime = currentTime;
+						_nextDataStopTime = dataStopTime - _revolutionTime;
+						// check SWS
+						int IdStartTime = _dt.sectors[0].id.info.startTime;
+						if (_nextDataStopTime > IdStartTime)
+							_nextDataStopTime = IdStartTime;
+						_hasData = true;
+						_needToCompute = false;
+					}	// last sector has data past index - shifted track
+					else
+						_sectorNumber = 0;
+				}	// test if last sector is wrapped
+
+				if ((_sectorNumber == -1) && (_dt.sectors[_dt.sectors.Count - 1].data == null))
+					_sectorNumber = 0;
+
+				if (_sectorNumber != -1) {
+					Sector sector = _dt.sectors[_sectorNumber];
+					_nextIdStartTime = sector.id.info.startTime;
+					_nextIdStopTime = _nextIdStartTime + sector.id.info.timeLength;
+					_nextDataStartTime = int.MaxValue;
+					_nextDataStopTime = int.MaxValue;
+					if (sector.data != null) {
+						_nextDataStartTime = sector.data.info.startTime;
+						_nextDataStopTime = _nextDataStartTime + sector.data.info.timeLength;
+						// check SWS
+						if ((_sectorNumber + 1) < _dt.sectors.Count) {
+							int IdStartTime = _dt.sectors[_sectorNumber + 1].id.info.startTime;
+							if (_nextDataStopTime > IdStartTime)
+								_nextDataStopTime = IdStartTime;
+						}
+						_hasData = true;
+					}	// sector has data
+					else _hasData = false;
+					_needToCompute = false;
+				}
+			} // need to compute start and stop values
+
+			// set phase & sectorNumber
+			if (currentTime >= _nextDataStartTime) {
+				if (_phase != Phases.p_data)
+					firstByte = true;
+				_phase = Phases.p_data;
+			}
+			else {
+				if (currentTime >= _nextIdStartTime)
+					_phase = Phases.p_id;
+				if (currentTime >= _nextIdStopTime) {
+					if (_hasData == false) {
+						_sectorNumber = (_sectorNumber + 1) % _dt.sectors.Count;
+						_needToCompute = true;
+					}
+					_phase = Phases.p_gap;
+				}
+			}
+
+			if (currentTime >= _nextDataStopTime) {
+				_phase = Phases.p_gap;
+				_sectorNumber = (_sectorNumber + 1) % _dt.sectors.Count;
+				_needToCompute = true;
+				compareSector = false;
+			}
+		}	// set phase and sectorNumber according to sectors found
+		else {
+			_sectorNumber = -1;
+			_phase = Phases.p_gap;
+		}
+	}
+}
 }	// Aufit name space
