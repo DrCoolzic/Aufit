@@ -44,6 +44,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using System.Windows.Threading;
+using System.Deployment.Application;
 
 using ChartPackage;
 using KFReaderPackage;
@@ -138,6 +139,9 @@ namespace Aufit {
 			this.Loaded += new RoutedEventHandler(container_loaded);
 			//MessageBox.Show(Application.Current.Properties["FileName"].ToString());
 			tbFileName.Text = Aufit.Properties.Settings.Default.ImageName;
+
+			DiskFormat d = new DiskFormat(trvDiskFormat);	// TODO test - remove
+
 		}
 
 
@@ -804,6 +808,8 @@ namespace Aufit {
 		}
 
 
+		private void formatClick(object sender, RoutedEventArgs e) {
+		}
 
 		private void btWriteDiskClick(object sender, RoutedEventArgs e) {
 			SaveFileDialog sfd = new SaveFileDialog();
@@ -1013,6 +1019,82 @@ namespace Aufit {
 			if (sfd.ShowDialog() == true)
 				File.WriteAllText(sfd.FileName, tbSaveImage.Text);
 		}
+
+		private bool checkForUpdate(bool showMessage) {
+			bool doUpdate = false;
+			UpdateCheckInfo info = null;
+
+			if (ApplicationDeployment.IsNetworkDeployed) {
+				ApplicationDeployment ad = ApplicationDeployment.CurrentDeployment;
+
+				try {
+					info = ad.CheckForDetailedUpdate();
+				}
+				catch (DeploymentDownloadException dde) {
+					MessageBox.Show("A new version of the application cannot be downloaded at this time. \n\nPlease check your network connection, or try again later. Error: " + dde.Message);
+					return false;
+				}
+				catch (InvalidDeploymentException ide) {
+					MessageBox.Show("Cannot check for a new version of the application. The ClickOnce deployment is corrupt. Please redeploy the application and try again. Error: " + ide.Message);
+					return false;
+				}
+				catch (InvalidOperationException ioe) {
+					MessageBox.Show("This application cannot be updated. It is likely not a ClickOnce application. Error: " + ioe.Message);
+					return false;
+				}
+
+				if (info.UpdateAvailable) {
+					doUpdate = true;
+					if (showMessage) {
+						MessageBoxResult result = MessageBox.Show(
+							"An update is available. Would you like to update the application now?",
+							"Update Available", MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.OK);
+						if (result != MessageBoxResult.OK)
+							doUpdate = false;
+					}
+				}
+				else
+					if (showMessage) MessageBox.Show("No Update Available at this time");
+
+			}	// network deployed
+			else
+				MessageBox.Show("This application is not a ClickOnce application");
+			return doUpdate;
+		}
+
+
+		private void InstallUpdate() {
+			ApplicationDeployment ad = ApplicationDeployment.CurrentDeployment;
+			try {
+				ad.Update();
+				MessageBox.Show("The application has been updated and will be restarted");
+				//System.Diagnostics.Process.Start(Application.ResourceAssembly.Location);
+				String ApplicationEntryPoint = ApplicationDeployment.CurrentDeployment.UpdatedApplicationFullName;
+				System.Diagnostics.Process.Start(ApplicationEntryPoint);
+				Application.Current.Shutdown();
+			}
+			catch (DeploymentDownloadException dde) {
+				MessageBox.Show("Cannot install the latest version of the application. \n\nPlease check your network connection, or try again later. Error: " + dde);
+				return;
+			}
+		}
+
+
+		private void updateClicked(object sender, RoutedEventArgs e) {
+			bool update = checkForUpdate(true);
+			if (update)
+				InstallUpdate();
+		}
+
+		private void helpClicked(object sender, RoutedEventArgs e) {
+			System.Diagnostics.Process.Start("Resources\\Aufit.pdf");
+			//String fileName = "Aufit.pdf";
+			//System.Diagnostics.Process process = new System.Diagnostics.Process();
+			//process.StartInfo.FileName = fileName;
+			//process.Start();
+
+		}
+
 
 
 		//MessageBoxResult result = MessageBox.Show(

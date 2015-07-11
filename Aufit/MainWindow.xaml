@@ -24,6 +24,8 @@
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
             <Button Grid.Column="0" x:Name="btFile" Content="Load image" Click="openFileClick" Height="20" VerticalAlignment="Top" Margin="5,5,0,0" />
             <Button Grid.Column="1" Content="Reload" Click="reloadClick" Height="20" VerticalAlignment="Top" Margin="5,5,0,0" />
@@ -38,7 +40,13 @@
             </Button>
             <CheckBox Grid.Column="6" x:Name="cbLimitFlux" Content="Limit Flux" Margin="15,0,10,0" VerticalAlignment="Center" 
 				Click="cbLimitClick" HorizontalAlignment="Right" IsChecked="True" />
-            <Button Grid.Column="7" Name="btSave" Height="20" Margin="0,5,5,0"  Content="Save Pict" Width="80"  Click="btSavePictClick"/>
+            <Button Grid.Column="7" Name="btSave" Height="20" Margin="0,0,5,0"  Content="Save Pict" Width="60"  Click="btSavePictClick"/>
+            <Button Grid.Column="8" Margin="0" Click="updateClicked" BorderThickness="0" Background="{x:Null}" >
+                <Image Source="Resources/update.png"/>
+            </Button>
+            <Button Grid.Column="9" Margin="0" Click="helpClicked" BorderThickness="0" Background="{x:Null}" >
+                <Image Source="Resources/help.png"/>
+            </Button>
         </Grid>
 
         <Grid Grid.Row="1" Name="matrixGrid" Margin="5" Loaded="matrixGridLoaded">
@@ -223,7 +231,45 @@
                     </Grid>
                 </Grid>
             </TabItem>
+            
+            <TabItem Name="tabFormat" Header="Master View" Width="80">
+                <Grid Margin="0" >
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
+                    <Grid Grid.Row="0" >
+                        <TreeView Name="trvDiskFormat" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <TreeView.Resources>
+                                <HierarchicalDataTemplate DataType="{x:Type jlg:TrackDescriptor}" ItemsSource="{Binding Items}">
+                                    <TextBlock Text="{Binding Content}" />
+                                </HierarchicalDataTemplate>
+                                <HierarchicalDataTemplate DataType="{x:Type jlg:BlockDescriptor}" ItemsSource="{Binding Items}">
+                                        <TextBlock Text="{Binding Content}" />
+                                 </HierarchicalDataTemplate>
+                                <DataTemplate DataType="{x:Type jlg:DataDescriptor}" >
+                                    <TextBlock Text="{Binding Content}" />
+                                </DataTemplate>
+                            </TreeView.Resources>
+                        </TreeView>
+
+                    </Grid>
+
+                    <Grid Grid.Row="1" >
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Name="x1" Margin="0,0,5,0" Content="Save Text" Click="anaSaveClick" Width="80" HorizontalAlignment="Right"/>
+                        <Button Grid.Column="1" Name="x2" Margin="0,0,5,0" Content="Formats" Click="formatClick" Width="80" />
+                        <Button Grid.Column="2" Name="x3" Margin="0,0,5,0"  Content="Protections" Click="btProtectionClick" Width="80" />
+                    </Grid>
+                </Grid>
+
+            </TabItem>
+            
             <TabItem x:Name="tabItemAnalysis" Header="Analysis" Width="80">
                 <Grid Margin="0" >
                     <Grid.RowDefinitions>
@@ -239,9 +285,11 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Name="btAnaSave" Margin="0,0,5,0" Content="Save" Click="anaSaveClick" Width="80" HorizontalAlignment="Right"/>
-                        <Button Grid.Column="1" Name="btProt" Margin="0,0,5,0"  Content="Protections" Click="btProtectionClick" Width="80" />
+                        <Button Grid.Column="0" Name="btAnaSave" Margin="0,0,5,0" Content="Save Text" Click="anaSaveClick" Width="80" HorizontalAlignment="Right"/>
+                        <Button Grid.Column="1" Name="btFormat" Margin="0,0,5,0" Content="Formats" Click="formatClick" Width="80" />
+                        <Button Grid.Column="2" Name="btProt" Margin="0,0,5,0"  Content="Protections" Click="btProtectionClick" Width="80" />
                     </Grid>
                 </Grid>
             </TabItem>

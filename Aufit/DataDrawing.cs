@@ -136,7 +136,7 @@ class DataDrawing {
 					sector.id.info.startBit + sector.id.info.bitCount,
 					(double)(sector.id.info.startTime + sector.id.info.timeLength) / 1000000.0);
 				sectorInfoPanel.Children.Add(tb);
-				drawRectangle(sector, idbstop, bstart, Phases.p_gap);
+				drawRectangle(sector, idbstop, bstart, Phases.p_gap_inner);
 
 				tb = new TextBox();
 				tb.Text = String.Format("Data Field {0} bytes Length={1:F2} µs - Start @ Bit={2} Time={3:F2} ms {4} {5}",
@@ -185,6 +185,7 @@ class DataDrawing {
 			int currentBitInByte = bitPosition % 8;
 			byte bits = dt.packedFluxData.packedBits[currentByte];
 			int bit = (bits >> currentBitInByte) & 0x1;
+			int bitWidth = dt.packedFluxData.bitWidth[currentByte];
 			//dsr.shiftBitsIn(bit);
 
 			if (bit == 0) continue;
@@ -192,17 +193,33 @@ class DataDrawing {
 			currentTime += flux;
 			ps.computePhaseAndSector(currentTime);
 
-			if (((flux > 8300) || (flux < 3700)) && (dt.sectors.Count > 0) && (ps.Phase == Phases.p_gap)) {
+			//int upper = 4 * bitWidth + ((14 * bitWidth) / 100); // + 3.5%
+			//int lower = 2 * bitWidth - ((20 * bitWidth) / 100);	// - 10%
+			//if (((flux > upper) || (flux < lower)) && (dt.sectors.Count > 0) && FDC.isGap(ps.Phase)) {
+			//if (((flux > 8300) || (flux < 3700)) && (dt.sectors.Count > 0) && (ps.Phase == Phases.p_gap_inner)) {
+			int upper = 4 * bitWidth + ((16 * bitWidth) / 100); // + 4%
+			if ((flux > upper) && (dt.sectors.Count > 0) && FDC.isGap(ps.Phase)) {
+
 				Line splice = new Line();
-				DoubleCollection dashPattern = new DoubleCollection(new double[2] { 2, 2 });
-				splice.Stroke = Brushes.Black;
-				splice.StrokeThickness = 1;
+				DoubleCollection dashPattern = new DoubleCollection(new double[2] { 2, 1 });
+				if (ps.Phase == Phases.p_gap_inner)
+					splice.Stroke = Brushes.Red;
+				else
+					splice.Stroke = Brushes.DarkBlue;
+				splice.StrokeThickness = 1.5;
 				splice.StrokeDashArray = dashPattern;
 				splice.X1 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
 				splice.Y1 = _dataChartLayout.NormY(_dataChartLayout.Ymin);
 				splice.X2 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
 				splice.Y2 = _dataChartLayout.NormY(_dataChartLayout.Ymax);
+
+				TextBox spliceInfo = new TextBox();
+				spliceInfo.Text = String.Format("Splice at {0} value={1:F3}", (double)currentTime / 1000000.0, flux);
+				ToolTipService.SetToolTip(splice, spliceInfo);
+				ToolTipService.SetShowDuration(splice, 100000);
+
 				_dataChartLayout.GraphicCanvas.Children.Add(splice);
+
 			}
 		}
 
@@ -216,7 +233,8 @@ class DataDrawing {
 
 		if (phase == Phases.p_id)
 			sectorPhasePolygon.Fill = Brushes.Yellow;
-		else if (phase == Phases.p_gap)
+		//else if (phase == Phases.p_gap)
+		else if (FDC.isGap(phase))
 			sectorPhasePolygon.Fill = Brushes.LightGreen;
 		else {
 			sectorPhasePolygon.Fill = Brushes.DeepSkyBlue;

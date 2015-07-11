@@ -1,7 +1,20 @@
+- added Help button with start PDF reader on Aufit.pdf
+- Added Check for Update button + update if requested
+- Read GAP info added in preparation to IPF writing:
+	GAP Information is now stored in the DB. This is different from what is
+	read in read track because in read track the sync is enabled at all time
+	but in read sector the sync is disabled while reading the sector. So
+	the GAP information stored correspond to what needs to be written to the
+	disk and not what is read with read track. This content can be  displayed
+	in the "Data View" tab with the sector button (inner and post GAP buffers)
+	The track and sector display now contains more information about position 
+	and length of track and sectors.
+- Disk layout drawing order changed. Should improve race condition in Batch mode
+- Fixed bug of Invalid Sync Seq detected - For example Black Cauldron Disk 2
 - invalid bytes in GAP (changed from 10 to 5)
-- out of band transitions in track data graph is displayed only into gap
-- cleaned protection messages
-- added ISS (sync seq) protection detection
+- out of band transitions in track data graph is displayed only into GAPS
+- cleaned / reformatted protection messages
+- added ISS (sync seq) protection detection for seq > 4
 
 * Aufit 1.0.5612.16387 & BatchAufit 1.0.5612.25552 Aufit batch mode workaround + Improved batch program
 - DiskGui commented setButtonBG ??? seems to improve batch mode - need investigation

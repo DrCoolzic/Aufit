@@ -158,17 +158,16 @@ namespace Aufit {
 				bool dragonflight = false;
 				bool jupiterMasterdrive = false;
 				int start = 0;
-
-				for (int i = start; i < dt.sectors[0].id.info.startByte; i++) {
+				for (int i = start; i < (dt.sectors[0].id.info.startByte); i++) {
 					if ((dt.track.buffer.Bytes[i].dataByte == 0x00) &&
 						(dt.track.buffer.Bytes[i + 1].dataByte == 0x1C) &&
 						(dt.track.buffer.Bytes[i + 2].dataByte == 0x92) &&
 						(dt.track.buffer.Bytes[i + 3].dataByte == 0x10) &&
 						(dt.track.buffer.Bytes[i + 4].dataByte == 0x90) &&
 						(dt.track.buffer.Bytes[i + 5].dataByte == 0xC2)) {
-							jupiterMasterdrive = true;
-							start = i + 6;
-							break;
+						jupiterMasterdrive = true;
+						start = i + 6;
+						break;
 					}
 				}
 
@@ -177,9 +176,9 @@ namespace Aufit {
 						(dt.track.buffer.Bytes[i + 1].dataByte == 0xCD) &&
 						(dt.track.buffer.Bytes[i + 2].dataByte == 0xB4) &&
 						(dt.track.buffer.Bytes[i + 3].dataByte == 0xF7)) {
-							dragonflight = true;
-							start = i + 4;
-							break;
+						dragonflight = true;
+						start = i + 4;
+						break;
 					}
 				}
 
@@ -190,7 +189,7 @@ namespace Aufit {
 					(dt.track.buffer.Bytes[start + 3].dataByte == 0xC0) &&
 					(dt.track.buffer.Bytes[start + 4].dataByte == 0xDE)))
 					jupiterMasterdrive = false;
-						
+
 
 				if (dragonflight || jupiterMasterdrive) {
 					dt.track.flags |= Track.HIDDEN_DATA;

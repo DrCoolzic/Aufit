@@ -174,9 +174,9 @@ namespace Aufit {
 			tbImageName.Text = Aufit.MainWindow.ImageName;
 
 			// draw all tracks of both side
-			for (int side = 0; side < 2; side++) {
-				Grid grid = (side == 0) ? cvDisk0 : cvDisk1;
-				for (int track = 0; track < 84; track++) {
+			for (int track = 0; track < 84; track++) {
+				for (int side = 0; side < 2; side++) {
+					Grid grid = (side == 0) ? cvDisk0 : cvDisk1;
 					if ((Global.Disk[track, side].fluxData == null) &&
 						(Global.Disk[track, side].packedFluxData == null)) continue;
 					if (_debugNoAsync) {
@@ -271,7 +271,7 @@ namespace Aufit {
 						if (sector.data != null) {
 							start = (double)sector.data.info.startTime;
 							stop = (double)(sector.data.info.startTime + sector.data.info.timeLength);
-							drawArc(sector, center, radius, timeAngle(idStop), timeAngle(start), Phases.p_gap, grid);
+							drawArc(sector, center, radius, timeAngle(idStop), timeAngle(start), Phases.p_gap_inner, grid);
 
 							// if SWS we truncate
 							if (((i + 1) < sectors.Count) && ((double)sectors[i + 1].id.info.startTime < stop))

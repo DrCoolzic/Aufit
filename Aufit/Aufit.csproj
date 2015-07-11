@@ -18,7 +18,7 @@
     <PublishUrl>ftp://info-coach.fr/atari/software/pc-projects/_aufit/Publish/</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Web</InstallFrom>
-    <UpdateEnabled>true</UpdateEnabled>
+    <UpdateEnabled>false</UpdateEnabled>
     <UpdateMode>Background</UpdateMode>
     <UpdateInterval>7</UpdateInterval>
     <UpdateIntervalUnits>Days</UpdateIntervalUnits>
@@ -30,6 +30,7 @@
     <TargetCulture>en-US</TargetCulture>
     <ProductName>Aufit</ProductName>
     <PublisherName>DrCoolZic</PublisherName>
+    <SuiteName>Aufit</SuiteName>
     <CreateWebPageOnPublish>true</CreateWebPageOnPublish>
     <WebPage>publish.htm</WebPage>
     <ApplicationRevision>12</ApplicationRevision>
@@ -39,7 +40,7 @@
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -126,6 +127,7 @@
     </Compile>
     <Compile Include="BufferGUI.cs" />
     <Compile Include="DiskGui.cs" />
+    <Compile Include="DiskFormat.cs" />
     <Compile Include="Global.cs" />
     <Compile Include="BezierSpline.cs" />
     <Compile Include="ButtonMatrix.cs" />
@@ -177,6 +179,9 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <AppDesigner Include="Properties\" />
+    <Content Include="Resources\Aufit.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -200,6 +205,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Aufit.css" />
+    <Resource Include="Resources\help.png" />
+    <Resource Include="Resources\update.png" />
     <Resource Include="floppy.ico" />
     <Resource Include="Resources\floppy.ico" />
     <Resource Include="Resources\plus.png" />

@@ -127,11 +127,12 @@ namespace Aufit {
 				currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
 					String.Format("{0}", (dt.sectors[sect].id.info.crc == 0) ? "OK" : "BAD")))));
 
-				if (dt.sectors[sect].data != null) {
+				if (dt.sectors[sect].innerGap != null)
 					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-						String.Format("{0:D}", dt.sectors[sect].data.info.startByte - (dt.sectors[sect].id.info.startByte + dt.sectors[sect].id.info.byteCount) - 3)
+						String.Format("{0:D}", dt.sectors[sect].innerGap.info.byteCount)
 						))));
 
+				if (dt.sectors[sect].data != null) {
 					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
 						String.Format("{0:D}", dt.sectors[sect].data.info.byteCount)))));
 					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
@@ -143,30 +144,13 @@ namespace Aufit {
 					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
 						String.Format("{0}", (dt.sectors[sect].data.fuzzy != null) ? "Yes" : "No")))));
 
-					if (sect < (dt.sectors.Count - 1)) {
+					if (dt.sectors[sect].postGap != null)
 						currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-						String.Format("{0:D}", dt.sectors[sect + 1].id.info.startByte - (dt.sectors[sect].data.info.startByte + dt.sectors[sect].data.info.byteCount + 6))
-						))));
-					}
-					else {
-						currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-							String.Format("{0:D}", 
-							((dt.sectors[sect].data.info.startByte + dt.sectors[sect].data.info.byteCount) < dt.track.info.byteCount) ?
-							dt.track.info.byteCount - (dt.sectors[sect].data.info.startByte + dt.sectors[sect].data.info.byteCount) + dt.sectors[0].id.info.startByte - 6 :
-							dt.sectors[0].id.info.startByte - 6 - ((dt.sectors[sect].data.info.startByte + dt.sectors[sect].data.info.byteCount) - dt.track.info.byteCount))
-						))));
-					}
-				}
-				else {
-					if (sect < (dt.sectors.Count - 1)) {
-						currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-						String.Format("{0:D}", dt.sectors[sect + 1].id.info.startByte - (dt.sectors[sect].id.info.startByte + dt.sectors[sect].id.info.byteCount - 3))
-						))));
-					}
+							String.Format("{0:D}", dt.sectors[sect].postGap.info.byteCount)
+							))));
 
-				}
-
-			}
+				}	// sector data
+			}	// for all sectors
 			doc.Blocks.Add(tab);
 			fdViewer.Document = doc;
 		}
@@ -197,6 +181,16 @@ namespace Aufit {
 			p.Inlines.Add(new Run(
 				String.Format("Track {0:D2}.{1} has {2} sectors", track, side, sectors.Count)
 				) { FontWeight = FontWeights.Bold });
+			if (Global.Disk[track, side].hasIncompleteData)
+				p.Inlines.Add(new Run(
+					String.Format(" *** Incomplete Data *** ", track, side, sectors.Count)
+					) { FontWeight = FontWeights.Bold });
+
+			if (Global.Disk[track, side].hasIncompleteGap)
+				p.Inlines.Add(new Run(
+					String.Format(" *** Incomplete Gap *** ", track, side, sectors.Count)
+					) { FontWeight = FontWeights.Bold });
+
 			p.Inlines.Add(new LineBreak());
 			p.Inlines.Add(new LineBreak());
 
@@ -204,19 +198,45 @@ namespace Aufit {
 				p.Inlines.Add(new Run(String.Format("Sector {0}", sector.id.number)) 
 					{ Background = Brushes.LightGray, FontWeight = FontWeights.Bold });
 				p.Inlines.Add(new LineBreak());
-				p.Inlines.Add(String.Format("ID Field: IAM={0:X2} T={1:X2} H={2:X2} S={3:X2} L={4:X2} CRC={5:X4} {6}", sector.id.iam,
+
+				p.Inlines.Add(String.Format("ID Field: IDAM={0:X2} T={1:X2} H={2:X2} N={3:X2} S={4:X2} CRC={5:X4} {6}", sector.id.iam,
 					sector.id.track, sector.id.head, sector.id.number, sector.id.size, sector.id.crc, (sector.id.info.crc == 0) ? "Good" : "Bad"));
 				p.Inlines.Add(new LineBreak());
+				p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms", 
+					sector.id.info.startBit, sector.id.info.startByte, (double)sector.id.info.startTime / 1000000.0));
+				p.Inlines.Add(new LineBreak());
+				p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
+					sector.id.info.bitCount, sector.id.info.byteCount, (double)sector.id.info.timeLength / 1000.0));
+				p.Inlines.Add(new LineBreak());
+
+				if (sector.innerGap != null) {
+					p.Inlines.Add("Inner GAP Field: ");
+					p.Inlines.Add(new LineBreak());
+					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
+						sector.innerGap.info.startBit, sector.innerGap.info.startByte, (double)sector.innerGap.info.startTime / 1000000.0));
+					p.Inlines.Add(new LineBreak());
+					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
+						sector.innerGap.info.bitCount, sector.innerGap.info.byteCount, (double)sector.innerGap.info.timeLength / 1000.0));
+					p.Inlines.Add(new LineBreak());
+					drawBuffer(sector.innerGap.buffer, p, sector.innerGap.info.startByte, sector.innerGap.info.byteCount);
+				}
+
 				if (sector.data != null) {
 					p.Inlines.Add("DATA Field: ");
 					if (sector.data.info.byteCount != Global.sectSize(sector.id.size))
 						p.Inlines.Add(" *** Incomplete *** ");
-					p.Inlines.Add(String.Format("DAM={0:X2} {1} bytes start at {2}µs length {3} µs  CRC={4:X4}{5}{6}",
+					p.Inlines.Add(String.Format("IAM={0:X2} {1} bytes start at {2}µs length {3} µs  CRC={4:X4}{5}{6}",
 						sector.data.iam, sector.data.info.byteCount, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000,
 						sector.data.crc, (sector.data.info.crc == 0) ? " Good" : " Bad",
 						(sector.data.fuzzy != null) ? " Fuzzy sector" : ""));
 					p.Inlines.Add(new LineBreak());
-					drawBuffer(sector.data.buffer, p, sector.data.info.startByte);
+					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
+						sector.data.info.startBit, sector.data.info.startByte, (double)sector.data.info.startTime / 1000000.0));
+					p.Inlines.Add(new LineBreak());
+					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
+						sector.data.info.bitCount, sector.data.info.byteCount, (double)sector.data.info.timeLength / 1000.0));
+					p.Inlines.Add(new LineBreak());
+					drawBuffer(sector.data.buffer, p, sector.data.info.startByte, sector.data.info.byteCount);
 
 					if (sector.data.fuzzy != null) {
 						p.Inlines.Add(new LineBreak());
@@ -232,7 +252,18 @@ namespace Aufit {
 							}
 							p.Inlines.Add(new LineBreak());
 						}
-					}
+					}	// fuzzy
+
+					p.Inlines.Add("Post GAP Field: ");
+					p.Inlines.Add(new LineBreak());
+					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
+						sector.postGap.info.startBit, sector.postGap.info.startByte, (double)sector.postGap.info.startTime / 1000000.0));
+					p.Inlines.Add(new LineBreak());
+					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
+						sector.postGap.info.bitCount, sector.postGap.info.byteCount, (double)sector.postGap.info.timeLength / 1000.0));
+					p.Inlines.Add(new LineBreak());
+					drawBuffer(sector.postGap.buffer, p, sector.postGap.info.startByte, sector.postGap.info.byteCount);
+
 				}
 				else {
 					p.Inlines.Add(" *** Sector has no data ***");
@@ -275,11 +306,18 @@ namespace Aufit {
 				track, side, tr.info.byteCount, tr.info.timeLength / 1000)) { FontWeight = FontWeights.Bold });
 			p.Margin = new Thickness(0);
 			p.Inlines.Add(new LineBreak());
-			p.Inlines.Add(new LineBreak());
 			doc.Blocks.Add(p);
 
 			TrackBuffer buffer = tr.buffer;
-			drawBuffer(buffer, p);
+			p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
+				tr.info.startBit, tr.info.startByte, (double)tr.info.startTime / 1000000.0));
+			p.Inlines.Add(new LineBreak());
+			p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
+				tr.info.bitCount, tr.info.byteCount, (double)tr.info.timeLength / 1000.0));
+			p.Inlines.Add(new LineBreak());
+			p.Inlines.Add(new LineBreak());
+
+			drawBuffer(buffer, p, 0, tr.info.byteCount);
 			fdViewer.Document = doc;
 		}
 
@@ -289,9 +327,9 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="buffer">The buffer to display</param>
 		/// <param name="message">an optional message to display before the buffer</param>
-		public void drawBuffer(TrackBuffer buffer, Paragraph p, int startPos = 0) {
-
-			for (int i = 0; i < buffer.Bytes.Count; i += 16) {
+		public void drawBuffer(TrackBuffer buffer, Paragraph p, int startPos, int bytes) {
+			//int bytes = buffer.Bytes.Count;
+			for (int i = 0; i < bytes; i += 16) {
 				// display position
 				p.Inlines.Add(new Run(String.Format("{0:D5}  ", i + startPos)));
 
@@ -309,7 +347,7 @@ namespace Aufit {
 
 				string ascii = "  ";
 				for (int j = 0; j < 16; j++) {
-					if ((i + j) < buffer.Bytes.Count) {
+					if ((i + j) < bytes) {
 						if (_noColor)
 							p.Inlines.Add(String.Format("{0:X2} ", buffer.Bytes[i + j].dataByte));
 						else
@@ -317,7 +355,7 @@ namespace Aufit {
 								String.Format("{0:X2} ", buffer.Bytes[i + j].dataByte)) {
 									Background =
 										((buffer.Bytes[i + j].dataByte >= 0xF5) && (buffer.Bytes[i + j].dataByte <= 0xF7) &&
-										 (buffer.Bytes[i + j].phase == Phases.p_gap)) ? Brushes.LightBlue :
+										 FDC.isGap(buffer.Bytes[i + j].phase)) ? Brushes.LightBlue :
 										((buffer.Bytes[i + j].mfmWord == 0x0000) || (buffer.Bytes[i + j].mfmWord == 0xFFFF)) ? Brushes.Coral :
 										((buffer.Bytes[i + j].mfmWord == 0x4489) || (buffer.Bytes[i + j].mfmWord == 0x5224)) ? Brushes.Yellow :
 										(buffer.Bytes[i + j].phase == Phases.p_data) ? Brushes.LightGreen :
@@ -328,7 +366,7 @@ namespace Aufit {
 										(buffer.Bytes[i + j].mfmWord == 0x5224) ? Brushes.Navy :
 										(buffer.Bytes[i + j].phase == Phases.p_id) ? Brushes.Blue :
 										(buffer.Bytes[i + j].phase == Phases.p_data) ? Brushes.Black :
-										(buffer.Bytes[i + j].phase == Phases.p_gap) ? Brushes.Black :
+										FDC.isGap(buffer.Bytes[i + j].phase) ? Brushes.Black :
 										Brushes.DarkBlue,
 									FontWeight =
 										(buffer.Bytes[i + j].mfmWord == 0x4489) || (buffer.Bytes[i + j].mfmWord == 0x5224) ||
@@ -350,7 +388,7 @@ namespace Aufit {
 				if (cbMFM.IsChecked == true) {
 					p.Inlines.Add("       ");
 					for (int j = 0; j < 16; j++) {
-						if ((i + j) < buffer.Bytes.Count)
+						if ((i + j) < bytes)
 							p.Inlines.Add(new Run(
 								String.Format("{0:X4} ", buffer.Bytes[i + j].mfmWord)) { 
 							Background = Brushes.LightGray});

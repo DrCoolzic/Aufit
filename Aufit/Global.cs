@@ -325,6 +325,8 @@ public class Global {
 		/// <summary>Image has shifted track and some data are missing</summary>
 		/// <remarks>This happen on the last revolution</remarks>
 		public bool hasIncompleteData;
+
+		public bool hasIncompleteGap;
 	}
 
 
@@ -694,7 +696,7 @@ public class PhaseSector {
 		firstByte = false;
 
 		_sectorNumber = -1;
-		_phase = Phases.p_gap;
+		_phase = Phases.p_gap_post;
 		_needToCompute = true;
 		_nextIdStartTime = int.MaxValue;
 		_nextIdStopTime = int.MaxValue;
@@ -768,12 +770,12 @@ public class PhaseSector {
 						_sectorNumber = (_sectorNumber + 1) % _dt.sectors.Count;
 						_needToCompute = true;
 					}
-					_phase = Phases.p_gap;
+					_phase = Phases.p_gap_inner;
 				}
 			}
 
 			if (currentTime >= _nextDataStopTime) {
-				_phase = Phases.p_gap;
+				_phase = Phases.p_gap_post;
 				_sectorNumber = (_sectorNumber + 1) % _dt.sectors.Count;
 				_needToCompute = true;
 				compareSector = false;
@@ -781,7 +783,7 @@ public class PhaseSector {
 		}	// set phase and sectorNumber according to sectors found
 		else {
 			_sectorNumber = -1;
-			_phase = Phases.p_gap;
+			_phase = Phases.p_gap_post;
 		}
 	}
 }

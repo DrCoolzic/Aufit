@@ -94,3 +94,6 @@ http://jaylee.org/post/2013/04/16/Cancellation-with-Async-Fsharp-Csharp-and-the-
 http://www.codeproject.com/Tips/457235/WPF-with-Asynchrony-Part
 
 http://www.dreamincode.net/forums/topic/246911-c%23-multi-threading-in-a-gui-environment/
+
+http://www.codeproject.com/Articles/169598/Parse-XML-Documents-by-XMLDocument-and-XDocument
+http://timeline.codeplex.com/

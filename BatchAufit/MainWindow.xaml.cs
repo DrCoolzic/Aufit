@@ -202,7 +202,7 @@ namespace BatchAufit {
 			}
 			tbResult.AppendText(String.Format("***** {0} images processed - ({1} succeeded, {2} failed) *****\n", processed, succeed, failed));
 			tbResult.AppendText(String.Format("      Time elapsed = {0:F2}s (Max={1:F2}s Avg={2:F2}s) - CPU = {3:F2}s\n",
-				elapsed.TotalSeconds, maxElapsed.TotalSeconds, maxElapsed.TotalSeconds / succeed, cpu.TotalSeconds));
+				elapsed.TotalSeconds, maxElapsed.TotalSeconds, elapsed.TotalSeconds / succeed, cpu.TotalSeconds));
 			pbProgress.Visibility = System.Windows.Visibility.Hidden;
 			_run = false;
 		}

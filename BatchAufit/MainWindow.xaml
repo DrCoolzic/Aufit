@@ -33,7 +33,7 @@
             <CheckBox x:Name="cbProt" Content="Protections" Margin="2" IsChecked="True" Padding="2,0,5,0"/>
             <CheckBox x:Name="cbSave" Content="Save Image" Margin="2" IsChecked="True" Padding="2,0,5,0"/>
             <TextBox BorderThickness="0" Margin="2" Text="Suffix:" IsReadOnly="True"/>
-            <TextBox Name="tbSuffix"  Text="aufit.1.0" BorderThickness="0" VerticalContentAlignment="Center" Padding="0,0,5,0"/>
+            <TextBox Name="tbSuffix"  Text="aufit.1.1" BorderThickness="0" VerticalContentAlignment="Center" Padding="0,0,5,0"/>
             <TextBox BorderThickness="0" Margin="2" Text="Scale:" IsReadOnly="True"/>
             <TextBox Name="tbScale"  Text="1.2" BorderThickness="0" VerticalContentAlignment="Center" Padding="0,0,5,0"/>
             <TextBox BorderThickness="0" Margin="2" Text="MaxProcessTime:" IsReadOnly="True" />

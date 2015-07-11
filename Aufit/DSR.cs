@@ -258,9 +258,12 @@ namespace WD1772Package {
 				if ((_crcCount & 0xF) == 0) {
 					if ((_crcCount > 48) || _decoderFlags.HasFlag(DecoderFlags.A1Found)) {
 						if (_crcCount == 48) {
-							// Debug.Assert(_syncSeq == 3, "Invalid _syncSeq should be 3 - Hit continue to repair");
-							if (_syncSeq != 3) _syncSeq = 3;
-							_decoderFlags &= ~DecoderFlags.SyncDetectorEnabled;
+							//Debug.Assert(_syncSeq == 3, "Invalid _syncSeq should be 3 - Hit continue to repair");
+							//if (_syncSeq != 3) _syncSeq = 3;
+							if (_syncSeq == 3)
+								_decoderFlags &= ~DecoderFlags.SyncDetectorEnabled;
+							else
+								_decoderFlags &= ~DecoderFlags.CrcActive;
 						}	// after 3 A1 we disable AM detector
 
 						// select data bits for CRC source byte value; needed without separate clock and data shifters
