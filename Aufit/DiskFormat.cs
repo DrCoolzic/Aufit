@@ -83,6 +83,7 @@ namespace Aufit {
 		}
 	}
 
+
 	public class DataDescriptor {
 		public DataDescriptor() {
 			Value = new List<byte>();

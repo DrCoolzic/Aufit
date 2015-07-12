@@ -75,7 +75,8 @@ namespace Aufit {
 		///			- NSI Non Standard IDAM
 		///			- ITN Invalid Track Number
 		///			- IHN Invalid Head Number
-		///			- ISN Invalid Sector number 
+		///			- ISN Invalid Sector number
+		///			- ISL Invalid Sector Length
 		///			- ICE ID CRC Error
 		///			.
 		///		- SWS Sector within Sector (done in readTrack())		

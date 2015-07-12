@@ -199,7 +199,7 @@ namespace Aufit {
 					{ Background = Brushes.LightGray, FontWeight = FontWeights.Bold });
 				p.Inlines.Add(new LineBreak());
 
-				p.Inlines.Add(String.Format("ID Field: IDAM={0:X2} T={1:X2} H={2:X2} N={3:X2} S={4:X2} CRC={5:X4} {6}", sector.id.iam,
+				p.Inlines.Add(String.Format("ID Field: IAM={0:X2} T={1:X2} H={2:X2} S={3:X2} L={4:X2} CRC={5:X4} {6}", sector.id.iam,
 					sector.id.track, sector.id.head, sector.id.number, sector.id.size, sector.id.crc, (sector.id.info.crc == 0) ? "Good" : "Bad"));
 				p.Inlines.Add(new LineBreak());
 				p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms", 
@@ -225,7 +225,7 @@ namespace Aufit {
 					p.Inlines.Add("DATA Field: ");
 					if (sector.data.info.byteCount != Global.sectSize(sector.id.size))
 						p.Inlines.Add(" *** Incomplete *** ");
-					p.Inlines.Add(String.Format("IAM={0:X2} {1} bytes start at {2}µs length {3} µs  CRC={4:X4}{5}{6}",
+					p.Inlines.Add(String.Format("DAM={0:X2} {1} bytes start at {2}µs length {3}µs CRC={4:X4}{5}{6}",
 						sector.data.iam, sector.data.info.byteCount, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000,
 						sector.data.crc, (sector.data.info.crc == 0) ? " Good" : " Bad",
 						(sector.data.fuzzy != null) ? " Fuzzy sector" : ""));

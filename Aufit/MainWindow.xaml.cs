@@ -140,7 +140,7 @@ namespace Aufit {
 			//MessageBox.Show(Application.Current.Properties["FileName"].ToString());
 			tbFileName.Text = Aufit.Properties.Settings.Default.ImageName;
 
-			DiskFormat d = new DiskFormat(trvDiskFormat);	// TODO test - remove
+			// DiskFormat d = new DiskFormat(trvDiskFormat);	// TODO test - remove
 
 		}
 
