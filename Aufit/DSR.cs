@@ -3,7 +3,7 @@
  * 
 <summary>This file contains the structures and functions for the WD1772 DST, MFM, and CRC registers</summary>
 
-<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2015 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any

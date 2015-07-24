@@ -3,7 +3,7 @@
  
 <summary>Open a Window and displays buffer information</summary>
 
-<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2015 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -199,7 +199,7 @@ namespace Aufit {
 					{ Background = Brushes.LightGray, FontWeight = FontWeights.Bold });
 				p.Inlines.Add(new LineBreak());
 
-				p.Inlines.Add(String.Format("ID Field: IAM={0:X2} T={1:X2} H={2:X2} S={3:X2} L={4:X2} CRC={5:X4} {6}", sector.id.Iam,
+				p.Inlines.Add(String.Format("ID Field: IAM={0:X2} T={1:X2} H={2:X2} S={3:X2} L={4:X2} CRC={5:X4} {6}", sector.id.IDAM,
 					sector.id.Track, sector.id.Head, sector.id.Sector, sector.id.Length, sector.id.CRC, (sector.id.info.crc == 0) ? "Good" : "Bad"));
 				p.Inlines.Add(new LineBreak());
 				p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms", 
@@ -227,8 +227,8 @@ namespace Aufit {
 					if (sector.data.info.byteCount != Global.sectSize(sector.id.Length))
 						p.Inlines.Add(" *** Incomplete *** ");
 					p.Inlines.Add(String.Format("DAM={0:X2} {1} bytes start at {2}µs length {3}µs CRC={4:X4}{5}{6}",
-						sector.data.iam, sector.data.info.byteCount, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000,
-						sector.data.crc, (sector.data.info.crc == 0) ? " Good" : " Bad",
+						sector.data.DAM, sector.data.info.byteCount, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000,
+						sector.data.CRC, (sector.data.info.crc == 0) ? " Good" : " Bad",
 						(sector.data.fuzzy != null) ? " Fuzzy sector" : ""));
 					p.Inlines.Add(new LineBreak());
 					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
@@ -356,7 +356,7 @@ namespace Aufit {
 								String.Format("{0:X2} ", buffer.DataByte[i + j])) {
 									Background =
 										((buffer.DataByte[i + j] >= 0xF5) && (buffer.DataByte[i + j] <= 0xF7) &&
-										 FDC.isGap(buffer.Phase[i + j])) ? Brushes.LightBlue :
+										 FDC.isGapPhase(buffer.Phase[i + j])) ? Brushes.LightBlue :
 										((buffer.MFMWord[i + j] == 0x0000) || (buffer.MFMWord[i + j] == 0xFFFF)) ? Brushes.Coral :
 										((buffer.MFMWord[i + j] == 0x4489) || (buffer.MFMWord[i + j] == 0x5224)) ? Brushes.Yellow :
 										(buffer.Phase[i + j] == Phases.p_data) ? Brushes.LightGreen :
@@ -367,7 +367,7 @@ namespace Aufit {
 										(buffer.MFMWord[i + j] == 0x5224) ? Brushes.Navy :
 										(buffer.Phase[i + j] == Phases.p_id) ? Brushes.Blue :
 										(buffer.Phase[i + j] == Phases.p_data) ? Brushes.Black :
-										FDC.isGap(buffer.Phase[i + j]) ? Brushes.Black :
+										FDC.isGapPhase(buffer.Phase[i + j]) ? Brushes.Black :
 										Brushes.DarkBlue,
 									FontWeight =
 										(buffer.MFMWord[i + j] == 0x4489) || (buffer.MFMWord[i + j] == 0x5224) ||

@@ -3,7 +3,7 @@
 
 <summary>Contains access to all global variables and function</summary>
 
-<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2015 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -209,8 +209,11 @@ public struct HistoData {
 	public bool hasBitsInBands;
 }
 
-
+/// <summary>
+/// Position of the bits in a unsigned int
+/// </summary>
 public class Bit {
+	/// <summary>First bit position</summary>
 	public const uint BIT_01 = 0x00000001;
 	public const uint BIT_02 = 0x00000002;
 	public const uint BIT_03 = 0x00000004;

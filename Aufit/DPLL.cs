@@ -5,7 +5,7 @@
  * This Digital Phase Lock Loop uses the algorithm described in US patent 4,780,844\n
  * http://info-coach.fr/atari/documents/general/patents/US4780844.pdf
 	
-<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2015 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any

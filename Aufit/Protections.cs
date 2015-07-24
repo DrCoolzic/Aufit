@@ -2,7 +2,7 @@
 @file Protections.cs
 <summary>Everything related to Protections</summary>
 
-<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2015 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -242,10 +242,10 @@ namespace Aufit {
 				}
 
 				// non standard IDAM
-				if (dt.sectors[secIndex].id.Iam != 0xFE) {
+				if (dt.sectors[secIndex].id.IDAM != 0xFE) {
 					dt.sectors[secIndex].flags |= Sector.NO_STD_IDAM;
 					dt.track.hasProtections = true;
-					writeInfo(info, String.Format("IIF-NSI Invalid ID Field: {0:X2} is Non Standard IDAM", dt.sectors[secIndex].id.Iam));
+					writeInfo(info, String.Format("IIF-NSI Invalid ID Field: {0:X2} is Non Standard IDAM", dt.sectors[secIndex].id.IDAM));
 				}
 
 				// invalid track number
@@ -301,10 +301,10 @@ namespace Aufit {
 					}
 
 					// non standard DAM
-					if (dt.sectors[secIndex].data.iam != 0xFB) {
+					if (dt.sectors[secIndex].data.DAM != 0xFB) {
 						dt.sectors[secIndex].flags |= Sector.NO_STD_DAM;
 						dt.track.hasProtections = true;
-						writeInfo(info, String.Format("NSD {0:X2} is a Non-Standard DAM", dt.sectors[secIndex].data.iam));
+						writeInfo(info, String.Format("NSD {0:X2} is a Non-Standard DAM", dt.sectors[secIndex].data.DAM));
 					}
 
 					// long sector ( 4000 * 8) + 3%

@@ -3,7 +3,7 @@
  * 
 <summary>Emulate WD1772 FDC commands: read track, read address, read sector and more</summary>
 
-<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2015 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -47,9 +47,7 @@ namespace WD1772Package {
 	}
 
 
-	/// <summary>
-	/// Store information about a block of data read from track.
-	/// /// </summary>
+	/// <summary>Store information about a block of data</summary>
 	public struct BlockInfo {
 		/// <summary>First byte of the block</summary> 
 		public int startByte;
@@ -69,17 +67,16 @@ namespace WD1772Package {
 		/// <summary>Length of the Block in nanoseconds </summary>
 		public int timeLength;
 
-		/// <summary>CRC value at the end of reading an ID or DATA block. Should be zero on a "good" block</summary>
+		/// <summary>CRC value at the end of reading an ID or DATA block.</summary>
+		/// <remarks> Should be zero on a "good" block</remarks>
 		public ushort crc;
 	}
 
 
-	/// <summary>
-	/// Store information about the ID Field of a Sector
-	/// </summary>
+	/// <summary>Store information about the ID Field of a Sector</summary>
 	public class IdField {
 		/// <summary>Returns the Index Address Mark</summary> 
-		public byte Iam {
+		public byte IDAM {
 			get { return buffer.DataByte[0]; }
 		}
 
@@ -103,7 +100,7 @@ namespace WD1772Package {
 			get { return buffer.DataByte[4]; }
 		}
 
-		/// <summary>Returns the CRC on two bytes</summary> 
+		/// <summary>Returns the CRC</summary> 
 		public ushort CRC {
 			get { return (ushort)((int)(buffer.DataByte[5]) + (int)(buffer.DataByte[6] << 8)); }
 		}		
@@ -116,21 +113,17 @@ namespace WD1772Package {
 	}
 
 
-	/// <summary>
-	/// Store information about the DATA Field of a Sector
-	/// </summary>
+	/// <summary>Store information about the DATA Field of a Sector</summary>
 	public class DataField {
 		/// <summary>Store the Index Address Mark</summary> 
-		public byte iam;
-		//public byte DAM {
-		//	get { return buffer.DataByte[0]; }
-		//}
+		public byte DAM;
 
 		/// <summary>buffer for all the byte read in the DATA field of the sector</summary>
+		/// <remarks>The buffer does not contain the DAM and CRC kept apart</remarks>
 		public TrackBuffer buffer = new TrackBuffer();
 
 		/// <summary>Store the CRC on two bytes</summary> 
-		public ushort crc;
+		public ushort CRC;
 
 		/// <summary>Array of bytes to store fuzzy mask</summary> 
 		public byte[] fuzzy;
@@ -140,9 +133,7 @@ namespace WD1772Package {
 
 	}
 
-	/// <summary>
-	/// Store Inner and Post GAP fields of a sector
-	/// </summary>
+	/// <summary>Store information about GAP fields of a sector</summary>
 	public class GapField {
 		public TrackBuffer buffer = new TrackBuffer();
 		public BlockInfo info = new BlockInfo();
@@ -190,16 +181,29 @@ namespace WD1772Package {
 		/// <remarks>If we find fuzzy bytes and good CRC we recover in this field</remarks>
 		public DataField recovered_data;
 
+		/// <summary>
+		/// Pointer to the Inner GAP field
+		/// </summary>
 		public GapField innerGap;
+
+		/// <summary>
+		/// Pointer to the Post Gap field
+		/// </summary>
 		public GapField postGap;
 	}
 
 
 	/// <summary>Track information</summary>
 	public class Track {
+		/// <summary>Flag set when a short track is detected</summary>
 		public const uint SHORT_TRACK = Bit.BIT_01;
+
+		/// <summary>Flag set when a long track is detected</summary>
 		public const uint LONG_TRACK = Bit.BIT_02;
+
+		/// <summary>Flag set when a "data track" is detected</summary>
 		public const uint DATA_TRACK = Bit.BIT_03;
+
 		public const uint BAD_DATA_GAP = Bit.BIT_04;
 		public const uint SECTOR_ST = Bit.BIT_05;
 		public const uint NOT_STD_SIZ = Bit.BIT_06;
@@ -216,7 +220,7 @@ namespace WD1772Package {
 		// Fuzzy track ???
 
 		/// <summary>buffer for all the byte read in the DATA field of the sector</summary>
-		public TrackBuffer buffer;
+		public TrackBuffer buffer = new TrackBuffer();
 
 		/// <summary> Contains information about the field </summary>
 		public BlockInfo info = new BlockInfo();
@@ -238,15 +242,26 @@ namespace WD1772Package {
 	/// We raise an exception if a sector is not found in readSector()
 	/// </summary>
 	public class SectorNotFoundException : Exception {
+		/// <summary>SectorNotFoundException Constructor</summary>
 		public SectorNotFoundException() : base() { }
+		/// <summary>SectorNotFoundException Constructor</summary>
 		public SectorNotFoundException(string message) : base(message) { }
+		/// <summary>SectorNotFoundException Constructor</summary>
 		public SectorNotFoundException(string message, Exception e) : base(message, e) { }
 
 		private static string _ExceptionMessage;
+
+		/// <summary>
+		/// Get/SEt the content of the Exception message
+		/// </summary>
 		public static string ExceptionMessage {
 			get { return _ExceptionMessage; }
 			set { _ExceptionMessage += value + "\n"; }
 		}
+
+		/// <summary>
+		/// Reset content of exception message
+		/// </summary>
 		public static void resetException() {
 			_ExceptionMessage = null;
 		}
@@ -258,21 +273,23 @@ namespace WD1772Package {
 		private readonly static int widthUpperLimit = 2070;
 		private readonly static int widthLowerLimit = 1930;
 
-		public static bool isGap(Phases p) {
+		public static bool isGapPhase(Phases p) {
 			return ((p == Phases.p_gap_inner) || (p == Phases.p_gap_post));
 		}
 
 
 		/// <summary>Read a track</summary>
+		/// <param name="track">The track index</param>
+		/// <param name="side">The side index</param>
+		/// <param name="rev">The revolution index</param>
 		/// <remarks>The data placed in the buffer are equivalent to what would 
 		/// be read by a WD1772 decode the flux transitions. We store the
-		/// phase for a byte based on information detected by readAddr and readSector.
+		/// phase of a byte based on information detected by readAddr and readSector.
 		/// Therefore this function must be called last.</remarks>
 		public static void readTrack(int track, int side, int rev) {
 			if (Global.Disk[track, side].track != null) return;
 
 			Global.Disk[track, side].track = new Track();
-			Global.Disk[track, side].track.buffer = new TrackBuffer();
 			Global.Disk[track, side].track.info.startTime = 0;
 			Global.Disk[track, side].track.info.startByte = 0;
 			Global.Disk[track, side].track.info.startBit = 0;
@@ -289,7 +306,6 @@ namespace WD1772Package {
 
 			int invalidByteInGap = 0;
 			int nfaCount = 0;
-			//int nfaStart;
 			int byteInSector = 0;
 			bool equal = false;
 			int revolutionTime = dt.packedFluxDataRev[rev].revolutionTime;
@@ -322,17 +338,12 @@ namespace WD1772Package {
 						Global.Disk[track, side].track.firstSyncOffset = byteCount - 3;
 					}
 
-					//if ((dsr.Data >= 0xF5) && (dsr.Data <= 0xF7) && (ps.Phase == Phases.p_gap))
-					if ((dsr.Data >= 0xF5) && (dsr.Data <= 0xF7) && (FDC.isGap(ps.Phase)))
+					if ((dsr.Data >= 0xF5) && (dsr.Data <= 0xF7) && (FDC.isGapPhase(ps.Phase)))
 						invalidByteInGap++;
 
 					// check NFA
-					if ((dsr.MFM == 0) || (dsr.MFM == 0xFFFF)) {
-						//if (nfaCount == 0) {
-						//	nfaStart = currentTime;
-						//}
+					if ((dsr.MFM == 0) || (dsr.MFM == 0xFFFF))
 						nfaCount++;
-					}
 					else {
 						if (nfaCount > 8)
 							Global.Disk[track, side].track.flags |= Track.NO_FLUX_AREA;
@@ -354,7 +365,7 @@ namespace WD1772Package {
 
 					// check if sector content is same as in track (Pasti optimization)
 					if (!ps.compareSector && (ps.SectorNumber >= 0) && (ps.Phase == Phases.p_data) && ps.firstByte) {						
-						if (dsr.Data == dt.sectors[ps.SectorNumber].data.iam) {
+						if (dsr.Data == dt.sectors[ps.SectorNumber].data.DAM) {
 							dt.sectors[ps.SectorNumber].trackOffset = byteCount + 1;
 							byteInSector = 0;
 							ps.compareSector = true;
@@ -382,9 +393,7 @@ namespace WD1772Package {
 
 
 	
-		/// <summary>
-		/// Read all the ID fields of a track
-		/// </summary>
+		/// <summary>Read all the ID fields of a track</summary>
 		/// <param name="track">The track index</param>
 		/// <param name="side">The side index</param>
 		/// <param name="rev">The revolution index</param>
@@ -446,13 +455,12 @@ namespace WD1772Package {
 									// and a new id
 									sector.id = new IdField();
 									sectorCount++;
-									//sector.id.iam = dsr.Data;
-									sector.id.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
 									sector.id.info.startBit = currentBit - startBit;
 									sector.id.info.startByte = byteCount;
 									sector.id.info.startTime = currentTime;
 									byteLeftInBlock = 7;
 									phase = Phases.p_id;
+									sector.id.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
 									break;
 								default:
 									// other AM re-enable sync search
@@ -721,13 +729,10 @@ namespace WD1772Package {
 									// Id field is already 7 bytes 43 + 7 = 50
 									if (idFound && ((byteRead - sector.id.info.startByte) <= 60)) {
 										data = new DataField();
-										//data.buffer = new TrackBuffer();
-										//data.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
-										data.iam = dsr.Data;
+										data.DAM = dsr.Data;
 										//dataFound = true;
 										byteLeftInBlock = Global.sectSize(sector.id.Length) + 3; // AM + 2 CRC + Size
 										phase = Phases.p_data;
-										//p_inner = false;
 										widthOver = 0;
 										widthUnder = 0;
 
@@ -798,8 +803,8 @@ namespace WD1772Package {
 							}	// ID Segment
 						else {
 							switch (byteLeftInBlock) {
-								case 2: data.crc = dsr.Data; break;
-								case 1: data.crc += (ushort)(dsr.Data << 8);
+								case 2: data.CRC = dsr.Data; break;
+								case 1: data.CRC += (ushort)(dsr.Data << 8);
 									crc = dsr.CRC;
 									break;
 								case 0:	// end of DATA block
@@ -849,12 +854,8 @@ namespace WD1772Package {
 										//	//	String.Format("buffers size s1={0} s2={1}\n", sref.buffer.Bytes.Count, sect.buffer.Bytes.Count));
 
 										byte[] fuzzy;
-										//if (sector.data.fuzzy != null)
-										//	fuzzy = sector.data.fuzzy;
-										//else {
 										int dataSize = Global.sectSize(sector.id.Length);
 										fuzzy = new byte[dataSize];
-										//}
 										bool fuzzyFound = false;
 
 										for (int i = 0; i < size - 3; i++) {

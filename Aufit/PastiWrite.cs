@@ -2,7 +2,7 @@
 @file PastiStruct.cs
 <summary>Functions to write Pasti File</summary>
 
-<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2015 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -192,7 +192,7 @@ namespace PastiPackage {
 
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].recovered_data == null))
 							tdesc.fuzzyCount += (uint)dt.sectors[sect].data.fuzzy.Count();
-						else if (SIM_FUZZY && (dt.sectors[sect].data.crc != 0) && ((dt.sectors[sect].flags & Sector.WIDTH_ABOVE) != 0)) {
+						else if (SIM_FUZZY && (dt.sectors[sect].data.CRC != 0) && ((dt.sectors[sect].flags & Sector.WIDTH_ABOVE) != 0)) {
 							// Rob Northen protection we force fuzzy bits if not there ?
 							int dataSize = Global.sectSize(dt.sectors[sect].id.Length);
 							dt.sectors[sect].data.fuzzy = new byte[dataSize];
@@ -293,12 +293,12 @@ namespace PastiPackage {
 									fdcFlag |= SectorDesc.CRC_ERR;
 							}
 							else {
-								if (dt.sectors[sect].data.iam != 0xFB)
+								if (dt.sectors[sect].data.DAM != 0xFB)
 									fdcFlag |= SectorDesc.REC_TYPE;
 								if ((dt.sectors[sect].data.info.crc != 0) && (dt.sectors[sect].recovered_data == null)) 
 									fdcFlag |= SectorDesc.CRC_ERR;
 							}	// these two flags are only meaningful if record has bytes
-							if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].data.crc != 0))
+							if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].data.CRC != 0))
 								fdcFlag |= SectorDesc.FUZZY_BITS;
 							if ((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0)
 								fdcFlag |= SectorDesc.BIT_WIDTH;

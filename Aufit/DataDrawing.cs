@@ -2,7 +2,7 @@
 @file DataDrawing.cs
 <summary>Everything related to drawing the Track Data chart</summary>
 
-<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2015 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -205,7 +205,7 @@ class DataDrawing {
 			//if (((flux > upper) || (flux < lower)) && (dt.sectors.Count > 0) && FDC.isGap(ps.Phase)) {
 			//if (((flux > 8300) || (flux < 3700)) && (dt.sectors.Count > 0) && (ps.Phase == Phases.p_gap_inner)) {
 			int upper = 4 * bitWidth + ((16 * bitWidth) / 100); // + 4%
-			if ((flux > upper) && (dt.sectors.Count > 0) && FDC.isGap(ps.Phase)) {
+			if ((flux > upper) && (dt.sectors.Count > 0) && FDC.isGapPhase(ps.Phase)) {
 
 				Line splice = new Line();
 				DoubleCollection dashPattern = new DoubleCollection(new double[2] { 2, 1 });
@@ -241,7 +241,7 @@ class DataDrawing {
 		if (phase == Phases.p_id)
 			sectorPhasePolygon.Fill = Brushes.Yellow;
 		//else if (phase == Phases.p_gap)
-		else if (FDC.isGap(phase))
+		else if (FDC.isGapPhase(phase))
 			sectorPhasePolygon.Fill = Brushes.LightGreen;
 		else {
 			sectorPhasePolygon.Fill = Brushes.DeepSkyBlue;

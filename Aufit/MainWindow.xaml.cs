@@ -3,7 +3,7 @@
  * 
 <summary>The Main Window for the AUFIT program</summary>
 
-<div class="jlg">Copyright (C) 2013-2014 Jean Louis-Guerin\n\n
+<div class="jlg">Copyright (C) 2013-2015 Jean Louis-Guerin\n\n
 This file is part of the Atari Universal FD Image Tool project.\n\n
 The Atari Universal FD Image Tool project may be used and distributed without restriction provided
 that this copyright statement is not removed from the file and that any
@@ -761,9 +761,9 @@ namespace Aufit {
 					if ((startPos < pos) && (endPos > pos)) {
 						// infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", _dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, indexStart));
 
-						string message = String.Format("Sector {0} - {1} bytes IAM={2:X2} {3}={4:X4} {5}\n",
-							sector.id.Sector, Global.sectSize(sector.id.Length), sector.data.iam,
-							(sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.crc,
+						string message = String.Format("Sector {0} - {1} bytes DAM={2:X2} {3}={4:X4} {5}\n",
+							sector.id.Sector, Global.sectSize(sector.id.Length), sector.data.DAM,
+							(sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.CRC,
 							(sector.data.fuzzy != null) ? "Has fuzzy bits" : "");
 						// TODO
 						//if (_sectorWindowIsOpen)
