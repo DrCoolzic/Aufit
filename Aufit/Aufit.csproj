@@ -33,7 +33,7 @@
     <SuiteName>Aufit</SuiteName>
     <CreateWebPageOnPublish>true</CreateWebPageOnPublish>
     <WebPage>publish.htm</WebPage>
-    <ApplicationRevision>12</ApplicationRevision>
+    <ApplicationRevision>15</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -136,6 +136,7 @@
     <Compile Include="DataDrawing.cs" />
     <Compile Include="DPLL.cs" />
     <Compile Include="DSR.cs" />
+    <Compile Include="IPFStruct.cs" />
     <Compile Include="KFReader.cs" />
     <Compile Include="PastiStruct.cs" />
     <Compile Include="PastiWrite.cs" />

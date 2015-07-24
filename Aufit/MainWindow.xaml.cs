@@ -105,9 +105,9 @@ namespace Aufit {
 
 		public static string ImageName { get; set; }
 		public static string DirectoryName { get; set; }
-		public bool HasIncompleteData { get; set; }
-		public bool HasProtection { get; set; }
-		public bool STIncompatible { get; set; }
+		//public bool HasIncompleteData { get; set; }
+		//public bool HasProtection { get; set; }
+		//public bool STIncompatible { get; set; }
 
 
 		/// <summary>
@@ -140,7 +140,7 @@ namespace Aufit {
 			//MessageBox.Show(Application.Current.Properties["FileName"].ToString());
 			tbFileName.Text = Aufit.Properties.Settings.Default.ImageName;
 
-			// DiskFormat d = new DiskFormat(trvDiskFormat);	// TODO test - remove
+			//DiskFormat d = new DiskFormat(trvDiskFormat);	// TODO test - remove
 
 		}
 
@@ -470,6 +470,10 @@ namespace Aufit {
 			bool readOK = false;
 			CurrentTrack = CurrentSide = CurrentRev = 0;
 			Global.resetDisk();
+			//HasIncompleteData = false;
+			//HasProtection = false;
+			//STIncompatible = false;
+
 			tbAnalysis.Clear();
 			SectorNotFoundException.resetException();
 			diskClear();
@@ -477,6 +481,7 @@ namespace Aufit {
 			fdViewer.Document = null;
 			redDot.Visibility = System.Windows.Visibility.Hidden;
 			tbSaveImage.Clear();
+			tbMasterView.Clear();
 			
 			guiEnable(false);
 			string extension = System.IO.Path.GetExtension(fileName);
@@ -893,6 +898,11 @@ namespace Aufit {
 					drawLayout(CurrentTrack, CurrentSide, CurrentRev);
 			}
 
+			if (tabItemMaster.IsSelected) {
+				//DiskFormat df = new DiskFormat();
+				drawDiskFormat(CurrentTrack, CurrentSide);
+			}
+
 			if (tabItemAnalysis.IsSelected) {
 
 			}
@@ -904,36 +914,44 @@ namespace Aufit {
 
 		private async Task checkWriteImage() {
 			if (tbSaveImage.Text.Length != 0) return;
+			bool hasProtection = false;
+			bool STIncompatible = false;
+			bool hasIncompleteData = false;
+			cbOutputFormat.SelectedIndex = 0;
+			tbSaveImage.AppendText(Aufit.MainWindow.ImageName);
+			tbSaveImage.AppendText("\n");
+
 			await checkProtectionAsync(infoBox);
 			cbST.IsEnabled = true;
 			cbMSA.IsEnabled = true;
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {
 					if (Global.Disk[track, side].track != null) {
-						HasProtection |= Global.Disk[track, side].track.hasProtections;
+						hasProtection |= Global.Disk[track, side].track.hasProtections;
 						STIncompatible |= (((Global.Disk[track, side].track.flags & Track.NOT_STD_SIZ) != 0) ||
 							((Global.Disk[track, side].track.flags & Track.SECTOR_ST) != 0));
 					}
-					HasIncompleteData |= Global.Disk[track, side].hasIncompleteData;
+					hasIncompleteData |= Global.Disk[track, side].hasIncompleteData;
 				}	// all tracks
 			}	// all sides
 
 			//tbSaveImage.Clear();
 			//tbSaveImage.ScrollToHome();
 
-			if (HasProtection) {
-				tbSaveImage.AppendText("Protections found on disk\n");
-			}	// protections
+			if (hasProtection)
+				tbSaveImage.AppendText("Has protections - ");
+			else
+				tbSaveImage.AppendText("No protection found - ");
 
-			if (STIncompatible || HasProtection) {
+			if (STIncompatible || hasProtection) {
 				tbSaveImage.AppendText("Can only be written with STX format\n");
 				cbMSA.IsEnabled = false;
 				cbST.IsEnabled = false;
-			}	// special
+			}	// protected
 			else
-				tbSaveImage.AppendText("Can be written with STX / ST / MSA file\n");
+				tbSaveImage.AppendText("Can be written with STX / ST / MSA formats\n");
 
-			if (HasIncompleteData) {
+			if (hasIncompleteData) {
 				MessageBox.Show(
 					"The disk contains shifted tracks and you are on the last revolution\nIt is not possible to produce a correct output file",
 					"Incomplete Data");
@@ -949,6 +967,10 @@ namespace Aufit {
 			Protections.checkProtection(track, side, infoBox);
 			if (tabItemDisk.IsSelected)
 				drawDiskSelectedTrack(track, side);
+
+			if (tabItemMaster.IsSelected) {
+				drawDiskFormat(track, side);
+			}
 
 			if (tabItemContent.IsSelected) {
 				switch (_view) {

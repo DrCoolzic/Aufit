@@ -131,12 +131,12 @@ class DataDrawing {
 				bstop = bstart + blength;
 
 				tb = new TextBox();
-				tb.Text = String.Format("Gap Field {0} bytes - Start @ Bit={1} Time={2:F2} ms",
-					sector.data.info.startByte - sector.id.info.startByte - sector.id.info.byteCount,
-					sector.id.info.startBit + sector.id.info.bitCount,
-					(double)(sector.id.info.startTime + sector.id.info.timeLength) / 1000000.0);
+				tb.Text = String.Format("IGap Field {0} bytes - Start @ Bit={1} Time={2:F2} ms",
+					sector.innerGap.info.byteCount, sector.innerGap.info.startBit, (double)sector.innerGap.info.startTime / 1000000.0);
 				sectorInfoPanel.Children.Add(tb);
-				drawRectangle(sector, idbstop, bstart, Phases.p_gap_inner);
+				//drawRectangle(sector, idbstop, bstart, Phases.p_gap_inner);
+				drawRectangle(sector, (double)sector.innerGap.info.startTime / 1000000.0,
+					(double)(sector.innerGap.info.startTime + sector.innerGap.info.timeLength) / 1000000.0, Phases.p_gap_inner);
 
 				tb = new TextBox();
 				tb.Text = String.Format("Data Field {0} bytes Length={1:F2} µs - Start @ Bit={2} Time={3:F2} ms {4} {5}",
@@ -164,6 +164,13 @@ class DataDrawing {
 				}
 
 			}	// sector has data field
+
+			if (sector.postGap != null) {
+				tb = new TextBox();
+				tb.Text = String.Format("PGap Field {0} bytes - Start @ Bit={1} Time={2:F2} ms",
+					sector.postGap.info.byteCount, sector.postGap.info.startBit, (double)sector.postGap.info.startTime / 1000000.0);
+				sectorInfoPanel.Children.Add(tb);
+			}
 
 			sectorBorderPolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.8));
 			sectorBorderPolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.2));

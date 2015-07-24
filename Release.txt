@@ -1,3 +1,4 @@
+* AufitV1.1.5671 Display of GAP bytes in sectors buffer. & Get Ready for IPF
 - added Help button with start PDF reader on Aufit.pdf
 - Added Check for Update button + update if requested
 - Read GAP info added in preparation to IPF writing:

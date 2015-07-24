@@ -335,48 +335,48 @@ namespace Aufit {
 
 				// display bitWidth
 				p.Inlines.Add(new Run(
-						String.Format("{0:D4} ", buffer.Bytes[i].bitWidth)) {
-							Foreground = (buffer.Bytes[i].bitWidth > 2050) ? Brushes.Blue :
-							(buffer.Bytes[i].bitWidth < 1950) ? Brushes.Red : Brushes.Black,
-							FontWeight = ((buffer.Bytes[i].bitWidth > 2050) || (buffer.Bytes[i].bitWidth < 1950)) ?
+						String.Format("{0:D4} ", buffer.BitWidth[i])) {
+							Foreground = (buffer.BitWidth[i] > 2050) ? Brushes.Blue :
+							(buffer.BitWidth[i] < 1950) ? Brushes.Red : Brushes.Black,
+							FontWeight = ((buffer.BitWidth[i] > 2050) || (buffer.BitWidth[i] < 1950)) ?
 											FontWeights.Bold : FontWeights.Normal
 						});
 
 				// display start time
-				p.Inlines.Add(String.Format("{0:D6}  ", buffer.Bytes[i].startTime / 1000));
+				p.Inlines.Add(String.Format("{0:D6}  ", buffer.StartTime[i] / 1000));
 
 				string ascii = "  ";
 				for (int j = 0; j < 16; j++) {
 					if ((i + j) < bytes) {
 						if (_noColor)
-							p.Inlines.Add(String.Format("{0:X2} ", buffer.Bytes[i + j].dataByte));
+							p.Inlines.Add(String.Format("{0:X2} ", buffer.DataByte[i + j]));
 						else
 							p.Inlines.Add(new Run(
-								String.Format("{0:X2} ", buffer.Bytes[i + j].dataByte)) {
+								String.Format("{0:X2} ", buffer.DataByte[i + j])) {
 									Background =
-										((buffer.Bytes[i + j].dataByte >= 0xF5) && (buffer.Bytes[i + j].dataByte <= 0xF7) &&
-										 FDC.isGap(buffer.Bytes[i + j].phase)) ? Brushes.LightBlue :
-										((buffer.Bytes[i + j].mfmWord == 0x0000) || (buffer.Bytes[i + j].mfmWord == 0xFFFF)) ? Brushes.Coral :
-										((buffer.Bytes[i + j].mfmWord == 0x4489) || (buffer.Bytes[i + j].mfmWord == 0x5224)) ? Brushes.Yellow :
-										(buffer.Bytes[i + j].phase == Phases.p_data) ? Brushes.LightGreen :
-										(buffer.Bytes[i + j].phase == Phases.p_id) ? Brushes.GreenYellow :
+										((buffer.DataByte[i + j] >= 0xF5) && (buffer.DataByte[i + j] <= 0xF7) &&
+										 FDC.isGap(buffer.Phase[i + j])) ? Brushes.LightBlue :
+										((buffer.MFMWord[i + j] == 0x0000) || (buffer.MFMWord[i + j] == 0xFFFF)) ? Brushes.Coral :
+										((buffer.MFMWord[i + j] == 0x4489) || (buffer.MFMWord[i + j] == 0x5224)) ? Brushes.Yellow :
+										(buffer.Phase[i + j] == Phases.p_data) ? Brushes.LightGreen :
+										(buffer.Phase[i + j] == Phases.p_id) ? Brushes.GreenYellow :
 										Brushes.White,
 									Foreground =
-										(buffer.Bytes[i + j].mfmWord == 0x4489) ? Brushes.Red :
-										(buffer.Bytes[i + j].mfmWord == 0x5224) ? Brushes.Navy :
-										(buffer.Bytes[i + j].phase == Phases.p_id) ? Brushes.Blue :
-										(buffer.Bytes[i + j].phase == Phases.p_data) ? Brushes.Black :
-										FDC.isGap(buffer.Bytes[i + j].phase) ? Brushes.Black :
+										(buffer.MFMWord[i + j] == 0x4489) ? Brushes.Red :
+										(buffer.MFMWord[i + j] == 0x5224) ? Brushes.Navy :
+										(buffer.Phase[i + j] == Phases.p_id) ? Brushes.Blue :
+										(buffer.Phase[i + j] == Phases.p_data) ? Brushes.Black :
+										FDC.isGap(buffer.Phase[i + j]) ? Brushes.Black :
 										Brushes.DarkBlue,
 									FontWeight =
-										(buffer.Bytes[i + j].mfmWord == 0x4489) || (buffer.Bytes[i + j].mfmWord == 0x5224) ||
-										(buffer.Bytes[i + j].phase == Phases.p_id) ? FontWeights.Bold :
+										(buffer.MFMWord[i + j] == 0x4489) || (buffer.MFMWord[i + j] == 0x5224) ||
+										(buffer.Phase[i + j] == Phases.p_id) ? FontWeights.Bold :
 										FontWeights.Normal,
 									//FontStyle =
 									//(buffer.Bytes[i + j].startTime > 200000000) ? FontStyle = FontStyles.Italic :
 									//FontStyles.Normal
 								});
-						char ch = Convert.ToChar(buffer.Bytes[i + j].dataByte);
+						char ch = Convert.ToChar(buffer.DataByte[i + j]);
 						ascii += Char.IsControl(ch) ? "." : ch.ToString();
 					}
 					else
@@ -390,7 +390,7 @@ namespace Aufit {
 					for (int j = 0; j < 16; j++) {
 						if ((i + j) < bytes)
 							p.Inlines.Add(new Run(
-								String.Format("{0:X4} ", buffer.Bytes[i + j].mfmWord)) { 
+								String.Format("{0:X4} ", buffer.MFMWord[i + j])) { 
 							Background = Brushes.LightGray});
 					}
 					p.Inlines.Add(new LineBreak());

@@ -37,35 +37,30 @@ namespace Aufit {
 	/// Buffer to store Track / Sector information
 	/// </summary>
 	public class TrackBuffer {
-		private List<TrackByte> _bytes;
+		private List<byte> _dataByte;
+		private List<ushort> _mfmWord;
+		private List<int> _bitWidth;
+		private List<int> _startTime;
+		private List<Phases> _phase;
 
-		/// <summary>
-		/// Store all important information about one decoded byte
-		/// </summary>
-		public struct TrackByte {
-			/// <summary>The Data Byte</summary>
-			public byte dataByte;
-
-			/// <summary>The complete MFM word (two bytes)</summary>
-			public ushort mfmWord;
-
-			/// <summary>Current bit width</summary>
-			public int bitWidth;
-
-			/// <summary>Start Time of the Byte</summary>
-			public int startTime;
-
-			/// <summary>Current Phase (id / inner gap / data / outer gap</summary>
-			public Phases phase;
-
+		public List<byte> DataByte {
+			get { return _dataByte; }
 		}
 
+		public List<ushort> MFMWord {
+			get { return _mfmWord; }
+		}
 
-		/// <summary>
-		/// Get access to the buffer of TrackByte
-		/// </summary>
-		public List<TrackByte> Bytes {
-			get { return _bytes; }
+		public List<int> BitWidth {
+			get { return _bitWidth; }
+		}
+
+		public List<int> StartTime {
+			get { return _startTime; }
+		}
+
+		public List<Phases> Phase {
+			get { return _phase; }
 		}
 
 
@@ -73,7 +68,12 @@ namespace Aufit {
 		/// Create a new TrackBuffer object. Set initial size of the array to 600
 		/// </summary>
 		public TrackBuffer() {
-			_bytes = new List<TrackByte>(600);
+			_dataByte = new List<byte>(600);
+			_mfmWord = new List<ushort>(600);
+			_bitWidth = new List<int>(600);
+			_startTime = new List<int>(600);
+			_phase = new List<Phases>(600);
+
 		}
 
 
@@ -86,13 +86,11 @@ namespace Aufit {
 		/// <param name="startTime">Byte start time</param>
 		/// <param name="phase">Current Phase</param>
 		public void addByte(byte data, ushort mfm, ushort bitWidth, int startTime, Phases phase) {
-			TrackByte b = new TrackByte();
-			b.dataByte = data;
-			b.mfmWord = mfm;
-			b.bitWidth = bitWidth;
-			b.startTime = startTime;
-			b.phase = phase;
-			_bytes.Add(b);
+			_dataByte.Add(data);
+			_mfmWord.Add(mfm);
+			_bitWidth.Add(bitWidth);
+			_startTime.Add(startTime);
+			_phase.Add(phase);
 		}
 	
 	}

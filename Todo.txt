@@ -1,5 +1,7 @@
 Improvements
 ============
+- write DAM and CRC as part of Data buffer (will be easier for IPF writing)
+- write ID in a buffer? and add property like IAM to read 1st byte, Track -> second byte etc ...
 - detect slow moving clock variation for possible recover
 - detect track data and non Atari sector data
 - decomposed track in 10? parts and compute entropy => find hidden data in unformatted track (e.g.power drift disk b t01.0)
@@ -34,6 +36,17 @@ Improvements
 
 BUGS
 ====
+- Dans l’onglet “Save Image”, si je clique sur “Write Image” puis sur “Cancel”, le message "Image write completed" 
+	est affiché quand même alors que manifestement aucune image n’a été écrite.
+- Les infos de l'onglet "Save Image" ne se mettent pas à jour à chaque nouvelle image chargée dans Aufit sans le refermer entre chaque image: 
+	+	Je démarre aufit
+	+	J'ouvre une image non protégée (par exemple ton image de DM Editor), que j'enregistre en .ST . 
+	Sans fermer Aufit, j'ouvre ton image de Dungeon Master. La sélection du format de fichier .ST reste en place, alors que le format .ST 
+	n’est pas censé être autorisé car le jeu est protégé. Et du coup quand je clique sur "Write Image", ca plante.
+	Si je ferme aufit et le redémarre puis que j'ouvre directement ton image Kryoflux de Dungeon Master, Aufit détecte qu'il est protégé 
+	et ne permet alors que d'enregistrer en STX (là ca marche). Mais si ensuite j'ouvre l'image de DM Editor, alors je ne peux l'enregistrer
+	que en STX, les formats ST et MSA restent grisés alors qu’ils devraient être accessibles.
+
 - Fixed 0.9.5496.32925: Pasti write optimization not working with certain disk like Elvira & eliminator
 - Fixed 0.9.5494.34756: ECO by Ocean T77.0 79.0 one sector - button not displayed correctly
 - Fixed 0.8.5494.22146: FDC: reposition the id start byte in readSect because of id+data.

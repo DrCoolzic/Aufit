@@ -322,11 +322,11 @@ namespace WD1772Package {
 					}
 
 					if (ps.compareSector && (dt.sectors[ps.SectorNumber].data != null)) {
-						if (dsr.Data != dt.sectors[ps.SectorNumber].data.buffer.Bytes[byteInSector].dataByte) {
+						if (dsr.Data != dt.sectors[ps.SectorNumber].data.buffer.DataByte[byteInSector]) {
 							equal = false;
 						}
 
-						if (byteInSector == (dt.sectors[ps.SectorNumber].data.buffer.Bytes.Count - 1)) {
+						if (byteInSector == (dt.sectors[ps.SectorNumber].data.buffer.DataByte.Count - 1)) {
 							if (equal)
 								dt.sectors[ps.SectorNumber].flags |= Sector.SEC_EQ_TRACK;
 							ps.compareSector = false;
@@ -841,7 +841,7 @@ namespace WD1772Package {
 										bool fuzzyFound = false;
 
 										for (int i = 0; i < size - 3; i++) {
-											byte xor = (byte)(data.buffer.Bytes[i].dataByte ^ sector.data.buffer.Bytes[i].dataByte);
+											byte xor = (byte)(data.buffer.DataByte[i] ^ sector.data.buffer.DataByte[i]);
 											if (xor != 0) {
 												fuzzyFound = true;
 												fuzzy[i] |= xor;

@@ -232,14 +232,14 @@
                 </Grid>
             </TabItem>
             
-            <TabItem Name="tabFormat" Header="Master View" Width="80">
+            <TabItem Name="tabItemMaster" Header="Master View" Width="80" Height="22" Margin="0,-2,0,0" VerticalAlignment="Bottom">
                 <Grid Margin="0" >
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0" >
+                    <!--<Grid Grid.Row="0" >
                         <TreeView Name="trvDiskFormat" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                             <TreeView.Resources>
                                 <HierarchicalDataTemplate DataType="{x:Type jlg:TrackDescriptor}" ItemsSource="{Binding Items}">
@@ -254,7 +254,11 @@
                             </TreeView.Resources>
                         </TreeView>
 
+                    </Grid>-->
+                    <Grid Grid.Row="0" >
+                        <TextBox BorderThickness="0" VerticalScrollBarVisibility="Auto" Margin="2" Name="tbMasterView" FontFamily="Consolas" FontSize="15" />
                     </Grid>
+
 
                     <Grid Grid.Row="1" >
                         <Grid.ColumnDefinitions>

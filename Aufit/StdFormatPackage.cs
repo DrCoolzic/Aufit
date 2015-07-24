@@ -104,15 +104,15 @@ namespace StdFormatPackage {
 						Sector s = FDC.findSector(track, side, sect + 1, -1);
 						Debug.Assert(s != null, "Did not found the sector?");
 						start = buffer.Count;
-						for (int i = 0; i < s.data.buffer.Bytes.Count; i++) {
+						for (int i = 0; i < s.data.buffer.DataByte.Count; i++) {
 							if (s.recovered_data != null)
-								buffer.Add(s.recovered_data.buffer.Bytes[i].dataByte);
+								buffer.Add(s.recovered_data.buffer.DataByte[i]);
 							else
-								buffer.Add(s.data.buffer.Bytes[i].dataByte);
+								buffer.Add(s.data.buffer.DataByte[i]);
 						}
 						if (_debug) 
 							_saveImageBox.AppendText(String.Format("      Writing Sector {0} {1} bytes ({2}-{3}) {4}\n",
-							s.id.number, s.data.buffer.Bytes.Count, start, buffer.Count - 1,
+							s.id.number, s.data.buffer.DataByte.Count, start, buffer.Count - 1,
 							(s.recovered_data != null) ? "recovered" : ""));
 						else if (s.recovered_data != null)
 							_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} recovered Sector {2}\n", 
@@ -208,13 +208,13 @@ namespace StdFormatPackage {
 					data = s.recovered_data.buffer;
 				else
 					data = s.data.buffer;
-				
-				for (int i = 0; i < data.Bytes.Count; i++)
-					trackBuffer.Add(data.Bytes[i].dataByte);
+
+				for (int i = 0; i < data.DataByte.Count; i++)
+					trackBuffer.Add(data.DataByte[i]);
 
 				if (_debug)
 					_saveImageBox.AppendText(String.Format("   Writing Sector {0} {1} bytes {2}\n",
-					s.id.number, data.Bytes.Count, (s.recovered_data != null) ? "recovered" : ""));
+					s.id.number, data.DataByte.Count, (s.recovered_data != null) ? "recovered" : ""));
 				else if (s.recovered_data != null)
 					_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} recovered Sector {2}\n",
 						track, side, s.id.number));

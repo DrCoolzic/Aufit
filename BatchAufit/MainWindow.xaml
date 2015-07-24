@@ -16,11 +16,15 @@
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
             <Button Grid.Column="0" Content="Root Directory" Click="RootDirectoryClicked" Height="20" Padding="5,0,5,0" Margin="5" />
             <Button Grid.Column="1" Content="Reload" Click="ReloadClicked" Height="20" Padding="5,0,5,0" Margin="5" />
             <TextBox Grid.Column="2" Name="tbRootDirName" BorderThickness="0" Background="Transparent" Margin="5,5,0,0" VerticalContentAlignment="Center"/>
-            <Button Grid.Column="3" Content="Save log" Click="SaveLogClicked" Height="20" Padding="5,0,5,0" Margin="5" />
+            <Button Grid.Column="3" Content="Save Log" Click="SaveLogClicked" Height="20" Padding="5,0,5,0" Margin="5" />
+            <Button Grid.Column="4" Margin="0" Click="updateClicked" BorderThickness="0" >
+                <Image Source="update.png"/>
+            </Button>
         </Grid>
 
         <Grid Grid.Row="1" >
