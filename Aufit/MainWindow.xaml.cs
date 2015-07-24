@@ -762,7 +762,7 @@ namespace Aufit {
 						// infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", _dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, indexStart));
 
 						string message = String.Format("Sector {0} - {1} bytes IAM={2:X2} {3}={4:X4} {5}\n",
-							sector.id.number, Global.sectSize(sector.id.size), sector.data.iam,
+							sector.id.Sector, Global.sectSize(sector.id.Length), sector.data.iam,
 							(sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.crc,
 							(sector.data.fuzzy != null) ? "Has fuzzy bits" : "");
 						// TODO
@@ -820,6 +820,7 @@ namespace Aufit {
 			SaveFileDialog sfd = new SaveFileDialog();
 			sfd.InitialDirectory = DirectoryName;
 			sfd.RestoreDirectory = true;
+			bool status = false;
 
 			uint flags = 0;
 			if (cbForceDS.IsChecked.Value == true)
@@ -839,7 +840,7 @@ namespace Aufit {
 						tbSaveImage.Clear();
 						tbSaveImage.AppendText(String.Format("Writing STX file {0}\n", sfd.FileName));
 						PastiWriter pasti = new PastiWriter(tbSaveImage);
-						pasti.writePasti(sfd.FileName, flags);
+						status = pasti.writePasti(sfd.FileName, flags);
 					}
 					break;
 
@@ -849,7 +850,7 @@ namespace Aufit {
 						tbSaveImage.Clear();
 						tbSaveImage.AppendText(String.Format("Writing ST file {0}\n", sfd.FileName));
 						StdWriter st = new StdWriter(tbSaveImage);
-						st.writeStd(sfd.FileName, flags, FileType.ST);
+						status = st.writeStd(sfd.FileName, flags, FileType.ST);
 					}
 					break;
 
@@ -859,7 +860,7 @@ namespace Aufit {
 						tbSaveImage.Clear();
 						tbSaveImage.AppendText(String.Format("Writing MSA file {0}\n", sfd.FileName));
 						StdWriter st = new StdWriter(tbSaveImage);
-						st.writeStd(sfd.FileName, flags, FileType.MSA);
+						status = st.writeStd(sfd.FileName, flags, FileType.MSA);
 					}
 					break;
 
@@ -868,7 +869,10 @@ namespace Aufit {
 						((ComboBoxItem)cbOutputFormat.SelectedItem).Content.ToString()));
 					return;
 			}
-			tbSaveImage.AppendText(String.Format("Image {0} write completed", sfd.FileName));
+			if (status)
+				tbSaveImage.AppendText(String.Format("Image {0} write succeed\n", sfd.FileName));
+			else if (sfd.FileName != "")
+				tbSaveImage.AppendText(String.Format("Image {0} write failed\n", sfd.FileName));
 		}
 
 

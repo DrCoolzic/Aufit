@@ -100,7 +100,7 @@ class DataDrawing {
 				endTime = sector.id.info.startTime + sector.id.info.timeLength;
 
 			snum.Text = String.Format("Sector {0} Start {1:F2} ms - Stop: {2:F2} ms",
-				sector.id.number, (double)sector.id.info.startTime / 1000000.0, (double)endTime / 1000000.0);				
+				sector.id.Sector, (double)sector.id.info.startTime / 1000000.0, (double)endTime / 1000000.0);				
 			sectorInfoPanel.Children.Add(snum);
 
 			double bstart = 0;
@@ -118,7 +118,7 @@ class DataDrawing {
 
 			TextBox tb = new TextBox();
 			tb.Text = String.Format("ID Field (T={0} H={1} S={2} L={3} CRC={4:X4}) - Start @ Bit={5} Time={6:F2} ms",
-				sector.id.track, sector.id.head, sector.id.number, sector.id.size, sector.id.crc,
+				sector.id.Track, sector.id.Head, sector.id.Sector, sector.id.Length, sector.id.CRC,
 				sector.id.info.startBit, bstart);
 			sectorInfoPanel.Children.Add(tb);
 

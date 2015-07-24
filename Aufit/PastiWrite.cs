@@ -194,7 +194,7 @@ namespace PastiPackage {
 							tdesc.fuzzyCount += (uint)dt.sectors[sect].data.fuzzy.Count();
 						else if (SIM_FUZZY && (dt.sectors[sect].data.crc != 0) && ((dt.sectors[sect].flags & Sector.WIDTH_ABOVE) != 0)) {
 							// Rob Northen protection we force fuzzy bits if not there ?
-							int dataSize = Global.sectSize(dt.sectors[sect].id.size);
+							int dataSize = Global.sectSize(dt.sectors[sect].id.Length);
 							dt.sectors[sect].data.fuzzy = new byte[dataSize];
 							for (int i = 0; i < dataSize; i++) {
 								dt.sectors[sect].data.fuzzy[i] = (byte)((i < 30) ? 0x00 : 0xFF);
@@ -224,7 +224,7 @@ namespace PastiPackage {
 					int timingEntries = 0;
 					for (int sect = 0; sect < sectorCount; sect++)
 						if ((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0)
-							timingEntries += Global.sectSize(dt.sectors[sect].id.size) / 16;
+							timingEntries += Global.sectSize(dt.sectors[sect].id.Length) / 16;
 
 					if (timingEntries > 0)
 						tdesc.recordSize += (uint)((2 * timingEntries) + 4);
@@ -279,11 +279,11 @@ namespace PastiPackage {
 							sd.bitPosition = (ushort)(dt.sectors[sect].id.info.startBit / 2);
 							sd.readTime = (ushort)((dt.sectors[sect].data != null) ? (dt.sectors[sect].data.info.timeLength / 1000) : 0);
 							sd.id = new IDField();
-							sd.id.track = dt.sectors[sect].id.track;
-							sd.id.side = dt.sectors[sect].id.head;
-							sd.id.number = dt.sectors[sect].id.number;
-							sd.id.size = dt.sectors[sect].id.size;
-							sd.id.crc = dt.sectors[sect].id.crc;
+							sd.id.track = dt.sectors[sect].id.Track;
+							sd.id.side = dt.sectors[sect].id.Head;
+							sd.id.number = dt.sectors[sect].id.Sector;
+							sd.id.size = dt.sectors[sect].id.Length;
+							sd.id.crc = dt.sectors[sect].id.CRC;
 
 							// compute flag
 							byte fdcFlag = 0;
@@ -305,7 +305,7 @@ namespace PastiPackage {
 
 							if (((fdcFlag & SectorDesc.CRC_ERR) != 0) && ((fdcFlag & SectorDesc.FUZZY_BITS) == 0) && ((fdcFlag & SectorDesc.SECT_RNF) != 0))
 								_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} S{2} CRC error on non fuzzy sector. Check image quality\n",
-										trackNum, side, dt.sectors[sect].id.number));
+										trackNum, side, dt.sectors[sect].id.Sector));
 
 							sd.fdcFlags = fdcFlag;
 							sd.reserved = 0;
@@ -338,10 +338,10 @@ namespace PastiPackage {
 							for (int i = 0; i < dt.sectors[sect].data.fuzzy.Count(); i++)
 								writeByte(buffer, (byte)~dt.sectors[sect].data.fuzzy[i]);
 							if (_debug) _saveImageBox.AppendText(String.Format("   Writing Fuzzy {0} bytes for sector {1} ({2}-{3})\n",
-								dt.sectors[sect].data.fuzzy.Count(), dt.sectors[sect].id.number, start, buffer.Count - 1));
+								dt.sectors[sect].data.fuzzy.Count(), dt.sectors[sect].id.Sector, start, buffer.Count - 1));
 							else
 								_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} found fuzzy sector {2}\n",
-										trackNum, side, dt.sectors[sect].id.number));
+										trackNum, side, dt.sectors[sect].id.Sector));
 						}	// fuzzy found
 					}	// all sect
 
@@ -373,7 +373,7 @@ namespace PastiPackage {
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.info.byteCount != 0)) {
 							if (optimize && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) !=0)) {
 								if (_debug) _saveImageBox.AppendText(String.Format("      Sector {0} {1} bytes already in track data @{2}\n",
-									dt.sectors[sect].id.number, dt.sectors[sect].data.buffer.DataByte.Count, dt.sectors[sect].trackOffset));
+									dt.sectors[sect].id.Sector, dt.sectors[sect].data.buffer.DataByte.Count, dt.sectors[sect].trackOffset));
 							}
 							else {
 								for (int i = 0; i < dt.sectors[sect].data.buffer.DataByte.Count; i++) {
@@ -384,11 +384,11 @@ namespace PastiPackage {
 								}
 								if (_debug) 
 									_saveImageBox.AppendText(String.Format("      Writing Sector {0} {1} bytes ({2}-{3}) {4}\n",
-									dt.sectors[sect].id.number, dt.sectors[sect].data.buffer.DataByte.Count, start, buffer.Count - 1,
+									dt.sectors[sect].id.Sector, dt.sectors[sect].data.buffer.DataByte.Count, start, buffer.Count - 1,
 									(dt.sectors[sect].recovered_data != null) ? "recovered" : ""));
 								else if (dt.sectors[sect].recovered_data != null) {
 									_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} recovered Sector {2}\n", 
-										trackNum, side, dt.sectors[sect].id.number));
+										trackNum, side, dt.sectors[sect].id.Sector));
 								}
 							}
 						}
@@ -417,10 +417,10 @@ namespace PastiPackage {
 								}
 								start = buffer.Count;
 								if (_debug) _saveImageBox.AppendText(String.Format("   Writing Timing {0} values for sector {1} ({2}-{3})\n",
-									dt.sectors[sect].data.buffer.DataByte.Count, dt.sectors[sect].id.number, start, buffer.Count - 1));
+									dt.sectors[sect].data.buffer.DataByte.Count, dt.sectors[sect].id.Sector, start, buffer.Count - 1));
 								else
 									_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} writing timing information for sector {2} \n",
-										trackNum, side, dt.sectors[sect].id.number));
+										trackNum, side, dt.sectors[sect].id.Sector));
 							}	// timing found
 						}	// all sect
 					}

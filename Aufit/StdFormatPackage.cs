@@ -112,11 +112,11 @@ namespace StdFormatPackage {
 						}
 						if (_debug) 
 							_saveImageBox.AppendText(String.Format("      Writing Sector {0} {1} bytes ({2}-{3}) {4}\n",
-							s.id.number, s.data.buffer.DataByte.Count, start, buffer.Count - 1,
+							s.id.Sector, s.data.buffer.DataByte.Count, start, buffer.Count - 1,
 							(s.recovered_data != null) ? "recovered" : ""));
 						else if (s.recovered_data != null)
 							_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} recovered Sector {2}\n", 
-								track, side, s.id.number));			
+								track, side, s.id.Sector));			
 					}	// sectors
 				} // for all tracks
 			}	// for all side
@@ -214,10 +214,10 @@ namespace StdFormatPackage {
 
 				if (_debug)
 					_saveImageBox.AppendText(String.Format("   Writing Sector {0} {1} bytes {2}\n",
-					s.id.number, data.DataByte.Count, (s.recovered_data != null) ? "recovered" : ""));
+					s.id.Sector, data.DataByte.Count, (s.recovered_data != null) ? "recovered" : ""));
 				else if (s.recovered_data != null)
 					_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} recovered Sector {2}\n",
-						track, side, s.id.number));
+						track, side, s.id.Sector));
 			}	// sectors
 
 			if (optimize) {

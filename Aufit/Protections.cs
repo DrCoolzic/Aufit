@@ -214,11 +214,11 @@ namespace Aufit {
 			//////////////////////		
 			for (int secIndex = 0; secIndex < dt.sectors.Count; secIndex++) {
 
-				info.sect = dt.sectors[secIndex].id.number;
+				info.sect = dt.sectors[secIndex].id.Sector;
 
 				// for ST format the sector must be in range 1-n
 				// detected on sector but is a track protection
-				if (dt.sectors[secIndex].id.number > dt.sectors.Count) {
+				if (dt.sectors[secIndex].id.Sector > dt.sectors.Count) {
 					dt.track.flags |= Track.SECTOR_ST;
 					//writeInfo(info, String.Format("Sector not sequential 1-{0} (SNS)", dt.sectors[secIndex].id.number));
 				}
@@ -226,7 +226,7 @@ namespace Aufit {
 
 				// normal sector size is 512
 				// detected on sector but is a track protection
-				if ((dt.sectors[secIndex].id.size & 0x3) != 2) {
+				if ((dt.sectors[secIndex].id.Length & 0x3) != 2) {
 					dt.track.flags |= Track.NOT_STD_SIZ;
 					//writeInfo(info, "Sector size is not 512 bytes (SSZ)");
 				}
@@ -234,46 +234,46 @@ namespace Aufit {
 
 				// Duplicate sector number
 				for (int comp = secIndex + 1; comp < dt.sectors.Count; comp++) {
-					if (dt.sectors[secIndex].id.number == dt.sectors[comp].id.number) {
+					if (dt.sectors[secIndex].id.Sector == dt.sectors[comp].id.Sector) {
 						dt.sectors[secIndex].flags |= Sector.DUP_SEC_NUM;
 						dt.track.hasProtections = true;
-						writeInfo(info, String.Format("DSN Duplicate Sector Number {0}", dt.sectors[secIndex].id.number));
+						writeInfo(info, String.Format("DSN Duplicate Sector Number {0}", dt.sectors[secIndex].id.Sector));
 					}
 				}
 
 				// non standard IDAM
-				if (dt.sectors[secIndex].id.iam != 0xFE) {
+				if (dt.sectors[secIndex].id.Iam != 0xFE) {
 					dt.sectors[secIndex].flags |= Sector.NO_STD_IDAM;
 					dt.track.hasProtections = true;
-					writeInfo(info, String.Format("IIF-NSI Invalid ID Field: {0:X2} is Non Standard IDAM", dt.sectors[secIndex].id.iam));
+					writeInfo(info, String.Format("IIF-NSI Invalid ID Field: {0:X2} is Non Standard IDAM", dt.sectors[secIndex].id.Iam));
 				}
 
 				// invalid track number
-				if (dt.sectors[secIndex].id.track != track) {
+				if (dt.sectors[secIndex].id.Track != track) {
 					dt.sectors[secIndex].flags |= Sector.BAD_TRK_NUM;
 					dt.track.hasProtections = true;
-					writeInfo(info, String.Format("IIF-ITN Invalid ID Field: {0} is an Invalid Track Number", dt.sectors[secIndex].id.track));
+					writeInfo(info, String.Format("IIF-ITN Invalid ID Field: {0} is an Invalid Track Number", dt.sectors[secIndex].id.Track));
 				}
 
 				// invalid head/side value
-				if (dt.sectors[secIndex].id.head > 1) {
+				if (dt.sectors[secIndex].id.Head > 1) {
 					dt.sectors[secIndex].flags |= Sector.BAD_HEAD_NUM;
 					dt.track.hasProtections = true;
-					writeInfo(info, String.Format("IIF-IHN Invalid ID Field: {0} is an Invalid Head/Side Number", dt.sectors[secIndex].id.head));
+					writeInfo(info, String.Format("IIF-IHN Invalid ID Field: {0} is an Invalid Head/Side Number", dt.sectors[secIndex].id.Head));
 				}
 
 				// invalid sector number
-				if (dt.sectors[secIndex].id.number > 0xF4) {
+				if (dt.sectors[secIndex].id.Sector > 0xF4) {
 					dt.sectors[secIndex].flags |= Sector.BAD_SEC_NUM;
 					dt.track.hasProtections = true;
-					writeInfo(info, String.Format("IIF-ISN Invalid ID Field: {0} is an Invalid Sector Number (ISN)", dt.sectors[secIndex].id.number));
+					writeInfo(info, String.Format("IIF-ISN Invalid ID Field: {0} is an Invalid Sector Number (ISN)", dt.sectors[secIndex].id.Sector));
 				}
 
 				// invalid length value
-				if (dt.sectors[secIndex].id.size > 3) {
+				if (dt.sectors[secIndex].id.Length > 3) {
 					dt.sectors[secIndex].flags |= Sector.BAD_SEC_LEN;
 					dt.track.hasProtections = true;
-					writeInfo(info, String.Format("IIF-ISL Invalid ID Field: {0} in an Invalid Sector Length (ISL)", dt.sectors[secIndex].id.size));
+					writeInfo(info, String.Format("IIF-ISL Invalid ID Field: {0} in an Invalid Sector Length (ISL)", dt.sectors[secIndex].id.Length));
 				}
 
 				// ID CRC error
@@ -308,7 +308,7 @@ namespace Aufit {
 					}
 
 					// long sector ( 4000 * 8) + 3%
-					if ((dt.sectors[secIndex].data.info.timeLength > (32960 * (Global.sectSize(dt.sectors[secIndex].id.size) + 3))) &&
+					if ((dt.sectors[secIndex].data.info.timeLength > (32960 * (Global.sectSize(dt.sectors[secIndex].id.Length) + 3))) &&
 							((dt.track.flags & Track.SHORT_TRACK) == 0)) {
 						dt.sectors[secIndex].flags |= Sector.LONG_SECT;
 						dt.track.hasProtections = true;
@@ -316,7 +316,7 @@ namespace Aufit {
 					}
 
 					// short sector ( 4000 * 8) - 3%
-					if ((dt.sectors[secIndex].data.info.timeLength < (31040 * (Global.sectSize(dt.sectors[secIndex].id.size) + 3))) &&
+					if ((dt.sectors[secIndex].data.info.timeLength < (31040 * (Global.sectSize(dt.sectors[secIndex].id.Length) + 3))) &&
 							((dt.track.flags & Track.LONG_TRACK) == 0)) {
 						dt.sectors[secIndex].flags |= Sector.SHORT_SECT;
 						dt.track.hasProtections = true;

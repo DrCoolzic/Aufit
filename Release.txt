@@ -1,3 +1,7 @@
+- Post GAP information displayed in tool tip when hovering sector in data chart
+- fix bug of incorrect message when canceling image write
+- fix bug of image format detection/selection when loading new image
+
 * AufitV1.1.5671 Display of GAP bytes in sectors buffer. & Get Ready for IPF
 - added Help button with start PDF reader on Aufit.pdf
 - Added Check for Update button + update if requested

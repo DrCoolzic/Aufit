@@ -108,7 +108,7 @@ namespace Aufit {
 				gapBytes, gapBytes * 16));
 			firstBlock = (lastBlock == (dt.sectors.Count - 1)) ? 0 : lastBlock + 1;
 			tbMasterView.AppendText(String.Format("-- First sector {0} start at bit {1}\n", 
-				dt.sectors[firstBlock].id.number, dt.sectors[firstBlock].id.info.startBit - 4*16));
+				dt.sectors[firstBlock].id.Sector, dt.sectors[firstBlock].id.info.startBit - 4*16));
 
 			
 
@@ -161,7 +161,7 @@ namespace Aufit {
 							postGapBadData = true;
 					}
 				}
-				tbMasterView.AppendText(String.Format("Sector {0} post gap - {1}x4E - {2}x00 -- {3}\n", s.id.number, count4E, count00, postGapBadData));
+				tbMasterView.AppendText(String.Format("Sector {0} post gap - {1}x4E - {2}x00 -- {3}\n", s.id.Sector, count4E, count00, postGapBadData));
 
 
 

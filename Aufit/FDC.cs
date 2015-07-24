@@ -78,23 +78,38 @@ namespace WD1772Package {
 	/// Store information about the ID Field of a Sector
 	/// </summary>
 	public class IdField {
-		/// <summary>Store the Index Address Mark</summary> 
-		public byte iam;
+		/// <summary>Returns the Index Address Mark</summary> 
+		public byte Iam {
+			get { return buffer.DataByte[0]; }
+		}
 
-		/// <summary>Store the track number</summary> 
-		public byte track;
+		/// <summary>Returns the track number</summary> 
+		public byte Track {
+			get { return buffer.DataByte[1]; }
+		}
 
-		/// <summary>Store the Head/Side number</summary> 
-		public byte head;
+		/// <summary>Returns the Head/Side number</summary> 
+		public byte Head {
+			get { return buffer.DataByte[2]; }
+		}
 
-		/// <summary>Store the sector number</summary> 
-		public byte number;
+		/// <summary>Returns the sector number</summary> 
+		public byte Sector {
+			get { return buffer.DataByte[3]; }
+		}
 
-		/// <summary>Store the encoded data segment size</summary> 
-		public byte size;
+		/// <summary>Returns the encoded data segment length</summary> 
+		public byte Length {
+			get { return buffer.DataByte[4]; }
+		}
 
-		/// <summary>Store the CRC on two bytes</summary> 
-		public ushort crc;
+		/// <summary>Returns the CRC on two bytes</summary> 
+		public ushort CRC {
+			get { return (ushort)((int)(buffer.DataByte[5]) + (int)(buffer.DataByte[6] << 8)); }
+		}		
+
+		/// <summary>Store the ID Field content</summary>
+		public TrackBuffer buffer = new TrackBuffer();
 
 		/// <summary> Contains information about the Id field block</summary>
 		public BlockInfo info = new BlockInfo();
@@ -107,9 +122,12 @@ namespace WD1772Package {
 	public class DataField {
 		/// <summary>Store the Index Address Mark</summary> 
 		public byte iam;
+		//public byte DAM {
+		//	get { return buffer.DataByte[0]; }
+		//}
 
 		/// <summary>buffer for all the byte read in the DATA field of the sector</summary>
-		public TrackBuffer buffer;
+		public TrackBuffer buffer = new TrackBuffer();
 
 		/// <summary>Store the CRC on two bytes</summary> 
 		public ushort crc;
@@ -402,6 +420,7 @@ namespace WD1772Package {
 
 				byte bits = Global.Disk[track, side].packedFluxData.packedBits[currentByte];
 				int bit = (bits >> bitInByte) & 0x1;
+				int bitWidth = Global.Disk[track, side].packedFluxData.bitWidth[currentByte];
 
 				if (bit != 0) {
 					int flux = Global.fluxWidth(currentBit, track, side);
@@ -427,7 +446,8 @@ namespace WD1772Package {
 									// and a new id
 									sector.id = new IdField();
 									sectorCount++;
-									sector.id.iam = dsr.Data;
+									//sector.id.iam = dsr.Data;
+									sector.id.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
 									sector.id.info.startBit = currentBit - startBit;
 									sector.id.info.startByte = byteCount;
 									sector.id.info.startTime = currentTime;
@@ -444,25 +464,21 @@ namespace WD1772Package {
 					}	// not in ID
 					else {	// We are in an ID
 						byteLeftInBlock--;
-						switch (byteLeftInBlock) {
-							case 6: Global.Disk[track, side].sectors[sectorCount - 1].id.track = dsr.Data; break;
-							case 5: Global.Disk[track, side].sectors[sectorCount - 1].id.head = dsr.Data; break;
-							case 4: Global.Disk[track, side].sectors[sectorCount - 1].id.number = dsr.Data; break;
-							case 3: Global.Disk[track, side].sectors[sectorCount - 1].id.size = dsr.Data; break;
-							case 2: Global.Disk[track, side].sectors[sectorCount - 1].id.crc = dsr.Data; break;
-							case 1: Global.Disk[track, side].sectors[sectorCount - 1].id.crc += (ushort)(dsr.Data << 8);
+						if (byteLeftInBlock > 0) {
+							if (byteLeftInBlock == 1)
 								crc = dsr.CRC;
-								break;
-							case 0:	// end of ID block
-								Global.Disk[track, side].sectors[sectorCount - 1].id.info.byteCount = byteCount - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startByte;
-								Global.Disk[track, side].sectors[sectorCount - 1].id.info.crc = crc;
-								Global.Disk[track, side].sectors[sectorCount - 1].id.info.timeLength = currentTime - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startTime;
-								Global.Disk[track, side].sectors[sectorCount - 1].id.info.bitCount = currentBit - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startBit - startBit;
-								phase = Phases.p_gap_inner;
-								dsr.sectorMode();	// we re-enable sync
-								break;
-						}					
+							Global.Disk[track, side].sectors[sectorCount - 1].id.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
+						}
+						else {
+							Global.Disk[track, side].sectors[sectorCount - 1].id.info.byteCount = byteCount - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startByte;
+							Global.Disk[track, side].sectors[sectorCount - 1].id.info.crc = crc;
+							Global.Disk[track, side].sectors[sectorCount - 1].id.info.timeLength = currentTime - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startTime;
+							Global.Disk[track, side].sectors[sectorCount - 1].id.info.bitCount = currentBit - Global.Disk[track, side].sectors[sectorCount - 1].id.info.startBit - startBit;
+							phase = Phases.p_gap_inner;
+							dsr.sectorMode();	// we re-enable sync
+						}	// byteInBlock == 0
 					} // we are in ID
+
 				}	// one byte ready
 			}	// for all bit
 
@@ -475,7 +491,7 @@ namespace WD1772Package {
 
 			// since we now continue when finding sync over index it is possible to have duplicate sector in first last position
 			if ((Global.Disk[track, side].sectors.Count > 0) && 
-				(Global.Disk[track, side].sectors[0].id.number == Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].id.number) &&
+				(Global.Disk[track, side].sectors[0].id.Sector == Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].id.Sector) &&
 				(Global.Disk[track, side].sectors[Global.Disk[track, side].sectors.Count - 1].id.info.startTime > Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime))
 					Global.Disk[track, side].sectors.RemoveAt(Global.Disk[track, side].sectors.Count - 1);
 		}	// end of readAddr()
@@ -705,10 +721,11 @@ namespace WD1772Package {
 									// Id field is already 7 bytes 43 + 7 = 50
 									if (idFound && ((byteRead - sector.id.info.startByte) <= 60)) {
 										data = new DataField();
-										data.buffer = new TrackBuffer();
+										//data.buffer = new TrackBuffer();
+										//data.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
 										data.iam = dsr.Data;
 										//dataFound = true;
-										byteLeftInBlock = Global.sectSize(sector.id.size) + 3; // AM + 2 CRC + Size
+										byteLeftInBlock = Global.sectSize(sector.id.Length) + 3; // AM + 2 CRC + Size
 										phase = Phases.p_data;
 										//p_inner = false;
 										widthOver = 0;
@@ -791,13 +808,13 @@ namespace WD1772Package {
 									data.info.timeLength = currentTime - data.info.startTime;
 									data.info.bitCount = currentBit - startBit - data.info.startBit;
 
-									if ((widthOver > (Global.sectSize(sector.id.size) / 2)) || (widthUnder > (Global.sectSize(sector.id.size) / 2))) {
-										if (widthOver > (Global.sectSize(sector.id.size) / 2))
+									if ((widthOver > (Global.sectSize(sector.id.Length) / 2)) || (widthUnder > (Global.sectSize(sector.id.Length) / 2))) {
+										if (widthOver > (Global.sectSize(sector.id.Length) / 2))
 											flags |= Sector.WIDTH_ABOVE;
-										if (widthUnder > (Global.sectSize(sector.id.size) / 2))
+										if (widthUnder > (Global.sectSize(sector.id.Length) / 2))
 											flags |= Sector.WIDTH_BELOW;
 									}
-									else if ((widthOver > 0) && (widthUnder > 0) && ((widthOver + widthUnder) > (Global.sectSize(sector.id.size) / 4)))
+									else if ((widthOver > 0) && (widthUnder > 0) && ((widthOver + widthUnder) > (Global.sectSize(sector.id.Length) / 4)))
 										flags |= Sector.WIDTH_INTRA;
 
 									phase = Phases.p_gap_post;
@@ -835,7 +852,7 @@ namespace WD1772Package {
 										//if (sector.data.fuzzy != null)
 										//	fuzzy = sector.data.fuzzy;
 										//else {
-										int dataSize = Global.sectSize(sector.id.size);
+										int dataSize = Global.sectSize(sector.id.Length);
 										fuzzy = new byte[dataSize];
 										//}
 										bool fuzzyFound = false;
@@ -911,7 +928,7 @@ namespace WD1772Package {
 					foreach (Sector sector in Global.Disk[track, side].sectors) {
 						if ((sector.flags & Sector.SEC_PROCESSED) == 0) {
 							sector.flags |= Sector.SEC_IN_SEC;
-							byte sectorNumber = sector.id.number;
+							byte sectorNumber = sector.id.Sector;
 							int idBitPosition = sector.id.info.startBit;
 							readSector(track, side, rev, sectorNumber, idBitPosition, false);
 							// now multiple readSector() for fuzzy bits
@@ -933,7 +950,7 @@ namespace WD1772Package {
 					Global.Disk[track, side].sectors[i].data = null;
 					Global.Disk[track, side].sectors[i].recovered_data = null;
 
-					byte sectorNumber = Global.Disk[track, side].sectors[i].id.number;
+					byte sectorNumber = Global.Disk[track, side].sectors[i].id.Sector;
 					int idBitPosition = Global.Disk[track, side].sectors[i].id.info.startBit;
 					readSector(track, side, rev, sectorNumber, idBitPosition, false);
 
@@ -966,18 +983,18 @@ namespace WD1772Package {
 		/// </summary>
 		/// <param name="track">The track number</param>
 		/// <param name="side">The side number</param>
-		/// <param name="num">The sector number</param>
+		/// <param name="sec">The sector number</param>
 		/// <param name="idBitPosition">Minimum bit position of the sector</param>
 		/// <returns></returns>
-		public static Sector findSector(int track, int side, int num, int idBitPosition) {
+		public static Sector findSector(int track, int side, int sec, int idBitPosition) {
 			List<Sector> sectors = Global.Disk[track, side].sectors;
 			foreach (Sector sector in sectors) {
 				if (idBitPosition < 0) {
-					if (sector.id.number == num)
+					if (sector.id.Sector == sec)
 						return sector;
 				}
 				else {
-					if ((sector.id.number == num) && (sector.id.info.startBit == idBitPosition))
+					if ((sector.id.Sector == sec) && (sector.id.info.startBit == idBitPosition))
 						return sector;
 				}
 			}
