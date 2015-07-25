@@ -481,6 +481,7 @@ namespace Aufit {
 			fdViewer.Document = null;
 			redDot.Visibility = System.Windows.Visibility.Hidden;
 			tbSaveImage.Clear();
+			cbOutputFormat.SelectedIndex = 0;
 			tbMasterView.Clear();
 			
 			guiEnable(false);
@@ -921,7 +922,6 @@ namespace Aufit {
 			bool hasProtection = false;
 			bool STIncompatible = false;
 			bool hasIncompleteData = false;
-			cbOutputFormat.SelectedIndex = 0;
 			tbSaveImage.AppendText(Aufit.MainWindow.ImageName);
 			tbSaveImage.AppendText("\n");
 

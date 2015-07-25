@@ -209,9 +209,7 @@ public struct HistoData {
 	public bool hasBitsInBands;
 }
 
-/// <summary>
-/// Position of the bits in a unsigned int
-/// </summary>
+/// <summary>Defines the position of bits in a unsigned int</summary>
 public class Bit {
 	/// <summary>First bit position</summary>
 	public const uint BIT_01 = 0x00000001;
