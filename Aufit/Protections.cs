@@ -106,15 +106,15 @@ namespace Aufit {
 			// Track Protections
 			//////////////////////
 			// normal track is 200000 / 32 = 6250 bytes - short track N-3% = 6062 - long track = N+3% = 6437
-			if (dt.track.info.byteCount < 6062) {
+			if (dt.track.buffer.DataByte.Count < 6062) {
 				dt.track.flags |= Track.SHORT_TRACK;
 				dt.track.hasProtections = true;
-				writeInfo(info, String.Format("SHT Short Track - {0} bytes", dt.track.info.byteCount));
+				writeInfo(info, String.Format("SHT Short Track - {0} bytes", dt.track.buffer.DataByte.Count));
 			}
-			if (dt.track.info.byteCount > 6437) {
+			if (dt.track.buffer.DataByte.Count > 6437) {
 				dt.track.flags |= Track.LONG_TRACK;
 				dt.track.hasProtections = true;
-				writeInfo(info, String.Format("LGT Long Track - {0} bytes ", dt.track.info.byteCount));
+				writeInfo(info, String.Format("LGT Long Track - {0} bytes ", dt.track.buffer.DataByte.Count));
 			}
 
 			// Bad data byte in GAP
@@ -126,23 +126,23 @@ namespace Aufit {
 			if (dt.sectors.Count > 0) {
 				Sector lastSector = dt.sectors[dt.sectors.Count - 1];
 
-				if (lastSector.id.info.startByte > dt.track.info.byteCount) {
+				if (lastSector.id.info.startByte > dt.track.buffer.DataByte.Count) {
 					dt.track.flags |= Track.ID_AFTER_IDX;
 					dt.track.hasProtections = true;
 					writeInfo(info, "SHT-IBI Shifted Track with ID Beyond Index");
 				}
-				else if ((lastSector.id.info.startByte + lastSector.id.info.byteCount) > dt.track.info.byteCount) {
+				else if ((lastSector.id.info.startByte + lastSector.id.buffer.DataByte.Count) > dt.track.buffer.DataByte.Count) {
 					dt.track.flags |= Track.ID_OVER_IDX;
 					dt.track.hasProtections = true;
 					writeInfo(info, "SHT-IOI Shifted Track with ID Over Index");
 				}
 				else if (lastSector.data != null) {
-					if (lastSector.data.info.startByte > dt.track.info.byteCount) {
+					if (lastSector.data.info.startByte > dt.track.buffer.DataByte.Count) {
 						dt.track.flags |= Track.DATA_AFTER_IDX;
 						dt.track.hasProtections = true;
 						writeInfo(info, "SHT-DBI Shifted Track with Data Beyond Index");
 					}
-					else if ((lastSector.data.info.startByte + lastSector.data.info.byteCount) > dt.track.info.byteCount) {
+					else if ((lastSector.data.info.startByte + lastSector.data.buffer.DataByte.Count) > dt.track.buffer.DataByte.Count) {
 						dt.track.flags |= Track.DATA_OVER_IDX;
 						dt.track.hasProtections = true;
 						writeInfo(info, "SHT-DOI Shifted Track with Data over Index");

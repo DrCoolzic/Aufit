@@ -132,7 +132,7 @@ class DataDrawing {
 
 				tb = new TextBox();
 				tb.Text = String.Format("IGap Field {0} bytes - Start @ Bit={1} Time={2:F2} ms",
-					sector.innerGap.info.byteCount, sector.innerGap.info.startBit, (double)sector.innerGap.info.startTime / 1000000.0);
+					sector.innerGap.buffer.DataByte.Count, sector.innerGap.info.startBit, (double)sector.innerGap.info.startTime / 1000000.0);
 				sectorInfoPanel.Children.Add(tb);
 				//drawRectangle(sector, idbstop, bstart, Phases.p_gap_inner);
 				drawRectangle(sector, (double)sector.innerGap.info.startTime / 1000000.0,
@@ -140,7 +140,7 @@ class DataDrawing {
 
 				tb = new TextBox();
 				tb.Text = String.Format("Data Field {0} bytes Length={1:F2} µs - Start @ Bit={2} Time={3:F2} ms {4} {5}",
-					sector.data.info.byteCount, blength * 1000, sector.data.info.startBit, bstart, 
+					sector.data.buffer.DataByte.Count, blength * 1000, sector.data.info.startBit, bstart, 
 					(sector.data.info.crc != 0) ? " - Bad CRC" : "",
 					(sector.data.fuzzy != null) ? " - Fuzzy sector" : "");
 				sectorInfoPanel.Children.Add(tb);
@@ -168,7 +168,7 @@ class DataDrawing {
 			if (sector.postGap != null) {
 				tb = new TextBox();
 				tb.Text = String.Format("PGap Field {0} bytes - Start @ Bit={1} Time={2:F2} ms",
-					sector.postGap.info.byteCount, sector.postGap.info.startBit, (double)sector.postGap.info.startTime / 1000000.0);
+					sector.postGap.buffer.DataByte.Count, sector.postGap.info.startBit, (double)sector.postGap.info.startTime / 1000000.0);
 				sectorInfoPanel.Children.Add(tb);
 			}
 

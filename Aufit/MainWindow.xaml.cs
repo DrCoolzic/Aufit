@@ -331,7 +331,7 @@ namespace Aufit {
 			ButtonMatrix.setButtonBG(track, side);
 
 			Global.DiskTrack dt = Global.Disk[track, side];
-			tbFluxInfo.AppendText(String.Format(" - {0} bytes {1} sectors", dt.track.info.byteCount, dt.sectors.Count));
+			tbFluxInfo.AppendText(String.Format(" - {0} bytes {1} sectors", dt.track.buffer.DataByte.Count, dt.sectors.Count));
 
 		}
 
@@ -480,8 +480,8 @@ namespace Aufit {
 			_view = DataView.None;
 			fdViewer.Document = null;
 			redDot.Visibility = System.Windows.Visibility.Hidden;
-			tbSaveImage.Clear();
 			cbOutputFormat.SelectedIndex = 0;
+			tbSaveImage.Clear();
 			tbMasterView.Clear();
 			
 			guiEnable(false);

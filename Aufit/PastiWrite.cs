@@ -160,7 +160,7 @@ namespace PastiPackage {
 					tdesc.trackFlags = 0x0020;		// Bit 5 has to be set to 1 for new format
 					tdesc.sectorCount = (ushort)sectorCount;
 
-					tdesc.trackLength = (ushort)dt.track.info.byteCount;
+					tdesc.trackLength = (ushort)dt.track.buffer.DataByte.Count;
 					tdesc.trackNumber = (byte)trackNum;
 					if (side == 1) tdesc.trackNumber |= 0x80;
 					tdesc.trackType = 0;
@@ -215,9 +215,9 @@ namespace PastiPackage {
 							tdesc.trackFlags |= TrackDesc.TRK_IMAGE;
 							tdesc.recordSize += 2;	// header
 						}
-						tdesc.recordSize +=  (uint)dt.track.info.byteCount;
+						tdesc.recordSize +=  (uint)dt.track.buffer.DataByte.Count;
 						// we write even number of bytes (padding)
-						tdesc.recordSize += (uint)(dt.track.info.byteCount % 2);
+						tdesc.recordSize += (uint)(dt.track.buffer.DataByte.Count % 2);
 					}
 
 					// do we need timing record
@@ -234,7 +234,7 @@ namespace PastiPackage {
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.buffer.DataByte.Count != 0)) {
 							// we do not add up if we can use the info in track
 							if (!optimize || !needTrackData || ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) == 0))
-								tdesc.recordSize += (uint)dt.sectors[sect].data.buffer.DataByte.Count;
+								tdesc.recordSize += (uint)dt.sectors[sect].data.buffer.DataByte.Count - 3;
 						}
 					}
 
@@ -257,7 +257,7 @@ namespace PastiPackage {
 					if (needSectorDesc) {
 						uint startSectorOffset = 0;
 						if (needTrackData)
-							startSectorOffset = (uint)(dt.track.info.byteCount + (dt.track.info.byteCount % 2) + (_trkSync ? 4 : 2));
+							startSectorOffset = (uint)(dt.track.buffer.DataByte.Count + (dt.track.buffer.DataByte.Count % 2) + (_trkSync ? 4 : 2));
 						for (int sect = 0; sect < sectorCount; sect++) {
 							SectorDesc sd = new SectorDesc();
 
@@ -270,7 +270,7 @@ namespace PastiPackage {
 									sd.dataOffset = (uint)dt.sectors[sect].trackOffset + 1;
 								else {
 									sd.dataOffset = startSectorOffset;
-									startSectorOffset += (uint)dt.sectors[sect].data.buffer.DataByte.Count;
+									startSectorOffset += (uint)dt.sectors[sect].data.buffer.DataByte.Count - 3;
 								}	// no optimization
 							}	// we have data
 							else
@@ -355,28 +355,28 @@ namespace PastiPackage {
 						start = buffer.Count;
 						if (_trkSync)
 							writeInt16(buffer, (ushort)(dt.track.firstSyncOffset));
-						writeInt16(buffer, (ushort)dt.track.info.byteCount);
-						for (int i = 0; i < dt.track.info.byteCount; i++)
+						writeInt16(buffer, (ushort)dt.track.buffer.DataByte.Count);
+						for (int i = 0; i < dt.track.buffer.DataByte.Count; i++)
 							writeByte(buffer, dt.track.buffer.DataByte[i]);
 						// we write even number
-						if ((dt.track.info.byteCount % 2) != 0)
+						if ((dt.track.buffer.DataByte.Count % 2) != 0)
 							writeByte(buffer, 0xFF);
 
 						if (_debug) _saveImageBox.AppendText(String.Format("      Writing Track {0}{1} bytes SyncPos={2} ({3}-{4})\n",
-							dt.track.info.byteCount + ((_trkSync) ? 4 : 2), ((dt.track.info.byteCount % 2) != 0) ? "(+1)" : "",
+							dt.track.buffer.DataByte.Count + ((_trkSync) ? 4 : 2), ((dt.track.buffer.DataByte.Count % 2) != 0) ? "(+1)" : "",
 							dt.track.firstSyncOffset, start, buffer.Count - 1));
 					}
 
 					// write all sectors data
 					for (int sect = 0; sect < sectorCount; sect++) {
 						start = buffer.Count;
-						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.info.byteCount != 0)) {
+						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.buffer.DataByte.Count != 0)) {
 							if (optimize && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) !=0)) {
 								if (_debug) _saveImageBox.AppendText(String.Format("      Sector {0} {1} bytes already in track data @{2}\n",
-									dt.sectors[sect].id.Sector, dt.sectors[sect].data.buffer.DataByte.Count, dt.sectors[sect].trackOffset));
+									dt.sectors[sect].id.Sector, dt.sectors[sect].data.buffer.DataByte.Count - 3, dt.sectors[sect].trackOffset));
 							}
 							else {
-								for (int i = 0; i < dt.sectors[sect].data.buffer.DataByte.Count; i++) {
+								for (int i = 1; i < dt.sectors[sect].data.buffer.DataByte.Count - 2; i++) {
 									if (dt.sectors[sect].recovered_data != null)
 										writeByte(buffer, dt.sectors[sect].recovered_data.buffer.DataByte[i]);
 									else
@@ -384,7 +384,7 @@ namespace PastiPackage {
 								}
 								if (_debug) 
 									_saveImageBox.AppendText(String.Format("      Writing Sector {0} {1} bytes ({2}-{3}) {4}\n",
-									dt.sectors[sect].id.Sector, dt.sectors[sect].data.buffer.DataByte.Count, start, buffer.Count - 1,
+									dt.sectors[sect].id.Sector, dt.sectors[sect].data.buffer.DataByte.Count - 3, start, buffer.Count - 1,
 									(dt.sectors[sect].recovered_data != null) ? "recovered" : ""));
 								else if (dt.sectors[sect].recovered_data != null) {
 									_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} recovered Sector {2}\n", 
@@ -406,7 +406,7 @@ namespace PastiPackage {
 						for (int sect = 0; sect < sectorCount; sect++) {
 							if ((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0) {
 								int timingSum = 0;
-								for (int i = 0; i < (dt.sectors[sect].data.buffer.DataByte.Count); i++) {
+								for (int i = 1; i < (dt.sectors[sect].data.buffer.DataByte.Count - 2); i++) {
 									timingSum += (dt.sectors[sect].data.buffer.BitWidth[i] * 16);
 									if (((i+1) % 16) == 0) {
 										timingSum = timingSum / 4000;
@@ -417,7 +417,7 @@ namespace PastiPackage {
 								}
 								start = buffer.Count;
 								if (_debug) _saveImageBox.AppendText(String.Format("   Writing Timing {0} values for sector {1} ({2}-{3})\n",
-									dt.sectors[sect].data.buffer.DataByte.Count, dt.sectors[sect].id.Sector, start, buffer.Count - 1));
+									dt.sectors[sect].data.buffer.DataByte.Count - 3, dt.sectors[sect].id.Sector, start, buffer.Count - 1));
 								else
 									_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} writing timing information for sector {2} \n",
 										trackNum, side, dt.sectors[sect].id.Sector));

@@ -89,21 +89,21 @@ namespace Aufit {
 			for (int i = 0; i < dt.sectors.Count; i++ ) {
 				Sector s = dt.sectors[i];
 				// we compute the Block bytes and the Gap bytes
-				blockBytes += s.id.info.byteCount + 3 + s.innerGap.info.byteCount + 
-					((s.data != null) ? (s.data.info.byteCount + 6) : 0); 
-				gapBytes += s.postGap.info.byteCount;
+				blockBytes += s.id.buffer.DataByte.Count + s.innerGap.buffer.DataByte.Count + 
+					((s.data != null) ? (s.data.buffer.DataByte.Count) : 0); 
+				gapBytes += s.postGap.buffer.DataByte.Count;
 
 				// we search the Track write splice
 				// for now we take the sector after the largest post gap area
-				if (s.postGap.info.byteCount > maxPost) {
-					maxPost = s.postGap.info.byteCount;
+				if (s.postGap.buffer.DataByte.Count > maxPost) {
+					maxPost = s.postGap.buffer.DataByte.Count;
 					lastBlock = i;
 				}
 
 			}	// for all sectors
 
 			tbMasterView.AppendText(String.Format("Size={0} ({1}) = {2} ({3}) Block + {4} ({5}) Gap ",
-				dt.track.info.byteCount, (blockBytes + gapBytes) * 16,
+				dt.track.buffer.DataByte.Count, (blockBytes + gapBytes) * 16,
 				blockBytes, blockBytes * 16,
 				gapBytes, gapBytes * 16));
 			firstBlock = (lastBlock == (dt.sectors.Count - 1)) ? 0 : lastBlock + 1;
@@ -124,7 +124,7 @@ namespace Aufit {
 				int setAside = 0;
 
 				// we check inner gap data
-				for (int b = 0; b < s.innerGap.info.byteCount; b++) {
+				for (int b = 0; b < s.innerGap.buffer.DataByte.Count; b++) {
 					if ((s.innerGap.buffer.DataByte[b] != 0x4E) && (s.innerGap.buffer.DataByte[b] != 0x00)) {
 						innerGapBadData = true;
 						tbMasterView.AppendText(String.Format("badIGap={0:X2} ", s.innerGap.buffer.DataByte[b]));
@@ -134,7 +134,7 @@ namespace Aufit {
 
 				//bool last = (s == dt.sectors[lastBlock]);
 				bool last = (i == lastBlock);
-				for (int b = 0; b < s.postGap.info.byteCount; b++) {
+				for (int b = 0; b < s.postGap.buffer.DataByte.Count; b++) {
 					if (in4E) {
 						if (isShifted00(s.postGap.buffer.DataByte[b])) {
 							if ((!last) && (s.postGap.buffer.DataByte[b] != 0x00))
