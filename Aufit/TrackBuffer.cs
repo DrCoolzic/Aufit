@@ -92,6 +92,15 @@ namespace Aufit {
 			_startTime.Add(startTime);
 			_phase.Add(phase);
 		}
+
+		public void removeLastBytes(int count) {
+			int sartFrom = _dataByte.Count - count;
+			_dataByte.RemoveRange(sartFrom, count);
+			_mfmWord.RemoveRange(sartFrom, count);
+			_bitWidth.RemoveRange(sartFrom, count);
+			_startTime.RemoveRange(sartFrom, count);
+			_phase.RemoveRange(sartFrom, count);
+		}
 	
 	}
 

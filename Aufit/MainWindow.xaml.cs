@@ -140,8 +140,9 @@ namespace Aufit {
 			//MessageBox.Show(Application.Current.Properties["FileName"].ToString());
 			tbFileName.Text = Aufit.Properties.Settings.Default.ImageName;
 
-			//DiskFormat d = new DiskFormat(trvDiskFormat);	// TODO test - remove
-
+			// http://stackoverflow.com/questions/896574/forcing-a-wpf-tooltip-to-stay-on-the-screen
+			//ToolTipService.ShowDurationProperty.OverrideMetadata(
+			//	typeof(DependencyObject), new FrameworkPropertyMetadata(60000));
 		}
 
 
@@ -809,7 +810,7 @@ namespace Aufit {
 		}
 
 
-		private void btSavePictClick(object sender, RoutedEventArgs e) {
+		private void btScreenshotClick(object sender, RoutedEventArgs e) {
 			Global.saveImage(mainGrid, 1, "track_view", true);
 		}
 
@@ -893,32 +894,38 @@ namespace Aufit {
 			if (_modeAuto) return;
 
 			if (tabItemTrack.IsSelected) {
+				infoBox.AppendText("Track View Selected\n");
 				drawAllCharts();
 			}
 			if (tabItemDisk.IsSelected) {
+				infoBox.AppendText("Disk View Selected\n");
 				await drawDiskLayout();
 			}
 			if (tabItemContent.IsSelected) {
+				infoBox.AppendText("Data View Selected\n");
 				if ((Global.Disk[CurrentTrack, CurrentSide].track != null) && (fdViewer.Document == null))
 					drawLayout(CurrentTrack, CurrentSide, CurrentRev);
 			}
 
 			if (tabItemMaster.IsSelected) {
-				//DiskFormat df = new DiskFormat();
+				infoBox.AppendText("Master View Selected\n");
 				drawDiskFormat(CurrentTrack, CurrentSide);
 			}
 
 			if (tabItemAnalysis.IsSelected) {
+				infoBox.AppendText("Analysis Selected\n");
 
 			}
 
 			if (tabItemSave.IsSelected) {
+				infoBox.AppendText("Save Image Selected\n");
 				await checkWriteImage();
 			}
 		}
 
 		private async Task checkWriteImage() {
 			if (tbSaveImage.Text.Length != 0) return;
+			if (Global.Disk[0,0].fluxData == null) return;
 			bool hasProtection = false;
 			bool STIncompatible = false;
 			bool hasIncompleteData = false;
@@ -1113,12 +1120,12 @@ namespace Aufit {
 		}
 
 		private void helpClicked(object sender, RoutedEventArgs e) {
-			System.Diagnostics.Process.Start("Resources\\Aufit.pdf");
-			//String fileName = "Aufit.pdf";
-			//System.Diagnostics.Process process = new System.Diagnostics.Process();
-			//process.StartInfo.FileName = fileName;
-			//process.Start();
-
+			try {
+				System.Diagnostics.Process.Start("Aufit.pdf");
+			}
+			catch (Exception exc) {
+				Console.WriteLine("Error: {0}", exc.Message);
+			}
 		}
 
 

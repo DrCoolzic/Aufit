@@ -626,15 +626,20 @@ namespace WD1772Package {
 						// We are in a GAP
 						//////////////////
 
-						// if we have found at least an ID we accumulate the GAP data -- filter SYNC and IAM
-						if (!dsr.SyncFound && (dsr.Data < 0xF8)) {
-							if ((phase == Phases.p_gap_inner) && (idCount > 0) && (sector != null) && !compare)
-								sector.innerGap.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
-							else if ((idCount > 0) && (sector != null) && (sector.postGap != null) && !compare)
-								sector.postGap.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
-						}
+						// if we have found at least an ID we accumulate the GAP data
+						if ((phase == Phases.p_gap_inner) && (idCount > 0) && (sector != null) && !compare)
+							sector.innerGap.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
+						else if ((idCount > 0) && (sector != null) && (sector.postGap != null) && !compare)
+							sector.postGap.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
+
 
 						if (dsr.IAM) {
+							// here we remove the three sync and the IAM
+							if ((phase == Phases.p_gap_inner) && (idCount > 0) && (sector != null) && !compare)
+								sector.innerGap.buffer.removeLastBytes(4);
+							else if ((idCount > 0) && (sector != null) && (sector.postGap != null) && !compare)
+								sector.postGap.buffer.removeLastBytes(4);
+
 							switch (dsr.Data) {
 								case 0xFC:	// IBM IAM
 								case 0xFD:
@@ -661,7 +666,7 @@ namespace WD1772Package {
 										int delta = currentTime - Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime;
 										if (delta > 32000) {
 											breakLoop = true;
-											break;
+											break;	// break switch statement
 										}
 
 										// search the corresponding sector
@@ -672,7 +677,7 @@ namespace WD1772Package {
 											// if (currentTime - s.id.info.startTime < 16000) {
 											if ((byteRead - s.id.info.startByte) < 32) {
 												sector = s;
-												break;
+												break;	// break loop
 											}
 
 										if (sector == null) {
@@ -931,7 +936,7 @@ namespace WD1772Package {
 								if (j == rev) continue;
 								readSector(track, side, j, sectorNumber, idBitPosition, true);
 							}
-						}	// not precessed = SWS
+						}	// not processed = SWS
 					}	// check all sectors
 				}	// non empty
 			}
@@ -953,6 +958,16 @@ namespace WD1772Package {
 						readSector(track, side, j, sectorNumber, idBitPosition, true);
 					}
 				}
+			}
+
+			// remove post GAP TODO does not work if last
+			for (int i = 0; i < Global.Disk[track, side].sectors.Count-1; i++) {
+				Sector s = Global.Disk[track, side].sectors[i];
+				Sector sp1 = Global.Disk[track, side].sectors[i+1];
+				int endCurrentData = s.data.info.startByte + s.data.buffer.DataByte.Count;
+				int startNextId = sp1.id.info.startByte;
+				if (endCurrentData > startNextId)
+					s.postGap = null;
 			}
 
 			readTrack(track, side, rev);

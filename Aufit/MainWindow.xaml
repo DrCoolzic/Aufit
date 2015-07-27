@@ -7,6 +7,7 @@
         Left="{jlg:SettingBinding Left}"
         Top="{jlg:SettingBinding Top}" 
         Closing="mainWinClosing" AllowDrop="True" Drop="fileDrop">
+    
     <Grid Name="mainGrid" KeyDown="keyDown">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -25,27 +26,62 @@
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" x:Name="btFile" Content="Load image" Click="openFileClick" Height="20" VerticalAlignment="Top" Margin="5,5,0,0" />
-            <Button Grid.Column="1" Content="Reload" Click="reloadClick" Height="20" VerticalAlignment="Top" Margin="5,5,0,0" />
+            <Button Grid.Column="0" x:Name="btFile" Content="Load image" Click="openFileClick" Height="20" VerticalAlignment="Top" Margin="5,5,0,0">
+                <Button.ToolTip>
+                    <ToolTip>
+                        <TextBlock>Open file selector to specify image to analyze</TextBlock>
+                    </ToolTip>
+                </Button.ToolTip>
+            </Button>
+            <Button Grid.Column="1" Content="Reload" Click="reloadClick" Height="20" VerticalAlignment="Top" Margin="5,5,0,0">
+                <Button.ToolTip>
+                    <ToolTip>
+                        <TextBlock>Reload the last analyzed image</TextBlock>
+                    </ToolTip>
+                </Button.ToolTip>
+            </Button>
             <TextBox Grid.Column="2" Name="tbFileName" BorderThickness="0" Background="Transparent" Margin="5,5,0,0" VerticalContentAlignment="Center"/>
             <TextBox Grid.Column="3" Name="tbRevolution" BorderThickness="0" Text="Rev. */*" Height="18" TextAlignment="Center" 
 				HorizontalAlignment="Right" Background="Transparent" />
             <Button Grid.Column="4" Margin="5,0,0,0" Height="18" Width="18" BorderThickness="0" Background="{x:Null}" Click="minusRevClicked">
                 <Image Source="Resources/minus.png"/>
+                <Button.ToolTip>
+                    <ToolTip>
+                        <TextBlock>Select the previous revolution</TextBlock>
+                    </ToolTip>
+                </Button.ToolTip>
             </Button>
-            <Button Grid.Column="5" Margin="5,0,0,0" Height="18" Width="18" Click="plusRevClicked" BorderThickness="0" Background="{x:Null}" >
+            <Button Grid.Column="5" Margin="5,0,5,0" Height="18" Width="18" Click="plusRevClicked" BorderThickness="0" Background="{x:Null}" >
                 <Image Source="Resources/plus.png"/>
+                <Button.ToolTip>
+                    <ToolTip>
+                        <TextBlock>Select the next revolution</TextBlock>
+                    </ToolTip>
+                </Button.ToolTip>
             </Button>
-            <CheckBox Grid.Column="6" x:Name="cbLimitFlux" Content="Limit Flux" Margin="15,0,10,0" VerticalAlignment="Center" 
-				Click="cbLimitClick" HorizontalAlignment="Right" IsChecked="True" />
-            <Button Grid.Column="7" Name="btSave" Height="20" Margin="0,0,5,0"  Content="Save Pict" Width="60"  Click="btSavePictClick"/>
-            <Button Grid.Column="8" Margin="0" Click="updateClicked" BorderThickness="0" Background="{x:Null}" >
+            <Button Grid.Column="6" Height="20" Margin="5,0,5,0"  Content="Screenshot" Width="70"  Click="btScreenshotClick">
+                <Button.ToolTip>
+                    <ToolTip>
+                        <TextBlock>Save Aufit's screenshot</TextBlock>
+                    </ToolTip>
+                </Button.ToolTip>
+            </Button>
+            <Button Grid.Column="7" Margin="0" Click="updateClicked" BorderThickness="0" Background="{x:Null}" >
                 <Image Source="Resources/update.png"/>
+                <Button.ToolTip>
+                    <ToolTip>
+                        <TextBlock>Check for new version of Aufit</TextBlock>
+                    </ToolTip>
+                </Button.ToolTip>
             </Button>
-            <Button Grid.Column="9" Margin="0" Click="helpClicked" BorderThickness="0" Background="{x:Null}" >
+            <Button Grid.Column="8" Margin="0" Click="helpClicked" BorderThickness="0" Background="{x:Null}" >
                 <Image Source="Resources/help.png"/>
+                <Button.ToolTip>
+                    <ToolTip>
+                        <TextBlock>Open Aufit user's manual</TextBlock>
+                    </ToolTip>
+                </Button.ToolTip>
             </Button>
         </Grid>
 
@@ -67,7 +103,7 @@
                       Click="cbHistoLogClick" HorizontalAlignment="Right" />
                     </Grid>
                 </TabItem>
-                <TabItem Name="tabItemInfo" Header="Information" Background="Transparent">
+                <TabItem Name="tabItemInfo" Header="Event Log" Background="Transparent">
                     <Grid>
                         <TextBox Name="infoBox" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Background="Transparent" BorderThickness="0"/>
                    </Grid>
@@ -78,8 +114,8 @@
                     <ColumnDefinition Width="87*"/>
                     <ColumnDefinition Width="38*"/>
                 </Grid.ColumnDefinitions>
-                <Button Name="btInfSave" Click="infoSaveClick" Content="Save" Width="60"  HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,0,0" Visibility="Hidden"/>
-                <Button Name="btInfClear" Click="infoClearClick" Content="Clear" Width="60" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,65,0" Visibility="Hidden"/>
+                <Button Name="btInfSave" Click="infoSaveClick" Content="Save Log" Width="60"  HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,0,0" Visibility="Hidden"/>
+                <Button Name="btInfClear" Click="infoClearClick" Content="Clear Log" Width="60" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,65,0" Visibility="Hidden"/>
             </Grid>
 
         </Grid>
@@ -96,8 +132,8 @@
         </Grid>
 
         <TabControl  Grid.Row="2" x:Name="tabDisplay" Background="Transparent" Margin="5" SelectionChanged="tabDisplaySelectionChanged">
-            <TabItem x:Name="tabItemTrack" Header="Track View" Background="Transparent"  Width="80" HorizontalAlignment="Left">
-                <Grid Grid.Row="2">
+            <TabItem x:Name="tabItemTrack" Header="Track View" Background="Transparent"  Width="80">
+                <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto"/>
                         <RowDefinition Height="3*"/>
@@ -111,34 +147,136 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBox Grid.Column="0" x:Name="tbFluxInfo" FontFamily="Arial" FontSize="13" Foreground="DarkBlue" FontWeight="Bold" Width="auto" Height="18" BorderThickness="0" Background="Transparent"/>
                         <Ellipse Grid.Column="1" x:Name="redDot" Fill="Red" HorizontalAlignment="Left" Height="16" Stroke="Red" VerticalAlignment="Top" Width="16" Visibility="Hidden"/>
-                        <CheckBox Grid.Column="2" x:Name="cbDetail" Content="Detail" Margin="5,0,5,0" VerticalAlignment="Center" Click="cbDetailClick"
-							  HorizontalAlignment="Right" IsChecked="True" />
+                        <CheckBox Grid.Column="2" x:Name="cbLimitFlux" Content="Limit Flux" Margin="5,0,5,0" VerticalAlignment="Center" 
+				            Click="cbLimitClick" HorizontalAlignment="Right" IsChecked="True">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>Limit displayed flux to range 2µs - 10µs</TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <CheckBox Grid.Column="3" x:Name="cbDetail" Content="Details" Margin="5,0,5,0" VerticalAlignment="Center" Click="cbDetailClick"
+							  HorizontalAlignment="Right" IsChecked="True">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>Uncheck for less details on slow machine</TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
                     </Grid>
 
                     <Grid Grid.Row="1" Margin="10,0,10,0"  x:Name ="fluxGrid"  ClipToBounds="False" Background="Transparent" SizeChanged="fluxGridSizeChanged" >
+                        <Button Margin="33,12,0,0" BorderThickness="0" Width="20" Height="20"  Opacity="0.7" Background="Transparent"
+                                HorizontalAlignment="Left" VerticalAlignment="Top" Panel.ZIndex="1000" ToolTipService.ShowDuration="60000" >
+                            <Image Source="Resources/help.png"/>
+                            <Button.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="Bold" FontSize="15" Opacity="1">Flux transition chart</TextBlock>
+                                        <TextBlock>Display unprocessed flux transitions as a scattered chart</TextBlock>
+                                        <TextBlock>X axis is in ms - Y axis is in µs</TextBlock>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                            <TextBlock>When not zoomed draw a zoom area by clicking and holding down left mouse button</TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                            <TextBlock>When zoomed click with the left mouse button for panning the graph</TextBlock>
+                                        </StackPanel>
+                                       <StackPanel Orientation="Horizontal">
+                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                            <TextBlock>Reset-Zoom/Refresh by clicking with right mouse button</TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                            <TextBlock>Zoom-in / Zoom-out using mouse wheel</TextBlock>
+                                        </StackPanel>
+                                     </StackPanel>
+                                </ToolTip>
+                            </Button.ToolTip>
+                        </Button> 
                         <Canvas Margin="2" Name="cvTextFlux" ClipToBounds="True" Grid.ColumnSpan="2">
                             <Canvas Name="cvGraphicFlux" ClipToBounds="True" Background="Transparent" MouseLeftButtonDown="fluxMouseLBD" MouseWheel="fluxMouseWheel" 
-									MouseLeftButtonUp="fluxMouseLBU" MouseMove="fluxMouseMove" MouseRightButtonDown="fluxMouseRBDown"/>
+									MouseLeftButtonUp="fluxMouseLBU" MouseMove="fluxMouseMove" MouseRightButtonDown="fluxMouseRBDown" />
                         </Canvas>
                         <StackPanel Grid.Column="5" Margin="10,20,15,0" Orientation="Horizontal" HorizontalAlignment="Right">
                             <CheckBox Grid.Column="8" x:Name="cbA1" Content="A1" Margin="5,0,5,0" VerticalAlignment="Top" 
-								HorizontalAlignment="Right" IsChecked="True" />
+								HorizontalAlignment="Right" IsChecked="True">
+                                <CheckBox.ToolTip>
+                                    <ToolTip>
+                                        <TextBlock>Display A1 Sync Marks as red line</TextBlock>
+                                    </ToolTip>
+                                </CheckBox.ToolTip>    
+                            </CheckBox>
                             <CheckBox Grid.Column="9" x:Name="cbC2" Content="C2" Margin="5,0,5,0" VerticalAlignment="Top" Click="cbDetailClick"
-								HorizontalAlignment="Right" IsChecked="False" />
+								HorizontalAlignment="Right" IsChecked="False">
+                                <CheckBox.ToolTip>
+                                    <ToolTip>
+                                        <TextBlock>Display C2 Sync Marks as blue line</TextBlock>
+                                    </ToolTip>
+                                </CheckBox.ToolTip>
+                            </CheckBox>
                         </StackPanel>
                     </Grid>
 
                     <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Top" />
                     <Grid Grid.Row="2" Margin="10,0,10,0"  x:Name ="clockGrid"  ClipToBounds="False" SizeChanged="clockGridSizeChanged" >
+                        <Button Margin="33,12,0,0" BorderThickness="0" Width="20" Height="20"  Opacity="0.7" Background="Transparent"
+                                HorizontalAlignment="Left" VerticalAlignment="Top" Panel.ZIndex="1000" ToolTipService.ShowDuration="60000">
+                            <Image Source="Resources/help.png"/>
+                            <Button.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="Bold" FontSize="15">Cell-width chart</TextBlock>
+                                        <TextBlock>Displays the cell's width as computed by WD1772 DPLL</TextBlock>
+                                        <TextBlock>X axis is in ms - Y axis is in ns</TextBlock>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                            <TextBlock>Moving the above splitter line resizes the graph</TextBlock>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </ToolTip>
+                            </Button.ToolTip>
+                        </Button>
                         <Canvas Margin="2" x:Name="cvTextClock" ClipToBounds="True">
-                            <Canvas x:Name="cvGraphicClock" ClipToBounds="True" />
+                            <Canvas x:Name="cvGraphicClock" ClipToBounds="True" Background="Transparent" />
                         </Canvas>
                     </Grid>
 
                     <Grid Grid.Row="3" Margin="10,0,10,0"  x:Name ="dataGrid"  ClipToBounds="False" Background="Transparent" SizeChanged="dataGridSizeChanged" >
+                        <Button Margin="33,12,0,0" BorderThickness="0" Width="20" Height="20"  Opacity="0.7" Background="{x:Null}"
+                                HorizontalAlignment="Left" VerticalAlignment="Top" Panel.ZIndex="1000" ToolTipService.ShowDuration="60000" >
+                            <Image Source="Resources/help.png"/>
+                            <Button.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="Bold" FontSize="15">Track data content</TextBlock>
+                                        <TextBlock>This graph displays the sectors found on a track</TextBlock>
+                                        <TextBlock>X axis in ms</TextBlock>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                            <TextBlock>ID field is displayed as yellow rectangle</TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                            <TextBlock>Intra-GAP field is displayed as green rectangle</TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                            <TextBlock>Data field is displayed as blue rectangle</TextBlock>
+                                        </StackPanel>
+                                        <TextBlock>Hover cursor over sectors for detailed information</TextBlock>
+                                        <TextBlock>Sectors with Fuzzy data have orange border</TextBlock>
+                                        <TextBlock>Sectors with CRC error have red border</TextBlock>
+                                        <TextBlock>Red lines indicate out of band transitions (Hover for info)</TextBlock>
+                                    </StackPanel>
+                                </ToolTip>
+                            </Button.ToolTip>
+                        </Button>
                         <Canvas Margin="2" Name="cvTextData" ClipToBounds="True">
                             <Canvas Name="cvGraphicData" ClipToBounds="True" Background="Transparent" MouseLeftButtonDown="dataMouseLBD" />
                         </Canvas>
@@ -148,8 +286,8 @@
                 </Grid>
             </TabItem>
 
-            <TabItem x:Name="tabItemDisk" Header="Disk View" Width="80">
-                <Grid Margin="0" >
+            <TabItem x:Name="tabItemDisk" Header="Disk View" Background="Transparent"  Width="80">
+                <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="24"/>
@@ -208,7 +346,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem x:Name="tabItemContent" Header="Data View" Width="80">
+            <TabItem x:Name="tabItemContent" Header="Data View" Width="80" Background="Transparent">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -231,30 +369,14 @@
                     </Grid>
                 </Grid>
             </TabItem>
-            
-            <TabItem Name="tabItemMaster" Header="Master View" Width="80" Height="22" Margin="0,-2,0,0" VerticalAlignment="Bottom">
-                <Grid Margin="0" >
+
+            <TabItem Name="tabItemMaster" Header="Master View" Width="80" Background="Transparent">
+                <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!--<Grid Grid.Row="0" >
-                        <TreeView Name="trvDiskFormat" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                            <TreeView.Resources>
-                                <HierarchicalDataTemplate DataType="{x:Type jlg:TrackDescriptor}" ItemsSource="{Binding Items}">
-                                    <TextBlock Text="{Binding Content}" />
-                                </HierarchicalDataTemplate>
-                                <HierarchicalDataTemplate DataType="{x:Type jlg:BlockDescriptor}" ItemsSource="{Binding Items}">
-                                        <TextBlock Text="{Binding Content}" />
-                                 </HierarchicalDataTemplate>
-                                <DataTemplate DataType="{x:Type jlg:DataDescriptor}" >
-                                    <TextBlock Text="{Binding Content}" />
-                                </DataTemplate>
-                            </TreeView.Resources>
-                        </TreeView>
-
-                    </Grid>-->
                     <Grid Grid.Row="0" >
                         <TextBox BorderThickness="0" VerticalScrollBarVisibility="Auto" Margin="2" Name="tbMasterView" FontFamily="Consolas" FontSize="15" />
                     </Grid>
@@ -273,9 +395,9 @@
                 </Grid>
 
             </TabItem>
-            
-            <TabItem x:Name="tabItemAnalysis" Header="Analysis" Width="80">
-                <Grid Margin="0" >
+
+            <TabItem x:Name="tabItemAnalysis" Header="Analysis" Width="80" Background="Transparent">
+                <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
@@ -298,8 +420,8 @@
                 </Grid>
             </TabItem>
 
-            <TabItem x:Name="tabItemSave" Header="Save Image" Width="80">
-                <Grid Margin="0" >
+            <TabItem x:Name="tabItemSave" Header="Save Image" Width="80" Background="Transparent">
+                <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>

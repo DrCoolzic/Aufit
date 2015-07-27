@@ -37,134 +37,99 @@ using WD1772Package;
 
 namespace Aufit {
 
-	/// <summary>
-	/// Contain information about the format
-	/// </summary>
-	/// <remarks>
-	/// In order to detect the format several operations needs to be performed.
-	/// - protection detection
-	/// - layout analysis number of sectors, number of block bytes and gap bytes
-	/// - detection of track splice and first sector position
-	/// - Inner GAP analysis and eventually correction
-	/// - Post GAP analysis and correction
-	/// - conversion of post gap in list of gap stream elements
-	/// .
-	/// we can ignore the following track protections
-	/// - Short track
-	/// - Long track
-	/// - Shifted track
-	/// ??
-	/// .
-	/// We can ignore the following sector protections
-	/// - duplicate sector number
-	/// - invalid id field
-	/// - data crc error
-	/// - non standard dam
-	/// </remarks>
-	//public class DiskFormat {
+	class GapInfo {
+		public int spliceTime;
+		public int spliceByte;
+		public int count4E;
+		public int count00;
+		public bool badDataFound;
+
+		public void reset() {
+			badDataFound = false;
+			count00 = 0;
+			count4E = 0;
+			spliceTime = 0;
+			spliceByte = 0;
+		}
+	}
 
 	public partial class MainWindow : Window {
 
-
-		//List<TrackDescriptor> tracks;
-
-		//public DiskFormat(TreeView trv = null) {
-		//	tracks = new List<TrackDescriptor>();
-		//}
-
-		public void drawDiskFormat(int track, int side /*, TextBox text = null*/) {
+		// In order to detect the format several operations needs to be performed.
+		// - protection detection
+		// - layout analysis number of sectors, number of block bytes and gap bytes
+		// - detection of track splice and first sector position
+		// - Inner GAP analysis and eventually correction
+		// - Post GAP analysis and correction
+		// - conversion of post gap in list of gap stream elements
+		// .
+		// we can ignore the following track protections
+		// - Short track
+		// - Long track
+		// - Shifted track
+		// ??
+		// .
+		// We can ignore the following sector protections
+		// - duplicate sector number
+		// - invalid id field
+		// - data crc error
+		// - non standard dam
+		
+		
+		public void drawDiskFormat(int track, int side) {
 			int blockBytes = 0;
 			int gapBytes = 0;
-			int maxPost = 0;
+			int maxPostSize = 0;
 			int firstBlock = 0;
 			int lastBlock = 0;
 			Global.DiskTrack dt = Global.Disk[track, side];
 
 			if ((dt.track == null) || (dt.sectors.Count == 0))
 				return;
+			
 			Protections.checkProtection(track, side, tbMasterView);
-
-			tbMasterView.AppendText(String.Format("Track T{0:D2}.{1} {2} blocks ", track, side, dt.sectors.Count));
+			tbMasterView.AppendText(String.Format("Track T{0:D2}.{1} has {2} blocks ", track, side, dt.sectors.Count));
 
 			for (int i = 0; i < dt.sectors.Count; i++ ) {
 				Sector s = dt.sectors[i];
 				// we compute the Block bytes and the Gap bytes
-				blockBytes += s.id.buffer.DataByte.Count + s.innerGap.buffer.DataByte.Count + 
-					((s.data != null) ? (s.data.buffer.DataByte.Count) : 0); 
-				gapBytes += s.postGap.buffer.DataByte.Count;
+				blockBytes += s.id.buffer.DataByte.Count + 3 + s.innerGap.buffer.DataByte.Count + 
+					((s.data != null) ? (s.data.buffer.DataByte.Count + 3) : 0);
+				gapBytes += (s.postGap != null) ? s.postGap.buffer.DataByte.Count : 0;
 
-				// we search the Track write splice
-				// for now we take the sector after the largest post gap area
-				if (s.postGap.buffer.DataByte.Count > maxPost) {
-					maxPost = s.postGap.buffer.DataByte.Count;
+				// we search the last block
+				// for now we take the sector that have the largest post gap size
+				if ((s.postGap != null) && (s.postGap.buffer.DataByte.Count > maxPostSize)) {
+					maxPostSize = s.postGap.buffer.DataByte.Count;
 					lastBlock = i;
 				}
-
 			}	// for all sectors
 
-			tbMasterView.AppendText(String.Format("Size={0} ({1}) = {2} ({3}) Block + {4} ({5}) Gap ",
+			firstBlock = (lastBlock == (dt.sectors.Count - 1)) ? 0 : lastBlock + 1;
+			tbMasterView.AppendText(String.Format("Size={0}B ({1}b) = {2}B ({3}b) Data + {4}B ({5}b) Gap ",
 				dt.track.buffer.DataByte.Count, (blockBytes + gapBytes) * 16,
 				blockBytes, blockBytes * 16,
 				gapBytes, gapBytes * 16));
-			firstBlock = (lastBlock == (dt.sectors.Count - 1)) ? 0 : lastBlock + 1;
 			tbMasterView.AppendText(String.Format("-- First sector {0} start at bit {1}\n", 
 				dt.sectors[firstBlock].id.Sector, dt.sectors[firstBlock].id.info.startBit - 4*16));
 
-			
-
+			GapInfo gap = new GapInfo(); ;
 			for (int i = firstBlock; i < (firstBlock + dt.sectors.Count); i++ ) {
 				Sector s = dt.sectors[i % dt.sectors.Count];
+				bool gapBadData;
+				tbMasterView.AppendText(String.Format("Sector {0,-3:D} ", s.id.Sector));
 
-				bool in4E = true;
-				bool innerGapBadData = false;
-				bool postGapBadData = false;
-				int writeSpliceTime;
-				int count4E = 0;
-				int count00 = 0;
-				int setAside = 0;
+				gapBadData = checkGAP(s.innerGap, gap, false);
+				tbMasterView.AppendText(String.Format("Inner gap: {0}x4E - {1}x00", gap.count4E, gap.count00));
+				if (gapBadData)
+					tbMasterView.AppendText(String.Format(" has bad data @ {0} {1:F2}", gap.spliceByte, (double)gap.spliceTime / 1000000.0));
+				tbMasterView.AppendText("\n");
 
-				// we check inner gap data
-				for (int b = 0; b < s.innerGap.buffer.DataByte.Count; b++) {
-					if ((s.innerGap.buffer.DataByte[b] != 0x4E) && (s.innerGap.buffer.DataByte[b] != 0x00)) {
-						innerGapBadData = true;
-						tbMasterView.AppendText(String.Format("badIGap={0:X2} ", s.innerGap.buffer.DataByte[b]));
-					}
-				}
-				if (innerGapBadData) tbMasterView.AppendText("\n");
-
-				//bool last = (s == dt.sectors[lastBlock]);
-				bool last = (i == lastBlock);
-				for (int b = 0; b < s.postGap.buffer.DataByte.Count; b++) {
-					if (in4E) {
-						if (isShifted00(s.postGap.buffer.DataByte[b])) {
-							if ((!last) && (s.postGap.buffer.DataByte[b] != 0x00))
-								postGapBadData = true;
-							setAside++;
-							if (setAside > 2) {
-								count00 = setAside;
-								in4E = false;
-							}
-						}	// 00
-						else {
-							count4E++;
-							count4E += setAside;
-							setAside = 0;
-							if ((!last) && (s.postGap.buffer.DataByte[b] != 0x4E)) {
-								postGapBadData = true;
-								writeSpliceTime = s.postGap.buffer.StartTime[b];
-							}
-						}	// not 00
-					}
-					else {
-						count00++;
-						if ((!last) && (s.postGap.buffer.DataByte[b] != 0x00))
-							postGapBadData = true;
-					}
-				}
-				tbMasterView.AppendText(String.Format("Sector {0} post gap - {1}x4E - {2}x00 -- {3}\n", s.id.Sector, count4E, count00, postGapBadData));
-
-
-
+				gapBadData = checkGAP(s.postGap, gap, true);
+				tbMasterView.AppendText(String.Format("           Post  gap: {0}x4E - {1}x00", gap.count4E, gap.count00));
+				if (gapBadData)
+					tbMasterView.AppendText(String.Format(" has bad data @ {0} {1:F2} ms", gap.spliceByte, (double)gap.spliceTime / 1000000.0));
+				tbMasterView.AppendText("\n");
 			}
 
 			// for post gap we generate stream gap elem
@@ -174,9 +139,60 @@ namespace Aufit {
 
 		}
 
+		private bool checkGAP(GapField gap, GapInfo gi, bool skipFirst) {
+			bool in4E = true;
+			int setAside = 0;
+			gi.reset();
+			if (gap == null) return false;
+
+			for (int i = skipFirst ? 1 : 0; i < gap.buffer.DataByte.Count; i++) {
+				byte b = gap.buffer.DataByte[i];
+				if (in4E) {
+					if (isShifted00(b)) {
+						if (b != 0x00) {
+							if (!gi.badDataFound) { 
+								gi.spliceTime = gap.buffer.StartTime[i];
+								gi.spliceByte = gap.info.startByte + i;
+							}
+							gi.badDataFound = true;
+						}
+						setAside++;
+						if (setAside > 2) {
+							gi.count00 = setAside;
+							in4E = false;
+						}
+					}	// 00
+					else {
+						gi.count4E += setAside;
+						gi.count4E++;
+						setAside = 0;
+						if (b != 0x4E) {
+							if (!gi.badDataFound) {
+								gi.spliceTime = gap.buffer.StartTime[i];
+								gi.spliceByte = gap.info.startByte + i;
+							}
+							gi.badDataFound = true;
+						}
+					}	// not 00
+				}	// in4E
+				else {
+					gi.count00++;
+					if (b != 0x00) {
+						if (!gi.badDataFound) {
+							gi.spliceTime = gap.buffer.StartTime[i];
+							gi.spliceByte = gap.info.startByte + i;
+						}
+						gi.badDataFound = true;
+					}
+				}	// !in4e
+			}
+			return gi.badDataFound;
+		}
+
+
 		bool isShifted4E(byte b) {
 			return ((b == 0x4E) || (b == 0x12) || (b == 0xC9) || (b == 0x24) || (b == 0x93) || (b == 0x48) || (b == 0x27) || (b == 0x90) ||
-				(b == 0xE4) || (b == 0x21) || (b == 0x9C) || (b == 0x42) || (b == 0x39) || (b == 0x84) || (b == 0x72) || (b == 0x09));
+				    (b == 0xE4) || (b == 0x21) || (b == 0x9C) || (b == 0x42) || (b == 0x39) || (b == 0x84) || (b == 0x72) || (b == 0x09) );
 		}
 
 
@@ -187,58 +203,6 @@ namespace Aufit {
 
 	}
 
-	public class TrackDescriptor {
-		public TrackDescriptor() {
-			this.Items = new ObservableCollection<BlockDescriptor>();
-		}
-
-		public ObservableCollection<BlockDescriptor> Items { get; set; }
-
-		public int Track { get; set; }
-		public int Head { get; set; }
-		public string BlockName { get; set; }
-
-		public string Content {
-			get { return String.Format("T{0:D2}.{1:D1} Block=9 Density=Auto Size=6250 (Data=xxx + Gap=yyy Start=92635 -- {2}", Track, Head, BlockName); }
-		}
-
-	}
-
-	public class BlockDescriptor {
-		public BlockDescriptor() {
-			this.Items = new ObservableCollection<DataDescriptor>();
-		}
-
-		public int Sector { get; set; }
-		public int Length { get; set; }
-		public string DataName { get; set; }
-		public ObservableCollection<DataDescriptor> Items { get; set; }
-		public string Content {
-			get { return String.Format("{0} Sector={1} Length={2}", DataName, Sector, Length); }
-		}
-	}
 
 
-	public class DataDescriptor {
-		public DataDescriptor() {
-			Value = new List<byte>();
-		}
-		public string Name { get; set; }
-		public DataType Type { get; set; }
-		public int Count { get; set; }
-		public List<byte> Value { get; set; }
-
-		public string Content {
-			get {
-				string s = String.Format("{0} Type={1} Count={2}{3}", Name, Type, Count, (Value.Count > 0) ? " Value " : "");
-				foreach (byte b in Value) s += b.ToString("X2");
-				return s;
-			}
-		}
-
-	}
-
-	public class DataContent {
-
-	}
 }

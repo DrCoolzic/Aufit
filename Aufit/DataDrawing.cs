@@ -200,31 +200,32 @@ class DataDrawing {
 			currentTime += flux;
 			ps.computePhaseAndSector(currentTime);
 
-			//int upper = 4 * bitWidth + ((14 * bitWidth) / 100); // + 3.5%
-			//int lower = 2 * bitWidth - ((20 * bitWidth) / 100);	// - 10%
-			//if (((flux > upper) || (flux < lower)) && (dt.sectors.Count > 0) && FDC.isGap(ps.Phase)) {
-			//if (((flux > 8300) || (flux < 3700)) && (dt.sectors.Count > 0) && (ps.Phase == Phases.p_gap_inner)) {
-			int upper = 4 * bitWidth + ((16 * bitWidth) / 100); // + 4%
-			if ((flux > upper) && (dt.sectors.Count > 0) && FDC.isGapPhase(ps.Phase)) {
+			int percent = 8;
+			int upper_high = 4 * bitWidth + ((4 * percent * bitWidth) / 100);
+			int upper_low  =  4 * bitWidth - ((4 * percent * bitWidth) / 100);	
+			int middle_high = 3 * bitWidth + ((3 * percent * bitWidth) / 100);
+			int middle_low =  3 * bitWidth - ((3 * percent * bitWidth) / 100);	
+			int lower_high =  2 * bitWidth + ((2 * percent  * bitWidth) / 100);
+			int lower_low  =  2 * bitWidth - ((2 * percent  * bitWidth) / 100);
+
+			if (((flux > upper_high) || ((flux < upper_low) && (flux > middle_high)) ||
+				(flux < lower_low) || ((flux > lower_high) && (flux < middle_low)))
+				&& (dt.sectors.Count > 0) && FDC.isGapPhase(ps.Phase)) {
 
 				Line splice = new Line();
-				DoubleCollection dashPattern = new DoubleCollection(new double[2] { 2, 1 });
-				if (ps.Phase == Phases.p_gap_inner)
-					splice.Stroke = Brushes.Red;
-				else
-					splice.Stroke = Brushes.DarkBlue;
-				splice.StrokeThickness = 1.5;
-				splice.StrokeDashArray = dashPattern;
+				splice.Stroke = Brushes.Red;
+				splice.StrokeThickness = 3;
+				//DoubleCollection dashPattern = new DoubleCollection(new double[2] { 2, 1 });
+				//splice.StrokeDashArray = dashPattern;
 				splice.X1 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
 				splice.Y1 = _dataChartLayout.NormY(_dataChartLayout.Ymin);
 				splice.X2 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
 				splice.Y2 = _dataChartLayout.NormY(_dataChartLayout.Ymax);
 
 				TextBox spliceInfo = new TextBox();
-				spliceInfo.Text = String.Format("Splice at {0} value={1:F3}", (double)currentTime / 1000000.0, flux);
+				spliceInfo.Text = String.Format("Out of band at {0} ms -- flux value={1:F3} µs", (double)currentTime / 1000000.0, flux);
 				ToolTipService.SetToolTip(splice, spliceInfo);
 				ToolTipService.SetShowDuration(splice, 100000);
-
 				_dataChartLayout.GraphicCanvas.Children.Add(splice);
 
 			}

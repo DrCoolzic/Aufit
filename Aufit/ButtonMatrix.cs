@@ -104,7 +104,7 @@ namespace Aufit {
 							//ToolTip tt = new ToolTip();
 							//tt.Content = String.Format("Track {0}{1}.{2}", x - 1, y - 1, side - 1);
 							//_buttons[x-1, y-1, side-1].ToolTip = tt;
-							ToolTipService.SetToolTip(_buttons[x - 1, y - 1, side - 1], String.Format("Track {0}{1}.{2}", x - 1, y - 1, side - 1));
+							ToolTipService.SetToolTip(_buttons[x - 1, y - 1, side - 1], String.Format("Select Track {0}{1}.{2}", x - 1, y - 1, side - 1));
 							ToolTipService.SetInitialShowDelay(_buttons[x - 1, y - 1, side - 1], 1000);
 
 							cv.Children.Add(_buttons[x - 1, y - 1, side - 1]);

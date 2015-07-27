@@ -1,3 +1,15 @@
+- fix graphical bug on the tabs of the Aufit main window
+- added tooltips for the three graphs in track view + checkboxes
+- added tooltips for all objects on Aufit main window
+- information window renames to Event log
+- fix bug of Rev number incorrectly reported in Event log
+- fix bug of inner and post data gap bytes possibly filtered
+- out of band in track data content now check for more than 8% in the 3 data band
+- corrected bug in Post Gap data (lenght for sws)
+- Aufit.pdf should be located in install directory. Aufit does not crash but report
+	an error message if help file not found.
+- Bad data in GAP are displayed in DarkOrange (Data View -> Sector command)
+	This can be used to detect sector write splice (tampered diskette)
 - Post GAP information displayed in tool tip when hovering sector in data chart
 - fix bug of incorrect message when canceling image write
 - fix bug of image format detection/selection when loading new image

@@ -187,7 +187,7 @@ class FluxDrawing {
 
 			if ((dsr.MFM == 0x5224) && (_win.cbC2.IsChecked.Value)) {
 				syncLine = new Line();
-				syncLine.Stroke = Brushes.Blue;
+				syncLine.Stroke = Brushes.DarkBlue;
 				syncLine.StrokeThickness = 0.5;
 				syncLine.X1 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
 				syncLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);

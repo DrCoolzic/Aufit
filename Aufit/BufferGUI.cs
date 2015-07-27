@@ -68,12 +68,11 @@ namespace Aufit {
 
 			Paragraph p = new Paragraph();
 			p.Margin = new Thickness(0);
-			p.Inlines.Add(new Run(Aufit.MainWindow.ImageName) { FontWeight = FontWeights.Bold, FontFamily = new FontFamily("Century Gothic, Courier New") });
+			//p.Inlines.Add(new Run(Aufit.MainWindow.ImageName) { FontWeight = FontWeights.Bold, FontFamily = new FontFamily("Century Gothic, Courier New") });
+			p.Inlines.Add(Aufit.MainWindow.ImageName);
 			p.Inlines.Add(new LineBreak());
 
-			p.Inlines.Add(new Run(
-				String.Format("Track {0:D2}.{1} {2} bytes has {3} sectors", track, side, dt.track.buffer.DataByte.Count, dt.sectors.Count)
-				) { FontWeight = FontWeights.Bold });
+			p.Inlines.Add(String.Format("Track {0:D2}.{1} {2} bytes has {3} sectors", track, side, dt.track.buffer.DataByte.Count, dt.sectors.Count));
 			doc.Blocks.Add(p);
 
 			Table tab = new Table();
@@ -148,6 +147,8 @@ namespace Aufit {
 						currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
 							String.Format("{0:D}", dt.sectors[sect].postGap.buffer.DataByte.Count)
 							))));
+					else
+						currentRow.Cells.Add(new TableCell(new Paragraph(new Run("0"))));
 
 				}	// sector data
 			}	// for all sectors
@@ -174,13 +175,10 @@ namespace Aufit {
 
 			Paragraph p = new Paragraph();
 			p.Margin = new Thickness(0);
-			p.Inlines.Add(new Run(Aufit.MainWindow.ImageName)
-				{ FontWeight = FontWeights.Bold, FontFamily = new FontFamily("Century Gothic, Courier New") });
+			p.Inlines.Add(Aufit.MainWindow.ImageName);
 			p.Inlines.Add(new LineBreak());
 
-			p.Inlines.Add(new Run(
-				String.Format("Track {0:D2}.{1} has {2} sectors", track, side, sectors.Count)
-				) { FontWeight = FontWeights.Bold });
+			p.Inlines.Add(String.Format("Track {0:D2}.{1} has {2} sectors", track, side, sectors.Count));
 			if (Global.Disk[track, side].hasIncompleteData)
 				p.Inlines.Add(new Run(
 					String.Format(" *** Incomplete Data *** ", track, side, sectors.Count)
@@ -209,7 +207,7 @@ namespace Aufit {
 				p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
 					sector.id.info.bitCount, sector.id.buffer.DataByte.Count, (double)sector.id.info.timeLength / 1000.0));
 				p.Inlines.Add(new LineBreak());
-				drawBuffer(sector.id.buffer, p, sector.id.info.startByte);
+				drawBuffer(sector.id.buffer, p, sector.id.info.startByte, false);
 
 				if (sector.innerGap != null) {
 					p.Inlines.Add(new Run("Inner GAP Field:") { FontWeight = FontWeights.Bold });
@@ -220,7 +218,7 @@ namespace Aufit {
 					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
 						sector.innerGap.info.bitCount, sector.innerGap.buffer.DataByte.Count, (double)sector.innerGap.info.timeLength / 1000.0));
 					p.Inlines.Add(new LineBreak());
-					drawBuffer(sector.innerGap.buffer, p, sector.innerGap.info.startByte);
+					drawBuffer(sector.innerGap.buffer, p, sector.innerGap.info.startByte, true);
 				}
 
 				if (sector.data != null) {
@@ -238,7 +236,7 @@ namespace Aufit {
 					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
 						sector.data.info.bitCount, sector.data.buffer.DataByte.Count, (double)sector.data.info.timeLength / 1000.0));
 					p.Inlines.Add(new LineBreak());
-					drawBuffer(sector.data.buffer, p, sector.data.info.startByte);
+					drawBuffer(sector.data.buffer, p, sector.data.info.startByte, false);
 
 					if (sector.data.fuzzy != null) {
 						p.Inlines.Add(new LineBreak());
@@ -255,7 +253,13 @@ namespace Aufit {
 							p.Inlines.Add(new LineBreak());
 						}
 					}	// fuzzy
+				}	// has data
+				else {
+					p.Inlines.Add(" *** Sector has no data ***");
+					p.Inlines.Add(new LineBreak());
+				}
 
+				if (sector.postGap != null) {
 					p.Inlines.Add(new Run("Post GAP Field: ") { FontWeight = FontWeights.Bold });
 					p.Inlines.Add(new LineBreak());
 					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
@@ -264,13 +268,13 @@ namespace Aufit {
 					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
 						sector.postGap.info.bitCount, sector.postGap.buffer.DataByte.Count, (double)sector.postGap.info.timeLength / 1000.0));
 					p.Inlines.Add(new LineBreak());
-					drawBuffer(sector.postGap.buffer, p, sector.postGap.info.startByte);
-
+					drawBuffer(sector.postGap.buffer, p, sector.postGap.info.startByte, true);
 				}
 				else {
-					p.Inlines.Add(" *** Sector has no data ***");
+					p.Inlines.Add(" *** Sector has no Post data GAP ***");
 					p.Inlines.Add(new LineBreak());
 				}
+
 				p.Inlines.Add(new LineBreak());
 			}
 
@@ -299,13 +303,13 @@ namespace Aufit {
 			_view = DataView.Track;
 
 			Paragraph p = new Paragraph(new Run(Aufit.MainWindow.ImageName));
-			p.FontWeight = FontWeights.Bold;
-			p.FontFamily = new FontFamily("Century Gothic, Courier New");
+			//p.FontWeight = FontWeights.Bold;
+			//p.FontFamily = new FontFamily("Century Gothic, Courier New");
 			p.Margin = new Thickness(0);
 			doc.Blocks.Add(p);
 
 			p = new Paragraph(new Run(String.Format("Track {0:D2}.{1} {2} bytes Length {3} µs",
-				track, side, tr.buffer.DataByte.Count, tr.info.timeLength / 1000)) { FontWeight = FontWeights.Bold });
+				track, side, tr.buffer.DataByte.Count, tr.info.timeLength / 1000)) { FontWeight = FontWeights.Normal });
 			p.Margin = new Thickness(0);
 			p.Inlines.Add(new LineBreak());
 			doc.Blocks.Add(p);
@@ -319,7 +323,7 @@ namespace Aufit {
 			p.Inlines.Add(new LineBreak());
 			p.Inlines.Add(new LineBreak());
 
-			drawBuffer(buffer, p, 0);
+			drawBuffer(buffer, p, 0, false);
 			fdViewer.Document = doc;
 		}
 
@@ -329,7 +333,7 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="buffer">The buffer to display</param>
 		/// <param name="message">an optional message to display before the buffer</param>
-		public void drawBuffer(TrackBuffer buffer, Paragraph p, int startPos) {
+		public void drawBuffer(TrackBuffer buffer, Paragraph p, int startPos, bool isGap) {
 			int bytes = buffer.DataByte.Count;
 			for (int i = 0; i < bytes; i += 16) {
 				// display position
@@ -364,6 +368,7 @@ namespace Aufit {
 										(buffer.Phase[i + j] == Phases.p_id) ? Brushes.GreenYellow :
 										Brushes.White,
 									Foreground =
+										(isGap && (buffer.DataByte[i + j] != 0x00) && (buffer.DataByte[i + j] != 0x4E)) ? Brushes.DarkOrange :
 										(buffer.MFMWord[i + j] == 0x4489) ? Brushes.Red :
 										(buffer.MFMWord[i + j] == 0x5224) ? Brushes.Navy :
 										(buffer.Phase[i + j] == Phases.p_id) ? Brushes.Blue :

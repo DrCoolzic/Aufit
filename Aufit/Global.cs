@@ -558,7 +558,7 @@ public class Global {
 		Global.Disk[track, side].histoData.hasBitsInBands = hasBitsInBands;
 
 		// log information
-		text.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev));
+		text.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev + 1));
 		text.AppendText(String.Format(" * {0} * (Entropy {1:F2})",
 			(entropy > UNFORMATED_ENTROPY) ? "Unformatted track" : "Normal track", entropy));
 		text.AppendText(String.Format(" - Fluxes {0}", fluxCount));
