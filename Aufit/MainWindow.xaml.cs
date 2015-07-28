@@ -141,8 +141,8 @@ namespace Aufit {
 			tbFileName.Text = Aufit.Properties.Settings.Default.ImageName;
 
 			// http://stackoverflow.com/questions/896574/forcing-a-wpf-tooltip-to-stay-on-the-screen
-			//ToolTipService.ShowDurationProperty.OverrideMetadata(
-			//	typeof(DependencyObject), new FrameworkPropertyMetadata(60000));
+			ToolTipService.ShowDurationProperty.OverrideMetadata(
+				typeof(DependencyObject), new FrameworkPropertyMetadata(60000));
 		}
 
 

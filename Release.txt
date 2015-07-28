@@ -1,5 +1,7 @@
+- Bug fix for fuzzy bytes on Dungeon Master & Chaos Strike back
+- added tooltip for all other tab views
 - fix graphical bug on the tabs of the Aufit main window
-- added tooltips for the three graphs in track view + checkboxes
+- added tooltips for track view
 - added tooltips for all objects on Aufit main window
 - information window renames to Event log
 - fix bug of Rev number incorrectly reported in Event log

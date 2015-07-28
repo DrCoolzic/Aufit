@@ -240,7 +240,7 @@ namespace Aufit {
 
 					if (sector.data.fuzzy != null) {
 						p.Inlines.Add(new LineBreak());
-						p.Inlines.Add(String.Format("Sector {0} Contains Fuzzy bytes", sector.id.Sector));
+						p.Inlines.Add(String.Format("Sector {0} Fuzzy Bytes Mask array", sector.id.Sector));
 						p.Inlines.Add(new LineBreak());
 						for (int line = 0; line < sector.data.fuzzy.Count() / 16; line++) {
 							p.Inlines.Add(String.Format("{0:D4} ", line * 16 + sector.data.info.startByte + 1));

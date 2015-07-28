@@ -35,10 +35,10 @@ public class DPLL {
 	readonly int PLL_CLK = 125;
 
 	/// <summary>00011101 low_value for phase compensation</summary>
-	readonly int LOW_FIX = 29;
+	readonly int LOW_FIX = 63;
 
 	/// <summary>11100011high value for phase compensation</summary>
-	readonly int HIGH_FIX = 227;
+	readonly int HIGH_FIX = 193;
 
 	/// <summary>bottom value for counter (128 - 9%) = 116</summary>
 	readonly int BOTTOM = 115;
