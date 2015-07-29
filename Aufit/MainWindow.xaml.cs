@@ -750,38 +750,38 @@ namespace Aufit {
 			// TODO ?
 		}
 
-		private void dataMouseLBD(object sender, MouseButtonEventArgs e) {
+		//private void dataMouseLBD(object sender, MouseButtonEventArgs e) {
 
-			if (e.ClickCount > 1) {
-				Point p = e.GetPosition(_dataDrawing.Chart.GraphicCanvas);
-				int pos = (int)_dataDrawing.Chart.WorldPoint(p).X * 1000000;
+		//	if (e.ClickCount > 1) {
+		//		Point p = e.GetPosition(_dataDrawing.Chart.GraphicCanvas);
+		//		int pos = (int)_dataDrawing.Chart.WorldPoint(p).X * 1000000;
 
-				foreach (Sector sector in Global.Disk[CurrentTrack, CurrentSide].sectors) {
-					int startPos = sector.id.info.startTime;
-					int endPos = (sector.data != null) ? sector.data.info.startTime + sector.data.info.timeLength :
-						sector.id.info.startTime + sector.id.info.timeLength;
-					if ((startPos < pos) && (endPos > pos)) {
-						// infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", _dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, indexStart));
+		//		foreach (Sector sector in Global.Disk[CurrentTrack, CurrentSide].sectors) {
+		//			int startPos = sector.id.info.startTime;
+		//			int endPos = (sector.data != null) ? sector.data.info.startTime + sector.data.info.timeLength :
+		//				sector.id.info.startTime + sector.id.info.timeLength;
+		//			if ((startPos < pos) && (endPos > pos)) {
+		//				// infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", _dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, indexStart));
 
-						string message = String.Format("Sector {0} - {1} bytes DAM={2:X2} {3}={4:X4} {5}\n",
-							sector.id.Sector, Global.sectSize(sector.id.Length), sector.data.DAM,
-							(sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.CRC,
-							(sector.data.fuzzy != null) ? "Has fuzzy bits" : "");
-						// TODO
-						//if (_sectorWindowIsOpen)
-						//	_sectorWindow.Close();
+		//				string message = String.Format("Sector {0} - {1} bytes DAM={2:X2} {3}={4:X4} {5}\n",
+		//					sector.id.Sector, Global.sectSize(sector.id.Length), sector.data.DAM,
+		//					(sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.CRC,
+		//					(sector.data.fuzzy != null) ? "Has fuzzy bits" : "");
+		//				// TODO
+		//				//if (_sectorWindowIsOpen)
+		//				//	_sectorWindow.Close();
 
-						//_sectorWindow = new BufferWindow();
-						//_sectorWindow.drawBuffer(sector.data.buffer, message);
+		//				//_sectorWindow = new BufferWindow();
+		//				//_sectorWindow.drawBuffer(sector.data.buffer, message);
 
-						//_sectorWindow.Closed += new EventHandler(sectorWindowClosed);
-						//_sectorWindowIsOpen = true;
-						//_sectorWindow.Show();
+		//				//_sectorWindow.Closed += new EventHandler(sectorWindowClosed);
+		//				//_sectorWindowIsOpen = true;
+		//				//_sectorWindow.Show();
 
-					}
-				}
-			}
-		}
+		//			}
+		//		}
+		//	}
+		//}
 
 
 		private void mainWinClosing(object sender, CancelEventArgs e) {

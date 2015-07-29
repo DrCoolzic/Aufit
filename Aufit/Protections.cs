@@ -159,6 +159,7 @@ namespace Aufit {
 				bool dragonflight = false;
 				bool jupiterMasterdrive = false;
 				int start = 0;
+				// TODO use string now
 				for (int i = start; i < (dt.sectors[0].id.info.startByte); i++) {
 					if ((dt.track.buffer.DataByte[i] == 0x00) &&
 						(dt.track.buffer.DataByte[i + 1] == 0x1C) &&

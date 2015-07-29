@@ -239,17 +239,31 @@ namespace Aufit {
 					drawBuffer(sector.data.buffer, p, sector.data.info.startByte, false);
 
 					if (sector.data.fuzzy != null) {
+						int byte80 = 0;
+						bool onlyByte80 = true;
 						p.Inlines.Add(new LineBreak());
 						p.Inlines.Add(String.Format("Sector {0} Fuzzy Bytes Mask array", sector.id.Sector));
 						p.Inlines.Add(new LineBreak());
 						for (int line = 0; line < sector.data.fuzzy.Count() / 16; line++) {
 							p.Inlines.Add(String.Format("{0:D4} ", line * 16 + sector.data.info.startByte + 1));
 							for (int col = 0; col < 16; col++) {
+								byte b = sector.data.fuzzy[(line * 16) + col + 1];
+								if (b == 0x80)
+									byte80++;
+								else
+									if (b != 0x00) 
+										onlyByte80 = false;
 								p.Inlines.Add(new Run(
-									String.Format("{0:X2} ", sector.data.fuzzy[(line * 16) + col])) {
-										FontWeight = (sector.data.fuzzy[(line * 16) + col] == 0) ? FontWeights.Normal : FontWeights.Bold
+									String.Format("{0:X2} ", b)) {
+										FontWeight = (b == 0) ? FontWeights.Normal : FontWeights.Bold
+										// , Background = ((b != 0x80) && (b != 0)) ? Brushes.Yellow : Brushes.Transparent
 									});
 							}
+							p.Inlines.Add(new LineBreak());
+						}
+						if (onlyByte80) {
+							p.Inlines.Add(new Run(
+								String.Format("{0} fuzzy bytes of type Dungeon Master / Chaos Strike Back found", byte80)));
 							p.Inlines.Add(new LineBreak());
 						}
 					}	// fuzzy

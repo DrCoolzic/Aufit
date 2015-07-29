@@ -593,7 +593,7 @@ namespace WD1772Package {
 					if (!compare) {
 						if ((phase == Phases.p_gap_post) || (phase == Phases.p_gap_inner)) {
 							Global.Disk[track, side].hasIncompleteGap = true;
-							if (phase == Phases.p_gap_post) {
+							if ((phase == Phases.p_gap_post) && (sector.postGap != null)) {
 								sector.postGap.info.timeLength = currentTime - sector.postGap.info.startTime;
 								sector.postGap.info.bitCount = currentBit - startBit - sector.postGap.info.startBit;
 							}
@@ -855,20 +855,24 @@ namespace WD1772Package {
 										//	//Debug.Assert(sref.buffer.Bytes.Count == sect.buffer.Bytes.Count, "Possible truncation",
 										//	//	String.Format("buffers size s1={0} s2={1}\n", sref.buffer.Bytes.Count, sect.buffer.Bytes.Count));
 
-										byte[] fuzzy;
-										int dataSize = Global.sectSize(sector.id.Length);
-										fuzzy = new byte[dataSize];
+										byte[] fuzzy = new byte[size];
 										bool fuzzyFound = false;
 
-										for (int i = 0; i < size - 3; i++) {
+										for (int i = 0; i < size; i++) {
 											byte xor = (byte)(data.buffer.DataByte[i] ^ sector.data.buffer.DataByte[i]);
 											if (xor != 0) {
 												fuzzyFound = true;
 												fuzzy[i] |= xor;
 											}
 										}	// compare all bytes
-										if (fuzzyFound && (sector.data.fuzzy == null))
-											sector.data.fuzzy = fuzzy;
+
+										if (fuzzyFound) {
+											if (sector.data.fuzzy == null)
+												sector.data.fuzzy = fuzzy;
+											else
+												for (int i = 0; i < size; i++)
+													sector.data.fuzzy[i] |= fuzzy[i];
+										}
 
 										// if we have fuzzy sector and CRC is correct this indicates
 										// that we need to keep the correctly read sector.
@@ -964,7 +968,9 @@ namespace WD1772Package {
 			for (int i = 0; i < Global.Disk[track, side].sectors.Count-1; i++) {
 				Sector s = Global.Disk[track, side].sectors[i];
 				Sector sp1 = Global.Disk[track, side].sectors[i+1];
-				int endCurrentData = s.data.info.startByte + s.data.buffer.DataByte.Count;
+				int endCurrentData = 0;
+				if (s.data != null)
+					endCurrentData = s.data.info.startByte + s.data.buffer.DataByte.Count;
 				int startNextId = sp1.id.info.startByte;
 				if (endCurrentData > startNextId)
 					s.postGap = null;

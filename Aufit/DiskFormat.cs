@@ -106,11 +106,11 @@ namespace Aufit {
 			}	// for all sectors
 
 			firstBlock = (lastBlock == (dt.sectors.Count - 1)) ? 0 : lastBlock + 1;
-			tbMasterView.AppendText(String.Format("Size={0}B ({1}b) = {2}B ({3}b) Data + {4}B ({5}b) Gap ",
+			tbMasterView.AppendText(String.Format("Size={0} ({1}) = {2} ({3}) Data + {4} ({5}) Gap ",
 				dt.track.buffer.DataByte.Count, (blockBytes + gapBytes) * 16,
 				blockBytes, blockBytes * 16,
 				gapBytes, gapBytes * 16));
-			tbMasterView.AppendText(String.Format("-- First sector {0} start at bit {1}\n", 
+			tbMasterView.AppendText(String.Format("- First sector={0} start at bit {1}\n", 
 				dt.sectors[firstBlock].id.Sector, dt.sectors[firstBlock].id.info.startBit - 4*16));
 
 			GapInfo gap = new GapInfo(); ;
@@ -119,13 +119,15 @@ namespace Aufit {
 				bool gapBadData;
 				tbMasterView.AppendText(String.Format("Sector {0,-3:D} ", s.id.Sector));
 
-				gapBadData = checkGAP(s.innerGap, gap, false);
+				//gapBadData = checkGAP(s.innerGap, gap, false);
+				gapBadData = checkGAP2(s.innerGap, gap);
 				tbMasterView.AppendText(String.Format("Inner gap: {0}x4E - {1}x00", gap.count4E, gap.count00));
 				if (gapBadData)
 					tbMasterView.AppendText(String.Format(" has bad data @ {0} {1:F2}", gap.spliceByte, (double)gap.spliceTime / 1000000.0));
 				tbMasterView.AppendText("\n");
 
-				gapBadData = checkGAP(s.postGap, gap, true);
+				//gapBadData = checkGAP(s.postGap, gap, true);
+				gapBadData = checkGAP2(s.postGap, gap);
 				tbMasterView.AppendText(String.Format("           Post  gap: {0}x4E - {1}x00", gap.count4E, gap.count00));
 				if (gapBadData)
 					tbMasterView.AppendText(String.Format(" has bad data @ {0} {1:F2} ms", gap.spliceByte, (double)gap.spliceTime / 1000000.0));
@@ -189,6 +191,34 @@ namespace Aufit {
 			return gi.badDataFound;
 		}
 
+		private bool checkGAP2(GapField gap, GapInfo gi) {
+			gi.reset();
+			if (gap == null) return false;
+			bool in4E = false;
+
+			for (int i = gap.buffer.DataByte.Count - 1; i >= 0 ; i--) {
+				byte b = gap.buffer.DataByte[i];
+				if (!in4E && (isShifted00(b) || (i == (gap.buffer.DataByte.Count - 1)))) {
+					gi.count00++;
+					if (b != 0x00) {
+						gi.spliceTime = gap.buffer.StartTime[i];
+						gi.spliceByte = gap.info.startByte + i;
+						gi.badDataFound = true;
+					}
+				}	// 00
+				else {
+					in4E = true;
+					gi.count4E++;
+					if ((b != 0x4E) && (i != 0)) {
+						gi.spliceTime = gap.buffer.StartTime[i];
+						gi.spliceByte = gap.info.startByte + i;
+						gi.badDataFound = true;
+					}
+				}	// not 00
+			}	// all bytes
+
+			return gi.badDataFound;
+		}
 
 		bool isShifted4E(byte b) {
 			return ((b == 0x4E) || (b == 0x12) || (b == 0xC9) || (b == 0x24) || (b == 0x93) || (b == 0x48) || (b == 0x27) || (b == 0x90) ||
