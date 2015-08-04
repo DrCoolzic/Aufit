@@ -307,100 +307,106 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="24"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="auto"/>
                     </Grid.RowDefinitions>
-                    <Grid Grid.Row="0" Name="gridImageView">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="auto"/>
-                        </Grid.RowDefinitions>
-                        <Button Margin="0,0,0,0" BorderThickness="0" Width="20" Height="20"  Opacity="0.7" Background="{x:Null}"
+                    <Button Margin="0,0,0,0" BorderThickness="0" Width="20" Height="20"  Opacity="0.7" Background="{x:Null}"
                                 HorizontalAlignment="Left" VerticalAlignment="Top" Panel.ZIndex="1000" ToolTipService.ShowDuration="60000" >
-                            <Image Source="Resources/help.png"/>
-                            <Button.ToolTip>
-                                <ToolTip>
-                                    <StackPanel>
-                                        <TextBlock FontWeight="Bold" FontSize="15">Disk View</TextBlock>
-                                        <TextBlock>Displays the layout of the two sides of the disk image</TextBlock>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-                                            <TextBlock>Sync marks displayed in black</TextBlock>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-                                            <TextBlock>ID fields displayed in yellow</TextBlock>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-                                            <TextBlock>Intra-GAP fields displayed in green</TextBlock>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-                                            <TextBlock>Data field is displayed in:</TextBlock>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
-                                            <TextBlock>Deep blue normal sector</TextBlock>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
-                                            <TextBlock>Blue over-clocked sector</TextBlock>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
-                                            <TextBlock>Aqua under-clocked sector</TextBlock>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
-                                            <TextBlock>Orange sector with Fuzzy bytes or CRC error</TextBlock>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-                                            <TextBlock>NFA regions displayed in red</TextBlock>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-                                            <TextBlock>Unformatted tracks displayed in gray</TextBlock>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-                                            <TextBlock>Data tracks in Blue</TextBlock>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-                                            <TextBlock>Track with data but no sync seq in yellow</TextBlock>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-                                            <TextBlock>Out of Band transitions in white</TextBlock>
-                                        </StackPanel>
+                        <Image Source="Resources/help.png"/>
+                        <Button.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock FontWeight="Bold" FontSize="15">Disk View</TextBlock>
+                                    <TextBlock>Displays the layout of the two sides of the disk image</TextBlock>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Sync marks displayed in black</TextBlock>
                                     </StackPanel>
-                                </ToolTip>
-                            </Button.ToolTip>
-                        </Button>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>ID fields displayed in yellow</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Intra-GAP fields displayed in green</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Data field is displayed in:</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
+                                        <TextBlock>Deep blue normal sector</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
+                                        <TextBlock>Blue over-clocked sector</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
+                                        <TextBlock>Aqua under-clocked sector</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
+                                        <TextBlock>Orange sector with Fuzzy bytes or CRC error</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>NFA regions displayed in red</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Unformatted tracks displayed in gray</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Data tracks in Blue</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Track with data but no sync seq in yellow</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Out of Band transitions in white</TextBlock>
+                                    </StackPanel>
+                                </StackPanel>
+                            </ToolTip>
+                        </Button.ToolTip>
+                    </Button>
 
-                        <Grid Grid.Row="0" >
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Viewbox Grid.Column="0"   Stretch="Uniform">
-                                <Grid Name="cvDisk0" Margin="0" />
-                            </Viewbox>
-                            <Viewbox Grid.Column="1" Stretch="Uniform" >
-                                <Grid Name="cvDisk1" Margin="0" />
-                            </Viewbox>
-                        </Grid>
-                        <Grid Grid.Row="1" Background="Transparent" Margin="2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0" Name="tbImageName"  BorderThickness="0" Background="Transparent" FontFamily="Segoe UI" FontSize="12" IsReadOnly="True"/>
-                            <TextBox Grid.Column="1" Name="tbImageVersion" BorderThickness="0" Background="Transparent" FontFamily="Segoe UI" FontSize="12" IsReadOnly="True"/>
-                        </Grid>
+                    <Grid Grid.Row="0" Name="gridImageView" Background="LightGray">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                       
+                        
+                        <Viewbox Grid.Column="0" Stretch="Uniform">
+                            <Grid Margin="15">
+                                <Grid Name="cvDiskSide0" Width="300" Height="300"/>
+                                <Grid Name="clipDiskSide0" Width="300" Height="300"/>
+                            </Grid>
+                        </Viewbox>
+                       
+
+                        <Viewbox Grid.Column="1" Stretch="Uniform" >
+                            <Grid Margin="15">
+                                <Grid Name="cvDiskSide1" Width="300" Height="300"/>
+                                <Grid Name="clipDiskSide1" Width="300" Height="300"/>
+                            </Grid>
+                        </Viewbox>
+                       
                     </Grid>
-                    <Grid Grid.Row="1" >
+                    <Grid Grid.Row="1" Background="Transparent" Margin="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Name="tbImageName"  BorderThickness="0" Background="Transparent" FontFamily="Segoe UI" FontSize="12" IsReadOnly="True"/>
+                        <TextBox Grid.Column="1" Name="tbImageVersion" BorderThickness="0" Background="Transparent" FontFamily="Segoe UI" FontSize="12" IsReadOnly="True"/>
+                    </Grid>
+                    <Grid Grid.Row="2" >
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>

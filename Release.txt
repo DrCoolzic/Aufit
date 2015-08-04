@@ -1,3 +1,7 @@
+* AufitV1.2
+- Added Magnifier capability in Disk View
+- Added detection of DM type of fuzzy bytes
+- Added Data / Time of build in the title bar
 - Fuzzy bytes are now a combination of fuzzy bytes for all revolutions
 - in Data View => Sectors detection & display of DM & CSB fuzzy bytes
 - added tooltips for Disk view chart

@@ -38,24 +38,117 @@ using System.Threading.Tasks;
 using WD1772Package;
 using GlobalPackage;
 using System.ComponentModel;
+using System.Windows.Input;
 
 namespace Aufit {
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
 	public partial class MainWindow : Window {
-		const int diskHalfWindowSize = 300;
-		const double diskFineLine = 1.7;
-		const double diskHeavyLine = 2.7;
+		const int diskHalfWindowSize = 150;
+		const double diskWindowSize = 2.0 * (double)diskHalfWindowSize;
+		const double diskFineLine = (double)diskHalfWindowSize / 180;
+		const double diskHeavyLine = (double)diskHalfWindowSize / 140;
 		const double rad_max = diskHalfWindowSize - diskHalfWindowSize * 0.03;
 		const double rad_start = diskHalfWindowSize / 6;
 		const double rad_inc = (rad_max - rad_start) / 84;
+
 		Point center = new Point(diskHalfWindowSize, diskHalfWindowSize);
-		int _selectedTrack = -1;
-		int _selectedSide = -1;
 		Brush disk_background = new SolidColorBrush(Colors.DarkGray);
 		Brush disk_color = new SolidColorBrush(Colors.DimGray);
 		Brush reference_line = new SolidColorBrush(Colors.MediumBlue);
+
+		EllipseGeometry clipRegionSide0 = new EllipseGeometry();
+		EllipseGeometry clipRegionSide1 = new EllipseGeometry();
+		System.Windows.Shapes.Path clipPathSide0 = new Path();
+		System.Windows.Shapes.Path clipPathSide1 = new Path();
+		ScaleTransform scaleTrSide0 = new ScaleTransform();
+		ScaleTransform scaleTrSide1 = new ScaleTransform();
+
+		int _selectedTrack = -1;
+		int _selectedSide = -1;
+
+
+		private void enterDiskSide0(object sender, MouseEventArgs e) {
+			// TODO this is insane ?
+			for (int i = 0; i < 50; i++)
+				moveMagnifierSide0(e);
+			clipDiskSide0.Visibility = System.Windows.Visibility.Visible;
+		}
+
+
+		private void enterDiskSide1(object sender, MouseEventArgs e) {
+			for (int i = 0; i < 50; i++)
+				moveMagnifierSide1(e);
+			clipDiskSide1.Visibility = System.Windows.Visibility.Visible;
+		}
+
+
+		private void leaveDiskSide0(object sender, MouseEventArgs e) {
+			clipDiskSide0.Visibility = System.Windows.Visibility.Hidden;
+		}
+
+
+		private void leaveDiskSide1(object sender, MouseEventArgs e) {
+			clipDiskSide1.Visibility = System.Windows.Visibility.Hidden;
+		}
+
+
+		private void moveDiskSide0(object sender, MouseEventArgs e) {
+			moveMagnifierSide0(e);
+		}
+
+
+		private void moveDiskSide1(object sender, MouseEventArgs e) {
+			moveMagnifierSide1(e);
+		}
+
+
+		void moveMagnifierSide0(MouseEventArgs e) {
+			double X = e.GetPosition(clipDiskSide0).X;
+			double Y = e.GetPosition(clipDiskSide0).Y;
+			
+			scaleTrSide0.CenterX = X;
+			scaleTrSide0.CenterY = Y;
+			clipRegionSide0.Center = new Point(X, Y);
+			clipRegionSide0.RadiusX = 15;
+			clipRegionSide0.RadiusY = 15;
+		}
+
+
+		void moveMagnifierSide1(MouseEventArgs e) {
+			double X = e.GetPosition(clipDiskSide1).X;
+			double Y = e.GetPosition(clipDiskSide1).Y;
+
+			scaleTrSide1.CenterX = X;
+			scaleTrSide1.CenterY = Y;
+			clipRegionSide1.Center = new Point(X, Y);
+			clipRegionSide1.RadiusX = 15;
+			clipRegionSide1.RadiusY = 15;
+		}
+
+
+		private void initDiskMagnifier() {
+			//clipPathSide0.Stroke = Brushes.Red;
+			//clipPathSide0.StrokeThickness = 1;
+			clipPathSide0.Data = clipRegionSide0;
+			clipDiskSide0.Children.Add(clipPathSide0);
+			clipDiskSide0.Clip = clipRegionSide0;
+			scaleTrSide0.ScaleX = 5;
+			scaleTrSide0.ScaleY = 5;
+			clipDiskSide0.RenderTransform = scaleTrSide0;
+			clipDiskSide0.Visibility = System.Windows.Visibility.Hidden;
+
+			clipPathSide1.Stroke = Brushes.Red;
+			clipPathSide1.StrokeThickness = 1;
+			clipPathSide1.Data = clipRegionSide1;
+			clipDiskSide1.Children.Add(clipPathSide1);
+			clipDiskSide1.Clip = clipRegionSide1;
+			scaleTrSide1.ScaleX = 5;
+			scaleTrSide1.ScaleY = 5;
+			clipDiskSide1.RenderTransform = scaleTrSide1;
+			clipDiskSide1.Visibility = System.Windows.Visibility.Hidden;
+		}
 
 
 		private async void btDiskRedraw(object sender, RoutedEventArgs e) {
@@ -65,8 +158,10 @@ namespace Aufit {
 
 
 		private void diskClear() {
-			cvDisk0.Children.Clear();
-			cvDisk1.Children.Clear();
+			cvDiskSide0.Children.Clear();
+			cvDiskSide0.MouseEnter -= enterDiskSide0;
+			cvDiskSide1.Children.Clear();
+			cvDiskSide1.MouseEnter -= enterDiskSide1;
 		}
 
 
@@ -74,8 +169,7 @@ namespace Aufit {
 		/// Display the layout of a FD
 		/// </summary>
 		private async Task<bool> drawDiskLayout() {
-			bool _debugNoAsync = false;
-			if (cvDisk0.Children.Count > 0) return false;
+			if (cvDiskSide0.Children.Count > 0) return false;
 
 			Brush Black = new SolidColorBrush(Colors.Black);
 			Black.Freeze();
@@ -89,63 +183,97 @@ namespace Aufit {
 			LightGray.Freeze();
 
 			const double referenceThickness = 0.5;
-			double startAngle = -0.0001;
-			double stopAngle = Math.PI * 2;
 			double radius = diskHalfWindowSize;
 
-			// add filled disk
-			System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
+			cvDiskSide0.MouseEnter -= enterDiskSide0;
+			cvDiskSide1.MouseEnter -= enterDiskSide1;
+			clipDiskSide0.MouseMove -= moveDiskSide0;
+			clipDiskSide1.MouseMove -= moveDiskSide1;
+			clipDiskSide0.MouseLeave -= leaveDiskSide0;
+			clipDiskSide1.MouseLeave -= leaveDiskSide1;
+
+			//// draw background disk
+			Path path;
+			CombinedGeometry cb = new CombinedGeometry();
+			cb.GeometryCombineMode = GeometryCombineMode.Exclude;
+			EllipseGeometry diskBg = new EllipseGeometry(center, radius, radius);
+			EllipseGeometry diskHole = new EllipseGeometry(center, radius/9, radius/9);
+			cb.Geometry1 = diskBg;
+			cb.Geometry2 = diskHole;
+
+			path = new Path();
 			path.Fill = disk_color;
-			PathGeometry pg = new PathGeometry();
-			addArc(pg, startAngle, stopAngle, center, radius);
-			path.Data = pg;
-			cvDisk0.Children.Add(path);
+			path.Data = cb;
+			cvDiskSide0.Children.Add(path);
+			//Canvas.SetZIndex(path, -1);
 
-			Canvas.SetZIndex(path, -1);
-			path = new System.Windows.Shapes.Path();
+			path = new Path();
 			path.Fill = disk_color;
-			path.Data = pg;
-			cvDisk1.Children.Add(path);
-			Canvas.SetZIndex(path, -1);
+			path.Data = cb;
+			clipDiskSide0.Children.Add(path);
+			
+			path = new Path();
+			path.Fill = disk_color;
+			path.Data = cb;
+			cvDiskSide1.Children.Add(path);
 
-			// add center hole
-			radius /= 9;
-			path = new System.Windows.Shapes.Path();
-			path.Fill = disk_background;
-			PathGeometry hole = new PathGeometry();
-			addArc(hole, startAngle, stopAngle, center, radius);
-			path.Data = hole;
-			cvDisk0.Children.Add(path);
-
-			path = new System.Windows.Shapes.Path();
-			path.Fill = disk_background;
-			path.Data = hole;
-			cvDisk1.Children.Add(path);
+			path = new Path();
+			path.Fill = disk_color;
+			path.Data = cb;
+			clipDiskSide1.Children.Add(path);
 
 			// draw side value
 			TextBox tb = new TextBox();
 			tb.IsReadOnly = true;
-			tb.Margin = new Thickness(0, diskHalfWindowSize - 20, 0, 0);
+			tb.Margin = new Thickness(0, diskHalfWindowSize - 11, 0, 0);
 			tb.FontFamily = new FontFamily("Segoe UI");
 			tb.BorderThickness = new Thickness(0);
-			tb.FontSize = 11;
+			tb.FontSize = 8;
 			tb.HorizontalContentAlignment = HorizontalAlignment.Center;
 			tb.Background = Transparent;
-			tb.Foreground = White;
+			tb.Foreground = Black;
+			tb.FontWeight = FontWeights.Bold;
 			tb.Text = "Side 0";
-			cvDisk0.Children.Add(tb);
+			cvDiskSide0.Children.Add(tb);
 
 			tb = new TextBox();
 			tb.IsReadOnly = true;
-			tb.Margin = new Thickness(0, diskHalfWindowSize - 20, 0, 0);
+			tb.Margin = new Thickness(0, diskHalfWindowSize - 11, 0, 0);
 			tb.FontFamily = new FontFamily("Segoe UI");
 			tb.BorderThickness = new Thickness(0);
-			tb.FontSize = 11;
+			tb.FontSize = 8;
 			tb.HorizontalContentAlignment = HorizontalAlignment.Center;
 			tb.Background = Transparent;
-			tb.Foreground = White;
+			tb.Foreground = Black;
+			tb.FontWeight = FontWeights.Bold;
+			tb.Text = "Side 0";
+			clipDiskSide0.Children.Add(tb);
+
+			tb = new TextBox();
+			tb.IsReadOnly = true;
+			tb.Margin = new Thickness(0, diskHalfWindowSize - 11, 0, 0);
+			tb.FontFamily = new FontFamily("Segoe UI");
+			tb.BorderThickness = new Thickness(0);
+			tb.FontSize = 8;
+			tb.HorizontalContentAlignment = HorizontalAlignment.Center;
+			tb.Background = Transparent;
+			tb.Foreground = Black;
+			tb.FontWeight = FontWeights.Bold;
 			tb.Text = "Side 1";
-			cvDisk1.Children.Add(tb);
+			cvDiskSide1.Children.Add(tb);
+
+			tb = new TextBox();
+			tb.IsReadOnly = true;
+			tb.Margin = new Thickness(0, diskHalfWindowSize - 11, 0, 0);
+			tb.FontFamily = new FontFamily("Segoe UI");
+			tb.BorderThickness = new Thickness(0);
+			tb.FontSize = 8;
+			tb.HorizontalContentAlignment = HorizontalAlignment.Center;
+			tb.Background = Transparent;
+			tb.Foreground = Black;
+			tb.FontWeight = FontWeights.Bold;
+			tb.Text = "Side 1";
+			clipDiskSide1.Children.Add(tb);
 
 			// draw reference line
 			//DoubleCollection referenceDashPattern = new DoubleCollection(new double[2] { 10, 2 });
@@ -157,7 +285,8 @@ namespace Aufit {
 			zeroLine.Y1 = diskHalfWindowSize;
 			zeroLine.X2 = 2 * diskHalfWindowSize;
 			zeroLine.Y2 = diskHalfWindowSize;
-			cvDisk0.Children.Add(zeroLine);
+			cvDiskSide0.Children.Add(zeroLine);
+
 			zeroLine = new Line();
 			zeroLine.Stroke = reference_line;
 			zeroLine.StrokeThickness = referenceThickness;
@@ -166,7 +295,27 @@ namespace Aufit {
 			zeroLine.Y1 = diskHalfWindowSize;
 			zeroLine.X2 = 2 * diskHalfWindowSize;
 			zeroLine.Y2 = diskHalfWindowSize;
-			cvDisk1.Children.Add(zeroLine);
+			clipDiskSide0.Children.Add(zeroLine);
+
+			zeroLine = new Line();
+			zeroLine.Stroke = reference_line;
+			zeroLine.StrokeThickness = referenceThickness;
+			//zeroLine.StrokeDashArray = referenceDashPattern;
+			zeroLine.X1 = diskHalfWindowSize;
+			zeroLine.Y1 = diskHalfWindowSize;
+			zeroLine.X2 = 2 * diskHalfWindowSize;
+			zeroLine.Y2 = diskHalfWindowSize;
+			cvDiskSide1.Children.Add(zeroLine);
+
+			zeroLine = new Line();
+			zeroLine.Stroke = reference_line;
+			zeroLine.StrokeThickness = referenceThickness;
+			//zeroLine.StrokeDashArray = referenceDashPattern;
+			zeroLine.X1 = diskHalfWindowSize;
+			zeroLine.Y1 = diskHalfWindowSize;
+			zeroLine.X2 = 2 * diskHalfWindowSize;
+			zeroLine.Y2 = diskHalfWindowSize;
+			clipDiskSide1.Children.Add(zeroLine);
 
 			// display Aufit version (nice for picture)
 			tbImageVersion.Text = "Aufit " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -174,23 +323,43 @@ namespace Aufit {
 			tbImageName.Text = Aufit.MainWindow.ImageName;
 
 			// draw all tracks of both side
+			bool _debugNoAsync = false;
 			for (int track = 0; track < 84; track++) {
 				for (int side = 0; side < 2; side++) {
-					Grid grid = (side == 0) ? cvDisk0 : cvDisk1;
 					if ((Global.Disk[track, side].fluxData == null) &&
 						(Global.Disk[track, side].packedFluxData == null)) continue;
+					
 					if (_debugNoAsync) {
-						Global.decodeAndRead(track, side, 0);
-						drawDiskTrackLayout(track, side, 0, cvDisk0);
+						if (side == 0) {
+							drawDiskTrackLayout(track, side, 0, cvDiskSide0);
+							drawDiskTrackLayout(track, side, 0, clipDiskSide0);
+						}
+						else {
+							drawDiskTrackLayout(track, side, 0, cvDiskSide1);
+							drawDiskTrackLayout(track, side, 0, clipDiskSide1);
+						}
 					}
 					else {
-						await Global.decodeAndReadAsync(track, side, 0);
-						await drawDiskTrackLayoutAsync(track, side, 0, grid);
+						if (side == 0) {
+							await drawDiskTrackLayoutAsync(track, side, 0, cvDiskSide0);
+							await drawDiskTrackLayoutAsync(track, side, 0, clipDiskSide0);
+						}
+						else {
+							await drawDiskTrackLayoutAsync(track, side, 0, cvDiskSide1);
+							await drawDiskTrackLayoutAsync(track, side, 0, clipDiskSide1);
+						}
 					}
 					// TODO below commented because fails in batch mode for certain files???
 					//ButtonMatrix.setButtonBG(track, 0);
 				}	// all tracks
 			}	// all sides
+
+			cvDiskSide0.MouseEnter += enterDiskSide0;
+			cvDiskSide1.MouseEnter += enterDiskSide1;
+			clipDiskSide0.MouseMove += moveDiskSide0;
+			clipDiskSide1.MouseMove += moveDiskSide1;
+			clipDiskSide0.MouseLeave += leaveDiskSide0;
+			clipDiskSide1.MouseLeave += leaveDiskSide1;
 
 			return true;
 		}
@@ -207,7 +376,7 @@ namespace Aufit {
 
 		private void drawSelected(int track, int side, Brush color) {
 			double radius = rad_max - track * rad_inc;
-			Grid grid = (side == 0) ? cvDisk0 : cvDisk1;
+			Grid grid = (side == 0) ? cvDiskSide0 : cvDiskSide1;
 			Path path = new Path();
 			path.StrokeThickness = diskHeavyLine - 0.3;
 			PathGeometry pg = new PathGeometry();

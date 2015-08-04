@@ -298,7 +298,21 @@ namespace Aufit {
 					// fuzzy bits
 					if (dt.sectors[secIndex].data.fuzzy != null) {
 						dt.track.hasProtections = true;
-						writeInfo(info, "FZS Fuzzy Sector");
+						int byte80 = 0;
+						bool onlyByte80 = true;
+						for (int i = 0; i < dt.sectors[secIndex].data.fuzzy.Count(); i++) {
+							byte b = dt.sectors[secIndex].data.fuzzy[i];
+							if (b == 0x80)
+								byte80++;
+							else
+								if (b != 0x00) 
+									onlyByte80 = false;
+
+						}
+						if (onlyByte80)
+							writeInfo(info, String.Format("FZS Fuzzy sector - {0} fuzzy bytes of type Dungeon Master", byte80));
+						else
+							writeInfo(info, "FZS Fuzzy Sector");
 					}
 
 					// non standard DAM

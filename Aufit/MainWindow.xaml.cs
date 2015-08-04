@@ -132,8 +132,19 @@ namespace Aufit {
 			_dataDrawing.Chart.FixOffset = true;
 
 			// this.DataContext = this;	// needed for property changed event
-			string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-			Title = "Aufit " + version;
+			
+			//string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+			//string[] parts = version.Split('.');
+			//int major = int.Parse(parts[0]);
+			//int minor = int.Parse(parts[1]);
+			//int build = int.Parse(parts[2]);
+			//int revision = int.Parse(parts[3]);
+
+			Version version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+			DateTime dateTimeOfBuild = new DateTime(2000, 1, 1) 
+                                + new TimeSpan(version.Build, 0, 0, 0) 
+                                + TimeSpan.FromSeconds(version.Revision * 2);
+			Title = "Aufit Build " + version.Major + "." + version.Minor + " - " + dateTimeOfBuild;
 			tbVersion.Text = "Aufit " + version;
 
 			this.Loaded += new RoutedEventHandler(container_loaded);
@@ -143,7 +154,10 @@ namespace Aufit {
 			// http://stackoverflow.com/questions/896574/forcing-a-wpf-tooltip-to-stay-on-the-screen
 			ToolTipService.ShowDurationProperty.OverrideMetadata(
 				typeof(DependencyObject), new FrameworkPropertyMetadata(60000));
+
+			initDiskMagnifier();
 		}
+
 
 
 		#region Button Matrix Procedures
@@ -1124,10 +1138,9 @@ namespace Aufit {
 				System.Diagnostics.Process.Start("Aufit.pdf");
 			}
 			catch (Exception exc) {
-				Console.WriteLine("Error: {0}", exc.Message);
+				MessageBox.Show(String.Format("Error: {0}", exc.Message));
 			}
 		}
-
 
 
 		//MessageBoxResult result = MessageBox.Show(
