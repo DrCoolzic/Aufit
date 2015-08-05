@@ -191,15 +191,15 @@ namespace PastiPackage {
 						}
 
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].recovered_data == null))
-							tdesc.fuzzyCount += (uint)dt.sectors[sect].data.fuzzy.Count();
+							tdesc.fuzzyCount += (uint)dt.sectors[sect].data.fuzzy.Count() - 3;
 						else if (SIM_FUZZY && (dt.sectors[sect].data.CRC != 0) && ((dt.sectors[sect].flags & Sector.WIDTH_ABOVE) != 0)) {
 							// Rob Northen protection we force fuzzy bits if not there ?
-							int dataSize = Global.sectSize(dt.sectors[sect].id.Length);
+							int dataSize = Global.sectSize(dt.sectors[sect].id.Length) + 3;
 							dt.sectors[sect].data.fuzzy = new byte[dataSize];
 							for (int i = 0; i < dataSize; i++) {
 								dt.sectors[sect].data.fuzzy[i] = (byte)((i < 30) ? 0x00 : 0xFF);
 							}
-							tdesc.fuzzyCount += (uint)dataSize;
+							tdesc.fuzzyCount += (uint)dataSize - 3;
 						}
 					}
 					tdesc.recordSize += tdesc.fuzzyCount;
@@ -298,7 +298,7 @@ namespace PastiPackage {
 								if ((dt.sectors[sect].data.info.crc != 0) && (dt.sectors[sect].recovered_data == null)) 
 									fdcFlag |= SectorDesc.CRC_ERR;
 							}	// these two flags are only meaningful if record has bytes
-							if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].data.CRC != 0))
+							if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null))
 								fdcFlag |= SectorDesc.FUZZY_BITS;
 							if ((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0)
 								fdcFlag |= SectorDesc.BIT_WIDTH;
@@ -335,10 +335,10 @@ namespace PastiPackage {
 					for (int sect = 0; sect < sectorCount; sect++) {
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].recovered_data == null) && (dt.sectors[sect].data.info.crc != 0)) {
 							start = buffer.Count;
-							for (int i = 0; i < dt.sectors[sect].data.fuzzy.Count(); i++)
+							for (int i = 1; i < dt.sectors[sect].data.fuzzy.Count() - 2; i++)
 								writeByte(buffer, (byte)~dt.sectors[sect].data.fuzzy[i]);
 							if (_debug) _saveImageBox.AppendText(String.Format("   Writing Fuzzy {0} bytes for sector {1} ({2}-{3})\n",
-								dt.sectors[sect].data.fuzzy.Count(), dt.sectors[sect].id.Sector, start, buffer.Count - 1));
+								dt.sectors[sect].data.fuzzy.Count() - 3, dt.sectors[sect].id.Sector, start, buffer.Count - 1));
 							else
 								_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} found fuzzy sector {2}\n",
 										trackNum, side, dt.sectors[sect].id.Sector));

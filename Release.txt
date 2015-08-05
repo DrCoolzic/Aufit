@@ -1,4 +1,5 @@
 * AufitV1.2
+- Fixed bug in writing incorrectly fuzzy bytes in STX for truncated sectors
 - Added Magnifier capability in Disk View
 - Added detection of DM type of fuzzy bytes
 - Added Data / Time of build in the title bar
