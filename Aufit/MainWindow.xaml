@@ -308,7 +308,6 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="auto"/>
-                        <RowDefinition Height="auto"/>
                     </Grid.RowDefinitions>
                     <Button Margin="0,0,0,0" BorderThickness="0" Width="20" Height="20"  Opacity="0.7" Background="{x:Null}"
                                 HorizontalAlignment="Left" VerticalAlignment="Top" Panel.ZIndex="1000" ToolTipService.ShowDuration="60000" >
@@ -375,38 +374,40 @@
                         </Button.ToolTip>
                     </Button>
 
-                    <Grid Grid.Row="0" Name="gridImageView" Background="LightGray">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                       
-                        
-                        <Viewbox Grid.Column="0" Stretch="Uniform">
+                    <Grid Grid.Row="0" Name="gridImageView">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>                       
+                            <Viewbox Grid.Column="0" Stretch="Uniform">
                             <Grid Margin="15">
                                 <Grid Name="cvDiskSide0" Width="300" Height="300"/>
                                 <Grid Name="clipDiskSide0" Width="300" Height="300"/>
                             </Grid>
-                        </Viewbox>
-                       
-
-                        <Viewbox Grid.Column="1" Stretch="Uniform" >
+                        </Viewbox>                     
+                            <Viewbox Grid.Column="1" Stretch="Uniform" >
                             <Grid Margin="15">
                                 <Grid Name="cvDiskSide1" Width="300" Height="300"/>
                                 <Grid Name="clipDiskSide1" Width="300" Height="300"/>
                             </Grid>
                         </Viewbox>
-                       
+                        </Grid>
+                        <Grid Grid.Row="1" Background="Transparent" Margin="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" Name="tbImageName"  BorderThickness="0" Background="Transparent" FontFamily="Segoe UI" FontSize="12" IsReadOnly="True"/>
+                            <TextBox Grid.Column="1" Name="tbImageVersion" BorderThickness="0" Background="Transparent" FontFamily="Segoe UI" FontSize="12" IsReadOnly="True"/>
+                        </Grid>
                     </Grid>
-                    <Grid Grid.Row="1" Background="Transparent" Margin="2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBox Grid.Column="0" Name="tbImageName"  BorderThickness="0" Background="Transparent" FontFamily="Segoe UI" FontSize="12" IsReadOnly="True"/>
-                        <TextBox Grid.Column="1" Name="tbImageVersion" BorderThickness="0" Background="Transparent" FontFamily="Segoe UI" FontSize="12" IsReadOnly="True"/>
-                    </Grid>
-                    <Grid Grid.Row="2" >
+
+                    <Grid Grid.Row="1" >
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>

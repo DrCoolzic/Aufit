@@ -355,11 +355,10 @@ namespace WD1772Package {
 					}
 
 					if (ps.compareSector && (dt.sectors[ps.SectorNumber].data != null)) {
-						if (dsr.Data != dt.sectors[ps.SectorNumber].data.buffer.DataByte[byteInSector]) {
+						if (dsr.Data != dt.sectors[ps.SectorNumber].data.buffer.DataByte[byteInSector + 1]) {
 							equal = false;
 						}
 
-						// TODO CHECK ????
 						if (byteInSector == (dt.sectors[ps.SectorNumber].data.buffer.DataByte.Count - 4)) {
 							if (equal)
 								dt.sectors[ps.SectorNumber].flags |= Sector.SEC_EQ_TRACK;
