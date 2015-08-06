@@ -60,10 +60,16 @@ namespace Aufit {
 
 		EllipseGeometry clipRegionSide0 = new EllipseGeometry();
 		EllipseGeometry clipRegionSide1 = new EllipseGeometry();
-		System.Windows.Shapes.Path clipPathSide0 = new Path();
-		System.Windows.Shapes.Path clipPathSide1 = new Path();
+		System.Windows.Shapes.Path clipPathSide0;
+		System.Windows.Shapes.Path clipPathSide1;
 		ScaleTransform scaleTrSide0 = new ScaleTransform();
 		ScaleTransform scaleTrSide1 = new ScaleTransform();
+		double diskScaleSide0;
+		double diskScaleSide1;
+		bool diskFreezeClipSide0;
+		bool diskFreezeClipSide1;
+		const double diskScaleMin = 1.2;
+		const double diskScaleDef = 4;
 
 		int _selectedTrack = -1;
 		int _selectedSide = -1;
@@ -85,11 +91,13 @@ namespace Aufit {
 
 
 		private void leaveDiskSide0(object sender, MouseEventArgs e) {
+			if (diskFreezeClipSide0) return;
 			clipDiskSide0.Visibility = System.Windows.Visibility.Hidden;
 		}
 
 
 		private void leaveDiskSide1(object sender, MouseEventArgs e) {
+			if (diskFreezeClipSide1) return;
 			clipDiskSide1.Visibility = System.Windows.Visibility.Hidden;
 		}
 
@@ -105,49 +113,147 @@ namespace Aufit {
 
 
 		void moveMagnifierSide0(MouseEventArgs e) {
+			if (diskFreezeClipSide0) return;
+
 			double X = e.GetPosition(clipDiskSide0).X;
 			double Y = e.GetPosition(clipDiskSide0).Y;
-			
+
+			scaleTrSide0.ScaleX = diskScaleSide0;
+			scaleTrSide0.ScaleY = diskScaleSide0;
 			scaleTrSide0.CenterX = X;
 			scaleTrSide0.CenterY = Y;
+
 			clipRegionSide0.Center = new Point(X, Y);
-			clipRegionSide0.RadiusX = 15;
-			clipRegionSide0.RadiusY = 15;
+			clipRegionSide0.RadiusX = 100 / diskScaleSide0;
+			clipRegionSide0.RadiusY = 100 / diskScaleSide0;
 		}
 
 
 		void moveMagnifierSide1(MouseEventArgs e) {
+			if (diskFreezeClipSide1) return;
+
 			double X = e.GetPosition(clipDiskSide1).X;
 			double Y = e.GetPosition(clipDiskSide1).Y;
 
+			scaleTrSide1.ScaleX = diskScaleSide1;
+			scaleTrSide1.ScaleY = diskScaleSide1;
 			scaleTrSide1.CenterX = X;
 			scaleTrSide1.CenterY = Y;
+
 			clipRegionSide1.Center = new Point(X, Y);
-			clipRegionSide1.RadiusX = 15;
-			clipRegionSide1.RadiusY = 15;
+			clipRegionSide1.RadiusX = 100 / diskScaleSide1;
+			clipRegionSide1.RadiusY = 100 / diskScaleSide1;
 		}
 
 
-		private void initDiskMagnifier() {
+		private void diskMouseWheelSide0(object sender, MouseWheelEventArgs e) {
+			if (e.Delta > 0)
+				diskScaleSide0 += 0.5;
+			else
+				diskScaleSide0 -= 0.5;
+			if (diskScaleSide0 < diskScaleMin) diskScaleSide0 = diskScaleMin;
+			moveMagnifierSide0(e);
+
+		}
+
+
+		private void diskMouseWheelSide1(object sender, MouseWheelEventArgs e) {
+			if (e.Delta > 0)
+				diskScaleSide1 += 0.5;
+			else
+				diskScaleSide1 -= 0.5;
+			if (diskScaleSide1 < diskScaleMin) diskScaleSide1 = diskScaleMin;
+			moveMagnifierSide1(e);
+
+		}
+
+
+		private void diskMLBSide0(object sender, MouseButtonEventArgs e) {
+			if (diskFreezeClipSide0) {
+				diskFreezeClipSide0 = false;
+			}
+			else {
+				diskFreezeClipSide0 = true;
+			}
+			e.Handled = true;
+		}
+
+
+		private void diskMRBSide0(object sender, MouseButtonEventArgs e) {
+			diskScaleSide0 = diskScaleDef;
+			moveMagnifierSide0(e);
+		}
+
+
+		private void diskMLBSide1(object sender, MouseButtonEventArgs e) {
+			if (diskFreezeClipSide1) {
+				diskFreezeClipSide1 = false;
+			}
+			else {
+				diskFreezeClipSide1 = true;
+			}
+			e.Handled = true;
+		}
+
+
+		private void diskMRBSide1(object sender, MouseButtonEventArgs e) {
+			diskScaleSide1 = diskScaleDef;
+			moveMagnifierSide1(e);
+		}
+
+
+		private void resetDiskMagnifier() {
+			cbMagnifier.IsChecked = false;
+
+			diskScaleSide0 = diskScaleDef;
+			diskScaleSide1 = diskScaleDef;
+			diskFreezeClipSide0 = false;
+			diskFreezeClipSide1 = false;
+
+			clipPathSide0 = new Path();
 			//clipPathSide0.Stroke = Brushes.Red;
 			//clipPathSide0.StrokeThickness = 1;
 			clipPathSide0.Data = clipRegionSide0;
 			clipDiskSide0.Children.Add(clipPathSide0);
 			clipDiskSide0.Clip = clipRegionSide0;
-			scaleTrSide0.ScaleX = 5;
-			scaleTrSide0.ScaleY = 5;
+			scaleTrSide0.ScaleX = diskScaleSide0;
+			scaleTrSide0.ScaleY = diskScaleSide0;
 			clipDiskSide0.RenderTransform = scaleTrSide0;
 			clipDiskSide0.Visibility = System.Windows.Visibility.Hidden;
 
-			clipPathSide1.Stroke = Brushes.Red;
-			clipPathSide1.StrokeThickness = 1;
+			clipPathSide1 = new Path();
+			//clipPathSide1.Stroke = Brushes.Red;
+			//clipPathSide1.StrokeThickness = 1;
 			clipPathSide1.Data = clipRegionSide1;
 			clipDiskSide1.Children.Add(clipPathSide1);
 			clipDiskSide1.Clip = clipRegionSide1;
-			scaleTrSide1.ScaleX = 5;
-			scaleTrSide1.ScaleY = 5;
+			scaleTrSide1.ScaleX = diskScaleSide0;
+			scaleTrSide1.ScaleY = diskScaleSide0;
 			clipDiskSide1.RenderTransform = scaleTrSide1;
 			clipDiskSide1.Visibility = System.Windows.Visibility.Hidden;
+
+			cvDiskSide0.MouseEnter -= enterDiskSide0;
+			cvDiskSide1.MouseEnter -= enterDiskSide1;
+			clipDiskSide0.MouseMove -= moveDiskSide0;
+			clipDiskSide1.MouseMove -= moveDiskSide1;
+			clipDiskSide0.MouseLeave -= leaveDiskSide0;
+			clipDiskSide1.MouseLeave -= leaveDiskSide1;
+
+		}
+
+
+		private void magnifierClicked(object sender, RoutedEventArgs e) {
+			if (cbMagnifier.IsChecked == true) {
+				cvDiskSide0.MouseEnter += enterDiskSide0;
+				cvDiskSide1.MouseEnter += enterDiskSide1;
+				clipDiskSide0.MouseMove += moveDiskSide0;
+				clipDiskSide1.MouseMove += moveDiskSide1;
+				clipDiskSide0.MouseLeave += leaveDiskSide0;
+				clipDiskSide1.MouseLeave += leaveDiskSide1;
+			}
+			else {
+				resetDiskMagnifier();
+			}
 		}
 
 
@@ -158,10 +264,9 @@ namespace Aufit {
 
 
 		private void diskClear() {
+			resetDiskMagnifier();
 			cvDiskSide0.Children.Clear();
-			cvDiskSide0.MouseEnter -= enterDiskSide0;
 			cvDiskSide1.Children.Clear();
-			cvDiskSide1.MouseEnter -= enterDiskSide1;
 		}
 
 
@@ -170,6 +275,7 @@ namespace Aufit {
 		/// </summary>
 		private async Task<bool> drawDiskLayout() {
 			if (cvDiskSide0.Children.Count > 0) return false;
+			resetDiskMagnifier();
 
 			Brush Black = new SolidColorBrush(Colors.Black);
 			Black.Freeze();
@@ -182,15 +288,9 @@ namespace Aufit {
 			Brush LightGray = new SolidColorBrush(Colors.LightGray);
 			LightGray.Freeze();
 
+
 			const double referenceThickness = 0.5;
 			double radius = diskHalfWindowSize;
-
-			cvDiskSide0.MouseEnter -= enterDiskSide0;
-			cvDiskSide1.MouseEnter -= enterDiskSide1;
-			clipDiskSide0.MouseMove -= moveDiskSide0;
-			clipDiskSide1.MouseMove -= moveDiskSide1;
-			clipDiskSide0.MouseLeave -= leaveDiskSide0;
-			clipDiskSide1.MouseLeave -= leaveDiskSide1;
 
 			//// draw background disk
 			Path path;
@@ -236,18 +336,18 @@ namespace Aufit {
 			tb.Text = "Side 0";
 			cvDiskSide0.Children.Add(tb);
 
-			tb = new TextBox();
-			tb.IsReadOnly = true;
-			tb.Margin = new Thickness(0, diskHalfWindowSize - 11, 0, 0);
-			tb.FontFamily = new FontFamily("Segoe UI");
-			tb.BorderThickness = new Thickness(0);
-			tb.FontSize = 8;
-			tb.HorizontalContentAlignment = HorizontalAlignment.Center;
-			tb.Background = Transparent;
-			tb.Foreground = Black;
-			tb.FontWeight = FontWeights.Bold;
-			tb.Text = "Side 0";
-			clipDiskSide0.Children.Add(tb);
+			//tb = new TextBox();
+			//tb.IsReadOnly = true;
+			//tb.Margin = new Thickness(0, diskHalfWindowSize - 11, 0, 0);
+			//tb.FontFamily = new FontFamily("Segoe UI");
+			//tb.BorderThickness = new Thickness(0);
+			//tb.FontSize = 8;
+			//tb.HorizontalContentAlignment = HorizontalAlignment.Center;
+			//tb.Background = Transparent;
+			//tb.Foreground = Black;
+			//tb.FontWeight = FontWeights.Bold;
+			//tb.Text = "Side 0";
+			//clipDiskSide0.Children.Add(tb);
 
 			tb = new TextBox();
 			tb.IsReadOnly = true;
@@ -262,18 +362,18 @@ namespace Aufit {
 			tb.Text = "Side 1";
 			cvDiskSide1.Children.Add(tb);
 
-			tb = new TextBox();
-			tb.IsReadOnly = true;
-			tb.Margin = new Thickness(0, diskHalfWindowSize - 11, 0, 0);
-			tb.FontFamily = new FontFamily("Segoe UI");
-			tb.BorderThickness = new Thickness(0);
-			tb.FontSize = 8;
-			tb.HorizontalContentAlignment = HorizontalAlignment.Center;
-			tb.Background = Transparent;
-			tb.Foreground = Black;
-			tb.FontWeight = FontWeights.Bold;
-			tb.Text = "Side 1";
-			clipDiskSide1.Children.Add(tb);
+			//tb = new TextBox();
+			//tb.IsReadOnly = true;
+			//tb.Margin = new Thickness(0, diskHalfWindowSize - 11, 0, 0);
+			//tb.FontFamily = new FontFamily("Segoe UI");
+			//tb.BorderThickness = new Thickness(0);
+			//tb.FontSize = 8;
+			//tb.HorizontalContentAlignment = HorizontalAlignment.Center;
+			//tb.Background = Transparent;
+			//tb.Foreground = Black;
+			//tb.FontWeight = FontWeights.Bold;
+			//tb.Text = "Side 1";
+			//clipDiskSide1.Children.Add(tb);
 
 			// draw reference line
 			//DoubleCollection referenceDashPattern = new DoubleCollection(new double[2] { 10, 2 });
@@ -342,11 +442,13 @@ namespace Aufit {
 					else {
 						if (side == 0) {
 							await drawDiskTrackLayoutAsync(track, side, 0, cvDiskSide0);
-							await drawDiskTrackLayoutAsync(track, side, 0, clipDiskSide0);
+							if (!BatchMode)
+								await drawDiskTrackLayoutAsync(track, side, 0, clipDiskSide0);
 						}
 						else {
 							await drawDiskTrackLayoutAsync(track, side, 0, cvDiskSide1);
-							await drawDiskTrackLayoutAsync(track, side, 0, clipDiskSide1);
+							if (!BatchMode)
+								await drawDiskTrackLayoutAsync(track, side, 0, clipDiskSide1);
 						}
 					}
 					// TODO below commented because fails in batch mode for certain files???
@@ -354,12 +456,6 @@ namespace Aufit {
 				}	// all tracks
 			}	// all sides
 
-			cvDiskSide0.MouseEnter += enterDiskSide0;
-			cvDiskSide1.MouseEnter += enterDiskSide1;
-			clipDiskSide0.MouseMove += moveDiskSide0;
-			clipDiskSide1.MouseMove += moveDiskSide1;
-			clipDiskSide0.MouseLeave += leaveDiskSide0;
-			clipDiskSide1.MouseLeave += leaveDiskSide1;
 
 			return true;
 		}
@@ -642,7 +738,7 @@ namespace Aufit {
 			double scale = 0.8;
 			if (rbMed.IsChecked == true) scale = 1.2;
 			else if (rbHigh.IsChecked == true) scale = 2.0;
-			Global.saveImage(gridImageView, scale, ".disk_view.png", true);
+			Global.saveImage(gridImageView, scale, "", true);
 		}
 
 	}

@@ -589,7 +589,8 @@ public class Global {
 	public static void saveImage(Visual target, double scale, string name, bool ask) {
 		SaveFileDialog sfd = new SaveFileDialog();
 		sfd.InitialDirectory = Aufit.MainWindow.DirectoryName;
-		sfd.FileName = Aufit.MainWindow.ImageName + name;
+		//sfd.FileName = Aufit.MainWindow.ImageName + name;
+		sfd.FileName = name;
 		if (ask) {
 			sfd.RestoreDirectory = true;
 			sfd.Filter = "Png file|*.png|All Files|*.*";

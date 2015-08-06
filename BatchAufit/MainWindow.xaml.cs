@@ -43,8 +43,12 @@ namespace BatchAufit {
 
 		public MainWindow() {
 			InitializeComponent();
-			string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-			Title = "BatchAufit " + version;
+			Version version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+			DateTime dateTimeOfBuild = new DateTime(2000, 1, 1)
+								+ new TimeSpan(version.Build, 0, 0, 0)
+								+ TimeSpan.FromSeconds(version.Revision * 2);
+			Title = "Aufit Build " + version.Major + "." + version.Minor + " - " + dateTimeOfBuild;
+
 			tbRootDirName.Text = Properties.Settings.Default.RootDirName;
 			tbMaxProcessTime.Text = Properties.Settings.Default.MaxProcessTime.ToString();
 		}
@@ -109,7 +113,6 @@ namespace BatchAufit {
 
 		private async Task ProcessDir(string selectedDir) {
 			pbProgress.IsIndeterminate = true;
-			pbProgress.Visibility = System.Windows.Visibility.Visible;
 			tbResult.Clear();
 			_count = 0;
 			_done = 0;
@@ -117,13 +120,16 @@ namespace BatchAufit {
 			DirectoryInfo di = new DirectoryInfo(selectedDir);
 			ProcessDir(di, tbSuffix.Text);
 			await ProcessSubDir(selectedDir);
-			pbProgress.Visibility = System.Windows.Visibility.Hidden;
 			tbTotal.Text = _count.ToString();
 			tbDone.Text = _done.ToString();
 			foreach (FileToProcess ftp in _fileToProcessList) {
 				tbResult.AppendText((ftp.Done ? "Done - " : "ToDo - ") + ftp.Name + "\n");
 			}
 			tbResult.ScrollToEnd();
+			pbProgress.IsIndeterminate = false;
+			pbProgress.Minimum = 0;
+			pbProgress.Maximum = _count;
+			pbProgress.Value = _done;
 		}
 
 
@@ -162,7 +168,6 @@ namespace BatchAufit {
 			pbProgress.IsIndeterminate = false;
 			pbProgress.Minimum = 0;
 			pbProgress.Maximum = _count;
-			pbProgress.Visibility = System.Windows.Visibility.Visible;
 			pbProgress.Value = _done;
 			int processed = 0;
 			int succeed = 0;
@@ -204,7 +209,6 @@ namespace BatchAufit {
 			tbResult.AppendText(String.Format("***** {0} images processed - ({1} succeeded, {2} failed) *****\n", processed, succeed, failed));
 			tbResult.AppendText(String.Format("      Time elapsed = {0:F2}s (Max={1:F2}s Avg={2:F2}s) - CPU = {3:F2}s\n",
 				elapsed.TotalSeconds, maxElapsed.TotalSeconds, elapsed.TotalSeconds / succeed, cpu.TotalSeconds));
-			pbProgress.Visibility = System.Windows.Visibility.Hidden;
 			_run = false;
 		}
 

@@ -82,14 +82,9 @@ namespace Aufit {
 		private HistoDrawing _histoDrawing = null;
 		private BitWidthDrawing _clockDrawing = null;
 		private DataDrawing _dataDrawing = null;
-		private bool _modeAuto = false;
+		private bool BatchMode { get; set; }
+		//private bool _batchMode = false;
 
-		//private BufferWindow _trackWindow = null;
-		//private bool _trackWindowIsOpen = false;
-		//private BufferWindow _sectorWindow = null;
-		//private bool _sectorWindowIsOpen = false;
-
-		// current display
 		/// <summary>
 		/// The track currently selected and displayed
 		/// </summary>
@@ -105,10 +100,6 @@ namespace Aufit {
 
 		public static string ImageName { get; set; }
 		public static string DirectoryName { get; set; }
-		//public bool HasIncompleteData { get; set; }
-		//public bool HasProtection { get; set; }
-		//public bool STIncompatible { get; set; }
-
 
 		/// <summary>
 		/// Initialize the main window
@@ -155,7 +146,6 @@ namespace Aufit {
 			ToolTipService.ShowDurationProperty.OverrideMetadata(
 				typeof(DependencyObject), new FrameworkPropertyMetadata(60000));
 
-			initDiskMagnifier();
 		}
 
 
@@ -407,7 +397,7 @@ namespace Aufit {
 		private async void container_loaded(object sender, RoutedEventArgs e) {
 			string suffix = "aufit";
 			if (Application.Current.Properties["Suffix"] != null) {
-				_modeAuto = true;
+				BatchMode = true;
 				suffix = (string)Application.Current.Properties["Suffix"];
 			}
 
@@ -420,7 +410,7 @@ namespace Aufit {
 			}
 
 			if (Application.Current.Properties["DiskView"] != null) {
-				_modeAuto = true;
+				BatchMode = true;
 				Thread.Sleep(2000);
 				tabDisplay.SelectedIndex = 1;
 				await drawDiskLayout();
@@ -429,11 +419,12 @@ namespace Aufit {
 					string s = Application.Current.Properties["Scale"].ToString();
 					scale = Double.Parse(s, CultureInfo.InvariantCulture);
 				}
-				Global.saveImage(gridImageView, scale, ".disk_view." + suffix + ".png", false);
+				string fileName = Aufit.MainWindow.ImageName + ".disk." + suffix + ".png";
+				Global.saveImage(gridImageView, scale, fileName, false);
 			}
 
 			if (Application.Current.Properties["Protections"] != null) {
-				_modeAuto = true;
+				BatchMode = true;
 				tabDisplay.SelectedIndex = 3;
 				tbAnalysis.Clear();
 				tbAnalysis.AppendText(String.Format("Protection analysis for {0}\n\n", ImageName));
@@ -443,7 +434,7 @@ namespace Aufit {
 			}
 
 			if (Application.Current.Properties["SaveImage"] != null) {
-				_modeAuto = true;
+				BatchMode = true;
 				tabDisplay.SelectedIndex = 4;
 				string fileName = Aufit.MainWindow.ImageName + ".image." + suffix + ".stx";
 				uint flags = 0;
@@ -457,7 +448,7 @@ namespace Aufit {
 				pasti.writePasti(fileName, flags);
 				tbSaveImage.AppendText(String.Format("Image {0} write completed", fileName));
 			}
-			if (_modeAuto) {
+			if (BatchMode) {
 				//string fileName = Aufit.MainWindow.ImageName + "." + suffix + ".done";
 				//File.Create(fileName).Dispose();
 				this.Close();
@@ -825,7 +816,7 @@ namespace Aufit {
 
 
 		private void btScreenshotClick(object sender, RoutedEventArgs e) {
-			Global.saveImage(mainGrid, 1, "track_view", true);
+			Global.saveImage(mainGrid, 1, "", true);
 		}
 
 
@@ -905,7 +896,7 @@ namespace Aufit {
 
 
 		private async void tabDisplaySelectionChanged(object sender, SelectionChangedEventArgs e) {
-			if (_modeAuto) return;
+			if (BatchMode) return;
 
 			if (tabItemTrack.IsSelected) {
 				infoBox.AppendText("Track View Selected\n");

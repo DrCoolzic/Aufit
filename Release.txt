@@ -1,30 +1,29 @@
-* AufitV1.2
+* Aufit V1.2
+- Fixed bug in file names
+- All transparent windows in Aufit are now blueish white 
 - Fixed bug in writing incorrectly fuzzy bytes in STX for truncated sectors
 - Added Magnifier capability in Disk View
-- Added detection of DM type of fuzzy bytes
+- Added detection of Dungeon Master type of fuzzy bytes
 - Added Data / Time of build in the title bar
-- Fuzzy bytes are now a combination of fuzzy bytes for all revolutions
+- Fuzzy bytes are now a combination of fuzzy bytes detected for each revolution
 - in Data View => Sectors detection & display of DM & CSB fuzzy bytes
-- added tooltips for Disk view chart
-- Bug fix for fuzzy bytes on Dungeon Master & Chaos Strike back
-- added tooltips for all other tab views
+- added Tooltips on most objects and charts of Aufit
+- Bug fix for fuzzy bytes on Dungeon Master & Chaos Strike back (DPLL)
 - fix graphical bug on the tabs of the Aufit main window
-- added tooltips for track view
-- added tooltips for all objects on Aufit main window
 - information window renames to Event log
 - fix bug of Rev number incorrectly reported in Event log
 - fix bug of inner and post data gap bytes possibly filtered
 - out of band in track data content now check for more than 8% in the 3 data band
-- corrected bug in Post Gap data (length for sws)
-- Aufit.pdf should be located in install directory. Aufit does not crash but report
-	an error message if help file not found.
+- corrected bug in Post Gap data (incorrect length for SWS)
+- Aufit.pdf is now located in the install directory. 
+- Aufit does not crash but report an error message if help file not found.
 - Bad data in GAP are displayed in DarkOrange (Data View -> Sector command)
-	This can be used to detect sector write splice (tampered diskette)
-- Post GAP information displayed in tool tip when hovering sector in data chart
+	This can be used to detect sector/track write splice
+- Post GAP information displayed in tool-tip when hovering sector in data chart
 - fix bug of incorrect message when canceling image write
 - fix bug of image format detection/selection when loading new image
 
-* AufitV1.1.5671 Display of GAP bytes in sectors buffer. & Get Ready for IPF
+* Aufit V1.1.5671 Display of GAP bytes in sectors buffer. & Get Ready for IPF
 - added Help button with start PDF reader on Aufit.pdf
 - Added Check for Update button + update if requested
 - Read GAP info added in preparation to IPF writing:

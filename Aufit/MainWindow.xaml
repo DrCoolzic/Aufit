@@ -6,7 +6,7 @@
         Width="{jlg:SettingBinding Width}"
         Left="{jlg:SettingBinding Left}"
         Top="{jlg:SettingBinding Top}" 
-        Closing="mainWinClosing" AllowDrop="True" Drop="fileDrop">
+        Closing="mainWinClosing" AllowDrop="True" Drop="fileDrop" Background="#FFF0F0FF">
 
     <Grid Name="mainGrid" KeyDown="keyDown">
         <Grid.RowDefinitions>
@@ -127,12 +127,12 @@
                 <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
             <ProgressBar Grid.Column="0" Name="progress" Visibility="Hidden" IsIndeterminate="True" Width="100"/>
-            <TextBox Grid.Column="1" BorderThickness="0" Name="tbStatus" FontWeight="Bold" FontSize="14" Visibility="Visible" Margin="10,0,0,0" IsReadOnly="True"/>
+            <TextBox Grid.Column="1" BorderThickness="0" Name="tbStatus" FontWeight="Bold" FontSize="14" Visibility="Visible" Margin="10,0,0,0" Background="Transparent" IsReadOnly="True"/>
             <TextBox Grid.Column="2" Margin="10,0,0,0" Name="tbVersion" Text="Version" BorderThickness="0"  Background="Transparent" IsReadOnly="True" />
         </Grid>
 
         <TabControl  Grid.Row="2" x:Name="tabDisplay" Background="Transparent" Margin="5" SelectionChanged="tabDisplaySelectionChanged">
-            <TabItem x:Name="tabItemTrack" Header="Track View" Background="Transparent"  Width="80">
+            <TabItem x:Name="tabItemTrack" Header="Track View" Background="Transparent"  Width="80" >
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto"/>
@@ -374,7 +374,7 @@
                         </Button.ToolTip>
                     </Button>
 
-                    <Grid Grid.Row="0" Name="gridImageView">
+                    <Grid Grid.Row="0" Name="gridImageView" >
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="auto"/>
@@ -385,15 +385,15 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>                       
                             <Viewbox Grid.Column="0" Stretch="Uniform">
-                            <Grid Margin="15">
-                                <Grid Name="cvDiskSide0" Width="300" Height="300"/>
-                                <Grid Name="clipDiskSide0" Width="300" Height="300"/>
+                            <Grid Margin="15" Background="Transparent">
+                                    <Grid Name="cvDiskSide0" Width="300" Height="300" />
+                                    <Grid Name="clipDiskSide0" Width="300" Height="300" MouseWheel="diskMouseWheelSide0" MouseLeftButtonDown="diskMLBSide0" MouseRightButtonUp="diskMRBSide0" Background="Transparent"/>
                             </Grid>
                         </Viewbox>                     
                             <Viewbox Grid.Column="1" Stretch="Uniform" >
                             <Grid Margin="15">
                                 <Grid Name="cvDiskSide1" Width="300" Height="300"/>
-                                <Grid Name="clipDiskSide1" Width="300" Height="300"/>
+                                    <Grid Name="clipDiskSide1" Width="300" Height="300" MouseWheel="diskMouseWheelSide1" MouseLeftButtonDown="diskMLBSide1" MouseRightButtonUp="diskMRBSide1" Background="Transparent"/>
                             </Grid>
                         </Viewbox>
                         </Grid>
@@ -409,6 +409,7 @@
 
                     <Grid Grid.Row="1" >
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>
@@ -457,14 +458,38 @@
                                 </ToolTip>
                             </CheckBox.ToolTip>
                         </CheckBox>
-                        <Button Grid.Column="3" Content="Save Picture" Width="80" Margin="0,2,0,0" VerticalContentAlignment="Center" Click="saveImageClick" HorizontalAlignment="Right">
+                        <CheckBox Grid.Column="3" x:Name="cbMagnifier" Content="Magnifier" Margin="15,0,10,0" VerticalAlignment="Center" 
+				            HorizontalAlignment="Right" IsChecked="False" Click="magnifierClicked">
+                            <CheckBox.ToolTip>
+                                <StackPanel>
+                                <TextBlock FontWeight="Bold" FontSize="15">Magnifier Glass</TextBlock>
+                                <TextBlock>Mouse over disk image displays a magnification region</TextBlock>
+                                <TextBlock>Mouse buttons usage:</TextBlock>
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                    <TextBlock>Mouse wheel increase/decrease zoom factor</TextBlock>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                    <TextBlock>Mouse right click reset zoom factor</TextBlock>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                    <TextBlock>Mouse left click freeze/unfreeze magnifier region</TextBlock>
+                                </StackPanel>
+                                <TextBlock>Magnifier regions for Side 0/1 are independent</TextBlock>
+                                <TextBlock>Saving picture also saves Magnifier region(s)</TextBlock>
+                                </StackPanel>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <Button Grid.Column="4" Content="Save Picture" Width="80" Margin="0,2,0,0" VerticalContentAlignment="Center" Click="saveImageClick" HorizontalAlignment="Right">
                             <Button.ToolTip>
                                 <ToolTip>
                                     <TextBlock>Open a write selector to save picture of the disk</TextBlock>
                                 </ToolTip>
                             </Button.ToolTip>
                         </Button>
-                        <Button Grid.Column="4" Name="btDisk" Margin="5,2,0,0"  Content="Redraw" Width="80"  Click="btDiskRedraw" VerticalContentAlignment="Center" HorizontalAlignment="Right" >
+                        <Button Grid.Column="5" Name="btDisk" Margin="5,2,0,0"  Content="Redraw" Width="80"  Click="btDiskRedraw" VerticalContentAlignment="Center" HorizontalAlignment="Right" >
                             <Button.ToolTip>
                                 <ToolTip>
                                     <TextBlock>Redraw disk picture. Useful to remove track selection</TextBlock>
