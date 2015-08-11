@@ -82,8 +82,6 @@ namespace Aufit {
 		private HistoDrawing _histoDrawing = null;
 		private BitWidthDrawing _clockDrawing = null;
 		private DataDrawing _dataDrawing = null;
-		private bool BatchMode { get; set; }
-		//private bool _batchMode = false;
 
 		/// <summary>
 		/// The track currently selected and displayed
@@ -100,6 +98,7 @@ namespace Aufit {
 
 		public static string ImageName { get; set; }
 		public static string DirectoryName { get; set; }
+		public static bool BatchMode { get; set; }
 
 		/// <summary>
 		/// Initialize the main window
@@ -340,14 +339,6 @@ namespace Aufit {
 
 		}
 
-		////////////////////////
-		// DEBUG FLAGS
-		////////////////////////
-		// when set to true the KF files are read without treading for debug
-		private bool _debugNoThread = false;
-		// Do we read KF directory using Asynchronous read or as tasks.
-		private bool _readKFAsync = true;
-
 
 		private async void openFileClick(object sender, RoutedEventArgs e) {
 			OpenFileDialog ofd = new OpenFileDialog();
@@ -397,7 +388,6 @@ namespace Aufit {
 		private async void container_loaded(object sender, RoutedEventArgs e) {
 			string suffix = "aufit";
 			if (Application.Current.Properties["Suffix"] != null) {
-				BatchMode = true;
 				suffix = (string)Application.Current.Properties["Suffix"];
 			}
 
@@ -407,14 +397,17 @@ namespace Aufit {
 				if (file.Exists) {
 					await processFile(fname);
 				}
+				else {
+					MessageBox.Show(String.Format("File {0} not found", fname));
+					//Application.Current.Shutdown();
+					this.Close();
+				}
 			}
 
 			if (Application.Current.Properties["DiskView"] != null) {
-				BatchMode = true;
-				Thread.Sleep(2000);
 				tabDisplay.SelectedIndex = 1;
 				await drawDiskLayout();
-				double scale = 1.2;
+				double scale = 1.4;
 				if (Application.Current.Properties["Scale"] != null) {
 					string s = Application.Current.Properties["Scale"].ToString();
 					scale = Double.Parse(s, CultureInfo.InvariantCulture);
@@ -424,7 +417,6 @@ namespace Aufit {
 			}
 
 			if (Application.Current.Properties["Protections"] != null) {
-				BatchMode = true;
 				tabDisplay.SelectedIndex = 3;
 				tbAnalysis.Clear();
 				tbAnalysis.AppendText(String.Format("Protection analysis for {0}\n\n", ImageName));
@@ -434,7 +426,6 @@ namespace Aufit {
 			}
 
 			if (Application.Current.Properties["SaveImage"] != null) {
-				BatchMode = true;
 				tabDisplay.SelectedIndex = 4;
 				string fileName = Aufit.MainWindow.ImageName + ".image." + suffix + ".stx";
 				uint flags = 0;
@@ -448,6 +439,7 @@ namespace Aufit {
 				pasti.writePasti(fileName, flags);
 				tbSaveImage.AppendText(String.Format("Image {0} write completed", fileName));
 			}
+
 			if (BatchMode) {
 				//string fileName = Aufit.MainWindow.ImageName + "." + suffix + ".done";
 				//File.Create(fileName).Dispose();
@@ -504,12 +496,11 @@ namespace Aufit {
 					DirectoryName = parent;
 					string file = System.IO.Path.GetFileName(fileName);
 					string root = file.Remove(file.Length - 8, 8);
-					if (_debugNoThread)
-						readOK = readAllTracks(path, root);
-					else if (_readKFAsync)
-						readOK = await readAllTracksAsync(path, root);
-					else
-						readOK = readAllTracksTasks(path, root);
+
+					// readOK = readAllTracks(path, root);
+					readOK = await readAllTracksAsync(path, root);
+					//readOK = readAllTracksTasks(path, root);
+
 					break;
 
 				case ".scp":
@@ -536,13 +527,15 @@ namespace Aufit {
 
 			tbStatus.Text = "PROCESSING DATA";
 			tabCtrl.SelectedIndex = 0;
-			if (_debugNoThread) {
-				for (int i = 0; i < 84; i++) {
-					for (int j = 0; j < 2; j++) {
-						Global.decodeAndRead(i, j, CurrentRev);
-						ButtonMatrix.setButtonBG(i, j);
+			if (BatchMode) {
+				for (int side = 0; side < 2; side++) {
+					for (int track = 0; track < 84; track++) {					
+						await Global.decodeAndReadAsync(track, side, CurrentRev);
+						ButtonMatrix.setButtonBG(track, side);
 					}
 				}
+				guiEnable(true);
+
 			}
 			else {
 				BackgroundWorker bgWorker;
@@ -560,10 +553,10 @@ namespace Aufit {
 		// http://stuff.seans.com/2009/05/21/net-basics-do-work-in-background-thread-to-keep-gui-responsive/
 		void bgWorkerDecodeAndReadAll(object sender, DoWorkEventArgs e) {
 			Task<List<Sector>>[] tasks = new Task<List<Sector>>[168];
-			for (int i = 0; i < 84; i++) {
-				for (int j = 0; j < 2; j++) {
-					FDC.resetTrack(i, j);
-					tasks[i + j * 84] = Global.decodeAndReadAsync(i, j, CurrentRev);
+			for (int side = 0; side < 2; side++) {
+				for (int track = 0; track < 84; track++) {				
+					FDC.resetTrack(track, side);
+					tasks[track + side * 84] = Global.decodeAndReadAsync(track, side, CurrentRev);
 				}
 			}
 			Task.WaitAll(tasks);
@@ -577,9 +570,9 @@ namespace Aufit {
 			}
 
 			guiEnable(true);
-			for (int i = 0; i < 84; i++) {
-				for (int j = 0; j < 2; j++) {
-					ButtonMatrix.setButtonBG(i, j);
+			for (int side = 0; side < 2; side++) {
+				for (int track = 0; track < 84; track++) {			
+					ButtonMatrix.setButtonBG(track, side);
 				}
 			}
 			string message = SectorNotFoundException.ExceptionMessage;
@@ -597,17 +590,17 @@ namespace Aufit {
 		/// <param name="root">Root name expanded with xx.x to create the final name</param>
 		private bool readAllTracksTasks(string path, string root) {
 			Task<bool>[] tasks = new Task<bool>[168];
-			for (int i = 0; i < 84; i++) {
-				for (int j = 0; j < 2; j++) {
-					string fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, i, j);
-					tasks[i + j * 84] = ProcessStream.readStreamTrackAsync(fname, i, j);
+			for (int side = 0; side < 2; side++) {
+				for (int track = 0; track < 84; track++) {				
+					string fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, track, side);
+					tasks[track + side * 84] = ProcessStream.readStreamTrackAsync(fname, track, side);
 				}
 			}
 			Task.WaitAll(tasks);
 
 			ButtonMatrix.clearButtons();
 			for (int side = 0; side < 2; side++) {
-				for (int track = 0; track < 84; track++) {
+				for (int track = 0; track < 84; track++) {								
 					if (Global.Disk[track, side].fluxData != null) {
 						Global.computeHisto(track, side, 1, infoBox);
 						ButtonMatrix.setButtonBG(track, side);
@@ -634,7 +627,7 @@ namespace Aufit {
 			ButtonMatrix.clearButtons();
 
 			for (int side = 0; side < 2; side++) {
-				for (int track = 0; track < 84; track++) {
+				for (int track = 0; track < 84; track++) {				
 					fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, track, side);
 					bool streamOK = await ProcessStream.readStreamTrackAsync(fname, track, side);
 					if (streamOK) {
@@ -751,10 +744,6 @@ namespace Aufit {
 			_dataDrawing.drawTrackData();
 		}
 
-		private void sectGridSizeChanged(object sender, SizeChangedEventArgs e) {
-			// TODO ?
-		}
-
 		//private void dataMouseLBD(object sender, MouseButtonEventArgs e) {
 
 		//	if (e.ClickCount > 1) {
@@ -797,21 +786,23 @@ namespace Aufit {
 			//await checkProtectionAsync();
 			tbAnalysis.Clear();
 			tbAnalysis.AppendText(String.Format("Protection analysis for {0}\n\n", ImageName));
-			for (int side = 0; side < 2; side++)
-				for (int track = 0; track < 84; track++) {
+			for (int side = 0; side < 2; side++) {
+				for (int track = 0; track < 84; track++) {				
 					await Global.decodeAndReadAsync(track, side, 1);
 					Protections.checkProtection(track, side, tbAnalysis);
 				}
+			}
 		}
 
 
 		private async Task checkProtectionAsync(TextBox tb) {
-			for (int side = 0; side < 2; side++)
-				for (int track = 0; track < 84; track++) {
+			for (int side = 0; side < 2; side++) {
+				for (int track = 0; track < 84; track++) {				
 					await Global.decodeAndReadAsync(track, side, 1);
 					Protections.checkProtection(track, side, tb);
 					ButtonMatrix.setButtonBG(track, side);
 				}
+			}
 		}
 
 
@@ -941,7 +932,7 @@ namespace Aufit {
 			cbST.IsEnabled = true;
 			cbMSA.IsEnabled = true;
 			for (int side = 0; side < 2; side++) {
-				for (int track = 0; track < 84; track++) {
+				for (int track = 0; track < 84; track++) {								
 					if (Global.Disk[track, side].track != null) {
 						hasProtection |= Global.Disk[track, side].track.hasProtections;
 						STIncompatible |= (((Global.Disk[track, side].track.flags & Track.NOT_STD_SIZ) != 0) ||

@@ -26,13 +26,20 @@ namespace Aufit {
 
 			for (int i = 0; i < e.Args.Length; i++) {
 				//MessageBox.Show(e.Args[i]);
-				if (e.Args[i] == "-disk_view")
+				if (e.Args[i] == "-disk_view") {
 					this.Properties["DiskView"] = "yes";
-				else if (e.Args[i] == "-protections")
+					Aufit.MainWindow.BatchMode = true;
+				}
+				else if (e.Args[i] == "-protections") {
 					this.Properties["Protections"] = "yes";
-				else if (e.Args[i] == "-save_image")
+					Aufit.MainWindow.BatchMode = true;
+				}
+				else if (e.Args[i] == "-save_image") {
 					this.Properties["SaveImage"] = "stx";
+					Aufit.MainWindow.BatchMode = true;
+				}
 				else if (e.Args[i] == "-suffix") {
+					Aufit.MainWindow.BatchMode = true;
 					if ((i++ + 1) < e.Args.Length)
 						this.Properties["Suffix"] = e.Args[i];
 					else {
@@ -41,6 +48,7 @@ namespace Aufit {
 					}
 				}
 				else if (e.Args[i] == "-scale") {
+					Aufit.MainWindow.BatchMode = true;
 					if ((i++ + 1) < e.Args.Length)
 						this.Properties["Scale"] = e.Args[i];
 					else {
@@ -48,8 +56,15 @@ namespace Aufit {
 						Application.Current.Shutdown();
 					}
 				}
-				else
+				else {
 					this.Properties["FileName"] = e.Args[i];
+					string fname = e.Args[i];
+					FileInfo file = new FileInfo(fname);
+					if (!file.Exists) {
+						MessageBox.Show(String.Format("File {0} not found", fname));
+						Application.Current.Shutdown();
+					}
+				}
 			}
 
 			//bool aIsNewInstance = false;

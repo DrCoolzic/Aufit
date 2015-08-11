@@ -1,4 +1,7 @@
 * Aufit V1.2
+- Definitively Fixed problem of racing conditions in batch mode
+- Fixed scale factor for disk snapshot  
+- Checking if passed file name exists otherwise exit application
 - Fixed bug in file names
 - All transparent windows in Aufit are now blueish white 
 - Fixed bug in writing incorrectly fuzzy bytes in STX for truncated sectors

@@ -424,8 +424,8 @@ namespace Aufit {
 
 			// draw all tracks of both side
 			bool _debugNoAsync = false;
-			for (int track = 0; track < 84; track++) {
-				for (int side = 0; side < 2; side++) {
+			for (int side = 0; side < 2; side++) {
+				for (int track = 0; track < 84; track++) {				
 					if ((Global.Disk[track, side].fluxData == null) &&
 						(Global.Disk[track, side].packedFluxData == null)) continue;
 					
@@ -735,9 +735,9 @@ namespace Aufit {
 
 
 		private void saveImageClick(object sender, RoutedEventArgs e) {
-			double scale = 0.8;
-			if (rbMed.IsChecked == true) scale = 1.2;
-			else if (rbHigh.IsChecked == true) scale = 2.0;
+			double scale = 1.0;
+			if (rbMed.IsChecked == true) scale = 1.4;
+			else if (rbHigh.IsChecked == true) scale = 2.2;
 			Global.saveImage(gridImageView, scale, "", true);
 		}
 
