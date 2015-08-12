@@ -386,6 +386,7 @@ namespace Aufit {
 
 
 		private async void container_loaded(object sender, RoutedEventArgs e) {
+			bool ok;
 			string suffix = "aufit";
 			if (Application.Current.Properties["Suffix"] != null) {
 				suffix = (string)Application.Current.Properties["Suffix"];
@@ -395,11 +396,14 @@ namespace Aufit {
 				string fname = Application.Current.Properties["FileName"].ToString();
 				FileInfo file = new FileInfo(fname);
 				if (file.Exists) {
-					await processFile(fname);
+					ok = await processFile(fname);
+					if (!ok) {
+						MessageBox.Show("Image could not be read/processed correctly");
+						this.Close();
+					}
 				}
 				else {
 					MessageBox.Show(String.Format("File {0} not found", fname));
-					//Application.Current.Shutdown();
 					this.Close();
 				}
 			}
@@ -426,6 +430,11 @@ namespace Aufit {
 			}
 
 			if (Application.Current.Properties["SaveImage"] != null) {
+				string ext = Application.Current.Properties["SaveImage"].ToString();
+				if (ext != "stx") {
+					MessageBox.Show("Currently only stx format is supported.");
+					this.Close();
+				}
 				tabDisplay.SelectedIndex = 4;
 				string fileName = Aufit.MainWindow.ImageName + ".image." + suffix + ".stx";
 				uint flags = 0;

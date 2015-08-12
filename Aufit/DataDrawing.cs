@@ -214,7 +214,7 @@ class DataDrawing {
 
 				Line splice = new Line();
 				splice.Stroke = Brushes.Red;
-				splice.StrokeThickness = 3;
+				splice.StrokeThickness = 1.5;
 				//DoubleCollection dashPattern = new DoubleCollection(new double[2] { 2, 1 });
 				//splice.StrokeDashArray = dashPattern;
 				splice.X1 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;

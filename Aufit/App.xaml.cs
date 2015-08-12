@@ -26,18 +26,26 @@ namespace Aufit {
 
 			for (int i = 0; i < e.Args.Length; i++) {
 				//MessageBox.Show(e.Args[i]);
-				if (e.Args[i] == "-disk_view") {
+				if (e.Args[i] == "-disk") {
 					this.Properties["DiskView"] = "yes";
 					Aufit.MainWindow.BatchMode = true;
 				}
+
 				else if (e.Args[i] == "-protections") {
 					this.Properties["Protections"] = "yes";
 					Aufit.MainWindow.BatchMode = true;
 				}
-				else if (e.Args[i] == "-save_image") {
-					this.Properties["SaveImage"] = "stx";
+
+				else if (e.Args[i] == "-save") {
 					Aufit.MainWindow.BatchMode = true;
+					if ((i++ + 1) < e.Args.Length)
+						this.Properties["SaveImage"] = e.Args[i];
+					else {
+						MessageBox.Show("Invalid suffix arguments");
+						Application.Current.Shutdown();
+					}
 				}
+
 				else if (e.Args[i] == "-suffix") {
 					Aufit.MainWindow.BatchMode = true;
 					if ((i++ + 1) < e.Args.Length)
@@ -47,6 +55,7 @@ namespace Aufit {
 						Application.Current.Shutdown();
 					}
 				}
+
 				else if (e.Args[i] == "-scale") {
 					Aufit.MainWindow.BatchMode = true;
 					if ((i++ + 1) < e.Args.Length)
@@ -56,6 +65,7 @@ namespace Aufit {
 						Application.Current.Shutdown();
 					}
 				}
+
 				else {
 					this.Properties["FileName"] = e.Args[i];
 					string fname = e.Args[i];
@@ -65,6 +75,7 @@ namespace Aufit {
 						Application.Current.Shutdown();
 					}
 				}
+
 			}
 
 			//bool aIsNewInstance = false;

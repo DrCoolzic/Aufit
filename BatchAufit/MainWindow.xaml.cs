@@ -162,9 +162,9 @@ namespace BatchAufit {
 			if (_fileToProcessList == null) return;
 			_run = true;
 			string arguments = "-suffix " + tbSuffix.Text + " " + "-scale " + tbScale.Text + " ";
-			if (cbDiskView.IsChecked == true) arguments += "-disk_view ";
+			if (cbDiskView.IsChecked == true) arguments += "-disk ";
 			if (cbProt.IsChecked == true) arguments += "-protections ";
-			if (cbSave.IsChecked == true) arguments += "-save_image ";
+			if (cbSave.IsChecked == true) arguments += "-save stx ";
 			pbProgress.IsIndeterminate = false;
 			pbProgress.Minimum = 0;
 			pbProgress.Maximum = _count;
@@ -224,6 +224,7 @@ namespace BatchAufit {
 		//	Task.Factory.StartNew(() => p.Start());
 		//	return tcs.Task;
 		//}
+
 
 
 		private void btStopClicked(object sender, RoutedEventArgs e) {

@@ -6,7 +6,7 @@
         Width="{jlg:SettingBinding Width}"
         Left="{jlg:SettingBinding Left}"
         Top="{jlg:SettingBinding Top}" 
-        Closing="mainWinClosing" AllowDrop="True" Drop="fileDrop" Background="#FFF0F0FF">
+        Closing="mainWinClosing" AllowDrop="True" Drop="fileDrop" Background="#FFFFFFFF">
 
     <Grid Name="mainGrid" KeyDown="keyDown">
         <Grid.RowDefinitions>
