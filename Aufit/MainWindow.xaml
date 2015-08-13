@@ -645,6 +645,7 @@
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>
@@ -692,21 +693,29 @@
                                 </ToolTip>
                             </CheckBox.ToolTip>
                         </CheckBox>
-                        <Button Grid.Column="6" Margin="0,0,5,0"  Content="Clear content" Width="80"  Click="btWriteClearClick" HorizontalAlignment="Right" VerticalAlignment="Top">
+                        <CheckBox Grid.Column="6" x:Name="cbTrackData" Content="NoTrackData" Margin="5,0,0,0" VerticalAlignment="Center" 
+							  HorizontalAlignment="Right" IsChecked="False">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>No track data written (only use if you understand)</TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <Button Grid.Column="7" Margin="0,0,5,0"  Content="Clear content" Width="80"  Click="btWriteClearClick" HorizontalAlignment="Right" VerticalAlignment="Top">
                             <Button.ToolTip>
                                 <ToolTip>
                                     <TextBlock>Clear the content of the windows and re-analyze possible formats</TextBlock>
                                 </ToolTip>
                             </Button.ToolTip>
                         </Button>
-                        <Button Grid.Column="7" Margin="0,0,5,0"  Content="Save content" Width="80"  Click="btWriteSaveClick" HorizontalAlignment="Right" VerticalAlignment="Top">
+                        <Button Grid.Column="8" Margin="0,0,5,0"  Content="Save content" Width="80"  Click="btWriteSaveClick" HorizontalAlignment="Right" VerticalAlignment="Top">
                             <Button.ToolTip>
                                 <ToolTip>
                                     <TextBlock>Save the content of the windows in a .txt file</TextBlock>
                                 </ToolTip>
                             </Button.ToolTip>
                         </Button>
-                        <Button Grid.Column="8" Margin="0,0,5,0"  Content="Write Image" Width="80"  Click="btWriteDiskClick" HorizontalAlignment="Right" VerticalAlignment="Top">
+                        <Button Grid.Column="9" Margin="0,0,5,0"  Content="Write Image" Width="80"  Click="btWriteDiskClick" HorizontalAlignment="Right" VerticalAlignment="Top">
                             <Button.ToolTip>
                                 <ToolTip>
                                     <TextBlock>Write the image in the selected output format</TextBlock>

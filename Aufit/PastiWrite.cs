@@ -48,6 +48,7 @@ namespace PastiPackage {
 		readonly bool SIM_FUZZY = false;
 
 		bool _debug = false;
+		bool _noTrackData = false;
 
 
 
@@ -99,6 +100,7 @@ namespace PastiPackage {
 
 			bool forceDs = ((flags & Global.FORCE_DS) != 0) ? true : false;
 			bool optimize = ((flags & Global.OPTIMIZE) != 0) ? true : false;
+			_noTrackData = ((flags & Global.NO_TRACK_DATA) != 0) ? true : false;
 
 			// check for double sided - we check that we have some sectors on side 1
 			if (forceDs) sideCount = 2;
@@ -532,6 +534,7 @@ namespace PastiPackage {
 			// - Short long track ??
 			// - SWS
 			// - no data
+			if (_noTrackData) return false;
 			return true;
 		}
 

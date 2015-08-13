@@ -398,13 +398,15 @@ namespace Aufit {
 				if (file.Exists) {
 					ok = await processFile(fname);
 					if (!ok) {
-						MessageBox.Show("Image could not be read/processed correctly");
-						this.Close();
+						//MessageBox.Show("Image could not be read/processed correctly");
+						Environment.Exit(10);
+						//this.Close();
 					}
 				}
 				else {
-					MessageBox.Show(String.Format("File {0} not found", fname));
-					this.Close();
+					//MessageBox.Show(String.Format("File {0} not found", fname));
+					Environment.Exit(11);
+					//this.Close();
 				}
 			}
 
@@ -838,6 +840,8 @@ namespace Aufit {
 				flags |= Global.DEBUG;
 			if (cbSync.IsChecked.Value == true)
 				flags |= Global.SYNC_HEAD;
+			if (cbTrackData.IsChecked.Value == true)
+				flags |= Global.NO_TRACK_DATA;
 
 
 			switch (((ComboBoxItem)cbOutputFormat.SelectedItem).Content.ToString()) {
