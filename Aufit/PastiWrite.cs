@@ -225,7 +225,7 @@ namespace PastiPackage {
 					// do we need timing record
 					int timingEntries = 0;
 					for (int sect = 0; sect < sectorCount; sect++)
-						if ((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0)
+						if (((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0) && (dt.sectors[sect].data != null))
 							timingEntries += Global.sectSize(dt.sectors[sect].id.Length) / 16;
 
 					if (timingEntries > 0)
@@ -406,7 +406,7 @@ namespace PastiPackage {
 						if (_debug) _saveImageBox.AppendText(String.Format("   Writing Timing header Flag=5 size={0} ({1}-{2})\n", 2 * timingEntries + 4, start, buffer.Count - 1));
 						// write timing
 						for (int sect = 0; sect < sectorCount; sect++) {
-							if ((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0) {
+							if (((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0) && (dt.sectors[sect].data != null)) {
 								int timingSum = 0;
 								for (int i = 1; i < (dt.sectors[sect].data.buffer.DataByte.Count - 2); i++) {
 									timingSum += (dt.sectors[sect].data.buffer.BitWidth[i] * 16);

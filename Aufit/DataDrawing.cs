@@ -181,53 +181,58 @@ class DataDrawing {
 
 		}	// all sectors
 
+		// draw out of band
+		int OOBCount = 0;
 		Global.DiskTrack dt = Global.Disk[track, side];
-		int startBit = dt.packedFluxDataRev[rev].firstFluxBit;
-		int stopBit = startBit + dt.packedFluxDataRev[rev].bitCount;
-		int currentTime = 0;
-		PhaseSector ps = new PhaseSector(dt, dt.packedFluxDataRev[rev].revolutionTime);
+		if (dt.sectors.Count > 1) {
+			int startBit = dt.packedFluxDataRev[rev].firstFluxBit;
+			int stopBit = startBit + dt.packedFluxDataRev[rev].bitCount;
+			int currentTime = 0;
+			PhaseSector ps = new PhaseSector(dt, dt.packedFluxDataRev[rev].revolutionTime);
 
-		for (int bitPosition = startBit; bitPosition < stopBit; bitPosition++) {
-			int currentByte = bitPosition / 8;
-			int currentBitInByte = bitPosition % 8;
-			byte bits = dt.packedFluxData.packedBits[currentByte];
-			int bit = (bits >> currentBitInByte) & 0x1;
-			int bitWidth = dt.packedFluxData.bitWidth[currentByte];
-			//dsr.shiftBitsIn(bit);
+			for (int bitPosition = startBit; bitPosition < stopBit; bitPosition++) {
+				int currentByte = bitPosition / 8;
+				int currentBitInByte = bitPosition % 8;
+				byte bits = dt.packedFluxData.packedBits[currentByte];
+				int bit = (bits >> currentBitInByte) & 0x1;
+				int bitWidth = dt.packedFluxData.bitWidth[currentByte];
+				//dsr.shiftBitsIn(bit);
 
-			if (bit == 0) continue;
-			int flux = Global.fluxWidth(bitPosition, track, side);
-			currentTime += flux;
-			ps.computePhaseAndSector(currentTime);
+				if (bit == 0) continue;
+				int flux = Global.fluxWidth(bitPosition, track, side);
+				currentTime += flux;
+				ps.computePhaseAndSector(currentTime);
+				if (!FDC.isGapPhase(ps.Phase)) continue;
 
-			int percent = 8;
-			int upper_high = 4 * bitWidth + ((4 * percent * bitWidth) / 100);
-			int upper_low  =  4 * bitWidth - ((4 * percent * bitWidth) / 100);	
-			int middle_high = 3 * bitWidth + ((3 * percent * bitWidth) / 100);
-			int middle_low =  3 * bitWidth - ((3 * percent * bitWidth) / 100);	
-			int lower_high =  2 * bitWidth + ((2 * percent  * bitWidth) / 100);
-			int lower_low  =  2 * bitWidth - ((2 * percent  * bitWidth) / 100);
+				int percent = 8;
+				int upper_high = 4 * bitWidth + ((4 * percent * bitWidth) / 100);
+				int upper_low = 4 * bitWidth - ((4 * percent * bitWidth) / 100);
+				int middle_high = 3 * bitWidth + ((3 * percent * bitWidth) / 100);
+				int middle_low = 3 * bitWidth - ((3 * percent * bitWidth) / 100);
+				int lower_high = 2 * bitWidth + ((2 * percent * bitWidth) / 100);
+				int lower_low = 2 * bitWidth - ((2 * percent * bitWidth) / 100);
 
-			if (((flux > upper_high) || ((flux < upper_low) && (flux > middle_high)) ||
-				(flux < lower_low) || ((flux > lower_high) && (flux < middle_low)))
-				&& (dt.sectors.Count > 0) && FDC.isGapPhase(ps.Phase)) {
+				if (((flux > upper_high) || ((flux < upper_low) && (flux > middle_high)) ||
+						(flux < lower_low) || ((flux > lower_high) && (flux < middle_low)))
+						&& (dt.sectors.Count > 0) && FDC.isGapPhase(ps.Phase)) {
+					if (OOBCount++ > 50) break;
+					Line splice = new Line();
+					splice.Stroke = Brushes.Red;
+					splice.StrokeThickness = 1.5;
+					//DoubleCollection dashPattern = new DoubleCollection(new double[2] { 2, 1 });
+					//splice.StrokeDashArray = dashPattern;
+					splice.X1 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
+					splice.Y1 = _dataChartLayout.NormY(_dataChartLayout.Ymin);
+					splice.X2 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
+					splice.Y2 = _dataChartLayout.NormY(_dataChartLayout.Ymax);
 
-				Line splice = new Line();
-				splice.Stroke = Brushes.Red;
-				splice.StrokeThickness = 1.5;
-				//DoubleCollection dashPattern = new DoubleCollection(new double[2] { 2, 1 });
-				//splice.StrokeDashArray = dashPattern;
-				splice.X1 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
-				splice.Y1 = _dataChartLayout.NormY(_dataChartLayout.Ymin);
-				splice.X2 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
-				splice.Y2 = _dataChartLayout.NormY(_dataChartLayout.Ymax);
+					TextBox spliceInfo = new TextBox();
+					spliceInfo.Text = String.Format("Out of band at {0} ms -- flux value={1:F3} µs", (double)currentTime / 1000000.0, flux);
+					ToolTipService.SetToolTip(splice, spliceInfo);
+					ToolTipService.SetShowDuration(splice, 100000);
+					_dataChartLayout.GraphicCanvas.Children.Add(splice);
 
-				TextBox spliceInfo = new TextBox();
-				spliceInfo.Text = String.Format("Out of band at {0} ms -- flux value={1:F3} µs", (double)currentTime / 1000000.0, flux);
-				ToolTipService.SetToolTip(splice, spliceInfo);
-				ToolTipService.SetShowDuration(splice, 100000);
-				_dataChartLayout.GraphicCanvas.Children.Add(splice);
-
+				}
 			}
 		}
 

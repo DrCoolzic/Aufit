@@ -158,48 +158,50 @@ namespace Aufit {
 				// check "dragon flight and Jupiter master drive protections"
 				bool dragonflight = false;
 				bool jupiterMasterdrive = false;
-				int start = 0;
-				// TODO use string now
-				for (int i = start; i < (dt.sectors[0].id.info.startByte); i++) {
-					if ((dt.track.buffer.DataByte[i] == 0x00) &&
-						(dt.track.buffer.DataByte[i + 1] == 0x1C) &&
-						(dt.track.buffer.DataByte[i + 2] == 0x92) &&
-						(dt.track.buffer.DataByte[i + 3] == 0x10) &&
-						(dt.track.buffer.DataByte[i + 4] == 0x90) &&
-						(dt.track.buffer.DataByte[i + 5] == 0xC2)) {
-						jupiterMasterdrive = true;
-						start = i + 6;
-						break;
+				if (dt.sectors[0].id.info.startByte < (dt.track.buffer.DataByte.Count - 15)) {
+					int start = 0;
+					// TODO use string now
+					for (int i = start; i < (dt.sectors[0].id.info.startByte); i++) {
+						if ((dt.track.buffer.DataByte[i] == 0x00) &&
+							(dt.track.buffer.DataByte[i + 1] == 0x1C) &&
+							(dt.track.buffer.DataByte[i + 2] == 0x92) &&
+							(dt.track.buffer.DataByte[i + 3] == 0x10) &&
+							(dt.track.buffer.DataByte[i + 4] == 0x90) &&
+							(dt.track.buffer.DataByte[i + 5] == 0xC2)) {
+							jupiterMasterdrive = true;
+							start = i + 6;
+							break;
+						}
 					}
-				}
 
-				for (int i = start; i < dt.sectors[0].id.info.startByte; i++) {
-					if ((dt.track.buffer.DataByte[i] == 0x0B) &&
-						(dt.track.buffer.DataByte[i + 1] == 0xCD) &&
-						(dt.track.buffer.DataByte[i + 2] == 0xB4) &&
-						(dt.track.buffer.DataByte[i + 3] == 0xF7)) {
-						dragonflight = true;
-						start = i + 4;
-						break;
+					for (int i = start; i < dt.sectors[0].id.info.startByte; i++) {
+						if ((dt.track.buffer.DataByte[i] == 0x0B) &&
+							(dt.track.buffer.DataByte[i + 1] == 0xCD) &&
+							(dt.track.buffer.DataByte[i + 2] == 0xB4) &&
+							(dt.track.buffer.DataByte[i + 3] == 0xF7)) {
+							dragonflight = true;
+							start = i + 4;
+							break;
+						}
 					}
-				}
 
-				if (jupiterMasterdrive && !
-					((dt.track.buffer.DataByte[start] == 0x00) &&
-					(dt.track.buffer.DataByte[start + 1] == 0xDE) &&
-					(dt.track.buffer.DataByte[start + 2] == 0xAD) &&
-					(dt.track.buffer.DataByte[start + 3] == 0xC0) &&
-					(dt.track.buffer.DataByte[start + 4] == 0xDE)))
-					jupiterMasterdrive = false;
+					if (jupiterMasterdrive && !
+						((dt.track.buffer.DataByte[start] == 0x00) &&
+						(dt.track.buffer.DataByte[start + 1] == 0xDE) &&
+						(dt.track.buffer.DataByte[start + 2] == 0xAD) &&
+						(dt.track.buffer.DataByte[start + 3] == 0xC0) &&
+						(dt.track.buffer.DataByte[start + 4] == 0xDE)))
+						jupiterMasterdrive = false;
 
 
-				if (dragonflight || jupiterMasterdrive) {
-					dt.track.flags |= Track.HIDDEN_DATA;
-					dt.track.hasProtections = true;
-					if (jupiterMasterdrive)
-						writeInfo(info, "HDG Hidden Data into GAP - type: Jupiter Master drive");
-					else
-						writeInfo(info, "HDG Hidden Data into GAP - type: Dragon flight");
+					if (dragonflight || jupiterMasterdrive) {
+						dt.track.flags |= Track.HIDDEN_DATA;
+						dt.track.hasProtections = true;
+						if (jupiterMasterdrive)
+							writeInfo(info, "HDG Hidden Data into GAP - type: Jupiter Master drive");
+						else
+							writeInfo(info, "HDG Hidden Data into GAP - type: Dragon flight");
+					}
 				}
 
 			}	// number of sectors > 0
