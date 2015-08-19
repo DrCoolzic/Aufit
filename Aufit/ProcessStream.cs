@@ -36,6 +36,9 @@ using KFStreamPackage;
 using WD1772Package;
 using GlobalPackage;
 using System.IO;
+using System.Diagnostics;
+using System.Windows.Threading;
+using System.Reflection;
 
 namespace KFStreamPackage {
 	/// <summary>
@@ -127,6 +130,7 @@ namespace KFStreamPackage {
 			Directory.CreateDirectory(sourceImage);
 
 			tb.Clear();
+			// write all raw files
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {
 					if (Global.Disk[track, side].fluxData != null) {
@@ -138,8 +142,34 @@ namespace KFStreamPackage {
 					}
 				}
 			}
+
+			// if dtc installed use it to generate the ctr file
+			if (File.Exists("dtc.exe")) {
+				try {
+					ProcessStartInfo si = new ProcessStartInfo();
+					//string a = Directory.GetParent(Assembly.GetExecutingAssembly().Location).FullName;
+					//string b = System.AppDomain.CurrentDomain.BaseDirectory;
+					//string execFile = Path.Combine(b, Path.GetFileName("dtc.exe"));
+					si.FileName = "dtc.exe";
+
+					string inputFiles = Path.Combine(sourceImage, Path.GetFileName("*"));
+					string outputFile = Path.Combine(Path.GetDirectoryName(sourceImage), Path.GetFileName(Path.GetFileName(sourceImage) + ".ctr"));
+					si.Arguments = @"-m1 -f""" + inputFiles + @""" -i0 -f""" + outputFile + @""" -i2";
+					//si.UseShellExecute = false;
+					//si.RedirectStandardOutput = true;
+					//si.CreateNoWindow = true;
+
+					Process process = Process.Start(si);
+					process.WaitForExit();
+					//string s = process.StandardOutput.ReadToEnd();
+				}
+				catch (Exception exc) {
+					MessageBox.Show(String.Format("Error: {0}", exc.Message));
+				}
+
+			}
 			return true;
-		}
+		}		
 
 	}	// streamProcess Class
 }	// name space
