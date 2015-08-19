@@ -31,7 +31,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Windows.Media;
 
-using KFReaderPackage;
+using KFStreamPackage;
 using GlobalPackage;
 using Aufit;
 using System.Windows.Controls;

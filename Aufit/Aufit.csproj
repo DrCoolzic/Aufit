@@ -139,6 +139,7 @@
     <Compile Include="DSR.cs" />
     <Compile Include="IPFStruct.cs" />
     <Compile Include="KFReader.cs" />
+    <Compile Include="KFWriter.cs" />
     <Compile Include="PastiStruct.cs" />
     <Compile Include="PastiWrite.cs" />
     <Compile Include="Protections.cs" />

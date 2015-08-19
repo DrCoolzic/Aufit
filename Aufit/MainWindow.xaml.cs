@@ -47,7 +47,7 @@ using System.Windows.Threading;
 using System.Deployment.Application;
 
 using ChartPackage;
-using KFReaderPackage;
+using KFStreamPackage;
 using WD1772Package;
 using SCPReaderPackage;
 using GlobalPackage;
@@ -873,6 +873,15 @@ namespace Aufit {
 						StdWriter st = new StdWriter(tbSaveImage);
 						status = st.writeStd(sfd.FileName, flags, FileType.MSA);
 					}
+					break;
+
+				case "KF Raw":
+					if (ImageName == null) return;
+					string name = ImageName + ".conv";
+					if (MessageBox.Show(String.Format("You are about to write raw files in the directory \n '{0}'\nDo you want to proceed", name),
+						"Do you want to write KF Raw files?", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes) == MessageBoxResult.No)
+						return;
+					ProcessStream.writeStreamTracks(name, tbSaveImage);
 					break;
 
 				default:

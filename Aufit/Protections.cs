@@ -325,7 +325,8 @@ namespace Aufit {
 					}
 
 					// long sector ( 4000 * 8) + 3%
-					if ((dt.sectors[secIndex].data.info.timeLength > (32960 * (Global.sectSize(dt.sectors[secIndex].id.Length) + 3))) &&
+					//if ((dt.sectors[secIndex].data.info.timeLength > (32960 * (Global.sectSize(dt.sectors[secIndex].id.Length) + 3))) &&
+					if ((dt.sectors[secIndex].data.info.timeLength > (33280 * (Global.sectSize(dt.sectors[secIndex].id.Length) + 3))) &&
 							((dt.track.flags & Track.SHORT_TRACK) == 0)) {
 						dt.sectors[secIndex].flags |= Sector.LONG_SECT;
 						dt.track.hasProtections = true;
@@ -333,7 +334,8 @@ namespace Aufit {
 					}
 
 					// short sector ( 4000 * 8) - 3%
-					if ((dt.sectors[secIndex].data.info.timeLength < (31040 * (Global.sectSize(dt.sectors[secIndex].id.Length) + 3))) &&
+					//if ((dt.sectors[secIndex].data.info.timeLength < (31040 * (Global.sectSize(dt.sectors[secIndex].id.Length) + 3))) &&
+					if ((dt.sectors[secIndex].data.info.timeLength < (30720 * (Global.sectSize(dt.sectors[secIndex].id.Length) + 3))) &&
 							((dt.track.flags & Track.LONG_TRACK) == 0)) {
 						dt.sectors[secIndex].flags |= Sector.SHORT_SECT;
 						dt.track.hasProtections = true;

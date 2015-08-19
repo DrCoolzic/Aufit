@@ -58,7 +58,7 @@ with a simple check regardless of the current stream alignment.
 .
 
 For more information please read the "KryoFlux Stream File Documentation"
-http://info-coach.fr/atari/software/projects/_kryoflux/kryoflux_stream_protocol.pdf
+http://info-coach.fr/atari/documents/_mydoc/kryoflux_stream_protocol.pdf
 
 @author original code provided by the Software Preservation Society
 @author Extensively modified by Jean Louis-Guerin
@@ -73,7 +73,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KFReaderPackage {
+namespace KFStreamPackage {
 
 #region structures
 	/// <summary>Define the Status codes returned by Stream decoding procedures</summary>
@@ -136,6 +136,29 @@ public struct Statistic {
 	/// <summary>Maximum flux value in number of Sample clock</summary>
 	public int fluxMax;
 }
+
+/// Stream block header definition (the type is specified as a byte)
+public enum BHeader : byte {
+	BHFlux2 = 7,			// Max Value of Header for a Flux2 block (h=0x00-0x07)
+	BHNop1,					// Header for a Nop1 block (h=0x08)
+	BHNop2,					// Header for a Nop2 block (h=0x09)
+	BHNop3,					// Header for a Nop3 block (h=0x0A)
+	BHOvl16,				// Header for an overflow16 block (h=0x0B)
+	BHFlux3,				// Header for a Flux3 block (h=00xC)
+	BHOOB,					// Header for a control block (h=0x0D)
+	BHFlux1					// Min Value of Header for a Flux1 block (h=0x0E-0x0FF)
+}
+
+/// Stream OOB Type definition
+public enum OOBType : byte {
+	OOBInvalid = 0,			// Invalid block - Should not happen
+	OOBStreamInfo,			// StreamInfo block - Transfer information
+	OOBIndex,				// Index Block - Index information
+	OOBStreamEnd,			// StreamEnd block - No more data
+	OOBHWInfo,				// Info block - Info from KryoFlux device
+	OOBEof = BHeader.BHOOB	// EOF block - end of file
+}
+
 #endregion structures
 
 /// <summary>The KFStreamReader Class</summary>
@@ -199,28 +222,6 @@ public class KFReader {
 		khsBuffer,				// buffering problem; overflow during read, underflow during write
 		khsIndex				// no index signal detected during timeout period
 	}
-
-	/// Stream block header definition (the type is specified as a byte)
-	private enum BHeader : byte {
-		BHFlux2 = 7,			// Max Value of Header for a Flux2 block (h=0x00-0x07)
-		BHNop1,					// Header for a Nop1 block (h=0x08)
-		BHNop2,					// Header for a Nop2 block (h=0x09)
-		BHNop3,					// Header for a Nop3 block (h=0x0A)
-		BHOvl16,				// Header for an overflow16 block (h=0x0B)
-		BHFlux3,				// Header for a Flux3 block (h=00xC)
-		BHOOB,					// Header for a control block (h=0x0D)
-		BHFlux1					// Min Value of Header for a Flux1 block (h=0x0E-0x0FF)
-	}
-
-	/// Stream OOB Type definition
-	private enum OOBType : byte {
-		OOBInvalid = 0,			// Invalid block - Should not happen
-		OOBStreamInfo,			// StreamInfo block - Transfer information
-		OOBIndex,				// Index Block - Index information
-		OOBStreamEnd,			// StreamEnd block - No more data
-		OOBInfo,				// Info block - Info from KryoFlux device
-		OOBEof = BHeader.BHOOB	// EOF block - end of file
-	}
 	#endregion Attributes and internal structures
 
 	#region Properties
@@ -279,7 +280,7 @@ public class KFReader {
 	/// in one string that you can access with this function. Each information is stored as 
 	/// a "name=value" pair and is separated from the previous one with a coma "," character.
 	/// For example "sck=24027428.5714285,". For more information please refer to the 
-	/// http://info-coach.fr/atari/software/projects/_kryoflux/kryoflux_stream_protocol.pdf
+	/// http://info-coach.fr/atari/documents/_mydoc/kryoflux_stream_protocol.pdf
 	/// document.\n
 	/// To find a specific name=value pair in the InfoString you can use the @ref findName() 
 	/// function</remarks>
@@ -628,7 +629,7 @@ public class KFReader {
 							return StreamStatus.sdsWrongPosition;
 						break;
 
-					case OOBType.OOBInfo:
+					case OOBType.OOBHWInfo:
 						int size = sbuf[pos + 2] + (sbuf[pos + 3] << 8);
 						
 						if (size != 0) {

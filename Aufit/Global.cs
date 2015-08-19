@@ -34,7 +34,7 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Diagnostics;
 
-using KFReaderPackage;
+using KFStreamPackage;
 using WD1772Package;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;

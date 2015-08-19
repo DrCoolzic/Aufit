@@ -33,7 +33,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows;
 
-using KFReaderPackage;
+using KFStreamPackage;
 using GlobalPackage;
 
 namespace ChartPackage {

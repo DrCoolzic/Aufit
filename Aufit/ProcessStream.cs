@@ -32,15 +32,17 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-using KFReaderPackage;
+using KFStreamPackage;
 using WD1772Package;
 using GlobalPackage;
+using System.IO;
 
-namespace KFReaderPackage {
+namespace KFStreamPackage {
 	/// <summary>
 	/// Class to Process all KryoFlux Stream files
 	/// </summary>
 	public class ProcessStream {
+		private static bool _interpolate = false;
 		/// <summary>
 		/// Reads, Parses and fills the DiskTracks[track, side] structure
 		/// </summary>
@@ -67,7 +69,9 @@ namespace KFReaderPackage {
 					Global.Disk[track, side].fluxData.fluxValue[i] = (int)((double)stream.FluxValues[i] * sample);
 
 				for (int rev = 0; rev < stream.IndexCount - 1; rev++) {
-					sample = 200000000.0 / (double)stream.Indexes[rev + 1].indexTime;
+					double interpolate = 200000000.0 / (double)stream.Indexes[rev + 1].indexTime;
+					if (_interpolate)
+						sample = interpolate;
 					Global.Disk[track, side].fluxDataRev[rev].revolutionTime = (int)((double)stream.Indexes[rev + 1].indexTime * sample);
 					Global.Disk[track, side].fluxDataRev[rev].fluxCount = stream.Indexes[rev + 1].fluxPosition - stream.Indexes[rev].fluxPosition;
 					int offset = stream.Indexes[rev].fluxPosition;
@@ -92,8 +96,6 @@ namespace KFReaderPackage {
 
 				Global.Disk[track, side].fluxData.maxFlux = fluxMax;
 				Global.Disk[track, side].fluxData.minFlux = fluxMin;
-				//Global.Disk[track, side].fluxData.maxFlux = (int)((double)stream.StreamStat.fluxMax * sample);
-				//Global.Disk[track, side].fluxData.minFlux = (int)((double)stream.StreamStat.fluxMin * sample);
 
 				return true;
 			}	// read correctly
@@ -112,6 +114,31 @@ namespace KFReaderPackage {
 		/// See also <see cref="readTrack()"/> function.
 		public static Task<bool> readStreamTrackAsync(string name, int track, int side) {
 			return Task<bool>.Run(() => readStreamTrack(name, track, side));
+		}
+
+
+		public static bool writeStreamTracks(string sourceImage, TextBox tb) {
+			// we first create the directory
+			if (Directory.Exists(sourceImage)) {
+				if (MessageBox.Show(String.Format("Directory already exists\n '{0}'\nDo you want to overwrite content", sourceImage),
+						"Overwrite directory content?", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.No)
+						return false;
+			}
+			Directory.CreateDirectory(sourceImage);
+
+			tb.Clear();
+			for (int side = 0; side < 2; side++) {
+				for (int track = 0; track < 84; track++) {
+					if (Global.Disk[track, side].fluxData != null) {
+						KFWriter w = new KFWriter(tb);
+						string trackName = String.Format("track{0:D2}.{1}.raw", track, side);
+						string fileName = Path.Combine(sourceImage, Path.GetFileName(trackName));
+						bool s = w.writeStream(fileName, Global.Disk[track, side].fluxData, Global.Disk[track, side].fluxDataRev);
+						tb.AppendText(String.Format("File {0} written\n", fileName));
+					}
+				}
+			}
+			return true;
 		}
 
 	}	// streamProcess Class

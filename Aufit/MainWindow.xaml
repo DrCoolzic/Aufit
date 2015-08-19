@@ -655,6 +655,7 @@
                             <ComboBoxItem IsSelected="True">STX</ComboBoxItem>
                             <ComboBoxItem Name="cbST">ST</ComboBoxItem>
                             <ComboBoxItem Name="cbMSA">MSA</ComboBoxItem>
+                            <ComboBoxItem Name="cbKFR">KF Raw</ComboBoxItem>
                             <ComboBox.ToolTip>
                                 <ToolTip>
                                     <TextBlock>Select the available output format for the image</TextBlock>

@@ -33,7 +33,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 
 using WD1772Package;
-using KFReaderPackage;
+using KFStreamPackage;
 using GlobalPackage;
 
 namespace Aufit {

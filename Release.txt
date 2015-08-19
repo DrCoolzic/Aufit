@@ -1,4 +1,7 @@
 * Aufit 1.3
+- Added KF Raw writer
+- short/long sectors are now 4% above/below normal instead of 3%
+- Fixed Alternate Realty bug (JMD&DF checking + limit OBB line + stx)
 - Added checkbox that allow to not generate Track Data in stx file
 - Fixed bug of ISS incorrectly detected.
 

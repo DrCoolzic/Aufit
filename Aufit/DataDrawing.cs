@@ -33,7 +33,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-using KFReaderPackage;
+using KFStreamPackage;
 using WD1772Package;
 using GlobalPackage;
 
@@ -217,7 +217,7 @@ class DataDrawing {
 						&& (dt.sectors.Count > 0) && FDC.isGapPhase(ps.Phase)) {
 					if (OOBCount++ > 50) break;
 					Line splice = new Line();
-					splice.Stroke = Brushes.Red;
+					splice.Stroke = Brushes.DarkBlue;
 					splice.StrokeThickness = 1.5;
 					//DoubleCollection dashPattern = new DoubleCollection(new double[2] { 2, 1 });
 					//splice.StrokeDashArray = dashPattern;
@@ -251,9 +251,11 @@ class DataDrawing {
 			sectorPhasePolygon.Fill = Brushes.LightGreen;
 		else {
 			sectorPhasePolygon.Fill = Brushes.DeepSkyBlue;
-			if ((sector.flags & Sector.WIDTH_ABOVE) != 0)
-				sectorPhasePolygon.Fill = Brushes.Blue;
-			if ((sector.flags & Sector.WIDTH_BELOW) != 0)
+			//if ((sector.flags & Sector.WIDTH_ABOVE) != 0)
+			if ((sector.flags & Sector.LONG_SECT) != 0)
+					sectorPhasePolygon.Fill = Brushes.Blue;
+			//if ((sector.flags & Sector.WIDTH_BELOW) != 0)
+			if ((sector.flags & Sector.SHORT_SECT) != 0)
 				sectorPhasePolygon.Fill = Brushes.Aqua;
 			if ((sector.flags & Sector.WIDTH_INTRA) != 0)
 				sectorPhasePolygon.Fill = Brushes.Purple;

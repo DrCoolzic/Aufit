@@ -676,9 +676,10 @@ namespace Aufit {
 				idPath.Stroke = Yellow;
 			if (phase == Phases.p_data) {
 				idPath.Stroke = DeepSkyBlue;
-				if ((sector.flags & Sector.WIDTH_ABOVE) != 0)
+				//if ((sector.flags & Sector.WIDTH_ABOVE) != 0)
+				if ((sector.flags & Sector.LONG_SECT) != 0)
 					idPath.Stroke = Blue;
-				if ((sector.flags & Sector.WIDTH_BELOW) != 0)
+				if ((sector.flags & Sector.SHORT_SECT) != 0)
 					idPath.Stroke = Aqua;
 				if ((sector.flags & Sector.WIDTH_INTRA) != 0)
 					idPath.Stroke = Purple;

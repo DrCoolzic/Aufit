@@ -44,9 +44,6 @@ namespace PastiPackage {
 		// when set to true the track data header contains sync position
 		bool _trkSync = false;
 
-		// when set to true we simulate fuzzy bits on Rob Northen ?
-		readonly bool SIM_FUZZY = false;
-
 		bool _debug = false;
 		bool _noTrackData = false;
 
@@ -194,15 +191,6 @@ namespace PastiPackage {
 
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].recovered_data == null))
 							tdesc.fuzzyCount += (uint)dt.sectors[sect].data.fuzzy.Count() - 3;
-						else if (SIM_FUZZY && (dt.sectors[sect].data.CRC != 0) && ((dt.sectors[sect].flags & Sector.WIDTH_ABOVE) != 0)) {
-							// Rob Northen protection we force fuzzy bits if not there ?
-							int dataSize = Global.sectSize(dt.sectors[sect].id.Length) + 3;
-							dt.sectors[sect].data.fuzzy = new byte[dataSize];
-							for (int i = 0; i < dataSize; i++) {
-								dt.sectors[sect].data.fuzzy[i] = (byte)((i < 30) ? 0x00 : 0xFF);
-							}
-							tdesc.fuzzyCount += (uint)dataSize - 3;
-						}
 					}
 					tdesc.recordSize += tdesc.fuzzyCount;
 

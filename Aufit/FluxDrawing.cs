@@ -35,7 +35,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 
 using WD1772Package;
-using KFReaderPackage;
+using KFStreamPackage;
 using GlobalPackage;
 using Aufit;
 
