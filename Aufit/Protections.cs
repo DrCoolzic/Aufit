@@ -301,21 +301,32 @@ namespace Aufit {
 					if (dt.sectors[secIndex].data.fuzzy != null) {
 						dt.track.hasProtections = true;
 						int byte80 = 0;
-						bool onlyByte80 = true;
+						int byteXX = 0;
 						for (int i = 0; i < dt.sectors[secIndex].data.fuzzy.Count(); i++) {
 							byte b = dt.sectors[secIndex].data.fuzzy[i];
-							if (b == 0x80)
-								byte80++;
-							else
-								if (b != 0x00) 
-									onlyByte80 = false;
-
+							if (b != 00) {
+								if (b == 0x80)
+									byte80++;
+								else
+									byteXX++;
+							}	// fuzzy byte
 						}
-						if (onlyByte80)
+						if ((byte80 > byteXX) && (track == 0) && (side == 0)) {
+							if (byteXX != 0) {
+								for (int i = 0; i < dt.sectors[secIndex].data.fuzzy.Count(); i++) {
+									if ((dt.sectors[secIndex].data.fuzzy[i] != 0x80) && (dt.sectors[secIndex].data.fuzzy[i] != 00))
+										dt.sectors[secIndex].data.fuzzy[i] = 0x80;
+									if ((i > 21) && (i < 510) &&
+										(dt.sectors[secIndex].data.buffer.DataByte[i] != 0x68) && (dt.sectors[secIndex].data.buffer.DataByte[i] != 0xE8))
+										dt.sectors[secIndex].data.buffer.DataByte[i] = 0x68;
+								}	// all bytes
+							}	// need correction
 							writeInfo(info, String.Format("FZS Fuzzy sector - {0} fuzzy bytes of type Dungeon Master", byte80));
+							dt.sectors[secIndex].flags |= Sector.DM_FUZZY;
+						} // DM	
 						else
 							writeInfo(info, "FZS Fuzzy Sector");
-					}
+					}	// Fuzzy sector
 
 					// non standard DAM
 					if (dt.sectors[secIndex].data.DAM != 0xFB) {

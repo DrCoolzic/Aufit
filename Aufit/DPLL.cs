@@ -34,19 +34,16 @@ public class DPLL {
 	/// <summary> 8 MHz clock = 125 ns</summary>
 	const int PLL_CLK = 125;
 
-	/// <summary> middle innitial value</summary>
-	const int NO_CORRECTION = 128;
-
-	/// <summary>low value for phase compensation</summary>
-	const int LOW_CORRECTION = NO_CORRECTION - 70;	// 58
+	/// <summary>low_value for phase compensation</summary>
+	const int LOW_CORRECTION = 63;
 
 	/// <summary>high value for phase compensation</summary>
-	const int HIGH_CORRECTION = NO_CORRECTION + 70;	// 198
+	const int HIGH_CORRECTION = 193;
 
-	/// <summary>bottom value for counter (128 - 10%) = 115</summary>
+	/// <summary>bottom value for counter (128 - 9%) = 116</summary>
 	const int LOW_STOP = 115;
 	
-	/// <summary>top value for counter (128 + 10%) = 141</summary>
+	/// <summary>top value for counter (128 + 9%) = 140</summary>
 	const int HIGH_STOP = 141;	
 
 	/// <summary> running time</summary>
@@ -104,14 +101,14 @@ public class DPLL {
 	}
 
 	private void reset() {
-		_up = false;				// increment counter false
+		_up = false;					// increment counter false
 		_down = false;				// decrement counter false
-		_count = NO_CORRECTION;		// period count initialized to 128 (128*16=2048=2^11)
+		_count = 128;				// period count initialized to 128 (128*16=2048=2^11)
 		_adder = 0;					// reset the 11 bits adder
 		_low = false;				// select LOW_FIX false
 		_high = false;				// select HIGH_FIX false
 		_history = 0;				// reset history
-		_freqAmount = 0;			// reset freq correction amount
+		_freqAmount = 0;				// reset freq correction amount
 		_phaseAmount = 0;			// reset phase amount correction
 	}
 
@@ -158,19 +155,20 @@ public class DPLL {
 
 				// check data in inspection window
 				if (_currentTime >= dataTime) {
-					if (dataNotFound)		// one time
+					if (dataNotFound)			// one time
 						readPulse = true;
 					dataNotFound = false;		// data found
 				}
 
 				// adjust period_count based on frequency correction
-				if (_up && (_count < HIGH_STOP))	_count++;
+				if (_up && (_count < HIGH_STOP))		_count++;
 				if (_down && (_count > LOW_STOP))	_count--;
 
 				// update adder based on phase correction
 				if (_low)		_adder += LOW_CORRECTION;
-				else if (_high) _adder += HIGH_CORRECTION;
-				else			_adder += _count;					
+				else if (_high)	_adder += HIGH_CORRECTION;
+				else			_adder += _count;
+					
 
 				if (readPulse) {
 					// -------------------- //
@@ -249,14 +247,14 @@ public class DPLL {
 					// should come later (indicated by a '1' of the most significant bit of phase_amount
 					// bit 3 used to control high(0) or low(1) select
 					switch ((_adder >> 8) & 0x7) {	// adder 3 msb
-						case 0: _phaseAmount = 0x3; break;		// 000 huge lead
+						case 0: _phaseAmount = 0x4; break;		// 000 huge lead
 						case 1: _phaseAmount = 0x3; break;		// 001 large lead
 						case 2: _phaseAmount = 0x2; break;		// 010 medium lead
 						case 3: _phaseAmount = 0x1; break;		// 011 small lead
 						case 4: _phaseAmount = 0x9; break;		// 100 small lag
 						case 5: _phaseAmount = 0xA; break;		// 101 medium lag
 						case 6: _phaseAmount = 0xB; break;		// 110 large lag
-						case 7: _phaseAmount = 0xB; break;		// 111 huge lag
+						case 7: _phaseAmount = 0xC; break;		// 111 huge lag
 					}
 				} // readPulse == true
 
