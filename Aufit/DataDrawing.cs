@@ -251,11 +251,11 @@ class DataDrawing {
 			sectorPhasePolygon.Fill = Brushes.LightGreen;
 		else {
 			sectorPhasePolygon.Fill = Brushes.DeepSkyBlue;
-			//if ((sector.flags & Sector.WIDTH_ABOVE) != 0)
-			if ((sector.flags & Sector.LONG_SECT) != 0)
+			if ((sector.flags & Sector.WIDTH_ABOVE) != 0)
+			//if ((sector.flags & Sector.LONG_SECT) != 0)
 					sectorPhasePolygon.Fill = Brushes.Blue;
-			//if ((sector.flags & Sector.WIDTH_BELOW) != 0)
-			if ((sector.flags & Sector.SHORT_SECT) != 0)
+			if ((sector.flags & Sector.WIDTH_BELOW) != 0)
+			//if ((sector.flags & Sector.SHORT_SECT) != 0)
 				sectorPhasePolygon.Fill = Brushes.Aqua;
 			if ((sector.flags & Sector.WIDTH_INTRA) != 0)
 				sectorPhasePolygon.Fill = Brushes.Purple;

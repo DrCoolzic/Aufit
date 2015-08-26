@@ -1,9 +1,11 @@
 * Aufit 1.3
+- Added call to DTC (if present in Aufit release directory) to 
+	automatically write .ctr file from generated KF Raw
 - Added KF Raw writer
 - short/long sectors are now 4% above/below normal instead of 3%
 - Fixed Alternate Realty bug (JMD&DF checking + limit OBB line + stx)
 - Added checkbox that allow to not generate Track Data in stx file
-- Fixed bug of ISS incorrectly detected.
+- Fixed bug of ISS sometimes incorrectly detected.
 
 * Aufit V1.2 August 12, 2015
 - Definitively Fixed problem of racing conditions in batch mode

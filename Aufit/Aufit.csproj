@@ -126,9 +126,9 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="BufferGUI.cs" />
-    <Compile Include="DiskGui.cs" />
-    <Compile Include="DiskFormat.cs" />
+    <Compile Include="DataViewGUI.cs" />
+    <Compile Include="DiskViewGUIi.cs" />
+    <Compile Include="MasterViewGUI.cs" />
     <Compile Include="Global.cs" />
     <Compile Include="BezierSpline.cs" />
     <Compile Include="ButtonMatrix.cs" />

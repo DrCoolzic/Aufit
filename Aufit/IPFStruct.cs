@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Documents;
 
 namespace IpfPackage {
 	/// <summary>Type of media imaged</summary>
@@ -217,8 +218,8 @@ namespace IpfPackage {
 		/// <returns>The record header string</returns>
 		public override string ToString() {
 			return String.Format(
-				"   T{0:D2}.{1} Size={2} bytes ({3} bits = Data={4} + Gap={5}) Start Byte={6} Bit={7}\n" +
-				"   DataKey={8:D3} Block={9} Density={10} Signal={11} Encoder={12} Flags={13}\n",
+				"T{0:D2}.{1} Size={2} bytes ({3} bits = Data={4} + Gap={5}) StartPosition={6} ({7})\n" + 
+				"DataKey={8:D3} Block={9} Density={10} Signal={11} Encoder={12} Flags={13}",
 				track, side, trackBytes, trackBits, dataBits, gapBits, startBytePos, startBitPos,
 				dataKey, blockCount, density.ToString(), signalType.ToString(), encoder, trackFlags.ToString());
 		}

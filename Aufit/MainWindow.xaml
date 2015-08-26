@@ -507,7 +507,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="auto"/>
                     </Grid.RowDefinitions>
-                    <FlowDocumentScrollViewer Margin="0" Grid.Row="0" ScrollViewer.VerticalScrollBarVisibility="Auto" Name="fdViewer" />
+                    <FlowDocumentScrollViewer Margin="0" Grid.Row="0" ScrollViewer.VerticalScrollBarVisibility="Auto"  ScrollViewer.HorizontalScrollBarVisibility="Auto" Name="fdDataView" />
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="auto"/>
@@ -565,9 +565,8 @@
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0" >
-                        <TextBox BorderThickness="0" VerticalScrollBarVisibility="Auto" Margin="2" Name="tbMasterView" FontFamily="Consolas" FontSize="15" IsReadOnly="True"/>
+                        <FlowDocumentScrollViewer Margin="0" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" Name="fdMasterView" Padding="0"/>
                     </Grid>
-
 
                     <Grid Grid.Row="1" >
                         <Grid.ColumnDefinitions>

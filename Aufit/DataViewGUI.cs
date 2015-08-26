@@ -60,7 +60,7 @@ namespace Aufit {
 			FDC.fdcRealAll(track, side, rev);
 			Global.DiskTrack dt = Global.Disk[track, side];
 
-			fdViewer.Document = null;
+			fdDataView.Document = null;
 			FlowDocument doc = new FlowDocument();
 			doc.FontFamily = new FontFamily("Consolas");
 			doc.FontSize = 15;
@@ -153,7 +153,7 @@ namespace Aufit {
 				}	// sector data
 			}	// for all sectors
 			doc.Blocks.Add(tab);
-			fdViewer.Document = doc;
+			fdDataView.Document = doc;
 		}
 
 
@@ -167,7 +167,7 @@ namespace Aufit {
 
 			List<Sector> sectors = Global.Disk[track, side].sectors;
 
-			fdViewer.Document = null;
+			fdDataView.Document = null;
 			FlowDocument doc = new FlowDocument();
 			doc.FontFamily = new FontFamily("Consolas");
 			doc.FontSize = 15;
@@ -293,7 +293,7 @@ namespace Aufit {
 			}
 
 			doc.Blocks.Add(p);
-			fdViewer.Document = doc;
+			fdDataView.Document = doc;
 		}
 
 
@@ -309,7 +309,7 @@ namespace Aufit {
 			FDC.fdcRealAll(track, side, rev);
 			Track tr = Global.Disk[track, side].track;
 
-			fdViewer.Document = null;
+			fdDataView.Document = null;
 			FlowDocument doc = new FlowDocument();
 			//d.FontFamily = new FontFamily("Lucida Console");			
 			doc.FontFamily = new FontFamily("Consolas");
@@ -338,7 +338,7 @@ namespace Aufit {
 			p.Inlines.Add(new LineBreak());
 
 			drawBuffer(buffer, p, 0, false);
-			fdViewer.Document = doc;
+			fdDataView.Document = doc;
 		}
 
 
@@ -426,7 +426,7 @@ namespace Aufit {
 			//dlg.Filter = "Text Format|*.txt|All files (*.*)|*.*";
 			if (dlg.ShowDialog() == true) {
 				//TextRange range = new TextRange(_flowDoc.ContentStart, _flowDoc.ContentEnd);
-				TextRange range = new TextRange(fdViewer.Document.ContentStart, fdViewer.Document.ContentEnd);
+				TextRange range = new TextRange(fdDataView.Document.ContentStart, fdDataView.Document.ContentEnd);
 				using (FileStream file = new FileStream(dlg.FileName, FileMode.Create)) {
 					range.Save(file, System.Windows.DataFormats.Rtf);
 					//range.Save(file, System.Windows.DataFormats.Text);

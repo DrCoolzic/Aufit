@@ -487,11 +487,11 @@ namespace Aufit {
 			SectorNotFoundException.resetException();
 			diskClear();
 			_view = DataView.None;
-			fdViewer.Document = null;
+			fdDataView.Document = null;
 			redDot.Visibility = System.Windows.Visibility.Hidden;
 			cbOutputFormat.SelectedIndex = 0;
 			tbSaveImage.Clear();
-			tbMasterView.Clear();
+			fdMasterView.Document = null;
 			
 			guiEnable(false);
 			string extension = System.IO.Path.GetExtension(fileName);
@@ -921,13 +921,13 @@ namespace Aufit {
 			}
 			if (tabItemContent.IsSelected) {
 				infoBox.AppendText("Data View Selected\n");
-				if ((Global.Disk[CurrentTrack, CurrentSide].track != null) && (fdViewer.Document == null))
+				if ((Global.Disk[CurrentTrack, CurrentSide].track != null) && (fdDataView.Document == null))
 					drawLayout(CurrentTrack, CurrentSide, CurrentRev);
 			}
 
 			if (tabItemMaster.IsSelected) {
 				infoBox.AppendText("Master View Selected\n");
-				drawDiskFormat(CurrentTrack, CurrentSide);
+				displayDiskFormat(CurrentTrack, CurrentSide);
 			}
 
 			if (tabItemAnalysis.IsSelected) {
@@ -998,7 +998,7 @@ namespace Aufit {
 				drawDiskSelectedTrack(track, side);
 
 			if (tabItemMaster.IsSelected) {
-				drawDiskFormat(track, side);
+				displayDiskFormat(track, side);
 			}
 
 			if (tabItemContent.IsSelected) {
