@@ -106,14 +106,14 @@ namespace Aufit {
 		public MainWindow() {
 			InitializeComponent();
 
-			_fluxDrawing = new FluxDrawing(fluxGrid, cvTextFlux, cvGraphicFlux, this);
+			_fluxDrawing = new FluxDrawing(fluxGrid, cvTextFlux, cvGraphicFlux, this, cbOddEven);
 			_fluxDrawing.DetailDraw = cbDetail.IsChecked.Value;
 			//_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
 			_fluxDrawing.Chart.FixOffset = true;
 
 			_histoDrawing = new HistoDrawing(histoGrid, cvTextHisto, cvGraphicHisto, this);
 
-			_clockDrawing = new BitWidthDrawing(clockGrid, cvTextClock, cvGraphicClock);
+			_clockDrawing = new BitWidthDrawing(clockGrid, cvTextClock, cvGraphicClock, cbClkAvg);
 			_clockDrawing.Chart.OptimalYSpacing = 18;
 			_clockDrawing.Chart.FixOffset = true;
 
@@ -1144,6 +1144,14 @@ namespace Aufit {
 			catch (Exception exc) {
 				MessageBox.Show(String.Format("Error: {0}", exc.Message));
 			}
+		}
+
+		private void cbOddEvenClick(object sender, RoutedEventArgs e) {
+			_fluxDrawing.drawFlux();
+		}
+
+		private void cbAvgClick(object sender, RoutedEventArgs e) {
+			_clockDrawing.drawBitWidth();
 		}
 
 

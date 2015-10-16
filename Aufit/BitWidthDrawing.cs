@@ -45,7 +45,7 @@ class BitWidthDrawing {
 	private int _minBitWidth;
 	private int _maxBitWidth;
 	private int _track, _side, _rev;
-	private const int BIT_AVG_COUNT = 50;
+	private CheckBox _avgCheckBox;
 
 	/// <summary>
 	/// Access the minimum value of the clock computed in setBitWidthDefault()
@@ -75,8 +75,9 @@ class BitWidthDrawing {
 	/// <param name="grid">Grid of the clock chart that contains the two canvases</param>
 	/// <param name="text">Text canvas of the clock chart</param>
 	/// <param name="graphic">Graphic canvas of the clock chart</param>
-	public BitWidthDrawing(Grid grid, Canvas text, Canvas graphic) {
+	public BitWidthDrawing(Grid grid, Canvas text, Canvas graphic, CheckBox avg) {
 		_bitWidthChartLayout = new ChartLayout(grid, text, graphic);
+		_avgCheckBox = avg;
 	}
 
 
@@ -89,6 +90,10 @@ class BitWidthDrawing {
 	public void drawBitWidth(int track = -1, int side = -1, int rev = -1) {
 		if (_bitWidthChartLayout == null) return;
 		_bitWidthChartLayout.chartResetCanvas();
+		int bitAvgCount = 1;
+		if (_avgCheckBox.IsChecked == true)
+			bitAvgCount = 50;
+
 
 		if (track == -1) track = _track;
 		else _track = track;
@@ -128,8 +133,8 @@ class BitWidthDrawing {
 			int clk = td.packedFluxData.bitWidth[currentByte];
 			int avgClock = 0;
 			int avgCount = 0;
-			for (int j = 0; j < BIT_AVG_COUNT; j++) {
-				int index = currentByte - BIT_AVG_COUNT / 2 + j;
+			for (int j = 0; j < bitAvgCount; j++) {
+				int index = currentByte - bitAvgCount / 2 + j;
 				if ((index >= 0) && (index <= (stopBit/8))) {
 					avgClock += td.packedFluxData.bitWidth[index];
 					avgCount++;

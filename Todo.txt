@@ -1,5 +1,7 @@
 Improvements
 ============
+- write line in transition display when zoomed
+- display in big dot outside range for transitions
 - write DAM and CRC as part of Data buffer (will be easier for IPF writing)
 - write ID in a buffer? and add property like IAM to read 1st byte, Track -> second byte etc ...
 - detect slow moving clock variation for possible recover

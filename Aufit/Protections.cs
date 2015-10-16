@@ -319,8 +319,9 @@ namespace Aufit {
 									if ((i > 21) && (i < 510) &&
 										(dt.sectors[secIndex].data.buffer.DataByte[i] != 0x68) && (dt.sectors[secIndex].data.buffer.DataByte[i] != 0xE8))
 										dt.sectors[secIndex].data.buffer.DataByte[i] = 0x68;
-								}	// all bytes
-							}	// need correction
+								}   // all bytes
+								byte80 += byteXX;
+							}   // HACK! need correction
 							writeInfo(info, String.Format("FZS Fuzzy sector - {0} fuzzy bytes of type Dungeon Master", byte80));
 							dt.sectors[secIndex].flags |= Sector.DM_FUZZY;
 						} // DM	

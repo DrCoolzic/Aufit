@@ -34,16 +34,19 @@ public class DPLL {
 	/// <summary> 8 MHz clock = 125 ns</summary>
 	const int PLL_CLK = 125;
 
-	/// <summary>low_value for phase compensation</summary>
-	const int LOW_CORRECTION = 63;
+	/// <summary>phase compensation</summary>
+	const int PHASE_CORRECTION = 65;
 
-	/// <summary>high value for phase compensation</summary>
-	const int HIGH_CORRECTION = 193;
+    /// <summary>low_value for phase compensation</summary>
+    const int LOW_CORRECTION = 128 - PHASE_CORRECTION;
 
-	/// <summary>bottom value for counter (128 - 9%) = 116</summary>
-	const int LOW_STOP = 115;
+    /// <summary>high value for phase compensation</summary>
+    const int HIGH_CORRECTION = 128 + PHASE_CORRECTION;
+
+    /// <summary>bottom value for counter (128 - 10%) = 115</summary>
+    const int LOW_STOP = 115;
 	
-	/// <summary>top value for counter (128 + 9%) = 140</summary>
+	/// <summary>top value for counter (128 + 10%) = 141</summary>
 	const int HIGH_STOP = 141;	
 
 	/// <summary> running time</summary>
@@ -164,12 +167,11 @@ public class DPLL {
 				if (_up && (_count < HIGH_STOP))		_count++;
 				if (_down && (_count > LOW_STOP))	_count--;
 
-				// update adder based on phase correction
-				if (_low)		_adder += LOW_CORRECTION;
-				else if (_high)	_adder += HIGH_CORRECTION;
-				else			_adder += _count;
+                // update adder based on phase correction
+                if (_low)       _adder += LOW_CORRECTION;
+                else if (_high) _adder += HIGH_CORRECTION;
+                else            _adder += _count;
 					
-
 				if (readPulse) {
 					// -------------------- //
 					// frequency correction //
@@ -198,10 +200,10 @@ public class DPLL {
 					// error = 0: 
 					//				-> no correction necessary <-
 					// error = 1:
-					//				MSBs input:			7	6	5	4	3	2	1	0
+					//				MSBs input:			 7	 6	 5	 4	 3	 2	 1	 0
 					//				Correction output:  -3  -2  -1   0   0  +1  +2  +3
 					// error = 2:
-					//				MSBs input:			7	6	5	4	3	2	1	0
+					//				MSBs input:			 7	 6	 5	 4	 3	 2	 1	 0
 					//				Correction output:  -4  -3  -2  -1  +1  +2  +3  +4
 					// The most significant bit of the freq_amount controls increment (value 0)
 					// or decrement (value 1) of the adder

@@ -46,6 +46,7 @@ namespace ChartPackage {
 class FluxDrawing {
 	private FluxEnsemble _fluxEnsemble;
 	private ChartLayout _fluxChartLayout;
+	private CheckBox _oddEven;
 
 	private double _viewportXmin;
 	private double _viewportXmax;
@@ -104,9 +105,10 @@ class FluxDrawing {
 	/// <param name="text">Test canvas in the ChartLayout</param>
 	/// <param name="graphic">Graphic canvas in the ChartLayout</param>
 	/// <param name="win">Pointer to the MainWindow</param>
-	public FluxDrawing(Grid grid, Canvas text, Canvas graphic, MainWindow win) {
+	public FluxDrawing(Grid grid, Canvas text, Canvas graphic, MainWindow win, CheckBox oddEven) {
 		_fluxChartLayout = new ChartLayout(grid, text, graphic);
 		_win = win;
+		_oddEven = oddEven;
 		DetailDraw = true;
 		//LimitFlux = true;
 	}
@@ -205,24 +207,25 @@ class FluxDrawing {
 			if (!_fluxChartLayout.inExtendedViewport((double)currentTime / 1000000.0, (double)flux / 1000.0)) continue;
 
 			double r = (zoom > 1) ? (zoom > 25) ? (zoom > 50) ? 2 : 1.6 : 1.2 : 0.7;
-			fluxPoints[pointsInViewport].colorIndex = 0;
+			fluxPoints[pointsInViewport].colorIndex = 0;	// default blue
 
-			if (_win.cbLimitFlux.IsChecked.Value) {
+			if (_oddEven.IsChecked == true) {
+				if (fluxCount % 2 == 0) fluxPoints[pointsInViewport].colorIndex = 2;	// red
+			}	// odd even
+			else if (_win.cbLimitFlux.IsChecked.Value) {
 				// border flux
 				if (((flux > 4900) && (flux < 5100)) || ((flux > 6900) && (flux < 7100))) {
 					//r *= 2;
-					fluxPoints[pointsInViewport].colorIndex = 2;
+					fluxPoints[pointsInViewport].colorIndex = 1;	// green
 				}
 				// invalid flux
 				if ((flux < 3500) || (flux > 8500)) {
 					//r = 2.5 * r;
-					fluxPoints[pointsInViewport].colorIndex = 4;
+					fluxPoints[pointsInViewport].colorIndex = 2;	// red
 				}
-				// odd even TODO checkbox?
-				//if (bitPosition % 2 == 0) fluxPoints[pointsInViewport].colorIndex++;
 			}
 			else
-				fluxPoints[pointsInViewport].colorIndex = 6;
+				fluxPoints[pointsInViewport].colorIndex = 3;	// black
 			
 			fluxPoints[pointsInViewport].ellipseGeometry = new EllipseGeometry(_fluxChartLayout.NormPoint((double)currentTime / 1000000.0, (double)flux / 1000.0), r, r);
 			pointsInViewport++;

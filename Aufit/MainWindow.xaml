@@ -148,6 +148,7 @@
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>
                             <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBox Grid.Column="0" x:Name="tbFluxInfo" FontFamily="Arial" FontSize="13" Foreground="DarkBlue" 
                                  FontWeight="Bold" Width="auto" Height="18" BorderThickness="0" Background="Transparent" IsReadOnly="True"/>
@@ -165,6 +166,14 @@
                             <CheckBox.ToolTip>
                                 <ToolTip>
                                     <TextBlock>Uncheck for less details on slow machine</TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <CheckBox Grid.Column="4" x:Name="cbOddEven" Content="O/E" Margin="5,0,0,0" VerticalAlignment="Center" Click="cbOddEvenClick"
+							  HorizontalAlignment="Right">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>Check to display different colors for Odd/Even Transitions</TextBlock>
                                 </ToolTip>
                             </CheckBox.ToolTip>
                         </CheckBox>
@@ -243,8 +252,16 @@
                                 </ToolTip>
                             </Button.ToolTip>
                         </Button>
+                        <CheckBox x:Name="cbClkAvg" Content="Avg" VerticalAlignment="Top" Click="cbAvgClick" Background="Transparent" Margin="0,14,15,0"
+								HorizontalAlignment="Right" IsChecked="True" >
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>When checked a moving average is displayed instead of instantaneous values</TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
                         <Canvas Margin="2" x:Name="cvTextClock" ClipToBounds="True">
-                            <Canvas x:Name="cvGraphicClock" ClipToBounds="True" Background="Transparent" />
+                            <Canvas x:Name="cvGraphicClock" ClipToBounds="True" />
                         </Canvas>
                     </Grid>
 

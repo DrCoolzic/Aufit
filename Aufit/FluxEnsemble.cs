@@ -65,12 +65,9 @@ namespace ChartPackage {
 
 				switch (fluxElipses[i].colorIndex) {
 					case 0: color = Brushes.Blue; break;
-					case 1: color = Brushes.MidnightBlue; break;
-					case 2: color = Brushes.LimeGreen; break;
-					case 3: color = Brushes.Green; break;
-					case 4: color = Brushes.Orange; break;
-					case 5: color = Brushes.Red; break;
-					case 6: color = Brushes.Black; break;
+					case 1: color = Brushes.Green; break;
+					case 2: color = Brushes.Red; break;
+					case 3: color = Brushes.Black; break;
 				}
 
 				//switch (fluxElipses[i].colorIndex) {

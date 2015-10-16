@@ -394,7 +394,6 @@ namespace Aufit {
 				}	// not 00
 			}	// all bytes
 			List<byte> foob = new List<byte>();
-			List<short> foos;
 			drawContent(foob, new Paragraph(), 0, true);
 
 			return gi.badDataFound;
