@@ -162,6 +162,7 @@ namespace WD1772Package {
 		public const uint LONG_SECT = Bit.BIT_12;
 		public const uint SHORT_SECT = Bit.BIT_13;
 		public const uint DM_FUZZY = Bit.BIT_14;
+		public const uint DM_HACK = Bit.BIT_15;
 
 		public const uint SEC_EQ_TRACK = Bit.BIT_31;
 		public const uint SEC_PROCESSED = Bit.BIT_32;

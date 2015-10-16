@@ -48,6 +48,11 @@ namespace Aufit {
 		private static List<Tuple<Button, Int32, Int32, Int32>> _buttonList = new List<Tuple<Button, int, int, int>>();
 		private static Button[, ,] _buttons = new Button[9, 10, 2];
 		private static Button _selectedButton = null;
+		private static bool _clickEnable = true;
+
+		public static void clickEnable(bool e) {
+			_clickEnable = e;
+		}
 
 		/// <summary>
 		/// Draw a matrix of 84 buttons + text box on the specified Canvas 
@@ -208,6 +213,7 @@ namespace Aufit {
 		/// <param name="button">Button clicked</param>
 		/// <returns>True if button found</returns>
 		public static bool buttonClicked(Button button) {
+			if (!_clickEnable) return false;
 			var tuple = _buttonList.Where(t => t.Item1 == button).FirstOrDefault();
 
 			if (tuple != null) {

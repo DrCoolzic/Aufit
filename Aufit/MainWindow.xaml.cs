@@ -463,6 +463,8 @@ namespace Aufit {
 			gridCommand.IsEnabled = enable;
 			cbLimitFlux.IsEnabled = enable;
 			tabDisplay.IsEnabled = enable;
+			tabCtrl.IsEnabled = enable;
+            ButtonMatrix.clickEnable(enable);
 
 			if (enable) {
 				tbStatus.Visibility = System.Windows.Visibility.Hidden;

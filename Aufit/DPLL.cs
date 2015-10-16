@@ -35,7 +35,7 @@ public class DPLL {
 	const int PLL_CLK = 125;
 
 	/// <summary>phase compensation</summary>
-	const int PHASE_CORRECTION = 65;
+	const int PHASE_CORRECTION = 90;
 
     /// <summary>low_value for phase compensation</summary>
     const int LOW_CORRECTION = 128 - PHASE_CORRECTION;

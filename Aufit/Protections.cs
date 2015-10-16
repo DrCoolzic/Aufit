@@ -321,8 +321,10 @@ namespace Aufit {
 										dt.sectors[secIndex].data.buffer.DataByte[i] = 0x68;
 								}   // all bytes
 								byte80 += byteXX;
+								dt.sectors[secIndex].flags |= Sector.DM_HACK;
 							}   // HACK! need correction
-							writeInfo(info, String.Format("FZS Fuzzy sector - {0} fuzzy bytes of type Dungeon Master", byte80));
+							writeInfo(info, String.Format("FZS Fuzzy sector - {0} fuzzy bytes of type Dungeon Master {1}", byte80,
+								((dt.sectors[secIndex].flags & Sector.DM_HACK) != 0) ? "(C)" : ""));
 							dt.sectors[secIndex].flags |= Sector.DM_FUZZY;
 						} // DM	
 						else

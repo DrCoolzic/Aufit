@@ -223,6 +223,11 @@ class FluxDrawing {
 					//r = 2.5 * r;
 					fluxPoints[pointsInViewport].colorIndex = 2;	// red
 				}
+				if (flux >= 10000) {
+					flux = 9930;
+					fluxPoints[pointsInViewport].colorIndex = 1;	// black
+                    r *= 4;
+				}
 			}
 			else
 				fluxPoints[pointsInViewport].colorIndex = 3;	// black
