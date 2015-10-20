@@ -426,8 +426,7 @@ namespace Aufit {
 			bool _debugNoAsync = false;
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {				
-					if ((Global.Disk[track, side].fluxData == null) &&
-						(Global.Disk[track, side].packedFluxData == null)) continue;
+					if (Global.Disk[track, side].fluxData == null) continue;
 					
 					if (_debugNoAsync) {
 						if (side == 0) {
@@ -524,7 +523,7 @@ namespace Aufit {
 						Sector sector = sectors[i];
 						double start = 0;
 						double stop = 0;
-						double revolutionTime = (double)Global.Disk[track, side].packedFluxDataRev[rev].revolutionTime;
+						double revolutionTime = (double)Global.Disk[track, side].fluxDataRev[rev].revolutionTime;
 
 						// draw ID segment
 						start = (double)sector.id.info.startTime;
@@ -577,75 +576,68 @@ namespace Aufit {
 				}	// no sector track
 
 				DSR dsr = new DSR();
-				int startBit = dt.packedFluxDataRev[rev].firstFluxBit;
-				int stopBit = startBit + dt.packedFluxDataRev[rev].bitCount;
 				int currentTime = 0;
-				int flux = 0;
 				int nfaStartTime = 0;
 				int lastOobStopTime = 0;
 				const int minDisplayWidth = 100000;
 
-				for (int currentBit = startBit; (currentBit < stopBit); currentBit++) {
-					int currentByte = currentBit / 8;
-					int bitInByte = currentBit % 8;
-					byte bits = dt.packedFluxData.packedBits[currentByte];
-					int bit = (bits >> bitInByte) & 0x1;
-					//int bitWidth = dt.packedFluxData.bitWidth[currentByte];
-					//currentTime += bitWidth;
+				for (int i = Global.firstIndex(track, side, rev); (i < Global.lastIndex(track, side, rev)); i++) {
+					int flux = dt.fluxData.fluxValue[i];
+					currentTime += flux;
+					int bitSpacing = dt.decodedData.bitSpacing[i];
+					//currentBit += bitSpacing;
 
-					dsr.shiftBitsIn(bit);
 					// draw out of band
-					if (bit != 0) {
-						flux = Global.fluxWidth(currentBit, track, side);
-						currentTime += flux;
-						if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) && (dt.sectors.Count > 0) && (cbOutOfBand.IsChecked == true) &&
-								(Global.fluxOutOfBand(flux)) && (currentTime > lastOobStopTime)) {
-							lastOobStopTime = currentTime + minDisplayWidth;
-							double startAngle = timeAngle(currentTime);
-							double stopAngle = timeAngle(lastOobStopTime);
-							Path path = new Path();
-							path.StrokeThickness = diskHeavyLine;
-							PathGeometry pg = new PathGeometry();
-							path.Stroke = White;
-							addArc(pg, startAngle, stopAngle, center, radius);
-							path.Data = pg;
-							grid.Children.Add(path);
-						}	// out of band
-					}	// one more flux
-
-					// draw NFA
-					if (dsr.DataReady) {
-						if (((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) || (cbDiskNFA.IsChecked == true)) && dsr.DataReady) {
-							if ((nfaStartTime == 0) && ((dsr.MFM == 0) || (dsr.MFM == 0xFFFF)))
-								nfaStartTime = currentTime;
-							if ((dsr.MFM != 0) && (dsr.MFM != 0xFFFF) && (nfaStartTime > 0) && (currentTime > (nfaStartTime + minDisplayWidth))) {
-								double startAngle = timeAngle(nfaStartTime);
-								double stopAngle = timeAngle(currentTime);
-								nfaStartTime = 0;
-								System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
-								path.StrokeThickness = diskHeavyLine;
-								PathGeometry pg = new PathGeometry();
-								path.Stroke = Red;
-								addArc(pg, startAngle, stopAngle, center, radius);
-								path.Data = pg;
-								grid.Children.Add(path);
-							}
-						}
-					}
-
-					// add sync bars
-					if (dsr.MFM == 0x4489) {
+					if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) && (dt.sectors.Count > 0) && (cbOutOfBand.IsChecked == true) &&
+							(Global.fluxOutOfBand(flux)) && (currentTime > lastOobStopTime)) {
+						lastOobStopTime = currentTime + minDisplayWidth;
 						double startAngle = timeAngle(currentTime);
-						double stopAngle = timeAngle(currentTime + minDisplayWidth);
+						double stopAngle = timeAngle(lastOobStopTime);
 						Path path = new Path();
 						path.StrokeThickness = diskHeavyLine;
 						PathGeometry pg = new PathGeometry();
-						path.Stroke = Brushes.Black;
+						path.Stroke = White;
 						addArc(pg, startAngle, stopAngle, center, radius);
 						path.Data = pg;
 						grid.Children.Add(path);
-					}
+					}   // out of band
 
+					while (bitSpacing-- > 0) {
+						dsr.shiftIn(bitSpacing > 0 ? 0 : 1);
+
+						// draw NFA
+						if (dsr.DataReady) {
+							if (((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) || (cbDiskNFA.IsChecked == true)) && dsr.DataReady) {
+								if ((nfaStartTime == 0) && ((dsr.MFM == 0) || (dsr.MFM == 0xFFFF)))
+									nfaStartTime = currentTime;
+								if ((dsr.MFM != 0) && (dsr.MFM != 0xFFFF) && (nfaStartTime > 0) && (currentTime > (nfaStartTime + minDisplayWidth))) {
+									double startAngle = timeAngle(nfaStartTime);
+									double stopAngle = timeAngle(currentTime);
+									nfaStartTime = 0;
+									System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
+									path.StrokeThickness = diskHeavyLine;
+									PathGeometry pg = new PathGeometry();
+									path.Stroke = Red;
+									addArc(pg, startAngle, stopAngle, center, radius);
+									path.Data = pg;
+									grid.Children.Add(path);
+								}
+							}
+						}
+
+						// add sync bars
+						if (dsr.MFM == 0x4489) {
+							double startAngle = timeAngle(currentTime);
+							double stopAngle = timeAngle(currentTime + minDisplayWidth);
+							Path path = new Path();
+							path.StrokeThickness = diskHeavyLine;
+							PathGeometry pg = new PathGeometry();
+							path.Stroke = Brushes.Black;
+							addArc(pg, startAngle, stopAngle, center, radius);
+							path.Data = pg;
+							grid.Children.Add(path);
+						}
+					}	// shift bit in
 				}	// all bits
 
 			});	// dispatcher

@@ -260,8 +260,8 @@ namespace Aufit {
 			if (Global.Disk[CurrentTrack, CurrentSide].fluxDataRev != null) {
 				RevCount = Global.Disk[CurrentTrack, CurrentSide].fluxDataRev.Count();
 			}
-			else if (Global.Disk[CurrentTrack, CurrentSide].packedFluxDataRev != null) {
-				RevCount = Global.Disk[CurrentTrack, CurrentSide].packedFluxDataRev.Count();
+			else if (Global.Disk[CurrentTrack, CurrentSide].fluxDataRev != null) {
+				RevCount = Global.Disk[CurrentTrack, CurrentSide].fluxDataRev.Count();
 			}
 			else return;
 
@@ -282,8 +282,8 @@ namespace Aufit {
 			if (Global.Disk[CurrentTrack, CurrentSide].fluxDataRev != null) {
 				RevCount = Global.Disk[CurrentTrack, CurrentSide].fluxDataRev.Count();
 			}
-			else if (Global.Disk[CurrentTrack, CurrentSide].packedFluxDataRev != null) {
-				RevCount = Global.Disk[CurrentTrack, CurrentSide].packedFluxDataRev.Count();
+			else if (Global.Disk[CurrentTrack, CurrentSide].fluxDataRev != null) {
+				RevCount = Global.Disk[CurrentTrack, CurrentSide].fluxDataRev.Count();
 			}
 			else return;
 
@@ -305,13 +305,12 @@ namespace Aufit {
 			int track = CurrentTrack;
 			int side = CurrentSide;
 			int rev = CurrentRev;
-			if ((Global.Disk[track, side].fluxDataRev == null) && (Global.Disk[track, side].packedFluxDataRev == null)) return;
+			if (Global.Disk[track, side].fluxDataRev == null) return;
 
 			//int RevCount = Global.Disk[track, side].packedFluxDataRev.Count();
-			string revString = (Global.Disk[track, side].fluxDataRev != null) ? Global.Disk[track, side].fluxDataRev.Count().ToString() :
-				((Global.Disk[track, side].packedFluxDataRev != null) ? (Global.Disk[track, side].packedFluxDataRev.Count().ToString()) : "*");
+			string revString = (Global.Disk[track, side].fluxDataRev != null) ? Global.Disk[track, side].fluxDataRev.Count().ToString() : "*";
 			tbRevolution.Text = "Rev. " + (CurrentRev + 1).ToString() + "/" + revString;
-			if (Global.Disk[track, side].packedFluxData == null)
+			if (Global.Disk[track, side].decodedData == null)
 				Global.mfmDecode(track, side);
 
 			// cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) > 0);

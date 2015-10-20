@@ -184,6 +184,7 @@ namespace WD1772Package {
 			_crcCount = 0;
 		}
 
+
 		/// <summary>
 		/// Shift one bit in the Address Mark Detector (MFM)
 		/// </summary>
@@ -197,7 +198,7 @@ namespace WD1772Package {
 		/// This function is a direct adaptation of the source code from SPS people
 		/// for more information read the header of this file.
 		/// </remarks>
-		public void shiftBitsIn(int bit) {
+		public void shiftIn(int bit) {
 			// shift the provided bit in AM Detector LSB
 			_syncDetector = (_syncDetector << 1) | bit;
 
