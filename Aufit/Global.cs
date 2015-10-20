@@ -124,7 +124,7 @@ namespace GlobalPackage {
 
 	/// <summary>Defines the position of bits in a unsigned int</summary>
 	public class Bit {
-		/// <summary>First bit position</summary>
+		/// <summary>bit position</summary>
 		public const uint BIT_01 = 0x00000001;
 		public const uint BIT_02 = 0x00000002;
 		public const uint BIT_03 = 0x00000004;
@@ -188,6 +188,7 @@ namespace GlobalPackage {
 		//#endregion flag_helper_functions
 	}
 
+
 	/// <summary>
 	/// Contains all global parameters and functions for AUFIT
 	/// </summary>
@@ -241,12 +242,14 @@ namespace GlobalPackage {
 			public bool hasIncompleteGap;
 		}
 
+
 		/// <summary>This function is used to re-initialized all disk/track structure. </summary>
 		/// <remarks>Should be called each time a new FD is read. Hopefully should also free 
 		/// all memory from previous read.</remarks>
 		public static void resetDisk() {
 			_disk = new DiskTrack[85, 2];
 		}
+
 
 		/// <summary>
 		/// This function is used to get the index of the first flux of a track in the FluxValue buffer for a specific revolution
@@ -286,15 +289,15 @@ namespace GlobalPackage {
 		/// <remarks> Fill packed structure and store useful information</remarks>
 		public static void mfmDecode(int track, int side) {
 			// if already there nothing to do
+			// nothing to process
+			if (Global.Disk[track, side].fluxData == null) return;
 			if (Global.Disk[track, side].decodedData != null) return;
 
 			int minBitWidth = Int32.MaxValue;
 			int maxBitWidth = 0;
 			int currentTime = 0;
-			//DiskTrack td = Global.Disk[track, side];
 
-			// nothing to process
-			if (Global.Disk[track, side].fluxData == null) return;
+
 			Global.Disk[track, side].decodedData = new DecodedData();
 			int decodedCount = Global.Disk[track, side].fluxData.totalFluxCount + 1;
 			Global.Disk[track, side].decodedData.bitWidth = new ushort[decodedCount];
@@ -445,13 +448,13 @@ namespace GlobalPackage {
 		}
 
 
-		/// <summary>This is an asynchronous version of decodeAndRead()</summary>
+		/// <summary>This is an asynchronous version of decodeAndProcessTrack()</summary>
 		/// <param name="track">The track to read and decode</param>
 		/// <param name="side">The side to read and decode</param>
 		/// <param name="rev">The revolution to read and decode</param>
 		/// <returns>A pointer to the TrackContent structure</returns>
-		public static Task<List<Sector>> decodeAndReadAsync(int track, int side, int rev) {
-			return Task<List<Sector>>.Run(() => decodeAndRead(track, side, rev));
+		public static Task<List<Sector>> decodeAndProcessTrackAsync(int track, int side, int rev) {
+			return Task<List<Sector>>.Run(() => decodeAndProcessTrack(track, side, rev));
 		}
 
 
@@ -460,12 +463,12 @@ namespace GlobalPackage {
 		/// <param name="side">The side to read and decode</param>
 		/// <param name="rev">The revolution to read and decode</param>
 		/// <returns>A pointer to the list of sectors</returns>
-		public static List<Sector> decodeAndRead(int track, int side, int rev) {
+		public static List<Sector> decodeAndProcessTrack(int track, int side, int rev) {
 			if (Global.Disk[track, side].fluxData == null) return null;
 			List<Sector> sectors = Global.Disk[track, side].sectors;
 			if (sectors != null) return sectors;
 			Global.mfmDecode(track, side);
-			FDC.fdcRealAll(track, side, rev);
+			FDC.processTrack(track, side, rev);
 			sectors = Global.Disk[track, side].sectors;
 			return sectors;
 		}

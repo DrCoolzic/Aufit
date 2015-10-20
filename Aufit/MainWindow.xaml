@@ -6,7 +6,7 @@
 		Width="{jlg:SettingBinding Width}"
 		Left="{jlg:SettingBinding Left}"
 		Top="{jlg:SettingBinding Top}" 
-		Closing="mainWinClosing" AllowDrop="True" Drop="fileDrop" Background="#FFFFFFFF">
+		AllowDrop="True" Drop="fileDrop" Background="#FFFFFFFF">
 
 	<Grid Name="mainGrid" KeyDown="keyDown">
 		<Grid.RowDefinitions>
@@ -115,7 +115,7 @@
 					<ColumnDefinition Width="38*"/>
 				</Grid.ColumnDefinitions>
 				<Button Name="btInfSave" Click="infoSaveClick" Content="Save Log" Width="60"  HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,0,0" Visibility="Hidden"/>
-				<Button Name="btInfClear" Click="infoClearClick" Content="Clear Log" Width="60" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,65,0" Visibility="Hidden"/>
+				<Button Name="btInfoClear" Click="infoClearClick" Content="Clear Log" Width="60" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,65,0" Visibility="Hidden"/>
 			</Grid>
 
 		</Grid>
@@ -605,7 +605,7 @@
 							<ColumnDefinition Width="auto"/>
 							<ColumnDefinition Width="auto"/>
 						</Grid.ColumnDefinitions>
-						<Button Grid.Column="0" Name="x1" Margin="0,0,5,0" Content="Save Text" Click="anaSaveClick" Width="80" HorizontalAlignment="Right"/>
+						<Button Grid.Column="0" Name="x1" Margin="0,0,5,0" Content="Save Content" Click="contentSaveClick" Width="80" HorizontalAlignment="Right"/>
 						<Button Grid.Column="1" Name="x2" Margin="0,0,5,0" Content="Formats" Click="formatClick" Width="80" />
 						<Button Grid.Column="2" Name="x3" Margin="0,0,5,0"  Content="Protections" Click="btProtectionClick" Width="80" />
 					</Grid>
@@ -631,7 +631,7 @@
 							<ColumnDefinition Width="auto"/>
 							<ColumnDefinition Width="auto"/>
 						</Grid.ColumnDefinitions>
-						<Button Grid.Column="1" Name="btAnaSave" Margin="0,0,5,0" Content="Save content" Click="anaSaveClick" Width="80" HorizontalAlignment="Right" >
+						<Button Grid.Column="1" Name="btAnaSave" Margin="0,0,5,0" Content="Save content" Click="contentSaveClick" Width="80" HorizontalAlignment="Right" >
 							<Button.ToolTip>
 								<ToolTip>
 									<TextBlock>Save the content of the windows in a .txt file</TextBlock>

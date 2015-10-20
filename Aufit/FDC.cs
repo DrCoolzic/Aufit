@@ -939,7 +939,7 @@ namespace WD1772Package {
 		/// <param name="track">The track to read</param>
 		/// <param name="side">The side to read</param>
 		/// <param name="rev">The revolution to use</param>
-		public static void fdcRealAll(int track, int side, int rev) {
+		public static void processTrack(int track, int side, int rev) {
 			if ((Global.Disk[track, side].sectors != null) && (Global.Disk[track, side].sectors.Count > 0))
 				return;
 

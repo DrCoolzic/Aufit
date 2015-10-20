@@ -26,20 +26,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</di
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Microsoft.Win32;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.ComponentModel;
 using System.IO;
 using System.Threading;
@@ -73,9 +66,8 @@ namespace Aufit {
 		}
 	}
 
-	/// <summary>
-	/// Interaction logic for MainWindow.xaml
-	/// </summary>
+
+	/// <summary>Interaction logic for MainWindow.xaml</summary>
 	public partial class MainWindow : Window {
 
 		private FluxDrawing _fluxDrawing = null;
@@ -87,17 +79,30 @@ namespace Aufit {
 		/// The track currently selected and displayed
 		/// </summary>
 		public static int CurrentTrack { get; set; }
+
 		/// <summary>
 		/// The side currently selected and displayed
 		/// </summary>
 		public static int CurrentSide { get; set; }
+
 		/// <summary>
 		/// The revolution currently selected and displayed
 		/// </summary>
 		public static int CurrentRev { get; set; }
 
+		/// <summary>
+		/// Name of input file (composed for stream dir)
+		/// </summary>
 		public static string ImageName { get; set; }
+
+		/// <summary>
+		/// Name of the directory that contains the file(s)
+		/// </summary>
 		public static string DirectoryName { get; set; }
+
+		/// <summary>
+		/// Set to true when Aufit is called in Batch mode
+		/// </summary>
 		public static bool BatchMode { get; set; }
 
 		/// <summary>
@@ -108,7 +113,6 @@ namespace Aufit {
 
 			_fluxDrawing = new FluxDrawing(fluxGrid, cvTextFlux, cvGraphicFlux, this, cbOddEven);
 			_fluxDrawing.DetailDraw = cbDetail.IsChecked.Value;
-			//_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
 			_fluxDrawing.Chart.FixOffset = true;
 
 			_histoDrawing = new HistoDrawing(histoGrid, cvTextHisto, cvGraphicHisto, this);
@@ -122,7 +126,7 @@ namespace Aufit {
 			_dataDrawing.Chart.FixOffset = true;
 
 			// this.DataContext = this;	// needed for property changed event
-			
+
 			//string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 			//string[] parts = version.Split('.');
 			//int major = int.Parse(parts[0]);
@@ -131,20 +135,18 @@ namespace Aufit {
 			//int revision = int.Parse(parts[3]);
 
 			Version version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-			DateTime dateTimeOfBuild = new DateTime(2000, 1, 1) 
-                                + new TimeSpan(version.Build, 0, 0, 0) 
-                                + TimeSpan.FromSeconds(version.Revision * 2);
+			DateTime dateTimeOfBuild = new DateTime(2000, 1, 1)
+								+ new TimeSpan(version.Build, 0, 0, 0)
+								+ TimeSpan.FromSeconds(version.Revision * 2);
 			Title = "Aufit Build " + version.Major + "." + version.Minor + " - " + dateTimeOfBuild;
 			tbVersion.Text = "Aufit " + version;
 
 			this.Loaded += new RoutedEventHandler(container_loaded);
-			//MessageBox.Show(Application.Current.Properties["FileName"].ToString());
 			tbFileName.Text = Aufit.Properties.Settings.Default.ImageName;
 
 			// http://stackoverflow.com/questions/896574/forcing-a-wpf-tooltip-to-stay-on-the-screen
 			ToolTipService.ShowDurationProperty.OverrideMetadata(
 				typeof(DependencyObject), new FrameworkPropertyMetadata(60000));
-
 		}
 
 
@@ -164,19 +166,17 @@ namespace Aufit {
 		/// <summary>
 		/// One button of the two matrices has been clicked. We find the button and we set the current Track/Side 
 		/// accordingly. We draw all the charts.
-		/// 
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		private void btMatrixClicked(object sender, RoutedEventArgs e) {
 			Button button = (Button)sender;
 			if (ButtonMatrix.buttonClicked(button)) {
-				//drawAllCharts();
-				//Protections.checkProtection(Track, Side, infoBox);
 				selectTrack(CurrentTrack, CurrentSide);
 			}
 		}
 		#endregion
+
 
 
 		#region flux drawing related
@@ -189,10 +189,10 @@ namespace Aufit {
 			_fluxDrawing.drawFlux(CurrentTrack, CurrentSide, CurrentRev);
 		}
 
+
 		private void fluxMouseLBU(object sender, MouseButtonEventArgs e) {
 			// NASTI BUG we receive a mouse up event from Openfiledialog
-			if (!_fluxDrawing.Chart.GraphicCanvas.IsMouseCaptured)
-				return;		// we receive a mouse up event from Openfiledialog !!! Bug?
+			if (!_fluxDrawing.Chart.GraphicCanvas.IsMouseCaptured) return;
 
 			_fluxDrawing.mouseLBU(sender, e);
 			_clockDrawing.Chart.setViewport(_fluxDrawing.ViewportXmin, _fluxDrawing.ViewportXmax, _clockDrawing.MinBitWidth, _clockDrawing.MaxBitWidth);
@@ -201,9 +201,11 @@ namespace Aufit {
 			_dataDrawing.drawTrackData();
 		}
 
+
 		private void fluxMouseLBD(object sender, MouseButtonEventArgs e) {
 			_fluxDrawing.mouseLBD(sender, e);
 		}
+
 
 		private void fluxMouseWheel(object sender, MouseWheelEventArgs e) {
 			_fluxDrawing.mouseWheel(sender, e);
@@ -213,9 +215,11 @@ namespace Aufit {
 			_dataDrawing.drawTrackData();
 		}
 
+
 		private void fluxMouseMove(object sender, MouseEventArgs e) {
 			_fluxDrawing.mouseMove(sender, e);
 		}
+
 
 		private void fluxMouseRBDown(object sender, MouseButtonEventArgs e) {
 			_fluxDrawing.mouseRBD(sender, e);
@@ -241,6 +245,7 @@ namespace Aufit {
 			_histoDrawing.drawHisto();
 		}
 
+
 		private void cbLimitClick(object sender, RoutedEventArgs e) {
 			Global.computeHisto(CurrentTrack, CurrentSide, CurrentRev, infoBox);
 			//_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
@@ -249,11 +254,13 @@ namespace Aufit {
 			_fluxDrawing.drawFlux(CurrentTrack, CurrentSide, CurrentRev);
 		}
 
+
 		private void cbDetailClick(object sender, RoutedEventArgs e) {
 			_fluxDrawing.DetailDraw = cbDetail.IsChecked.Value;
 			_fluxDrawing.drawFlux(CurrentTrack, CurrentSide, CurrentRev);
 			_clockDrawing.drawBitWidth();
 		}
+
 
 		private void minusRevClicked(object sender, RoutedEventArgs e) {
 			int RevCount = 1;
@@ -277,6 +284,7 @@ namespace Aufit {
 			drawAllCharts();
 		}
 
+
 		private void plusRevClicked(object sender, RoutedEventArgs e) {
 			int RevCount = 1;
 			if (Global.Disk[CurrentTrack, CurrentSide].fluxDataRev != null) {
@@ -298,6 +306,7 @@ namespace Aufit {
 		#endregion
 
 
+
 		/// <summary>
 		/// Display all the charts for the current Track/Side/Rev
 		/// </summary>
@@ -307,21 +316,19 @@ namespace Aufit {
 			int rev = CurrentRev;
 			if (Global.Disk[track, side].fluxDataRev == null) return;
 
-			//int RevCount = Global.Disk[track, side].packedFluxDataRev.Count();
 			string revString = (Global.Disk[track, side].fluxDataRev != null) ? Global.Disk[track, side].fluxDataRev.Count().ToString() : "*";
 			tbRevolution.Text = "Rev. " + (CurrentRev + 1).ToString() + "/" + revString;
 			if (Global.Disk[track, side].decodedData == null)
 				Global.mfmDecode(track, side);
 
-			// cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) > 0);
 			cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) < Global.UNFORMATED_ENTROPY);
 			_histoDrawing.drawHisto(track, side, rev);
 
 			if (!tabItemTrack.IsSelected) {
 				// still want to read track/id/sector
-				FDC.fdcRealAll(track, side, rev);
+				FDC.processTrack(track, side, rev);
 				return;
-			}			
+			}
 
 			_fluxDrawing.setFluxDefault(track, side, rev);
 			_fluxDrawing.drawFlux(track, side, rev);
@@ -341,9 +348,7 @@ namespace Aufit {
 
 		private async void openFileClick(object sender, RoutedEventArgs e) {
 			OpenFileDialog ofd = new OpenFileDialog();
-			//ofd.FileName = Aufit.Properties.Settings.Default.ImageName;
 			ofd.Filter = "Aufit|*.scp;*.raw|All Files|*.*";
-
 			bool? ok = ofd.ShowDialog();
 			if (ok == true) {
 				Aufit.Properties.Settings.Default.ImageName = ofd.FileName;
@@ -364,24 +369,24 @@ namespace Aufit {
 				droppedFiles = e.Data.GetData(DataFormats.FileDrop, true) as string[];
 			}
 
-			if ((null == droppedFiles) || (!droppedFiles.Any())) { return; }
+			if ((droppedFiles == null) || (!droppedFiles.Any())) { return; }
 			await processFile(droppedFiles[0]);
 		}
 
 
-		public static void test(string name) {
-			// use pipe
-			// http://msdn.microsoft.com/en-us/library/bb546085.aspx
-			// http://elegantcode.com/2011/03/02/wpf-advanced-jump-lists-using-a-single-instance-application/
-			// http://danielvaughan.org/post/Enforcing-Single-Instance-WPF-Applications.aspx
-			// http://stackoverflow.com/questions/19147/what-is-the-correct-way-to-create-a-single-instance-application
-			// http://msdn.microsoft.com/en-us/library/ms771662(v=VS.90).aspxv
-			// http://stackoverflow.com/questions/7901007/sending-event-between-2-wpf-windows
-			MessageBox.Show(name + " ***** do not know what to do :(");
-			//MessageBox.Show("container: " + mainWin.ToString());
-			MessageBox.Show("Fuck");
-			//mainWin.processFile(name);
-		}
+		//public static void test(string name) {
+		//	// use pipe
+		//	// http://msdn.microsoft.com/en-us/library/bb546085.aspx
+		//	// http://elegantcode.com/2011/03/02/wpf-advanced-jump-lists-using-a-single-instance-application/
+		//	// http://danielvaughan.org/post/Enforcing-Single-Instance-WPF-Applications.aspx
+		//	// http://stackoverflow.com/questions/19147/what-is-the-correct-way-to-create-a-single-instance-application
+		//	// http://msdn.microsoft.com/en-us/library/ms771662(v=VS.90).aspxv
+		//	// http://stackoverflow.com/questions/7901007/sending-event-between-2-wpf-windows
+		//	MessageBox.Show(name + " ***** do not know what to do :(");
+		//	//MessageBox.Show("container: " + mainWin.ToString());
+		//	MessageBox.Show("Fuck");
+		//	//mainWin.processFile(name);
+		//}
 
 
 		private async void container_loaded(object sender, RoutedEventArgs e) {
@@ -399,19 +404,18 @@ namespace Aufit {
 					if (!ok) {
 						//MessageBox.Show("Image could not be read/processed correctly");
 						Environment.Exit(10);
-						//this.Close();
 					}
 				}
 				else {
 					//MessageBox.Show(String.Format("File {0} not found", fname));
 					Environment.Exit(11);
-					//this.Close();
 				}
 			}
 
 			if (Application.Current.Properties["DiskView"] != null) {
 				tabDisplay.SelectedIndex = 1;
 				await drawDiskLayout();
+
 				double scale = 1.4;
 				if (Application.Current.Properties["Scale"] != null) {
 					string s = Application.Current.Properties["Scale"].ToString();
@@ -426,7 +430,7 @@ namespace Aufit {
 				tbAnalysis.Clear();
 				tbAnalysis.AppendText(String.Format("Protection analysis for {0}\n\n", ImageName));
 				await checkProtectionAsync(tbAnalysis);
-				string fileName = Aufit.MainWindow.ImageName + ".protections."+ suffix + ".txt";
+				string fileName = Aufit.MainWindow.ImageName + ".protections." + suffix + ".txt";
 				File.WriteAllText(fileName, tbAnalysis.Text);
 			}
 
@@ -458,12 +462,16 @@ namespace Aufit {
 		}
 
 
+		/// <summary>
+		/// Enable/Disable most part of the GUI
+		/// </summary>
+		/// <param name="enable">True = enable GUI; False = disable GUI</param>
+		/// <remarks>When GUI is disabled we also display progress bar</remarks>
 		private void guiEnable(bool enable) {
-			gridCommand.IsEnabled = enable;
-			cbLimitFlux.IsEnabled = enable;
-			tabDisplay.IsEnabled = enable;
-			tabCtrl.IsEnabled = enable;
-            ButtonMatrix.clickEnable(enable);
+			gridCommand.IsEnabled = enable;	// command line
+			tabDisplay.IsEnabled = enable;	// all tabs
+			//tabCtrl.IsEnabled = enable;
+			ButtonMatrix.clickEnable(enable);	// button selection
 
 			if (enable) {
 				tbStatus.Visibility = System.Windows.Visibility.Hidden;
@@ -476,14 +484,15 @@ namespace Aufit {
 		}
 
 
+		/// <summary>
+		/// We need to process an input file or a set of input files
+		/// </summary>
+		/// <param name="fileName">The name of the file to process</param>
+		/// <returns>True if file read and processed correctly</returns>
 		private async Task<bool> processFile(string fileName) {
 			bool readOK = false;
 			CurrentTrack = CurrentSide = CurrentRev = 0;
 			Global.resetDisk();
-			//HasIncompleteData = false;
-			//HasProtection = false;
-			//STIncompatible = false;
-
 			tbAnalysis.Clear();
 			SectorNotFoundException.resetException();
 			diskClear();
@@ -493,7 +502,7 @@ namespace Aufit {
 			cbOutputFormat.SelectedIndex = 0;
 			tbSaveImage.Clear();
 			fdMasterView.Document = null;
-			
+
 			guiEnable(false);
 			string extension = System.IO.Path.GetExtension(fileName);
 			tbStatus.Text = "READING IMAGE";
@@ -501,30 +510,28 @@ namespace Aufit {
 			tabDisplay.SelectedIndex = 0;
 
 			switch (extension) {
-				case ".raw":
-					string path = System.IO.Path.GetDirectoryName(fileName);
-					string parent = System.IO.Path.GetDirectoryName(path);
-					ImageName = path + ".raw";
-					DirectoryName = parent;
-					string file = System.IO.Path.GetFileName(fileName);
-					string root = file.Remove(file.Length - 8, 8);
+			case ".raw":
+				string path = System.IO.Path.GetDirectoryName(fileName);
+				string parent = System.IO.Path.GetDirectoryName(path);
+				ImageName = path + ".raw";
+				DirectoryName = parent;
+				string file = System.IO.Path.GetFileName(fileName);
+				string root = file.Remove(file.Length - 8, 8);
+				readOK = await readAllStreamTracksAsync(path, root);
+				// readOK = readAllStreamTracks(path, root);
+				//readOK = readAllStreamTracksWithTasks(path, root);
+				break;
 
-					// readOK = readAllTracks(path, root);
-					readOK = await readAllTracksAsync(path, root);
-					//readOK = readAllTracksTasks(path, root);
+			case ".scp":
+				ImageName = fileName;
+				DirectoryName = System.IO.Path.GetDirectoryName(ImageName);
+				readOK = await SCPReader.readScpAsync(fileName, infoBox);
+				break;
 
-					break;
-
-				case ".scp":
-					ImageName = fileName;					
-					DirectoryName = System.IO.Path.GetDirectoryName(ImageName);
-					readOK = await SCPReader.readScpAsync(fileName, infoBox);
-					break;
-
-				default:
-					tbFileName.Text = "Sorry input file is an unknown format";
-					guiEnable(true);
-					return false;
+			default:
+				tbFileName.Text = "Sorry input file is an unknown format";
+				guiEnable(true);
+				return false;
 			}
 
 			if (readOK) {
@@ -540,9 +547,10 @@ namespace Aufit {
 			tbStatus.Text = "PROCESSING DATA";
 			tabCtrl.SelectedIndex = 0;
 			if (BatchMode) {
+				// in batch mode we must ensure DB is ready before we continue
 				for (int side = 0; side < 2; side++) {
-					for (int track = 0; track < 84; track++) {					
-						await Global.decodeAndReadAsync(track, side, CurrentRev);
+					for (int track = 0; track < 84; track++) {
+						await Global.decodeAndProcessTrackAsync(track, side, CurrentRev);
 						ButtonMatrix.setButtonBG(track, side);
 					}
 				}
@@ -561,20 +569,28 @@ namespace Aufit {
 			return true;
 		}
 
-
+		/// <summary>
+		/// We decode and process all tracks as background tasks
+		/// </summary>
+		/// <param name="sender">Not used</param>
+		/// <param name="e">Not used</param>
 		// http://stuff.seans.com/2009/05/21/net-basics-do-work-in-background-thread-to-keep-gui-responsive/
 		void bgWorkerDecodeAndReadAll(object sender, DoWorkEventArgs e) {
 			Task<List<Sector>>[] tasks = new Task<List<Sector>>[168];
 			for (int side = 0; side < 2; side++) {
-				for (int track = 0; track < 84; track++) {				
+				for (int track = 0; track < 84; track++) {
 					FDC.resetTrack(track, side);
-					tasks[track + side * 84] = Global.decodeAndReadAsync(track, side, CurrentRev);
+					tasks[track + side * 84] = Global.decodeAndProcessTrackAsync(track, side, CurrentRev);
 				}
 			}
 			Task.WaitAll(tasks);
 		}
 
-
+		/// <summary>
+		/// This function is trigered when all tracks have been processed
+		/// </summary>
+		/// <param name="sender">not used</param>
+		/// <param name="e">Event argument</param>
 		void bgWorkerDecodeAndReadCompleted(object sender, RunWorkerCompletedEventArgs e) {
 			if (e.Error != null) {
 				MessageBox.Show(e.Error.Message);
@@ -583,7 +599,7 @@ namespace Aufit {
 
 			guiEnable(true);
 			for (int side = 0; side < 2; side++) {
-				for (int track = 0; track < 84; track++) {			
+				for (int track = 0; track < 84; track++) {
 					ButtonMatrix.setButtonBG(track, side);
 				}
 			}
@@ -591,7 +607,7 @@ namespace Aufit {
 			if (message != null) {
 				infoBox.AppendText(message);
 				redDot.Visibility = System.Windows.Visibility.Visible;
-			}			
+			}	// we have found inconsistencies while processing sectors
 		}
 
 
@@ -600,10 +616,10 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="path">Path to directory that contains the streams</param>
 		/// <param name="root">Root name expanded with xx.x to create the final name</param>
-		private bool readAllTracksTasks(string path, string root) {
+		private bool readAllStreamTracksWithTasks(string path, string root) {
 			Task<bool>[] tasks = new Task<bool>[168];
 			for (int side = 0; side < 2; side++) {
-				for (int track = 0; track < 84; track++) {				
+				for (int track = 0; track < 84; track++) {
 					string fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, track, side);
 					tasks[track + side * 84] = ProcessStream.readStreamTrackAsync(fname, track, side);
 				}
@@ -612,7 +628,7 @@ namespace Aufit {
 
 			ButtonMatrix.clearButtons();
 			for (int side = 0; side < 2; side++) {
-				for (int track = 0; track < 84; track++) {								
+				for (int track = 0; track < 84; track++) {
 					if (Global.Disk[track, side].fluxData != null) {
 						Global.computeHisto(track, side, 1, infoBox);
 						ButtonMatrix.setButtonBG(track, side);
@@ -632,14 +648,14 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="path">Path to directory that contains the streams</param>
 		/// <param name="root">Root name expanded with xx.x to create the final name</param>
-		private async Task<bool> readAllTracksAsync(string path, string root) {
+		private async Task<bool> readAllStreamTracksAsync(string path, string root) {
 			string fname;
 			infoBox.Clear();
 			infoBox.FontSize = 11;
 			ButtonMatrix.clearButtons();
 
 			for (int side = 0; side < 2; side++) {
-				for (int track = 0; track < 84; track++) {				
+				for (int track = 0; track < 84; track++) {
 					fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, track, side);
 					bool streamOK = await ProcessStream.readStreamTrackAsync(fname, track, side);
 					if (streamOK) {
@@ -663,12 +679,12 @@ namespace Aufit {
 
 
 		/// <summary>
-		/// For debug: Reads track without multi-threading
+		/// For debug: Reads all stream track without multi-threading
 		/// </summary>
 		/// <param name="path"></param>
 		/// <param name="root"></param>
 		/// <returns></returns>
-		private bool readAllTracks(string path, string root) {
+		private bool readAllStreamTracks(string path, string root) {
 			string fname;
 			infoBox.Clear();
 			infoBox.FontSize = 11;
@@ -693,7 +709,6 @@ namespace Aufit {
 			drawAllCharts();
 			return true;
 		}
-
 
 
 		private void keyDown(object sender, KeyEventArgs e) {
@@ -739,7 +754,7 @@ namespace Aufit {
 				}
 			}
 			else
-				return;	// other keys
+				return; // other keys
 
 			if (Global.Disk[track, side].fluxData == null) return;
 			CurrentTrack = track;
@@ -790,17 +805,13 @@ namespace Aufit {
 		//}
 
 
-		private void mainWinClosing(object sender, CancelEventArgs e) {
-		}
-
-
 		private async void btProtectionClick(object sender, RoutedEventArgs e) {
 			//await checkProtectionAsync();
 			tbAnalysis.Clear();
 			tbAnalysis.AppendText(String.Format("Protection analysis for {0}\n\n", ImageName));
 			for (int side = 0; side < 2; side++) {
-				for (int track = 0; track < 84; track++) {				
-					await Global.decodeAndReadAsync(track, side, 1);
+				for (int track = 0; track < 84; track++) {
+					await Global.decodeAndProcessTrackAsync(track, side, 1);
 					Protections.checkProtection(track, side, tbAnalysis);
 				}
 			}
@@ -809,8 +820,8 @@ namespace Aufit {
 
 		private async Task checkProtectionAsync(TextBox tb) {
 			for (int side = 0; side < 2; side++) {
-				for (int track = 0; track < 84; track++) {				
-					await Global.decodeAndReadAsync(track, side, 1);
+				for (int track = 0; track < 84; track++) {
+					await Global.decodeAndProcessTrackAsync(track, side, 1);
 					Protections.checkProtection(track, side, tb);
 					ButtonMatrix.setButtonBG(track, side);
 				}
@@ -825,6 +836,7 @@ namespace Aufit {
 
 		private void formatClick(object sender, RoutedEventArgs e) {
 		}
+
 
 		private void btWriteDiskClick(object sender, RoutedEventArgs e) {
 			SaveFileDialog sfd = new SaveFileDialog();
@@ -846,49 +858,49 @@ namespace Aufit {
 
 
 			switch (((ComboBoxItem)cbOutputFormat.SelectedItem).Content.ToString()) {
-				case "STX":
-					sfd.Filter = "Pasti file|*.stx|All Files|*.*";
-					if (sfd.ShowDialog() == true) {
-						tbSaveImage.Clear();
-						tbSaveImage.AppendText(String.Format("Writing STX file {0}\n", sfd.FileName));
-						PastiWriter pasti = new PastiWriter(tbSaveImage);
-						status = pasti.writePasti(sfd.FileName, flags);
-					}
-					break;
+			case "STX":
+				sfd.Filter = "Pasti file|*.stx|All Files|*.*";
+				if (sfd.ShowDialog() == true) {
+					tbSaveImage.Clear();
+					tbSaveImage.AppendText(String.Format("Writing STX file {0}\n", sfd.FileName));
+					PastiWriter pasti = new PastiWriter(tbSaveImage);
+					status = pasti.writePasti(sfd.FileName, flags);
+				}
+				break;
 
-				case "ST":
-					sfd.Filter = "ST file|*.st|All Files|*.*";
-					if (sfd.ShowDialog() == true) {
-						tbSaveImage.Clear();
-						tbSaveImage.AppendText(String.Format("Writing ST file {0}\n", sfd.FileName));
-						StdWriter st = new StdWriter(tbSaveImage);
-						status = st.writeStd(sfd.FileName, flags, FileType.ST);
-					}
-					break;
+			case "ST":
+				sfd.Filter = "ST file|*.st|All Files|*.*";
+				if (sfd.ShowDialog() == true) {
+					tbSaveImage.Clear();
+					tbSaveImage.AppendText(String.Format("Writing ST file {0}\n", sfd.FileName));
+					StdWriter st = new StdWriter(tbSaveImage);
+					status = st.writeStd(sfd.FileName, flags, FileType.ST);
+				}
+				break;
 
-				case "MSA":
-					sfd.Filter = "MSA file|*.msa|All Files|*.*";
-					if (sfd.ShowDialog() == true) {
-						tbSaveImage.Clear();
-						tbSaveImage.AppendText(String.Format("Writing MSA file {0}\n", sfd.FileName));
-						StdWriter st = new StdWriter(tbSaveImage);
-						status = st.writeStd(sfd.FileName, flags, FileType.MSA);
-					}
-					break;
+			case "MSA":
+				sfd.Filter = "MSA file|*.msa|All Files|*.*";
+				if (sfd.ShowDialog() == true) {
+					tbSaveImage.Clear();
+					tbSaveImage.AppendText(String.Format("Writing MSA file {0}\n", sfd.FileName));
+					StdWriter st = new StdWriter(tbSaveImage);
+					status = st.writeStd(sfd.FileName, flags, FileType.MSA);
+				}
+				break;
 
-				case "KF Raw":
-					if (ImageName == null) return;
-					string name = ImageName + ".conv";
-					if (MessageBox.Show(String.Format("You are about to write raw files in the directory \n '{0}'\nDo you want to proceed", name),
-						"Do you want to write KF Raw files?", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes) == MessageBoxResult.No)
-						return;
-					ProcessStream.writeStreamTracks(name, tbSaveImage);
-					break;
-
-				default:
-					MessageBox.Show(String.Format("Sorry the {0} format is not yet supported", 
-						((ComboBoxItem)cbOutputFormat.SelectedItem).Content.ToString()));
+			case "KF Raw":
+				if (ImageName == null) return;
+				string name = ImageName + ".conv";
+				if (MessageBox.Show(String.Format("You are about to write raw files in the directory \n '{0}'\nDo you want to proceed", name),
+					"Do you want to write KF Raw files?", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes) == MessageBoxResult.No)
 					return;
+				ProcessStream.writeStreamTracks(name, tbSaveImage);
+				break;
+
+			default:
+				MessageBox.Show(String.Format("Sorry the {0} format is not yet supported",
+					((ComboBoxItem)cbOutputFormat.SelectedItem).Content.ToString()));
+				return;
 			}
 			if (status)
 				tbSaveImage.AppendText(String.Format("Image {0} write succeed\n", sfd.FileName));
@@ -897,16 +909,14 @@ namespace Aufit {
 		}
 
 
-		private MessageBoxResult ask(string caption, string messageBoxText) {
-			MessageBoxButton button = MessageBoxButton.YesNoCancel;
-			MessageBoxImage icon = MessageBoxImage.Question;
-			MessageBoxResult defaultResult = MessageBoxResult.Cancel;
-			MessageBoxResult result;
-			result = MessageBox.Show(messageBoxText, caption, button, icon, defaultResult);
-			return result;
-		}
-
-
+		//private MessageBoxResult ask(string caption, string messageBoxText) {
+		//	MessageBoxButton button = MessageBoxButton.YesNoCancel;
+		//	MessageBoxImage icon = MessageBoxImage.Question;
+		//	MessageBoxResult defaultResult = MessageBoxResult.Cancel;
+		//	MessageBoxResult result;
+		//	result = MessageBox.Show(messageBoxText, caption, button, icon, defaultResult);
+		//	return result;
+		//}
 
 
 		private async void tabDisplaySelectionChanged(object sender, SelectionChangedEventArgs e) {
@@ -942,9 +952,10 @@ namespace Aufit {
 			}
 		}
 
+
 		private async Task checkWriteImage() {
 			if (tbSaveImage.Text.Length != 0) return;
-			if (Global.Disk[0,0].fluxData == null) return;
+			if (Global.Disk[0, 0].fluxData == null) return;
 			bool hasProtection = false;
 			bool STIncompatible = false;
 			bool hasIncompleteData = false;
@@ -955,15 +966,15 @@ namespace Aufit {
 			cbST.IsEnabled = true;
 			cbMSA.IsEnabled = true;
 			for (int side = 0; side < 2; side++) {
-				for (int track = 0; track < 84; track++) {								
+				for (int track = 0; track < 84; track++) {
 					if (Global.Disk[track, side].track != null) {
 						hasProtection |= Global.Disk[track, side].track.hasProtections;
 						STIncompatible |= (((Global.Disk[track, side].track.flags & Track.NOT_STD_SIZ) != 0) ||
 							((Global.Disk[track, side].track.flags & Track.SECTOR_ST) != 0));
 					}
 					hasIncompleteData |= Global.Disk[track, side].hasIncompleteData;
-				}	// all tracks
-			}	// all sides
+				}   // all tracks
+			}   // all sides
 
 			//tbSaveImage.Clear();
 			//tbSaveImage.ScrollToHome();
@@ -977,7 +988,7 @@ namespace Aufit {
 				tbSaveImage.AppendText("Can only be written with STX format\n");
 				cbMSA.IsEnabled = false;
 				cbST.IsEnabled = false;
-			}	// protected
+			}   // protected
 			else
 				tbSaveImage.AppendText("Can be written with STX / ST / MSA formats\n");
 
@@ -985,7 +996,7 @@ namespace Aufit {
 				MessageBox.Show(
 					"The disk contains shifted tracks and you are on the last revolution\nIt is not possible to produce a correct output file",
 					"Incomplete Data");
-			}	// incomplete data
+			}   // incomplete data
 		}
 
 
@@ -1004,73 +1015,74 @@ namespace Aufit {
 
 			if (tabItemContent.IsSelected) {
 				switch (_view) {
-					case DataView.Track:
-						drawTrackBuffer(track, side, CurrentRev);
-						break;
-					case DataView.Sector:
-						drawSectorBuffer(track, side, CurrentRev);
-						break;
-					case DataView.Layout:
-						drawLayout(track, side, CurrentRev);
-						break;
+				case DataView.Track:
+					drawTrackBuffer(track, side, CurrentRev);
+					break;
+				case DataView.Sector:
+					drawSectorBuffer(track, side, CurrentRev);
+					break;
+				case DataView.Layout:
+					drawLayout(track, side, CurrentRev);
+					break;
 				}
 			}
 		}
 
 
-		private void anaSaveClick(object sender, RoutedEventArgs e) {
+		private void contentSaveClick(object sender, RoutedEventArgs e) {
+			saveTextboxContent(tbAnalysis);
+		}
+
+
+		private void infoSaveClick(object sender, RoutedEventArgs e) {
+			saveTextboxContent(infoBox);
+		}
+
+
+		private void saveTextboxContent(TextBox tb) {
 			SaveFileDialog sfd = new SaveFileDialog();
 			sfd.InitialDirectory = DirectoryName;
 			sfd.RestoreDirectory = true;
 
 			sfd.Filter = "Text file|*.txt|All Files|*.*";
 			if (sfd.ShowDialog() == true)
-				File.WriteAllText(sfd.FileName, tbAnalysis.Text);
+				File.WriteAllText(sfd.FileName, tb.Text);
 		}
 
 
 		private void tabHistoInfoChanged(object sender, SelectionChangedEventArgs e) {
 			if (tabItemInfo.IsSelected) {
-				btInfClear.Visibility = System.Windows.Visibility.Visible;
+				btInfoClear.Visibility = System.Windows.Visibility.Visible;
 				btInfSave.Visibility = System.Windows.Visibility.Visible;
 			}
 			else {
-				btInfClear.Visibility = System.Windows.Visibility.Hidden;
+				btInfoClear.Visibility = System.Windows.Visibility.Hidden;
 				btInfSave.Visibility = System.Windows.Visibility.Hidden;
 			}
 		}
 
 
-		private void infoSaveClick(object sender, RoutedEventArgs e) {
-			SaveFileDialog sfd = new SaveFileDialog();
-			sfd.InitialDirectory = DirectoryName;
-			sfd.RestoreDirectory = true;
-
-			sfd.Filter = "Text file|*.txt|All Files|*.*";
-
-			if (sfd.ShowDialog() == true)
-				File.WriteAllText(sfd.FileName, infoBox.Text);
-		}
-
 		private void infoClearClick(object sender, RoutedEventArgs e) {
 			infoBox.Clear();
 		}
+
 
 		private async void btWriteClearClick(object sender, RoutedEventArgs e) {
 			tbSaveImage.Clear();
 			await checkWriteImage();
 		}
 
+
 		private void btWriteSaveClick(object sender, RoutedEventArgs e) {
 			SaveFileDialog sfd = new SaveFileDialog();
 			sfd.InitialDirectory = DirectoryName;
 			sfd.RestoreDirectory = true;
-
 			sfd.Filter = "Text file|*.txt|All Files|*.*";
 
 			if (sfd.ShowDialog() == true)
 				File.WriteAllText(sfd.FileName, tbSaveImage.Text);
 		}
+
 
 		private bool checkForUpdate(bool showMessage) {
 			bool doUpdate = false;
@@ -1108,7 +1120,7 @@ namespace Aufit {
 				else
 					if (showMessage) MessageBox.Show("No Update Available at this time");
 
-			}	// network deployed
+			}   // network deployed
 			else
 				MessageBox.Show("This application is not a ClickOnce application");
 			return doUpdate;
@@ -1138,6 +1150,7 @@ namespace Aufit {
 				InstallUpdate();
 		}
 
+
 		private void helpClicked(object sender, RoutedEventArgs e) {
 			try {
 				System.Diagnostics.Process.Start("Aufit.pdf");
@@ -1147,9 +1160,11 @@ namespace Aufit {
 			}
 		}
 
+
 		private void cbOddEvenClick(object sender, RoutedEventArgs e) {
 			_fluxDrawing.drawFlux();
 		}
+
 
 		private void cbAvgClick(object sender, RoutedEventArgs e) {
 			_clockDrawing.drawBitWidth();

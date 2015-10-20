@@ -57,7 +57,7 @@ namespace Aufit {
 		public void drawLayout(int track, int side, int rev) {
 			// Force reread
 			FDC.resetTrack(track, side);
-			FDC.fdcRealAll(track, side, rev);
+			FDC.processTrack(track, side, rev);
 			Global.DiskTrack dt = Global.Disk[track, side];
 
 			fdDataView.Document = null;
@@ -163,7 +163,7 @@ namespace Aufit {
 		public void drawSectorBuffer(int track, int side, int rev) {
 			// Force reread
 			FDC.resetTrack(track, side);
-			FDC.fdcRealAll(track, side, rev);
+			FDC.processTrack(track, side, rev);
 
 			List<Sector> sectors = Global.Disk[track, side].sectors;
 
@@ -306,7 +306,7 @@ namespace Aufit {
 		public void drawTrackBuffer(int track, int side, int rev) {
 			// Force reread
 			FDC.resetTrack(track, side);
-			FDC.fdcRealAll(track, side, rev);
+			FDC.processTrack(track, side, rev);
 			Track tr = Global.Disk[track, side].track;
 
 			fdDataView.Document = null;
