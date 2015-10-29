@@ -210,7 +210,10 @@ namespace Aufit {
 				drawBuffer(sector.id.buffer, p, sector.id.info.startByte, false);
 
 				if (sector.innerGap != null) {
-					p.Inlines.Add(new Run("Inner GAP Field:") { FontWeight = FontWeights.Bold });
+					if (sector.data != null)
+						p.Inlines.Add(new Run("Inner GAP Field:") { FontWeight = FontWeights.Bold });
+					else
+						p.Inlines.Add(new Run("Post GAP Field:") { FontWeight = FontWeights.Bold });
 					p.Inlines.Add(new LineBreak());
 					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
 						sector.innerGap.info.startBit, sector.innerGap.info.startByte, (double)sector.innerGap.info.startTime / 1000000.0));
@@ -268,10 +271,10 @@ namespace Aufit {
 						}
 					}	// fuzzy
 				}	// has data
-				else {
-					p.Inlines.Add(" *** Sector has no data ***");
-					p.Inlines.Add(new LineBreak());
-				}
+				//else {
+				//	p.Inlines.Add(" *** Sector has no data ***");
+				//	p.Inlines.Add(new LineBreak());
+				//}
 
 				if (sector.postGap != null) {
 					p.Inlines.Add(new Run("Post GAP Field: ") { FontWeight = FontWeights.Bold });
@@ -284,10 +287,10 @@ namespace Aufit {
 					p.Inlines.Add(new LineBreak());
 					drawBuffer(sector.postGap.buffer, p, sector.postGap.info.startByte, true);
 				}
-				else {
-					p.Inlines.Add(" *** Sector has no Post data GAP ***");
-					p.Inlines.Add(new LineBreak());
-				}
+				//else {
+				//	p.Inlines.Add(" *** Sector has no Post data GAP ***");
+				//	p.Inlines.Add(new LineBreak());
+				//}
 
 				p.Inlines.Add(new LineBreak());
 			}

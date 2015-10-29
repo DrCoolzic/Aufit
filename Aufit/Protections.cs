@@ -128,23 +128,23 @@ namespace Aufit {
 
 				if (lastSector.id.info.startByte > dt.track.buffer.DataByte.Count) {
 					dt.track.flags |= Track.ID_AFTER_IDX;
-					dt.track.hasProtections = true;
+					dt.track.shiftedTrack = true;
 					writeInfo(info, "SHT-IBI Shifted Track with ID Beyond Index");
 				}
 				else if ((lastSector.id.info.startByte + lastSector.id.buffer.DataByte.Count) > dt.track.buffer.DataByte.Count) {
 					dt.track.flags |= Track.ID_OVER_IDX;
-					dt.track.hasProtections = true;
+					dt.track.shiftedTrack = true;
 					writeInfo(info, "SHT-IOI Shifted Track with ID Over Index");
 				}
 				else if (lastSector.data != null) {
 					if (lastSector.data.info.startByte > dt.track.buffer.DataByte.Count) {
 						dt.track.flags |= Track.DATA_AFTER_IDX;
-						dt.track.hasProtections = true;
+						dt.track.shiftedTrack = true;
 						writeInfo(info, "SHT-DBI Shifted Track with Data Beyond Index");
 					}
 					else if ((lastSector.data.info.startByte + lastSector.data.buffer.DataByte.Count) > dt.track.buffer.DataByte.Count) {
 						dt.track.flags |= Track.DATA_OVER_IDX;
-						dt.track.hasProtections = true;
+						dt.track.shiftedTrack = true;
 						writeInfo(info, "SHT-DOI Shifted Track with Data over Index");
 					}
 				}
@@ -222,7 +222,7 @@ namespace Aufit {
 				// for ST format the sector must be in range 1-n
 				// detected on sector but is a track protection
 				if (dt.sectors[secIndex].id.Sector > dt.sectors.Count) {
-					dt.track.flags |= Track.SECTOR_ST;
+					dt.track.flags |= Track.SECTOR_SNS;
 					//writeInfo(info, String.Format("Sector not sequential 1-{0} (SNS)", dt.sectors[secIndex].id.number));
 				}
 

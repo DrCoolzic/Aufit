@@ -186,18 +186,23 @@ namespace Aufit {
 							color = Brushes.Blue;
 						else
 							color = Brushes.LightBlue;
-					}	// bits in band found
+					}   // bits in band found
 					else {
 						if (dt.sectors.Count == 0)
 							color = Brushes.SlateGray;
 					}
 				} // abnormally low sector count
-				else if (dt.track.hasProtections) color = Brushes.Orange;
+				else {
+					if (dt.track.hasProtections)
+						color = Brushes.Orange;
+					else if (dt.track.shiftedTrack)
+						color = new SolidColorBrush(Color.FromArgb(0xFF, 160, 80, 0));
+						//color = Brushes.Green;
+				}
 			} // processed
 			else // not processed
-			//if (Global.Disk[track, side].packedFluxData != null) {
 				if (dt.histoData.histogram != null) {
-				color = (dt.histoData.entropy > Global.UNFORMATED_ENTROPY) ? Brushes.LightGray : Brushes.Lime;
+					color = (dt.histoData.entropy > Global.UNFORMATED_ENTROPY) ? Brushes.LightGray : Brushes.Lime;
 			}
 			else
 				color = Brushes.White;

@@ -309,7 +309,6 @@ namespace GlobalPackage {
 				currentTime += flux;
 				int bitSpacing = dpll.bitSpacing(currentTime);
 				Global.Disk[track, side].decodedData.bitSpacing[index] = (ushort)bitSpacing;
-				//currentBit += bitSpacing;
 
 				int bitWidth = dpll.BitWidth;
 				Global.Disk[track, side].decodedData.bitWidth[index] = (ushort)bitWidth;
@@ -346,7 +345,6 @@ namespace GlobalPackage {
 				tmpHisto[flux]++;
 				fluxCount++;
 			}
-
 
 			// we trim the array size to keep only significant entries. This is useful as
 			// we may end up with a huge array if track has Non Flux areas. Computations for
@@ -428,7 +426,6 @@ namespace GlobalPackage {
 			if (target == null) return;
 
 			Rect bounds = VisualTreeHelper.GetDescendantBounds(target);
-
 			DrawingVisual dv = new DrawingVisual();
 			using (DrawingContext dc = dv.RenderOpen()) {
 				dv.Transform = new ScaleTransform(scale, scale);
@@ -482,8 +479,8 @@ namespace GlobalPackage {
 				return false;
 			return true;
 		}
-
 	}   // class Global
+
 
 	public class PhaseSector {
 		// ugly

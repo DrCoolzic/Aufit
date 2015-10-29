@@ -148,22 +148,49 @@ namespace WD1772Package {
 	/// Sector information. Contains ID & Data fields and flags
 	/// </summary>
 	public class Sector {
+		/// <summary>50% of bits above normal + 3.5%</summary>
 		public const uint WIDTH_ABOVE = Bit.BIT_01;
-		public const uint WIDTH_BELOW = Bit.BIT_02;
-		public const uint WIDTH_INTRA = Bit.BIT_03;
-		public const uint NO_STD_IDAM = Bit.BIT_04;
-		public const uint BAD_TRK_NUM = Bit.BIT_05;
-		public const uint BAD_HEAD_NUM = Bit.BIT_06;
-		public const uint BAD_SEC_NUM = Bit.BIT_07;
-		public const uint BAD_SEC_LEN = Bit.BIT_08;
-		public const uint SEC_IN_SEC = Bit.BIT_09;
-		public const uint NO_STD_DAM = Bit.BIT_10;
-		public const uint DUP_SEC_NUM = Bit.BIT_11;
-		public const uint LONG_SECT = Bit.BIT_12;
-		public const uint SHORT_SECT = Bit.BIT_13;
-		public const uint DM_FUZZY = Bit.BIT_14;
-		public const uint DM_HACK = Bit.BIT_15;
 
+		/// <summary>50% of bits below normal - 3.5%</summary>
+		public const uint WIDTH_BELOW = Bit.BIT_02;
+
+		/// <summary>Mix of bits below and above normal</summary>
+		public const uint WIDTH_INTRA = Bit.BIT_03;
+
+		/// <summary>IDAM not equal $FE</summary>
+		public const uint NO_STD_IDAM = Bit.BIT_04;
+
+		/// <summary>Wrong track number in ID</summary>
+		public const uint BAD_TRK_NUM = Bit.BIT_05;
+
+		/// <summary>Wrong head number in ID</summary>
+		public const uint BAD_HEAD_NUM = Bit.BIT_06;
+
+		/// <summary>Invalid sector number in ID</summary>
+		public const uint BAD_SEC_NUM = Bit.BIT_07;
+
+		/// <summary>Invalid sector length in ID</summary>
+		public const uint BAD_SEC_LEN = Bit.BIT_08;
+
+		/// <summary>Sector within sector (overlapping)</summary>
+		public const uint SEC_IN_SEC = Bit.BIT_09;
+
+		/// <summary>DAM not equal to $FB</summary>
+		public const uint NO_STD_DAM = Bit.BIT_10;
+
+		/// <summary>Two or more sector with same number</summary>
+		public const uint DUP_SEC_NUM = Bit.BIT_11;
+
+		/// <summary>Sector read time is 3% above normal</summary>
+		public const uint LONG_SECT = Bit.BIT_12;
+
+		/// <summary>Sector read time is 3% below normal</summary>
+		public const uint SHORT_SECT = Bit.BIT_13;
+
+		/// <summary>Sector has DM type of fuzzy byte</summary>
+		public const uint DM_FUZZY = Bit.BIT_14;
+
+		public const uint DM_HACK = Bit.BIT_30;
 		public const uint SEC_EQ_TRACK = Bit.BIT_31;
 		public const uint SEC_PROCESSED = Bit.BIT_32;
 		// BAD_ID_CRC => id.info.crc != 0
@@ -201,27 +228,45 @@ namespace WD1772Package {
 
 	/// <summary>Track information</summary>
 	public class Track {
-		/// <summary>Flag set when a short track is detected</summary>
+		/// <summary>Track has less than 6062 bytes</summary>
 		public const uint SHORT_TRACK = Bit.BIT_01;
 
-		/// <summary>Flag set when a long track is detected</summary>
+		/// <summary>Track has more 6437 bytes</summary>
 		public const uint LONG_TRACK = Bit.BIT_02;
 
-		/// <summary>Flag set when a "data track" is detected</summary>
+		/// <summary>Data track detected</summary>
 		public const uint DATA_TRACK = Bit.BIT_03;
 
+		/// <summary>Track has more than 5 invalid bytes ($F5-F7) in GAP</summary>
 		public const uint BAD_DATA_GAP = Bit.BIT_04;
-		public const uint SECTOR_ST = Bit.BIT_05;
+
+		/// <summary>Sector numbered non sequentially</summary>
+		public const uint SECTOR_SNS = Bit.BIT_05;
+
+		/// <summary>Track contains sector with non standard size</summary>
 		public const uint NOT_STD_SIZ = Bit.BIT_06;
+
+		/// <summary>Track contains No Flux Area</summary>
 		public const uint NO_FLUX_AREA = Bit.BIT_07;
+
+		/// <summary>Shifted Track with data over index pulse</summary>
 		public const uint DATA_OVER_IDX = Bit.BIT_08;
+
+		/// <summary>Shifted Track with data after index pulse</summary>
 		public const uint DATA_AFTER_IDX = Bit.BIT_09;
+
+		/// <summary>Shifted Track with id over index pulse</summary>
 		public const uint ID_OVER_IDX = Bit.BIT_10;
+
+		/// <summary>Shifted Track with id after index pulse</summary>
 		public const uint ID_AFTER_IDX = Bit.BIT_11;
+
+		/// <summary>Hidden Data in track (DF & JMD)</summary>
 		public const uint HIDDEN_DATA = Bit.BIT_12;
+
+		/// <summary>Track has Sync sequence > 4</summary>
 		public const uint INV_SYNC_SEQ = Bit.BIT_13;
-		// SYNC_IN_DATA ???
-		// hidden data in track ?
+
 		// partially formatted track
 		// Fuzzy track ???
 
@@ -241,6 +286,7 @@ namespace WD1772Package {
 
 		/// <summary>Protection(s) detected for this track</summary>
 		public bool hasProtections = false;
+		public bool shiftedTrack = false;
 
 	}
 
@@ -276,8 +322,9 @@ namespace WD1772Package {
 
 	/// <summary>Emulate some WD1772 FDC Commands</summary>
 	public class FDC {
-		private readonly static int widthUpperLimit = 2070;
-		private readonly static int widthLowerLimit = 1930;
+		// 2000 +/- 3.5%
+		private readonly static int WIDTH_UPPER_LIMIT = 2070;
+		private readonly static int WIDTH_LOWER_LIMIT = 1930;
 
 		public static bool isGapPhase(Phases p) {
 			return ((p == Phases.p_gap_inner) || (p == Phases.p_gap_post));
@@ -716,8 +763,7 @@ namespace WD1772Package {
 												track, side, Global.Disk[track, side].sectors.Count));
 										}
 
-										// correct start byte value here as it could be different 
-										// from value found in readAddress
+										// correct start byte value here as it could be different from value from readAddress
 										sector.id.info.startByte = byteRead;
 										sector.flags |= Sector.SEC_PROCESSED;
 										flags = 0;
@@ -915,8 +961,8 @@ namespace WD1772Package {
 								default:
 									data.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, currentTime, phase);
 									//int segment = 3 - ((byteLeftInBlock - 3) / (Global.sectSize(sector.id.size) / 4));
-									if (bitWidth > widthUpperLimit) widthOver++;
-									if (bitWidth < widthLowerLimit) widthUnder++;
+									if (bitWidth > WIDTH_UPPER_LIMIT) widthOver++;
+									if (bitWidth < WIDTH_LOWER_LIMIT) widthUnder++;
 									break;
 								}   // switch
 							}   // DATA Segment

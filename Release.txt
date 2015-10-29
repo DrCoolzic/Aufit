@@ -1,5 +1,9 @@
+* Aufit 1.4
+- Shifted track is very common so color is Green instead of Orange (reserved for other prot)
+
 * Aufit 1.3
-- While reading/processing file the button matrix and histo/log tab are now disabled to avoid problems
+- Major change in the Database -- Typical size after Read/Process down from 900 MB to 650 MB
+- While reading/processing file the button matrix is now disabled to avoid problems
 - Fix added tool tips
 - in flux transition with flux limit on, when a flux is above 10000 it display at the
 	border of graph with a radius 4 times bigger (these flux used to be hidden)
@@ -14,7 +18,7 @@
 	automatically write .ctr file from generated KF Raw
 - Added KF Raw writer
 - short/long sectors are now 4% above/below normal instead of 3%
-- Fixed Alternate Realty bug (JMD&DF checking + limit OBB line + stx)
+- Fixed Alternate Realty bug (JMD & DF checking + limit OBB line + stx)
 - Added checkbox that allow to not generate Track Data in stx file
 - Fixed bug of ISS sometimes incorrectly detected.
 

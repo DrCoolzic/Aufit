@@ -223,8 +223,8 @@ namespace ChartPackage {
 					}
 					if (flux >= 10000) {
 						flux = 9930;
-						fluxPoints[pointsInViewport].colorIndex = 1;    // black
-						r *= 4;
+						fluxPoints[pointsInViewport].colorIndex = 3;    // black
+						r *= 2;
 					}
 				}
 				else

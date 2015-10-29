@@ -968,9 +968,9 @@ namespace Aufit {
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {
 					if (Global.Disk[track, side].track != null) {
-						hasProtection |= Global.Disk[track, side].track.hasProtections;
-						STIncompatible |= (((Global.Disk[track, side].track.flags & Track.NOT_STD_SIZ) != 0) ||
-							((Global.Disk[track, side].track.flags & Track.SECTOR_ST) != 0));
+						hasProtection |= Global.Disk[track, side].track.hasProtections | Global.Disk[track, side].track.shiftedTrack;
+                        STIncompatible |= (((Global.Disk[track, side].track.flags & Track.NOT_STD_SIZ) != 0) ||
+							((Global.Disk[track, side].track.flags & Track.SECTOR_SNS) != 0));
 					}
 					hasIncompleteData |= Global.Disk[track, side].hasIncompleteData;
 				}   // all tracks
