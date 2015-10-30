@@ -45,7 +45,7 @@ namespace KFStreamPackage {
 	/// Class to Process all KryoFlux Stream files
 	/// </summary>
 	public class ProcessStream {
-		private static bool _interpolate = false;
+		private static bool _interpolate = true;
 		/// <summary>
 		/// Reads, Parses and fills the DiskTracks[track, side] structure
 		/// </summary>
