@@ -49,7 +49,7 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="track">Track number</param>
 		/// <param name="side">Side Number</param>
-		/// <param name="text">Optional textbox to display protections</param>
+		/// <param name="text">Optional TextBox to display protections</param>
 		/// <remarks>We check the following protections
 		/// - Track protections:
 		///		- SHT short track

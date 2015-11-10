@@ -74,6 +74,9 @@ namespace Aufit {
 		private HistoDrawing _histoDrawing = null;
 		private BitWidthDrawing _clockDrawing = null;
 		private DataDrawing _dataDrawing = null;
+		private Timer _trackPlayTimer = null;
+		bool _ChartDrawingDone = true;
+
 
 		/// <summary>
 		/// The track currently selected and displayed
@@ -149,6 +152,39 @@ namespace Aufit {
 				typeof(DependencyObject), new FrameworkPropertyMetadata(60000));
 		}
 
+
+		private void btPlayClick(object sender, RoutedEventArgs e) {
+			if (_trackPlayTimer != null) {
+				_trackPlayTimer.Dispose();
+				guiEnable(true);
+				_trackPlayTimer = null;
+				btPlay.Content = "Play";
+				_ChartDrawingDone = true;
+				return;
+			}
+			// we measure the time it takes to display a track
+				Stopwatch s = new Stopwatch();
+				s.Start();
+				selectTrack(CurrentTrack, CurrentSide);
+				s.Stop();
+				TimeSpan _displayTime = s.Elapsed;
+			guiEnable(false);
+			btPlay.Content = "Stop";
+			_trackPlayTimer = new Timer(timerCallBack, null, 0, _displayTime.Milliseconds + 100);
+		}
+
+
+		private void timerCallBack(object state) {
+			if (!_ChartDrawingDone) return;
+			nextTrack();
+			Dispatcher.Invoke(() => {
+				_ChartDrawingDone = false;
+				ButtonMatrix.deselectButton();
+				ButtonMatrix.selectButton(CurrentTrack, CurrentSide);
+				drawAllCharts();
+				_ChartDrawingDone = true;
+			});
+		}
 
 
 		#region Button Matrix Procedures
@@ -467,12 +503,8 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="enable">True = enable GUI; False = disable GUI</param>
 		/// <remarks>When GUI is disabled we also display progress bar</remarks>
-		private void guiEnable(bool enable) {
-			gridCommand.IsEnabled = enable;	// command line
-			tabDisplay.IsEnabled = enable;	// all tabs
-			//tabCtrl.IsEnabled = enable;
-			ButtonMatrix.clickEnable(enable);	// button selection
-
+		private void guiAndVisibility(bool enable) {
+			guiEnable(enable);
 			if (enable) {
 				tbStatus.Visibility = System.Windows.Visibility.Hidden;
 				progress.Visibility = System.Windows.Visibility.Hidden;
@@ -481,6 +513,14 @@ namespace Aufit {
 				tbStatus.Visibility = System.Windows.Visibility.Visible;
 				progress.Visibility = System.Windows.Visibility.Visible;
 			}
+		}
+
+
+		private void guiEnable(bool enable) {
+			gridCommand.IsEnabled = enable; // command line
+			tabDisplay.IsEnabled = enable;  // all tabs
+			//tabCtrl.IsEnabled = enable;
+			ButtonMatrix.clickEnable(enable);   // button selection
 		}
 
 
@@ -502,8 +542,9 @@ namespace Aufit {
 			cbOutputFormat.SelectedIndex = 0;
 			tbSaveImage.Clear();
 			fdMasterView.Document = null;
+			btPlay.IsEnabled = false;
 
-			guiEnable(false);
+			guiAndVisibility(false);
 			string extension = System.IO.Path.GetExtension(fileName);
 			tbStatus.Text = "READING IMAGE";
 			tabCtrl.SelectedIndex = 1;
@@ -530,7 +571,7 @@ namespace Aufit {
 
 			default:
 				tbFileName.Text = "Sorry input file is an unknown format";
-				guiEnable(true);
+				guiAndVisibility(true);
 				return false;
 			}
 
@@ -540,7 +581,7 @@ namespace Aufit {
 			}
 			else {
 				tbFileName.Text = "Sorry could not read correctly the input file";
-				guiEnable(true);
+				guiAndVisibility(true);
 				return false;
 			}
 
@@ -554,7 +595,7 @@ namespace Aufit {
 						ButtonMatrix.setButtonBG(track, side);
 					}
 				}
-				guiEnable(true);
+				guiAndVisibility(true);
 
 			}
 			else {
@@ -597,7 +638,8 @@ namespace Aufit {
 				return;
 			}
 
-			guiEnable(true);
+			guiAndVisibility(true);
+			btPlay.IsEnabled = true;
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {
 					ButtonMatrix.setButtonBG(track, side);
@@ -711,55 +753,58 @@ namespace Aufit {
 		}
 
 
+		private static void nextTrack() {
+			if (CurrentTrack < 83) CurrentTrack++;
+			else {
+				CurrentTrack = 0;
+				if (CurrentSide < 1) CurrentSide++;
+				else CurrentSide = 0;
+			}
+			if (Global.Disk[CurrentTrack, CurrentSide].fluxData == null)
+				nextTrack();
+		}
+
+
 		private void keyDown(object sender, KeyEventArgs e) {
 			e.Handled = true;
 
-			int track = CurrentTrack;
-			int side = CurrentSide;
 			if (e.Key == Key.Left) {
-				if (track > 0) track--;
+				if (CurrentTrack > 0) CurrentTrack--;
 				else {
-					track = 83;
-					if (side > 0) side--;
-					else side = 1;
+					CurrentTrack = 83;
+					if (CurrentSide > 0) CurrentSide--;
+					else CurrentSide = 1;
 				}
 			}
 			else if (e.Key == Key.Right) {
-				if (track < 83) track++;
-				else {
-					track = 0;
-					if (side < 1) side++;
-					else side = 0;
-				}
+				nextTrack();
 			}
 			else if (e.Key == Key.Down) {
-				if (track >= 80) {
-					track -= 80;
-					side = (side + 1) % 2;
+				if (CurrentTrack >= 80) {
+					CurrentTrack -= 80;
+					CurrentSide = (CurrentSide + 1) % 2;
 				}
 				else {
-					if (track > 73) {
-						track -= 70;
-						side = (side + 1) % 2;
+					if (CurrentTrack > 73) {
+						CurrentTrack -= 70;
+						CurrentSide = (CurrentSide + 1) % 2;
 					}
-					else track = track + 10;
+					else CurrentTrack = CurrentTrack + 10;
 				}
 			}
 			else if (e.Key == Key.Up) {
-				if (track >= 10) track -= 10;
+				if (CurrentTrack >= 10) CurrentTrack -= 10;
 				else {
-					if (track < 4) track = track + 80;
-					else track = track + 70;
-					side = (side + 1) % 2;
+					if (CurrentTrack < 4) CurrentTrack = CurrentTrack + 80;
+					else CurrentTrack = CurrentTrack + 70;
+					CurrentSide = (CurrentSide + 1) % 2;
 				}
 			}
 			else
 				return; // other keys
 
-			if (Global.Disk[track, side].fluxData == null) return;
-			CurrentTrack = track;
-			CurrentSide = side;
-			selectTrack(track, side);
+			if (Global.Disk[CurrentTrack, CurrentSide].fluxData == null) return;
+			selectTrack(CurrentTrack, CurrentSide);
 		}
 
 
@@ -1006,6 +1051,7 @@ namespace Aufit {
 			FDC.resetTrack(CurrentTrack, CurrentSide);
 			drawAllCharts();
 			Protections.checkProtection(track, side, infoBox);
+
 			if (tabItemDisk.IsSelected)
 				drawDiskSelectedTrack(track, side);
 

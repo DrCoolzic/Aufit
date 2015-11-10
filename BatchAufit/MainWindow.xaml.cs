@@ -47,7 +47,7 @@ namespace BatchAufit {
 			DateTime dateTimeOfBuild = new DateTime(2000, 1, 1)
 								+ new TimeSpan(version.Build, 0, 0, 0)
 								+ TimeSpan.FromSeconds(version.Revision * 2);
-			Title = "Aufit Build " + version.Major + "." + version.Minor + " - " + dateTimeOfBuild;
+			Title = "BatchAufit V" + version.Major + "." + version.Minor + " - " + dateTimeOfBuild;
 
 			tbRootDirName.Text = Properties.Settings.Default.RootDirName;
 			tbMaxProcessTime.Text = Properties.Settings.Default.MaxProcessTime.ToString();

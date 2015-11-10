@@ -1,5 +1,6 @@
 * Aufit 1.4
 - Shifted track is very common so color is Green instead of Orange (reserved for other prot)
+- Aufit Windows background is now white instead of transparent for screen shot
 
 * Aufit 1.3
 - Major change in the Database -- Typical size after Read/Process down from 900 MB to 650 MB

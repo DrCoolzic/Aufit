@@ -6,9 +6,8 @@
 		Width="{jlg:SettingBinding Width}"
 		Left="{jlg:SettingBinding Left}"
 		Top="{jlg:SettingBinding Top}" 
-		AllowDrop="True" Drop="fileDrop" Background="#FFFFFFFF">
-
-	<Grid Name="mainGrid" KeyDown="keyDown">
+		AllowDrop="True" Drop="fileDrop">
+	<Grid Name="mainGrid" KeyDown="keyDown" Background="White">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="auto"/>
 			<RowDefinition Height="170"/>
@@ -91,7 +90,15 @@
 				<ColumnDefinition Width="185"/>
 				<ColumnDefinition Width="*"/>
 			</Grid.ColumnDefinitions>
-			<Canvas Grid.Column="0" Name="BM1" />
+			<Canvas Grid.Column="0" Name="BM1">
+				<Button Click="btPlayClick" BorderThickness="0" Name="btPlay" Content="Play" Padding="5,0" Canvas.Left="135" Canvas.Top="144" Width="40" Background="WhiteSmoke" IsEnabled="False">
+					<Button.ToolTip>
+						<ToolTip>
+							<TextBlock>Automatically display all the tracks</TextBlock>
+						</ToolTip>
+					</Button.ToolTip>
+				</Button>
+			</Canvas>
 			<Canvas Grid.Column="1" Name="BM2" />
 			<TabControl  Grid.Column="2" x:Name="tabCtrl" Background="Transparent" SelectionChanged="tabHistoInfoChanged">
 				<TabItem Header="Histogram" Background="Transparent">
@@ -153,11 +160,11 @@
 						<TextBox Grid.Column="0" x:Name="tbFluxInfo" FontFamily="Arial" FontSize="13" Foreground="DarkBlue" 
 								 FontWeight="Bold" Width="auto" Height="18" BorderThickness="0" Background="Transparent" IsReadOnly="True"/>
 						<Ellipse Grid.Column="1" x:Name="redDot" Fill="Red" HorizontalAlignment="Left" Height="16" Stroke="Red" VerticalAlignment="Top" Width="16" Visibility="Hidden"/>
-						<CheckBox Grid.Column="2" x:Name="cbLimitFlux" Content="Limit Flux" Margin="5,0,5,0" VerticalAlignment="Center" 
+						<CheckBox Grid.Column="2" x:Name="cbLimitFlux" Content="Flux 2-10" Margin="5,0,5,0" VerticalAlignment="Center" 
 							Click="cbLimitClick" HorizontalAlignment="Right" IsChecked="True">
 							<CheckBox.ToolTip>
 								<ToolTip>
-									<TextBlock>Limit displayed flux to range 2µs - 10µs</TextBlock>
+									<TextBlock>Limit displayed flux to range 2-10 µs</TextBlock>
 								</ToolTip>
 							</CheckBox.ToolTip>
 						</CheckBox>
@@ -320,7 +327,7 @@
 										<TextBlock>Hover cursor over sectors for detailed information</TextBlock>
 										<TextBlock>Sectors with Fuzzy data have orange border</TextBlock>
 										<TextBlock>Sectors with CRC error have red border</TextBlock>
-										<TextBlock>Red lines indicate out of band transitions (Hover for more info)</TextBlock>
+										<TextBlock>Dark Blue lines indicate out of band transitions (Hover for more info)</TextBlock>
 									</StackPanel>
 								</ToolTip>
 							</Button.ToolTip>
@@ -405,28 +412,28 @@
 						</Button.ToolTip>
 					</Button>
 
-					<Grid Grid.Row="0" Name="gridImageView" >
+					<Grid Grid.Row="0" Name="gridImageView" Background="White">
 						<Grid.RowDefinitions>
 							<RowDefinition Height="*"/>
 							<RowDefinition Height="auto"/>
 						</Grid.RowDefinitions>
-						<Grid Grid.Row="0">
+						<Grid Grid.Row="0" >
 							<Grid.ColumnDefinitions>
 								<ColumnDefinition Width="*"/>
 								<ColumnDefinition Width="*"/>
-							</Grid.ColumnDefinitions>                       
+							</Grid.ColumnDefinitions>
 							<Viewbox Grid.Column="0" Stretch="Uniform">
-							<Grid Margin="15" Background="Transparent">
+								<Grid Margin="15" Background="Transparent">
 									<Grid Name="cvDiskSide0" Width="300" Height="300" />
 									<Grid Name="clipDiskSide0" Width="300" Height="300" MouseWheel="diskMouseWheelSide0" MouseLeftButtonDown="diskMLBSide0" MouseRightButtonUp="diskMRBSide0" Background="Transparent"/>
-							</Grid>
-						</Viewbox>                     
+								</Grid>
+							</Viewbox>
 							<Viewbox Grid.Column="1" Stretch="Uniform" >
-							<Grid Margin="15">
-								<Grid Name="cvDiskSide1" Width="300" Height="300"/>
+								<Grid Margin="15">
+									<Grid Name="cvDiskSide1" Width="300" Height="300"/>
 									<Grid Name="clipDiskSide1" Width="300" Height="300" MouseWheel="diskMouseWheelSide1" MouseLeftButtonDown="diskMLBSide1" MouseRightButtonUp="diskMRBSide1" Background="Transparent"/>
-							</Grid>
-						</Viewbox>
+								</Grid>
+							</Viewbox>
 						</Grid>
 						<Grid Grid.Row="1" Background="Transparent" Margin="2">
 							<Grid.ColumnDefinitions>
@@ -493,23 +500,23 @@
 							HorizontalAlignment="Right" IsChecked="False" Click="magnifierClicked">
 							<CheckBox.ToolTip>
 								<StackPanel>
-								<TextBlock FontWeight="Bold" FontSize="15">Magnifier Glass</TextBlock>
-								<TextBlock>Mouse over disk image displays a magnification region</TextBlock>
-								<TextBlock>Mouse buttons usage:</TextBlock>
-								<StackPanel Orientation="Horizontal">
-									<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-									<TextBlock>Mouse wheel increase/decrease zoom factor</TextBlock>
-								</StackPanel>
-								<StackPanel Orientation="Horizontal">
-									<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-									<TextBlock>Mouse right click reset zoom factor</TextBlock>
-								</StackPanel>
-								<StackPanel Orientation="Horizontal">
-									<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-									<TextBlock>Mouse left click freeze/unfreeze magnifier region</TextBlock>
-								</StackPanel>
-								<TextBlock>Magnifier regions for Side 0/1 are independent</TextBlock>
-								<TextBlock>Saving picture also saves Magnifier region(s)</TextBlock>
+									<TextBlock FontWeight="Bold" FontSize="15">Magnifier Glass</TextBlock>
+									<TextBlock>Mouse over disk image displays a magnification region</TextBlock>
+									<TextBlock>Mouse buttons usage:</TextBlock>
+									<StackPanel Orientation="Horizontal">
+										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+										<TextBlock>Mouse wheel increase/decrease zoom factor</TextBlock>
+									</StackPanel>
+									<StackPanel Orientation="Horizontal">
+										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+										<TextBlock>Mouse right click reset zoom factor</TextBlock>
+									</StackPanel>
+									<StackPanel Orientation="Horizontal">
+										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+										<TextBlock>Mouse left click freeze/unfreeze magnifier region</TextBlock>
+									</StackPanel>
+									<TextBlock>Magnifier regions for Side 0/1 are independent</TextBlock>
+									<TextBlock>Saving picture also saves Magnifier region(s)</TextBlock>
 								</StackPanel>
 							</CheckBox.ToolTip>
 						</CheckBox>

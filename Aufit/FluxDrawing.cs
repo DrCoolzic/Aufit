@@ -267,9 +267,12 @@ namespace ChartPackage {
 
 			int max = Global.Disk[track, side].fluxData.maxFlux + 500;
 			if (max < 10000) max = 10000;
-			if (_win.cbLimitFlux.IsChecked.Value && (max > 10000)) max = 10000;
 			int min = Global.Disk[track, side].fluxData.minFlux;
 			if (min < 2000) min = 2000;
+			if (_win.cbLimitFlux.IsChecked.Value /*&& (max > 10000)*/) {
+				max = 10000;
+				min = 2000;
+			}
 
 			_fluxChartLayout.setDefaultViewport(_viewportXmin, _viewportXmax, min / 1000, max / 1000);
 		}
