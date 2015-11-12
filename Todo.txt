@@ -1,8 +1,14 @@
 Master
 
+BUGS
+====
+- Data view not updated when selected track changed
+- Fix Vroom track 77.1 Data field not detected?
+- Fix Barbarian track 78.0 not decoded as 00 (KF)
 
 Improvements
 ============
+- redo SWS
 - redo shifted track definition and detection
 - When NFA SWS not shifted track
 - STX long/short track - time of sector not needed - Double Dragon
@@ -27,8 +33,14 @@ Improvements
 - Analysis display in main win
 - When ID over/past index => fix track display & track buffer
 
+Problem images
+==============
+- SCP Awesome disk 3: 4 rev max
 BARBARIAN T78 RAW
 
+
+DONE
+====
 - DONE: data view MFM checkbox changed => redisplay
 - DONE: add clear/save content button in save image
 - DONE: support for ST format
@@ -48,10 +60,6 @@ BARBARIAN T78 RAW
 - DONE: Content display in main win
 - DONE: Save display in main win
 
-BUGS
-====
-- Fix Vroom track 77.1 Data field not detected?
-- Fix Barbarian track 78.0 not decoded as 00 (KF)
 - FIXED 0.9.5496.32925: Pasti write optimization not working with certain disk like Elvira & eliminator
 - FIXED 0.9.5494.34756: ECO by Ocean T77.0 79.0 one sector - button not displayed correctly
 - FIXED 0.8.5494.22146: FDC: reposition the id start byte in readSect because of id+data.
@@ -77,9 +85,6 @@ BUGS
 - FIXED: comphitvol2 d2 : invalid byte in gaps actually located in data segment wrapped => should fix in read track detection (check in track buffer that it also display correctly)
 - FIXED: time of lore mitsumi track 46 fuzzy mask all 00 ???? ???? 72 ?
 
-Problem images
-==============
-- SCP Awesome disk 3: 4 rev max
 
 
 Useful information

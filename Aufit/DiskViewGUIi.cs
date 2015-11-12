@@ -47,16 +47,16 @@ namespace Aufit {
 	public partial class MainWindow : Window {
 		const int diskHalfWindowSize = 150;
 		const double diskWindowSize = 2.0 * (double)diskHalfWindowSize;
-		const double diskFineLine = (double)diskHalfWindowSize / 180;
+		const double diskFineLine = (double)diskHalfWindowSize / 200;
 		const double diskHeavyLine = (double)diskHalfWindowSize / 140;
 		const double rad_max = diskHalfWindowSize - diskHalfWindowSize * 0.03;
 		const double rad_start = diskHalfWindowSize / 6;
 		const double rad_inc = (rad_max - rad_start) / 84;
 
 		Point center = new Point(diskHalfWindowSize, diskHalfWindowSize);
-		Brush disk_background = new SolidColorBrush(Colors.DarkGray);
-		Brush disk_color = new SolidColorBrush(Colors.DimGray);
-		Brush reference_line = new SolidColorBrush(Colors.MediumBlue);
+		Brush DiskHighlightBrush = new SolidColorBrush(Colors.DarkGray);
+		Brush DiskBackgoundBrush = new SolidColorBrush(Colors.DimGray);
+		Brush ReferenceLineBrush = new SolidColorBrush(Colors.MediumBlue);
 
 		EllipseGeometry clipRegionSide0 = new EllipseGeometry();
 		EllipseGeometry clipRegionSide1 = new EllipseGeometry();
@@ -267,6 +267,8 @@ namespace Aufit {
 			resetDiskMagnifier();
 			cvDiskSide0.Children.Clear();
 			cvDiskSide1.Children.Clear();
+			clipDiskSide0.Children.Clear();
+			clipDiskSide1.Children.Clear();
 		}
 
 
@@ -277,17 +279,10 @@ namespace Aufit {
 			if (cvDiskSide0.Children.Count > 0) return false;
 			resetDiskMagnifier();
 
-			Brush Black = new SolidColorBrush(Colors.Black);
-			Black.Freeze();
-			Brush DarkSlateGray = new SolidColorBrush(Colors.DarkSlateGray);
-			DarkSlateGray.Freeze();
-			Brush White = new SolidColorBrush(Colors.White);
-			White.Freeze();
-			Brush Transparent = new SolidColorBrush(Colors.Transparent);
-			Transparent.Freeze();
-			Brush LightGray = new SolidColorBrush(Colors.LightGray);
-			LightGray.Freeze();
-
+			Brush TextColorBrush = new SolidColorBrush(Colors.Black);
+			TextColorBrush.Freeze();
+			Brush TextBackgroundBrush = new SolidColorBrush(Colors.Transparent);
+			TextBackgroundBrush.Freeze();
 
 			const double referenceThickness = 0.5;
 			double radius = diskHalfWindowSize;
@@ -302,23 +297,23 @@ namespace Aufit {
 			cb.Geometry2 = diskHole;
 
 			path = new Path();
-			path.Fill = disk_color;
+			path.Fill = DiskBackgoundBrush;
 			path.Data = cb;
 			cvDiskSide0.Children.Add(path);
 			//Canvas.SetZIndex(path, -1);
 
 			path = new Path();
-			path.Fill = disk_color;
+			path.Fill = DiskBackgoundBrush;
 			path.Data = cb;
 			clipDiskSide0.Children.Add(path);
 			
 			path = new Path();
-			path.Fill = disk_color;
+			path.Fill = DiskBackgoundBrush;
 			path.Data = cb;
 			cvDiskSide1.Children.Add(path);
 
 			path = new Path();
-			path.Fill = disk_color;
+			path.Fill = DiskBackgoundBrush;
 			path.Data = cb;
 			clipDiskSide1.Children.Add(path);
 
@@ -330,8 +325,8 @@ namespace Aufit {
 			tb.BorderThickness = new Thickness(0);
 			tb.FontSize = 8;
 			tb.HorizontalContentAlignment = HorizontalAlignment.Center;
-			tb.Background = Transparent;
-			tb.Foreground = Black;
+			tb.Background = TextBackgroundBrush;
+			tb.Foreground = TextColorBrush;
 			tb.FontWeight = FontWeights.Bold;
 			tb.Text = "Side 0";
 			cvDiskSide0.Children.Add(tb);
@@ -356,8 +351,8 @@ namespace Aufit {
 			tb.BorderThickness = new Thickness(0);
 			tb.FontSize = 8;
 			tb.HorizontalContentAlignment = HorizontalAlignment.Center;
-			tb.Background = Transparent;
-			tb.Foreground = Black;
+			tb.Background = TextBackgroundBrush;
+			tb.Foreground = TextColorBrush;
 			tb.FontWeight = FontWeights.Bold;
 			tb.Text = "Side 1";
 			cvDiskSide1.Children.Add(tb);
@@ -378,7 +373,7 @@ namespace Aufit {
 			// draw reference line
 			//DoubleCollection referenceDashPattern = new DoubleCollection(new double[2] { 10, 2 });
 			Line zeroLine = new Line();
-			zeroLine.Stroke = reference_line;
+			zeroLine.Stroke = ReferenceLineBrush;
 			zeroLine.StrokeThickness = referenceThickness;
 			//zeroLine.StrokeDashArray = referenceDashPattern;
 			zeroLine.X1 = diskHalfWindowSize;
@@ -388,7 +383,7 @@ namespace Aufit {
 			cvDiskSide0.Children.Add(zeroLine);
 
 			zeroLine = new Line();
-			zeroLine.Stroke = reference_line;
+			zeroLine.Stroke = ReferenceLineBrush;
 			zeroLine.StrokeThickness = referenceThickness;
 			//zeroLine.StrokeDashArray = referenceDashPattern;
 			zeroLine.X1 = diskHalfWindowSize;
@@ -398,7 +393,7 @@ namespace Aufit {
 			clipDiskSide0.Children.Add(zeroLine);
 
 			zeroLine = new Line();
-			zeroLine.Stroke = reference_line;
+			zeroLine.Stroke = ReferenceLineBrush;
 			zeroLine.StrokeThickness = referenceThickness;
 			//zeroLine.StrokeDashArray = referenceDashPattern;
 			zeroLine.X1 = diskHalfWindowSize;
@@ -408,7 +403,7 @@ namespace Aufit {
 			cvDiskSide1.Children.Add(zeroLine);
 
 			zeroLine = new Line();
-			zeroLine.Stroke = reference_line;
+			zeroLine.Stroke = ReferenceLineBrush;
 			zeroLine.StrokeThickness = referenceThickness;
 			//zeroLine.StrokeDashArray = referenceDashPattern;
 			zeroLine.X1 = diskHalfWindowSize;
@@ -450,38 +445,41 @@ namespace Aufit {
 								await drawDiskTrackLayoutAsync(track, side, 0, clipDiskSide1);
 						}
 					}
-					// TODO below commented because fails in batch mode for certain files???
-					//ButtonMatrix.setButtonBG(track, 0);
+					ButtonMatrix.setButtonBG(track, 0);
 				}	// all tracks
 			}	// all sides
-
-
 			return true;
 		}
 
 
 		public void drawDiskSelectedTrack(int track, int side) {
 			if (track != -1)
-				drawSelected(_selectedTrack, _selectedSide, disk_color);
-			drawSelected(track, side, disk_background);
+				drawSelected(_selectedTrack, _selectedSide, true);
+			drawSelected(track, side, false);
 			_selectedTrack = track;
 			_selectedSide = side;
 		}
 
 
-		private void drawSelected(int track, int side, Brush color) {
+		private void drawSelected(int track, int side, bool erase) {
 			double radius = rad_max - track * rad_inc;
 			Grid grid = (side == 0) ? cvDiskSide0 : cvDiskSide1;
 			Path path = new Path();
-			path.StrokeThickness = diskHeavyLine - 0.3;
+			if (erase) {
+				path.StrokeThickness = diskHeavyLine - 0.2;
+				path.Stroke = DiskBackgoundBrush;
+			}
+			else {
+				path.StrokeThickness = diskHeavyLine - 0.3;
+				path.Stroke = DiskHighlightBrush;
+			}
 			PathGeometry pg = new PathGeometry();
-			path.Stroke = color;
 			double startAngle = -0.0001;
 			double stopAngle = Math.PI * 2;
 			addArc(pg, startAngle, stopAngle, center, radius);
 			path.Data = pg;
 			grid.Children.Add(path);
-			Grid.SetZIndex(path, -1);
+			Grid.SetZIndex(path, 10);
 		}
 
 
@@ -501,24 +499,25 @@ namespace Aufit {
 			List<Sector> sectors = dt.sectors;
 			if (sectors == null) return false;
 			double radius = rad_max - track * rad_inc;
-			Brush White = new SolidColorBrush(Colors.White);
-			White.Freeze();
-			Brush Black = new SolidColorBrush(Colors.Black);
-			Black.Freeze();
-			Brush Blue = new SolidColorBrush(Colors.Blue);
-			Blue.Freeze();
-			Brush SlateGray = new SolidColorBrush(Colors.SlateGray);
-			SlateGray.Freeze();
-			Brush Yellow = new SolidColorBrush(Colors.Yellow);
-			Yellow.Freeze();
-			Brush Red = new SolidColorBrush(Colors.Red);
-			Red.Freeze();
+
+			Brush OutOfBandBrush = new SolidColorBrush(Colors.White);
+			OutOfBandBrush.Freeze();
+			Brush SyncBrush = new SolidColorBrush(Colors.Red);
+			SyncBrush.Freeze();
+			Brush NFABrush = new SolidColorBrush(Colors.Black);
+			NFABrush.Freeze();
+
+			Brush DataOneIdTrackBrush = new SolidColorBrush(Global.DataOneIdTrackColor);
+			DataOneIdTrackBrush.Freeze();
+			Brush UnformattedTrackBrush = new SolidColorBrush(Global.UnformattedTrackColor);
+			UnformattedTrackBrush.Freeze();
+
 
 			// http://www.developpez.net/forums/d966615/dotnet/developpement-windows/windows-presentation-foundation/probleme-stathread-wpf/
 			this.Dispatcher.Invoke(DispatcherPriority.Background, (ThreadStart)delegate {
 
 				// draw sectors arcs
-				if ((sectors.Count > 0) || ((sectors.Count == 1) && (sectors[0].data != null))) {
+				if ((sectors.Count > 1) || ((sectors.Count == 1) && (sectors[0].data != null))) {
 					for (int i = 0; i < sectors.Count; i++) {
 						Sector sector = sectors[i];
 						double start = 0;
@@ -557,11 +556,10 @@ namespace Aufit {
 					Path path = new Path();
 					path.StrokeThickness = diskFineLine;
 					PathGeometry pg = new PathGeometry();
-					//path.Stroke = Black;
 
 					if ((dt.histoData.hasBitsInBands) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
 						if (dt.track.firstSyncOffset > 0)
-							path.Stroke = Blue;
+							path.Stroke = DataOneIdTrackBrush;
 						else
 							path.Stroke = Brushes.LightBlue;
 					}	// bits in band found
@@ -573,6 +571,7 @@ namespace Aufit {
 					addArc(pg, startAngle, stopAngle, center, radius);
 					path.Data = pg;
 					grid.Children.Add(path);
+					Grid.SetZIndex(path, 100);
 				}	// no sector track
 
 				DSR dsr = new DSR();
@@ -585,7 +584,7 @@ namespace Aufit {
 					int flux = dt.fluxData.fluxValue[i];
 					currentTime += flux;
 					int bitSpacing = dt.decodedData.bitSpacing[i];
-					//currentBit += bitSpacing;
+					int bitWidth = dt.decodedData.bitWidth[i];
 
 					// draw out of band
 					if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) && (dt.sectors.Count > 0) && (cbOutOfBand.IsChecked == true) &&
@@ -596,46 +595,51 @@ namespace Aufit {
 						Path path = new Path();
 						path.StrokeThickness = diskHeavyLine;
 						PathGeometry pg = new PathGeometry();
-						path.Stroke = White;
+						path.Stroke = OutOfBandBrush;
 						addArc(pg, startAngle, stopAngle, center, radius);
 						path.Data = pg;
 						grid.Children.Add(path);
+						Grid.SetZIndex(path, 100);
 					}   // out of band
 
+					int runningTime = currentTime - flux;
 					while (bitSpacing-- > 0) {
 						dsr.shiftIn(bitSpacing > 0 ? 0 : 1);
+						runningTime += bitWidth;
 
 						// draw NFA
 						if (dsr.DataReady) {
 							if (((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) || (cbDiskNFA.IsChecked == true)) && dsr.DataReady) {
 								if ((nfaStartTime == 0) && ((dsr.MFM == 0) || (dsr.MFM == 0xFFFF)))
-									nfaStartTime = currentTime;
-								if ((dsr.MFM != 0) && (dsr.MFM != 0xFFFF) && (nfaStartTime > 0) && (currentTime > (nfaStartTime + minDisplayWidth))) {
+									nfaStartTime = runningTime;
+								if ((dsr.MFM != 0) && (dsr.MFM != 0xFFFF) && (nfaStartTime > 0) && (runningTime > (nfaStartTime + minDisplayWidth))) {
 									double startAngle = timeAngle(nfaStartTime);
-									double stopAngle = timeAngle(currentTime);
+									double stopAngle = timeAngle(runningTime);
 									nfaStartTime = 0;
 									System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
 									path.StrokeThickness = diskHeavyLine;
 									PathGeometry pg = new PathGeometry();
-									path.Stroke = Red;
+									path.Stroke = NFABrush;
 									addArc(pg, startAngle, stopAngle, center, radius);
 									path.Data = pg;
 									grid.Children.Add(path);
+									Grid.SetZIndex(path, 100);
 								}
 							}
 						}
 
 						// add sync bars
 						if (dsr.MFM == 0x4489) {
-							double startAngle = timeAngle(currentTime);
-							double stopAngle = timeAngle(currentTime + minDisplayWidth);
+							double startAngle = timeAngle(runningTime);
+							double stopAngle = timeAngle(runningTime + minDisplayWidth);
 							Path path = new Path();
 							path.StrokeThickness = diskHeavyLine;
 							PathGeometry pg = new PathGeometry();
-							path.Stroke = Brushes.Black;
+							path.Stroke = SyncBrush;
 							addArc(pg, startAngle, stopAngle, center, radius);
 							path.Data = pg;
 							grid.Children.Add(path);
+							Grid.SetZIndex(path, 100);
 						}
 					}	// shift bit in
 				}	// all bits
@@ -646,44 +650,46 @@ namespace Aufit {
 
 
 		private void drawArc(Sector sector, Point center, double radius, double startAngle, double stopAngle, Phases phase, Grid grid) {
-			Brush LightGreen = new SolidColorBrush(Colors.LightGreen);
-			LightGreen.Freeze();
-			Brush Aqua = new SolidColorBrush(Colors.Aqua);
-			Aqua.Freeze();
-			Brush Purple = new SolidColorBrush(Colors.Purple);
-			Purple.Freeze();
-			Brush Orange = new SolidColorBrush(Colors.Orange);
-			Orange.Freeze();
-			Brush Blue = new SolidColorBrush(Colors.Blue);
-			Blue.Freeze();
-			Brush DeepSkyBlue = new SolidColorBrush(Colors.DeepSkyBlue);
-			DeepSkyBlue.Freeze();
-			Brush Yellow = new SolidColorBrush(Colors.Yellow);
-			Yellow.Freeze();
+			Brush IGapBrush = new SolidColorBrush(Global.IGapColor);
+			IGapBrush.Freeze();
+			Brush ShortSectorBrush = new SolidColorBrush(Global.ShortSectorColor);
+			ShortSectorBrush.Freeze();
+			Brush BitRateSectorBrush = new SolidColorBrush(Global.BitRateSectorColor);
+			BitRateSectorBrush.Freeze();
+			Brush FuzzySectorBrush = new SolidColorBrush(Global.FuzzySectorColor);
+			FuzzySectorBrush.Freeze();
+			Brush LongSectorBrush = new SolidColorBrush(Global.LongSectorColor);
+			LongSectorBrush.Freeze();
+			Brush NormalSectorBrush = new SolidColorBrush(Global.NormalSectorColor);
+			NormalSectorBrush.Freeze();
+			Brush IdBrush = new SolidColorBrush(Global.IdColor);
+			IdBrush.Freeze();
 
 			System.Windows.Shapes.Path idPath = new System.Windows.Shapes.Path();
 			idPath.StrokeThickness = diskFineLine;
-			idPath.Stroke = LightGreen;
+			idPath.Stroke = IGapBrush;
+
 			if (phase == Phases.p_id)
-				idPath.Stroke = Yellow;
+				idPath.Stroke = IdBrush;
 			if (phase == Phases.p_data) {
-				idPath.Stroke = DeepSkyBlue;
+				idPath.Stroke = NormalSectorBrush;
 				if ((sector.flags & Sector.WIDTH_ABOVE) != 0)
 				//if ((sector.flags & Sector.LONG_SECT) != 0)
-					idPath.Stroke = Blue;
+					idPath.Stroke = LongSectorBrush;
 				if ((sector.flags & Sector.WIDTH_BELOW) != 0)
 				//if ((sector.flags & Sector.SHORT_SECT) != 0)
-					idPath.Stroke = Aqua;
+					idPath.Stroke = ShortSectorBrush;
 				if ((sector.flags & Sector.WIDTH_INTRA) != 0)
-					idPath.Stroke = Purple;
+					idPath.Stroke = BitRateSectorBrush;
 				if ((sector.data.info.crc != 0) || (sector.data.fuzzy != null))
-					idPath.Stroke = Orange;
+					idPath.Stroke = FuzzySectorBrush;
 			}
 
 			PathGeometry idPg = new PathGeometry();
 			addArc(idPg, startAngle, stopAngle, center, radius);
 			idPath.Data = idPg;
 			grid.Children.Add(idPath);
+			Grid.SetZIndex(idPath, 100);
 		}
 
 

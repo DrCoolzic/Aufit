@@ -47,6 +47,7 @@ using GlobalPackage;
 using PastiPackage;
 using StdFormatPackage;
 using System.Globalization;
+using System.Windows.Media;
 
 namespace Aufit {
 	//http://www.thomaslevesque.com/2008/11/18/wpf-binding-to-application-settings-using-a-markup-extension/
@@ -170,7 +171,7 @@ namespace Aufit {
 				TimeSpan _displayTime = s.Elapsed;
 			guiEnable(false);
 			btPlay.Content = "Stop";
-			_trackPlayTimer = new Timer(timerCallBack, null, 0, _displayTime.Milliseconds + 100);
+			_trackPlayTimer = new Timer(timerCallBack, null, 0, _displayTime.Milliseconds + 200);
 		}
 
 
@@ -970,28 +971,35 @@ namespace Aufit {
 			if (tabItemTrack.IsSelected) {
 				infoBox.AppendText("Track View Selected\n");
 				drawAllCharts();
+				if (Global.Disk[CurrentTrack, CurrentSide].fluxDataRev != null)
+					btPlay.IsEnabled = true;
 			}
 			if (tabItemDisk.IsSelected) {
+				btPlay.IsEnabled = false;
 				infoBox.AppendText("Disk View Selected\n");
 				await drawDiskLayout();
 			}
-			if (tabItemContent.IsSelected) {
+			if (tabItemData.IsSelected) {
+				btPlay.IsEnabled = false;
 				infoBox.AppendText("Data View Selected\n");
 				if ((Global.Disk[CurrentTrack, CurrentSide].track != null) && (fdDataView.Document == null))
 					drawLayout(CurrentTrack, CurrentSide, CurrentRev);
 			}
 
 			if (tabItemMaster.IsSelected) {
+				btPlay.IsEnabled = false;
 				infoBox.AppendText("Master View Selected\n");
 				displayDiskFormat(CurrentTrack, CurrentSide);
 			}
 
 			if (tabItemAnalysis.IsSelected) {
+				btPlay.IsEnabled = false;
 				infoBox.AppendText("Analysis Selected\n");
 
 			}
 
 			if (tabItemSave.IsSelected) {
+				btPlay.IsEnabled = false;
 				infoBox.AppendText("Save Image Selected\n");
 				await checkWriteImage();
 			}
@@ -1059,7 +1067,7 @@ namespace Aufit {
 				displayDiskFormat(track, side);
 			}
 
-			if (tabItemContent.IsSelected) {
+			if (tabItemData.IsSelected) {
 				switch (_view) {
 				case DataView.Track:
 					drawTrackBuffer(track, side, CurrentRev);

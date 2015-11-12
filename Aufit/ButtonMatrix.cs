@@ -46,7 +46,7 @@ namespace Aufit {
 		private readonly static Thickness thickButtonBorder = new Thickness(2.4);
 
 		private static List<Tuple<Button, Int32, Int32, Int32>> _buttonList = new List<Tuple<Button, int, int, int>>();
-		private static Button[, ,] _buttons = new Button[9, 10, 2];
+		private static Button[,,] _buttons = new Button[9, 10, 2];
 		private static Button _selectedButton = null;
 		private static bool _clickEnable = true;
 
@@ -155,6 +155,7 @@ namespace Aufit {
 			_selectedButton = _buttons[x, y, z];
 		}
 
+
 		/// <summary>
 		/// Reset button size from 15 to 13, set border to thin, move to original, and reset _selected
 		/// </summary>
@@ -169,45 +170,45 @@ namespace Aufit {
 			}
 		}
 
+
 		/// <summary>
 		/// Set background color of button based on track / side
 		/// </summary>
 		/// <param name="track">Track number</param>
 		/// <param name="side">Side Number </param>
 		public static void setButtonBG(int track, int side) {
-			Brush color = Brushes.LimeGreen;
+			Brush color;
 			Global.DiskTrack dt = Global.Disk[track, side];
 
-			//// track processed
-			if (dt.sectors != null) {
-				if (dt.sectors.Count < 3) {
-					if ((dt.histoData.hasBitsInBands) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
-						if (dt.track.firstSyncOffset > 0)
-							color = Brushes.Blue;
-						else
-							color = Brushes.LightBlue;
-					}   // bits in band found
-					else {
-						if (dt.sectors.Count == 0)
-							color = Brushes.SlateGray;
-					}
-				} // abnormally low sector count
-				else {
-					if (dt.track.hasProtections)
-						color = Brushes.Orange;
-					else if (dt.track.shiftedTrack)
-						color = new SolidColorBrush(Color.FromArgb(0xFF, 160, 80, 0));
-						//color = Brushes.Green;
-				}
-			} // processed
-			else // not processed
-				if (dt.histoData.histogram != null) {
+			// set background color of buttons in matrix
+			if (dt.track == null) {
+				if (dt.histoData.histogram != null)
 					color = (dt.histoData.entropy > Global.UNFORMATED_ENTROPY) ? Brushes.LightGray : Brushes.Lime;
-			}
-			else
-				color = Brushes.White;
+				else
+					color = Brushes.White;
+			}   // unprocessed
+			else {
+				if (((dt.sectors.Count == 1) && (dt.sectors[0].data != null)) || (dt.sectors.Count > 1)) {
+					if (dt.track.hasProtections)
+						color = new SolidColorBrush(Global.ProtectedTrackColor);
+					else if (dt.track.shiftedTrack)
+						color = new SolidColorBrush(Global.ShiftedTrackColor);
+					else
+						color = new SolidColorBrush(Global.NormalTrackColor);
+				}   // normal sector ==> many id or one id with data
+				else {
+					if ((dt.histoData.hasBitsInBands) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
+						if (dt.sectors.Count > 0)
+							color = new SolidColorBrush(Global.DataOneIdTrackColor);   // one id detected
+						else
+							color = new SolidColorBrush(Global.DataTrackColor);  // no id detected
+					}   // entropy + BIB
+					else
+						color = new SolidColorBrush(Global.UnformattedTrackColor);
+				}   // not a normal sector
+			}   // processed
 
-			_buttons[track / 10, track % 10, side].Background = color;		
+			_buttons[track / 10, track % 10, side].Background = color;
 		}
 
 

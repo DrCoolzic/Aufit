@@ -8,7 +8,7 @@ using System.Windows;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Aufit")]
-[assembly: AssemblyDescription("Aufit")]
+[assembly: AssemblyDescription("Aufit Atari Image Tool")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("DrCoolZic")]
 [assembly: AssemblyProduct("Atari Universal File Image Tool")]
@@ -55,6 +55,6 @@ using System.Windows;
 // [assembly: AssemblyVersion("0.5.1.0")]
 
 // number of day since 2000 - number second since midnight / 2
-[assembly: AssemblyVersion("1.3.*")]
+[assembly: AssemblyVersion("1.4.*")]
 //[assembly: AssemblyFileVersion("0.5.1")]
 [assembly: AssemblyFileVersionAttribute("1.0")]

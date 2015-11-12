@@ -38,6 +38,7 @@ using System.Windows.Media.Imaging;
 using System.Windows;
 using System.IO;
 using Microsoft.Win32;
+using System.ComponentModel;
 
 namespace GlobalPackage {
 
@@ -193,6 +194,22 @@ namespace GlobalPackage {
 	/// Contains all global parameters and functions for AUFIT
 	/// </summary>
 	public class Global {
+		// Button and Track Color
+		public static Color ProtectedTrackColor = Colors.Orange;    //  Aufit.Properties.Settings.Default.ProtectedTrackColor;
+		public static Color UnformattedTrackColor = Colors.SlateGray;	// Aufit.Properties.Settings.Default.UnformattedTrackColor;
+		public static Color ShiftedTrackColor = Colors.Green;   // Aufit.Properties.Settings.Default.ShiftedTrackColor;
+		public static Color NormalTrackColor = Colors.LimeGreen;    // Aufit.Properties.Settings.Default.NormalTrackColor;
+		public static Color DataOneIdTrackColor = Colors.Blue;  // Aufit.Properties.Settings.Default.DataOneIdTrack;
+		public static Color DataTrackColor = Colors.LightBlue;	// Aufit.Properties.Settings.Default.DataTrack;
+
+		// Sector Color
+		public static Color IGapColor = Colors.LightGreen;
+        public static Color ShortSectorColor = Colors.Aqua;
+		public static Color BitRateSectorColor = Colors.Purple;
+		public static Color FuzzySectorColor = Colors.Orange;
+		public static Color LongSectorColor = Colors.Blue;
+		public static Color NormalSectorColor = Colors.DeepSkyBlue;
+		public static Color IdColor = Colors.Yellow;
 
 		private static DiskTrack[,] _disk = new DiskTrack[85, 2];
 

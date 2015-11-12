@@ -1,4 +1,14 @@
 * Aufit 1.4
+- Play button only in track view
+- Fixed NFA not displayed in DiskView
+- Fixed magnifier images not cleared when loading new image
+- Fixed Data track not displayed in DiskView
+- Fixed bad pb induced by new DB currentTime not computed correctly in FDC/DiskView/Flux Drawing
+- Fixed bug one id track not displayed in DiskView
+- Added the MoveAufitOutput Project
+- Fixed wrong title in BatchAufit
+- Added the "Play Tracks" capability (play time is computed on first track)
+- When limited Flux display is now fix from 2 to 10
 - Shifted track is very common so color is Green instead of Orange (reserved for other prot)
 - Aufit Windows background is now white instead of transparent for screen shot
 

@@ -13,8 +13,17 @@
 			<RowDefinition Height="170"/>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
+        <!--<Menu x:Name="menu" Grid.Row="0" HorizontalAlignment="Left"  VerticalAlignment="Top" >
+            <MenuItem Header="_File">
+                <MenuItem Header="_New" />
+                <MenuItem Header="_Open" />
+                <MenuItem Header="_Save" />
+                <Separator />
+                <MenuItem Header="_Exit" />
+            </MenuItem>
+        </Menu>-->
 
-		<Grid Grid.Row="0" Name="gridCommand">
+        <Grid Grid.Row="0" Name="gridCommand">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="80"/>
 				<ColumnDefinition Width="50"/>
@@ -82,7 +91,7 @@
 					</ToolTip>
 				</Button.ToolTip>
 			</Button>
-		</Grid>
+        </Grid>
 
 		<Grid Grid.Row="1" Name="matrixGrid" Margin="5" Loaded="matrixGridLoaded">
 			<Grid.ColumnDefinitions>
@@ -91,7 +100,7 @@
 				<ColumnDefinition Width="*"/>
 			</Grid.ColumnDefinitions>
 			<Canvas Grid.Column="0" Name="BM1">
-				<Button Click="btPlayClick" BorderThickness="0" Name="btPlay" Content="Play" Padding="5,0" Canvas.Left="135" Canvas.Top="144" Width="40" Background="WhiteSmoke" IsEnabled="False">
+				<Button Click="btPlayClick" BorderThickness="0" Name="btPlay" Content="Play" Padding="5,0" Canvas.Left="135" Canvas.Top="144" Width="40" IsEnabled="False">
 					<Button.ToolTip>
 						<ToolTip>
 							<TextBlock>Automatically display all the tracks</TextBlock>
@@ -357,15 +366,15 @@
 									<TextBlock>Displays the layout of the two sides of the disk image</TextBlock>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>Sync marks displayed in black</TextBlock>
+										<TextBlock>Sync marks displayed in Red</TextBlock>
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>ID fields displayed in yellow</TextBlock>
+										<TextBlock>ID fields displayed in Yellow</TextBlock>
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>Intra-GAP fields displayed in green</TextBlock>
+										<TextBlock>Intra-GAP fields displayed in Ligth Green</TextBlock>
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
@@ -373,39 +382,43 @@
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
-										<TextBlock>Deep blue normal sector</TextBlock>
+										<TextBlock>Deep Blue = Normal sector</TextBlock>
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
-										<TextBlock>Blue over-clocked sector</TextBlock>
+										<TextBlock>Blue = Long sector</TextBlock>
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
-										<TextBlock>Aqua under-clocked sector</TextBlock>
+										<TextBlock>Aqua = Short sector</TextBlock>
 									</StackPanel>
-									<StackPanel Orientation="Horizontal">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
+                                        <TextBlock>Purple = sector with bit-width variations</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
-										<TextBlock>Orange sector with Fuzzy bytes or CRC error</TextBlock>
+										<TextBlock>Orange = sector with Fuzzy bytes or CRC error</TextBlock>
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>NFA regions displayed in red</TextBlock>
+										<TextBlock>NFA regions displayed in Black</TextBlock>
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>Unformatted tracks displayed in gray</TextBlock>
+										<TextBlock>Unformatted tracks displayed in Slate Gray</TextBlock>
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>Data tracks in Blue</TextBlock>
+										<TextBlock>Data tracks with sync in Blue</TextBlock>
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>Track with data but no sync seq in yellow</TextBlock>
+										<TextBlock>Data track with without sync seq in Light Blue</TextBlock>
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>Out of Band transitions in white</TextBlock>
+										<TextBlock>Out of Band transitions in White</TextBlock>
 									</StackPanel>
 								</StackPanel>
 							</ToolTip>
@@ -539,7 +552,7 @@
 				</Grid>
 			</TabItem>
 
-			<TabItem x:Name="tabItemContent" Header="Data View" Width="80" Background="Transparent">
+			<TabItem x:Name="tabItemData" Header="Data View" Width="80" Background="Transparent">
 				<Grid>
 					<Grid.RowDefinitions>
 						<RowDefinition Height="*"/>

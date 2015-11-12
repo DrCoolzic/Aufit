@@ -172,6 +172,7 @@ namespace ChartPackage {
 				int bitSpacing = dt.decodedData.bitSpacing[i];
 				//currentBit += bitSpacing;
 
+				int runningTime = currentTime - flux;
 				while (bitSpacing-- > 0) {
 					dsr.shiftIn(bitSpacing > 0 ? 0 : 1);
 
@@ -180,9 +181,9 @@ namespace ChartPackage {
 						syncLine = new Line();
 						syncLine.Stroke = Brushes.Red;
 						syncLine.StrokeThickness = 1;
-						syncLine.X1 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
+						syncLine.X1 = _fluxChartLayout.NormPoint(new Point((double)runningTime / 1000000.0, 2)).X;
 						syncLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
-						syncLine.X2 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
+						syncLine.X2 = _fluxChartLayout.NormPoint(new Point((double)runningTime / 1000000.0, 10)).X;
 						syncLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
 						_fluxChartLayout.GraphicCanvas.Children.Add(syncLine);
 					}
@@ -191,9 +192,9 @@ namespace ChartPackage {
 						syncLine = new Line();
 						syncLine.Stroke = Brushes.DarkBlue;
 						syncLine.StrokeThickness = 0.5;
-						syncLine.X1 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
+						syncLine.X1 = _fluxChartLayout.NormPoint(new Point((double)runningTime / 1000000.0, 2)).X;
 						syncLine.Y1 = _fluxChartLayout.NormY(_fluxChartLayout.Ymin);
-						syncLine.X2 = _fluxChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
+						syncLine.X2 = _fluxChartLayout.NormPoint(new Point((double)runningTime / 1000000.0, 10)).X;
 						syncLine.Y2 = _fluxChartLayout.NormY(_fluxChartLayout.Ymax);
 						_fluxChartLayout.GraphicCanvas.Children.Add(syncLine);
 					}

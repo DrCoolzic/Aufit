@@ -236,26 +236,40 @@ namespace ChartPackage {
 
 
 		private void drawRectangle(Sector sector, double bstart, double bstop, Phases phase) {
+			Brush IGapBrush = new SolidColorBrush(Global.IGapColor);
+			IGapBrush.Freeze();
+			Brush ShortSectorBrush = new SolidColorBrush(Global.ShortSectorColor);
+			ShortSectorBrush.Freeze();
+			Brush BitRateSectorBrush = new SolidColorBrush(Global.BitRateSectorColor);
+			BitRateSectorBrush.Freeze();
+			Brush FuzzySectorBrush = new SolidColorBrush(Global.FuzzySectorColor);
+			FuzzySectorBrush.Freeze();
+			Brush LongSectorBrush = new SolidColorBrush(Global.LongSectorColor);
+			LongSectorBrush.Freeze();
+			Brush NormalSectorBrush = new SolidColorBrush(Global.NormalSectorColor);
+			NormalSectorBrush.Freeze();
+			Brush IdBrush = new SolidColorBrush(Global.IdColor);
+			IdBrush.Freeze();
+
 			Polygon sectorPhasePolygon = new Polygon();
 			sectorPhasePolygon.Stroke = Brushes.Black;
 			sectorPhasePolygon.StrokeThickness = 0.5;
 
 			if (phase == Phases.p_id)
-				sectorPhasePolygon.Fill = Brushes.Yellow;
+				sectorPhasePolygon.Fill = IdBrush;
 			//else if (phase == Phases.p_gap)
 			else if (FDC.isGapPhase(phase))
-				sectorPhasePolygon.Fill = Brushes.LightGreen;
+				sectorPhasePolygon.Fill = IGapBrush;
 			else {
-				sectorPhasePolygon.Fill = Brushes.DeepSkyBlue;
+				sectorPhasePolygon.Fill = NormalSectorBrush;
 				if ((sector.flags & Sector.WIDTH_ABOVE) != 0)
 					//if ((sector.flags & Sector.LONG_SECT) != 0)
-					sectorPhasePolygon.Fill = Brushes.Blue;
+					sectorPhasePolygon.Fill = LongSectorBrush;
 				if ((sector.flags & Sector.WIDTH_BELOW) != 0)
 					//if ((sector.flags & Sector.SHORT_SECT) != 0)
-					sectorPhasePolygon.Fill = Brushes.Aqua;
+					sectorPhasePolygon.Fill = ShortSectorBrush;
 				if ((sector.flags & Sector.WIDTH_INTRA) != 0)
-					sectorPhasePolygon.Fill = Brushes.Purple;
-				//	plg.Fill = Brushes.BlueViolet;
+					sectorPhasePolygon.Fill = BitRateSectorBrush;
 
 				if (sector.data.info.crc != 0) {
 					Polygon crcPolygon = new Polygon();
@@ -269,7 +283,7 @@ namespace ChartPackage {
 				}
 				if (sector.data.fuzzy != null) {
 					Polygon fuzzyPolygon = new Polygon();
-					fuzzyPolygon.Fill = Brushes.Orange;
+					fuzzyPolygon.Fill = FuzzySectorBrush;
 					fuzzyPolygon.StrokeThickness = 0;
 					fuzzyPolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.10));
 					fuzzyPolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.9));
