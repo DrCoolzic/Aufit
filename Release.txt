@@ -1,4 +1,5 @@
 * Aufit 1.4
+- Added capability to display Histogram/Entropy for track AND SECTORS
 - Detect First sector and track splice - display in track view
 - DB now store first and last flux index in info
 - Unformatted is now detected when no MFM byte only

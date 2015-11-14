@@ -60,9 +60,7 @@ namespace ChartPackage {
 		/// <summary>
 		/// Draw the Histogram of flux transitions chart
 		/// </summary>
-		//	public void drawHisto(int track = -1, int side = -1, int rev = -1) {
-		public void drawHisto() {
-			bool fixedValue = true;
+		public void drawTrackHisto() {
 			_histoChartLayout.chartResetCanvas();
 			if (_histoChartLayout == null) return;
 
@@ -70,23 +68,31 @@ namespace ChartPackage {
 			int side = MainWindow.CurrentSide;
 			int rev = MainWindow.CurrentRev;
 			if (Global.Disk[track, side].fluxData == null) return;
-			if (Global.Disk[track, side].histoData.histogram == null) return;
-			if (Global.Disk[track, side].histoData.histogram.Length == 0) return;
+
+			drawHisto(Global.Disk[track, side].histoData);
+		}   // drawHisto()
+
+
+		public void drawHisto(HistoData h, string message = null) {
+			bool fixedValue = true;
+			_histoChartLayout.chartResetCanvas();
+			if (_histoChartLayout == null) return;
+			if ((h.histogram == null) || (h.histogram.Length == 0)) return;
 
 			if (_win.cbHistoLog.IsChecked.Value) _histoChartLayout.HasYGrid = false;
 			else _histoChartLayout.HasYGrid = true;
 
 			int xmin = Int32.MaxValue;
-			int xmax = Global.Disk[track, side].histoData.histogram.Length;
+			int xmax = h.histogram.Length;
 			int ymin = 0;
 			int ymax = 0;
 
 			int value;
-			for (int i = 0; i < Global.Disk[track, side].histoData.histogram.Length; i++) {
+			for (int i = 0; i < h.histogram.Length; i++) {
 				if (_win.cbHistoLog.IsChecked.Value)
-					value = (int)Math.Log(Global.Disk[track, side].histoData.histogram[i] + 1, 1.2);
+					value = (int)Math.Log(h.histogram[i] + 1, 1.2);
 				else
-					value = Global.Disk[track, side].histoData.histogram[i];
+					value = h.histogram[i];
 				if ((xmin == Int32.MaxValue) && (value != 0)) xmin = i - 1;
 				if (value > ymax) ymax = value;
 			}
@@ -111,15 +117,15 @@ namespace ChartPackage {
 			// first dummy point
 			pg.Points.Add(_histoChartLayout.NormPoint(0, 0));
 
-			Point[] points = new Point[Global.Disk[track, side].histoData.histogram.Length];
+			Point[] points = new Point[h.histogram.Length];
 			// all pointsInViewport
 			double timing;
-			for (int i = 0; i < Global.Disk[track, side].histoData.histogram.Length - 1; i++) {
+			for (int i = 0; i < h.histogram.Length - 1; i++) {
 				if (_win.cbHistoLog.IsChecked.Value) {
-					value = (int)Math.Log(Global.Disk[track, side].histoData.histogram[i] + 1, 1.2);
+					value = (int)Math.Log(h.histogram[i] + 1, 1.2);
 				}
 				else {
-					value = Global.Disk[track, side].histoData.histogram[i];
+					value = h.histogram[i];
 				}
 
 				timing = ((double)i * (double)Global.HISTO_SCALE) / 1000.0;
@@ -127,15 +133,15 @@ namespace ChartPackage {
 				points[i] = _histoChartLayout.NormPoint(timing, value);
 			}
 			// force last point to zero
-			timing = ((Global.Disk[track, side].histoData.histogram.Length - 1) * (double)Global.HISTO_SCALE) / 1000.0;
+			timing = ((h.histogram.Length - 1) * (double)Global.HISTO_SCALE) / 1000.0;
 			pg.Points.Add(_histoChartLayout.NormPoint(timing, 0));
-			points[Global.Disk[track, side].histoData.histogram.Length - 1] = _histoChartLayout.NormPoint(timing, 0);
+			points[h.histogram.Length - 1] = _histoChartLayout.NormPoint(timing, 0);
 
 			// add polygon to canvas
 			_histoChartLayout.GraphicCanvas.Children.Add(pg);
 
 			// compute control pointsInViewport for Bezier curve if formatted	
-			if (Global.Disk[track, side].histoData.entropy < Global.UNFORMATED_ENTROPY) {
+			if (h.entropy < Global.UNFORMATED_ENTROPY) {
 				Point[] cp1, cp2;
 				ovp.BezierSpline.GetCurveControlPoints(points, out cp1, out cp2);
 				PathSegmentCollection lines = new PathSegmentCollection();
@@ -146,6 +152,7 @@ namespace ChartPackage {
 				System.Windows.Shapes.Path path = new System.Windows.Shapes.Path() { Stroke = Brushes.Blue, StrokeThickness = 1, Data = g };
 				_histoChartLayout.GraphicCanvas.Children.Add(path);
 			}   // formatted
+			_win.tbEntropy.Text = String.Format("{0} = {1:F2}", (message == null) ? "Track" : message, h.entropy);
 		}   // drawHisto()
 	}
 }

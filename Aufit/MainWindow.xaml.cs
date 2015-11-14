@@ -271,20 +271,20 @@ namespace Aufit {
 
 		#region histogram related
 		private void histoGridSizeChanged(object sender, SizeChangedEventArgs e) {
-			_histoDrawing.drawHisto();
+			_histoDrawing.drawTrackHisto();
 		}
 		#endregion
 
 
 		#region options handlers
 		private void cbHistoLogClick(object sender, RoutedEventArgs e) {
-			_histoDrawing.drawHisto();
+			_histoDrawing.drawTrackHisto();
 		}
 
 
 		private void cbLimitClick(object sender, RoutedEventArgs e) {
 			//Global.computeTrackHisto(CurrentTrack, CurrentSide, CurrentRev, infoBox);
-			_histoDrawing.drawHisto();
+			_histoDrawing.drawTrackHisto();
 			_fluxDrawing.setFluxDefault();
 			_fluxDrawing.drawFlux(CurrentTrack, CurrentSide, CurrentRev);
 		}
@@ -314,7 +314,7 @@ namespace Aufit {
 
 			//tbRevolution.Text = "Revolution " + (Rev + 1).ToString() + " / " + RevCount.ToString();
 			Global.computeTrackHisto(CurrentTrack, CurrentSide, CurrentRev, infoBox);
-			_histoDrawing.drawHisto();
+			_histoDrawing.drawTrackHisto();
 			FDC.resetTrack(CurrentTrack, CurrentSide);
 			drawAllCharts();
 		}
@@ -334,7 +334,7 @@ namespace Aufit {
 
 			//tbRevolution.Text = "Revolution " + (Rev + 1).ToString() + " / " + RevCount.ToString();
 			Global.computeTrackHisto(CurrentTrack, CurrentSide, CurrentRev, infoBox);
-			_histoDrawing.drawHisto();
+			_histoDrawing.drawTrackHisto();
 			FDC.resetTrack(CurrentTrack, CurrentSide);
 			drawAllCharts();
 		}
@@ -358,7 +358,7 @@ namespace Aufit {
 
 			cbLimitFlux.IsChecked = (Global.computeTrackHisto(track, side, rev, infoBox) < Global.UNFORMATED_ENTROPY);
 			//_histoDrawing.drawHisto(track, side, rev);
-			_histoDrawing.drawHisto();
+			_histoDrawing.drawTrackHisto();
 
 			if (!tabItemTrack.IsSelected) {
 				// still want to read track/id/sector
@@ -816,6 +816,33 @@ namespace Aufit {
 
 		private void dataGridSizeChanged(object sender, SizeChangedEventArgs e) {
 			_dataDrawing.drawTrackData();
+		}
+
+		private void dataMouseLBD(object sender, MouseButtonEventArgs e) {
+			Point p = e.GetPosition(_dataDrawing.Chart.GraphicCanvas);
+			int pos = (int)_dataDrawing.Chart.WorldPoint(p).X * 1000000;
+
+			foreach (Sector sector in Global.Disk[CurrentTrack, CurrentSide].sectors) {
+				int startPos = sector.id.info.startTime;
+				int endPos = (sector.data != null) ? sector.data.info.startTime + sector.data.info.timeLength :
+					sector.id.info.startTime + sector.id.info.timeLength;
+				if ((startPos < pos) && (endPos > pos)) {
+					//infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", 
+					//	_dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, sector.id.Sector));
+					//infoBox.ScrollToEnd();
+					int first = sector.id.info.startIndex;
+					int last = sector.data.info.lastIndex;
+					int[] segment = Global.Disk[CurrentTrack, CurrentSide].fluxData.fluxValue.Skip(first).Take(last - first).ToArray();
+					HistoData h = Global.computeSegmentHisto(segment);
+					string message = String.Format("Sect {0}", sector.id.Sector);
+					_histoDrawing.drawHisto(h, message);
+				}
+			}
+		}
+
+		private void dataMouseRBD(object sender, MouseButtonEventArgs e) {
+			_histoDrawing.drawHisto(Global.Disk[CurrentTrack, CurrentSide].histoData);
+
 		}
 
 		//private void dataMouseLBD(object sender, MouseButtonEventArgs e) {
