@@ -119,7 +119,7 @@ namespace GlobalPackage {
 		public double entropy;
 
 		/// <summary>The track seems to have data</summary>
-		public bool hasBitsInBands;
+		public bool hasMFM;
 	}
 
 
@@ -338,67 +338,79 @@ namespace GlobalPackage {
 		}
 
 
-		/// <summary>This function fills the histogram array, computes the entropy,
-		/// and display information</summary>
+		/// <summary>This function fills the histogram array, computes the entropy and
+		/// checks if MFM bits are found for a complete track. It displays information
+		/// on the provided TextBox.
 		/// <param name="track">We compute the histogram for this track</param>
 		/// <param name="side">We compute the histogram for this side</param>
 		/// <param name="rev">We compute the histogram for this revolution</param>
 		/// <param name="text">The TextBox where the information are written</param>
 		/// <returns>the computed entropy</returns>
-		public static double computeHisto(int track, int side, int rev, TextBox text) {
+		public static double computeTrackHisto(int track, int side, int rev, TextBox text) {
 			if (Global.Disk[track, side].fluxDataRev == null) return 0;
+
+			int first = Disk[track, side].fluxDataRev[rev].firstFluxIndex;
+			int last = (Disk[track, side].fluxDataRev[rev].firstFluxIndex + Disk[track, side].fluxDataRev[rev].fluxCount);
+			int[] fluxSegment = Disk[track, side].fluxData.fluxValue.Skip(first).Take(last - first).ToArray();
+			HistoData h  = computeSegmentHisto(fluxSegment);
+			Global.Disk[track, side].histoData = h;
+
+			// log information
+			text.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev + 1));
+			text.AppendText(String.Format(" * {0} * (Entropy {1:F2})",
+				(h.entropy > UNFORMATED_ENTROPY) ? "Unformatted track" : "Normal track", h.entropy));
+			text.AppendText(String.Format(" - Fluxes {0}", last - first));
+			text.AppendText(String.Format(" - Histogram size {0} ({1} ns) {2}\n",
+				h.histogram.Length, (h.histogram.Length - 1) * HISTO_SCALE, h.hasMFM ? "HasBits" : "NoBits"));
+			text.ScrollToEnd();
+			return h.entropy;
+		}
+
+
+		/// <summary>This function fills the histogram array, computes the entropy and
+		/// checks if MFM bits are found for a segment of flux transitions.
+		/// <param name="fluxArray">The array of flux</param>
+		/// <returns>A HistoData object with computed values</returns>
+		public static HistoData computeSegmentHisto(int[] fluxSegment) {
 			const int THRESHOLD = 2;
 			int[] tmpHisto = null;
 			int sizeBeforeTrim = 0;
 			int fluxCount = 0;
+			HistoData h = new HistoData();
+			h.hasMFM = false;
+			h.entropy = 0;
 
-			int first = Disk[track, side].fluxDataRev[rev].firstFluxIndex;
-			int last = (Disk[track, side].fluxDataRev[rev].firstFluxIndex + Disk[track, side].fluxDataRev[rev].fluxCount);
-			sizeBeforeTrim = (Global.Disk[track, side].fluxData.fluxValue.Max() / HISTO_SCALE) + 2;
+			sizeBeforeTrim = (fluxSegment.Max() / HISTO_SCALE) + 2;
 			tmpHisto = new int[sizeBeforeTrim];
-
-			for (int i = first; i < last; i++) {
-				int flux = Global.Disk[track, side].fluxData.fluxValue[i] / HISTO_SCALE;
+			for (int i = 0; i < fluxSegment.Length; i++) {
+				int flux = fluxSegment[i] / HISTO_SCALE;
 				tmpHisto[flux]++;
 				fluxCount++;
 			}
 
 			// we trim the array size to keep only significant entries. This is useful as
-			// we may end up with a huge array if track has Non Flux areas. Computations for
-			// Bezier takes long time on large array. 
+			// we may end up with a huge array if track has Non Flux areas. 
+			// Computations for Bezier curves takes long time on large array. 
 			int histoSize = sizeBeforeTrim;
 			for (int i = sizeBeforeTrim - 1; i >= 0; i--) {
 				if (tmpHisto[i] >= THRESHOLD) break;
 				else histoSize--;
 			}
-			Global.Disk[track, side].histoData.histogram = new int[histoSize];
+			h.histogram = new int[histoSize];
 			for (int i = 0; i < histoSize; i++)
-				Global.Disk[track, side].histoData.histogram[i] = tmpHisto[i];
+				h.histogram[i] = tmpHisto[i];
 
-			bool hasBitsInBands = false;
-			double entropy = 0;
 			for (int i = 0; i < histoSize; i++)
-				if (Global.Disk[track, side].histoData.histogram[i] > 0) {
-					if (Global.Disk[track, side].histoData.histogram[i] > 300) {
-						if ((i > (3400 / HISTO_SCALE)) && (i < (8600 / HISTO_SCALE))) hasBitsInBands = true;
+				if (h.histogram[i] > 0) {
+					if (h.histogram[i] > 1000) {
+						if ((i > (3400 / HISTO_SCALE)) && (i < (8600 / HISTO_SCALE)))
+							h.hasMFM = true;
 					}   // large number of flux transitions
-					double p = (double)Global.Disk[track, side].histoData.histogram[i] / (double)(fluxCount);
-					entropy += p * Math.Log(p, 2);
+					double p = h.histogram[i] / (double)(fluxCount);
+					h.entropy += p * Math.Log(p, 2);
 				}
-			entropy = -entropy;
-
-			Global.Disk[track, side].histoData.entropy = entropy;
-			Global.Disk[track, side].histoData.hasBitsInBands = hasBitsInBands;
-
-			// log information
-			text.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev + 1));
-			text.AppendText(String.Format(" * {0} * (Entropy {1:F2})",
-				(entropy > UNFORMATED_ENTROPY) ? "Unformatted track" : "Normal track", entropy));
-			text.AppendText(String.Format(" - Fluxes {0}", fluxCount));
-			text.AppendText(String.Format(" - Histogram size {0} ({1} ns) {2}\n",
-				histoSize, (histoSize - 1) * HISTO_SCALE, hasBitsInBands ? "HasBits" : "NoBits"));
-			text.ScrollToEnd();
-			return entropy;
+			h.entropy = -h.entropy;
+			return h;
 		}
 
 
@@ -496,6 +508,60 @@ namespace GlobalPackage {
 				return false;
 			return true;
 		}
+
+		/// <summary>
+		/// Find the first sector and position of track write splice
+		/// </summary>
+		/// <param name="track">Track number</param>
+		/// <param name="side">Side number</param>
+		/// <remarks>We search the first and last block of track and fill the firstSectIndex in Track structure.
+		/// Then we find the write splice located at the end of the last block by searching the first non 4E char.
+		/// This information is stored in the splicePosition field of Track structure. This information can be
+		/// used to find if the track is shifted or not.</remarks>
+		public static void trackPosition(int track, int side) {
+			Global.DiskTrack dt = Global.Disk[track, side];
+			if ((dt.sectors == null) || (dt.sectors.Count == 0)) {
+				Global.Disk[track, side].track.splicePosition = 0;
+				return;
+			}
+			int maxPostSize = 0;
+			int lastBlock = 0;
+			Sector s;
+
+			for (int i = 0; i < dt.sectors.Count; i++) {
+				s = dt.sectors[i];
+
+				// we search the last block
+				// for now we take the sector that have the largest post gap size
+				if (s.postGap != null) {
+					if (s.postGap.buffer.DataByte.Count > maxPostSize) {
+						maxPostSize = s.postGap.buffer.DataByte.Count;
+						lastBlock = i;
+					}
+				}   // sector with data
+				else {
+					if (s.innerGap == null) return;
+					if (s.innerGap.buffer.DataByte.Count > maxPostSize) {
+						maxPostSize = s.innerGap.buffer.DataByte.Count;
+						lastBlock = i;
+					}
+				}   // sector no data
+			}   // for all sectors
+			int firstBlock = (lastBlock == (dt.sectors.Count - 1)) ? 0 : lastBlock + 1;
+			Global.Disk[track, side].track.firstSectIndex = firstBlock;
+
+			// search first non 4E byte
+			s = dt.sectors[lastBlock];
+			GapField g = (s.data != null) ? s.postGap : s.innerGap;
+			int pos;
+			for (pos = 1; pos < g.buffer.DataByte.Count; pos++)
+				if (g.buffer.DataByte[pos] != 0x4E) break;
+			if ((g.buffer.DataByte[pos] == 0) || (pos == g.buffer.DataByte.Count))
+				pos = (int)((double)g.buffer.DataByte.Count * 0.9);
+			pos += g.info.startByte - dt.track.buffer.DataByte.Count;
+			Global.Disk[track, side].track.splicePosition = pos;
+		}
+
 	}   // class Global
 
 

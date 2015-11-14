@@ -166,7 +166,7 @@
 							<ColumnDefinition Width="auto"/>
 							<ColumnDefinition Width="auto"/>
 						</Grid.ColumnDefinitions>
-						<TextBox Grid.Column="0" x:Name="tbFluxInfo" FontFamily="Arial" FontSize="13" Foreground="DarkBlue" 
+						<TextBox Grid.Column="0" x:Name="tbFluxInfo" FontSize="13" Foreground="DarkBlue" 
 								 FontWeight="Bold" Width="auto" Height="18" BorderThickness="0" Background="Transparent" IsReadOnly="True"/>
 						<Ellipse Grid.Column="1" x:Name="redDot" Fill="Red" HorizontalAlignment="Left" Height="16" Stroke="Red" VerticalAlignment="Top" Width="16" Visibility="Hidden"/>
 						<CheckBox Grid.Column="2" x:Name="cbLimitFlux" Content="Flux 2-10" Margin="5,0,5,0" VerticalAlignment="Center" 

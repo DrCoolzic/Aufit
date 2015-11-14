@@ -1,9 +1,14 @@
 * Aufit 1.4
+- Detect First sector and track splice - display in track view
+- DB now store first and last flux index in info
+- Unformatted is now detected when no MFM byte only
+- Fixed crash in Gunship: we have an id over index => buffer truncated in last revolution
+- Fixed bitWidth field in id buffer not filled correctly
 - Play button only in track view
 - Fixed NFA not displayed in DiskView
 - Fixed magnifier images not cleared when loading new image
 - Fixed Data track not displayed in DiskView
-- Fixed bad pb induced by new DB currentTime not computed correctly in FDC/DiskView/Flux Drawing
+- Fixed bug induced by new DB currentTime not computed correctly in FDC/DiskView/Flux Drawing
 - Fixed bug one id track not displayed in DiskView
 - Added the MoveAufitOutput Project
 - Fixed wrong title in BatchAufit

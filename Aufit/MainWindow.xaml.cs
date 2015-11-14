@@ -171,7 +171,7 @@ namespace Aufit {
 				TimeSpan _displayTime = s.Elapsed;
 			guiEnable(false);
 			btPlay.Content = "Stop";
-			_trackPlayTimer = new Timer(timerCallBack, null, 0, _displayTime.Milliseconds + 200);
+			_trackPlayTimer = new Timer(timerCallBack, null, 0, _displayTime.Milliseconds * 2);
 		}
 
 
@@ -278,14 +278,12 @@ namespace Aufit {
 
 		#region options handlers
 		private void cbHistoLogClick(object sender, RoutedEventArgs e) {
-			Global.computeHisto(CurrentTrack, CurrentSide, CurrentRev, infoBox);
 			_histoDrawing.drawHisto();
 		}
 
 
 		private void cbLimitClick(object sender, RoutedEventArgs e) {
-			Global.computeHisto(CurrentTrack, CurrentSide, CurrentRev, infoBox);
-			//_fluxDrawing.LimitFlux = cbLimitFlux.IsChecked.Value;
+			//Global.computeTrackHisto(CurrentTrack, CurrentSide, CurrentRev, infoBox);
 			_histoDrawing.drawHisto();
 			_fluxDrawing.setFluxDefault();
 			_fluxDrawing.drawFlux(CurrentTrack, CurrentSide, CurrentRev);
@@ -315,7 +313,7 @@ namespace Aufit {
 				CurrentRev--;
 
 			//tbRevolution.Text = "Revolution " + (Rev + 1).ToString() + " / " + RevCount.ToString();
-			Global.computeHisto(CurrentTrack, CurrentSide, CurrentRev, infoBox);
+			Global.computeTrackHisto(CurrentTrack, CurrentSide, CurrentRev, infoBox);
 			_histoDrawing.drawHisto();
 			FDC.resetTrack(CurrentTrack, CurrentSide);
 			drawAllCharts();
@@ -335,7 +333,7 @@ namespace Aufit {
 			CurrentRev = (CurrentRev + 1) % RevCount;
 
 			//tbRevolution.Text = "Revolution " + (Rev + 1).ToString() + " / " + RevCount.ToString();
-			Global.computeHisto(CurrentTrack, CurrentSide, CurrentRev, infoBox);
+			Global.computeTrackHisto(CurrentTrack, CurrentSide, CurrentRev, infoBox);
 			_histoDrawing.drawHisto();
 			FDC.resetTrack(CurrentTrack, CurrentSide);
 			drawAllCharts();
@@ -358,8 +356,9 @@ namespace Aufit {
 			if (Global.Disk[track, side].decodedData == null)
 				Global.mfmDecode(track, side);
 
-			cbLimitFlux.IsChecked = (Global.computeHisto(track, side, rev, infoBox) < Global.UNFORMATED_ENTROPY);
-			_histoDrawing.drawHisto(track, side, rev);
+			cbLimitFlux.IsChecked = (Global.computeTrackHisto(track, side, rev, infoBox) < Global.UNFORMATED_ENTROPY);
+			//_histoDrawing.drawHisto(track, side, rev);
+			_histoDrawing.drawHisto();
 
 			if (!tabItemTrack.IsSelected) {
 				// still want to read track/id/sector
@@ -379,7 +378,9 @@ namespace Aufit {
 
 			Global.DiskTrack dt = Global.Disk[track, side];
 			tbFluxInfo.AppendText(String.Format(" - {0} bytes {1} sectors", dt.track.buffer.DataByte.Count, dt.sectors.Count));
-
+			if (dt.sectors.Count > 0)
+				tbFluxInfo.AppendText(String.Format(" First={0}", dt.sectors[dt.track.firstSectIndex].id.Sector));
+			tbFluxInfo.AppendText(String.Format(" Splice={0}", dt.track.splicePosition));
 		}
 
 
@@ -673,7 +674,7 @@ namespace Aufit {
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {
 					if (Global.Disk[track, side].fluxData != null) {
-						Global.computeHisto(track, side, 1, infoBox);
+						Global.computeTrackHisto(track, side, 1, infoBox);
 						ButtonMatrix.setButtonBG(track, side);
 					}
 				}
@@ -703,7 +704,7 @@ namespace Aufit {
 					bool streamOK = await ProcessStream.readStreamTrackAsync(fname, track, side);
 					if (streamOK) {
 						//Global.mfmDecode(track, side);
-						Global.computeHisto(track, side, 0, infoBox);
+						Global.computeTrackHisto(track, side, 0, infoBox);
 						ButtonMatrix.setButtonBG(track, side);
 					}
 					// else return false;
@@ -738,7 +739,7 @@ namespace Aufit {
 					fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, track, side);
 					bool streamOK = ProcessStream.readStreamTrack(fname, track, side);
 					if (streamOK) {
-						Global.computeHisto(track, side, 1, infoBox);
+						Global.computeTrackHisto(track, side, 1, infoBox);
 						ButtonMatrix.setButtonBG(track, side);
 					}
 					// else return false;

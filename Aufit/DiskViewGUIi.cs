@@ -557,7 +557,7 @@ namespace Aufit {
 					path.StrokeThickness = diskFineLine;
 					PathGeometry pg = new PathGeometry();
 
-					if ((dt.histoData.hasBitsInBands) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
+					if ((dt.histoData.hasMFM) /*&& (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)*/) {
 						if (dt.track.firstSyncOffset > 0)
 							path.Stroke = DataOneIdTrackBrush;
 						else
