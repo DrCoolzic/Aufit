@@ -341,7 +341,11 @@
 											<Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
 											<TextBlock>Purple rectangle for sector with bit width variations</TextBlock>
 										</StackPanel>
-										<TextBlock>Sectors with Fuzzy data have orange border</TextBlock>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
+                                            <TextBlock>Yellow rectangle for extra DATA sector with no ID field</TextBlock>
+                                        </StackPanel>
+                                        <TextBlock>Sectors with Fuzzy data have orange border</TextBlock>
 										<TextBlock>Sectors with CRC error have red border</TextBlock>
 										<TextBlock>Dark Blue lines indicate out of band transitions (Hover for more info)</TextBlock>
                                         <TextBlock>Place cursor over a sector to get detailed information</TextBlock>
@@ -405,6 +409,10 @@
                                     <StackPanel Orientation="Horizontal">
                                         <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
                                         <TextBlock>Purple = sector with bit-width variations</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
+                                        <TextBlock>Yellow = extra DATA sector with no ID</TextBlock>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>

@@ -63,6 +63,8 @@ namespace ChartPackage {
 			_dataChartLayout = new ChartLayout(grid, text, graphic);
 		}
 
+		private enum SecType { id, gap, data, data2 }
+
 		/// <summary>
 		/// draw the data chart
 		/// </summary>
@@ -94,7 +96,9 @@ namespace ChartPackage {
 				StackPanel sectorInfoPanel = new StackPanel();
 				TextBox snum = new TextBox();
 				int endTime;
-				if (sector.data != null)
+				if (sector.data2 != null)
+					endTime = sector.data2.info.startTime + sector.data2.info.timeLength;
+				else if (sector.data != null)
 					endTime = sector.data.info.startTime + sector.data.info.timeLength;
 				else
 					endTime = sector.id.info.startTime + sector.id.info.timeLength;
@@ -122,7 +126,7 @@ namespace ChartPackage {
 					sector.id.info.startBit, bstart);
 				sectorInfoPanel.Children.Add(tb);
 
-				drawRectangle(sector, bstart, bstop, Phases.p_id);
+				drawRectangle(sector, bstart, bstop, SecType.id);
 
 				// draw DATA field
 				if (sector.data != null) {
@@ -136,7 +140,7 @@ namespace ChartPackage {
 					sectorInfoPanel.Children.Add(tb);
 					//drawRectangle(sector, idbstop, bstart, Phases.p_gap_inner);
 					drawRectangle(sector, (double)sector.innerGap.info.startTime / 1000000.0,
-						(double)(sector.innerGap.info.startTime + sector.innerGap.info.timeLength) / 1000000.0, Phases.p_gap_inner);
+						(double)(sector.innerGap.info.startTime + sector.innerGap.info.timeLength) / 1000000.0, SecType.gap);
 
 					tb = new TextBox();
 					tb.Text = String.Format("Data Field {0} bytes Length={1:F2} µs - Start @ Bit={2} Time={3:F2} ms {4} {5}",
@@ -150,7 +154,7 @@ namespace ChartPackage {
 						(((double)sectors[i + 1].id.info.startTime / 1000000.0) < bstop))
 						bstop = (double)sectors[i + 1].id.info.startTime / 1000000.0;
 
-					drawRectangle(sector, bstart, bstop, Phases.p_data);
+					drawRectangle(sector, bstart, bstop, SecType.data);
 
 					// if shifted we draw an extra wrapped part
 					if (bstop > revolutionTime) {
@@ -160,9 +164,8 @@ namespace ChartPackage {
 						if (((double)sectors[0].id.info.startTime / 1000000.0) < shiftedBstop)
 							shiftedBstop = (double)sectors[0].id.info.startTime / 1000000.0;
 
-						drawRectangle(sector, shiftedBstart, shiftedBstop, Phases.p_data);
+						drawRectangle(sector, shiftedBstart, shiftedBstop, SecType.data);
 					}
-
 				}   // sector has data field
 
 				if (sector.postGap != null) {
@@ -171,6 +174,44 @@ namespace ChartPackage {
 						sector.postGap.buffer.DataByte.Count, sector.postGap.info.startBit, (double)sector.postGap.info.startTime / 1000000.0);
 					sectorInfoPanel.Children.Add(tb);
 				}
+
+				// draw extra DATA field
+				if (sector.data2 != null) {
+					bstart = (double)sector.data2.info.startTime / 1000000.0;
+					blength = (double)sector.data2.info.timeLength / 1000000.0;
+					bstop = bstart + blength;
+
+					tb = new TextBox();
+					tb.Text = String.Format("Extra Data Field {0} bytes Length={1:F2} µs - Start @ Bit={2} Time={3:F2} ms {4} {5}",
+						sector.data2.buffer.DataByte.Count, blength * 1000, sector.data2.info.startBit, bstart,
+						(sector.data2.info.crc != 0) ? " - Bad CRC" : "",
+						(sector.data2.fuzzy != null) ? " - Fuzzy sector" : "");
+					sectorInfoPanel.Children.Add(tb);
+
+					// if SWS we truncate
+					if (((i + 1) < sectors.Count) &&
+						(((double)sectors[i + 1].id.info.startTime / 1000000.0) < bstop))
+						bstop = (double)sectors[i + 1].id.info.startTime / 1000000.0;
+
+					drawRectangle(sector, bstart, bstop, SecType.data2);
+
+					// if shifted we draw an extra wrapped part
+					if (bstop > revolutionTime) {
+						double shiftedBstart = 0;
+						double shiftedBstop = bstop - revolutionTime;
+						// if SWS we truncate
+						if (((double)sectors[0].id.info.startTime / 1000000.0) < shiftedBstop)
+							shiftedBstop = (double)sectors[0].id.info.startTime / 1000000.0;
+
+						drawRectangle(sector, shiftedBstart, shiftedBstop, SecType.data2);
+					}
+					if (sector.postGap2 != null) {
+						tb = new TextBox();
+						tb.Text = String.Format("Extra PGap Field {0} bytes - Start @ Bit={1} Time={2:F2} ms",
+							sector.postGap2.buffer.DataByte.Count, sector.postGap2.info.startBit, (double)sector.postGap2.info.startTime / 1000000.0);
+						sectorInfoPanel.Children.Add(tb);
+					}
+				}   // sector has extra data field
 
 				sectorBorderPolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.8));
 				sectorBorderPolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.2));
@@ -235,7 +276,7 @@ namespace ChartPackage {
 		}
 
 
-		private void drawRectangle(Sector sector, double bstart, double bstop, Phases phase) {
+		private void drawRectangle(Sector sector, double bstart, double bstop, SecType type) {
 			Brush IGapBrush = new SolidColorBrush(Global.IGapColor);
 			IGapBrush.Freeze();
 			Brush ShortSectorBrush = new SolidColorBrush(Global.ShortSectorColor);
@@ -250,15 +291,17 @@ namespace ChartPackage {
 			NormalSectorBrush.Freeze();
 			Brush IdBrush = new SolidColorBrush(Global.IdColor);
 			IdBrush.Freeze();
+			Brush NoIdDataBrush = new SolidColorBrush(Global.NoIdDataColor);
+			NoIdDataBrush.Freeze();
 
 			Polygon sectorPhasePolygon = new Polygon();
 			sectorPhasePolygon.Stroke = Brushes.Black;
 			sectorPhasePolygon.StrokeThickness = 0.5;
 
-			if (phase == Phases.p_id)
+			if (type == SecType.id)
 				sectorPhasePolygon.Fill = IdBrush;
 			//else if (phase == Phases.p_gap)
-			else if (FDC.isGapPhase(phase))
+			else if (type == SecType.gap)
 				sectorPhasePolygon.Fill = IGapBrush;
 			else {
 				sectorPhasePolygon.Fill = NormalSectorBrush;
@@ -271,7 +314,15 @@ namespace ChartPackage {
 				if ((sector.flags & Sector.WIDTH_INTRA) != 0)
 					sectorPhasePolygon.Fill = BitRateSectorBrush;
 
-				if (sector.data.info.crc != 0) {
+				DataField data;
+				if (type == SecType.data2) {
+					sectorPhasePolygon.Fill = NoIdDataBrush;
+					data = sector.data2;
+				}
+				else
+					data = sector.data;
+
+				if (data.info.crc != 0) {
 					Polygon crcPolygon = new Polygon();
 					crcPolygon.Fill = Brushes.Red;
 					crcPolygon.StrokeThickness = 0;
@@ -281,7 +332,7 @@ namespace ChartPackage {
 					crcPolygon.Points.Add(_dataChartLayout.NormPoint(bstop, 0.05));
 					_dataChartLayout.GraphicCanvas.Children.Add(crcPolygon);
 				}
-				if (sector.data.fuzzy != null) {
+				if (data.fuzzy != null) {
 					Polygon fuzzyPolygon = new Polygon();
 					fuzzyPolygon.Fill = FuzzySectorBrush;
 					fuzzyPolygon.StrokeThickness = 0;

@@ -210,6 +210,7 @@ namespace GlobalPackage {
 		public static Color LongSectorColor = Colors.Blue;
 		public static Color NormalSectorColor = Colors.DeepSkyBlue;
 		public static Color IdColor = Colors.Yellow;
+		public static Color NoIdDataColor = Colors.Yellow;
 
 		private static DiskTrack[,] _disk = new DiskTrack[85, 2];
 

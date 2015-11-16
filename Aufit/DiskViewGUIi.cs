@@ -488,6 +488,8 @@ namespace Aufit {
 		}
 
 
+		private enum SecType { id, gap, data, data2 }
+
 		/// <summary>
 		/// Draw one track of the FD
 		/// </summary>
@@ -528,13 +530,13 @@ namespace Aufit {
 						start = (double)sector.id.info.startTime;
 						stop = (double)(sector.id.info.startTime + sector.id.info.timeLength);
 						double idStop = stop;
-						drawArc(sector, center, radius, timeAngle(start), timeAngle(stop), Phases.p_id, grid);
+						drawArc(sector, center, radius, timeAngle(start), timeAngle(stop), SecType.id, grid);
 
 						// Draw gap and data if there
 						if (sector.data != null) {
 							start = (double)sector.data.info.startTime;
 							stop = (double)(sector.data.info.startTime + sector.data.info.timeLength);
-							drawArc(sector, center, radius, timeAngle(idStop), timeAngle(start), Phases.p_gap_inner, grid);
+							drawArc(sector, center, radius, timeAngle(idStop), timeAngle(start), SecType.gap, grid);
 
 							// if SWS we truncate
 							if (((i + 1) < sectors.Count) && ((double)sectors[i + 1].id.info.startTime < stop))
@@ -548,9 +550,30 @@ namespace Aufit {
 									shiftedBstop = (double)sectors[0].id.info.startTime;
 								stop = shiftedBstop + revolutionTime;
 							}
-							drawArc(sector, center, radius, timeAngle(start), timeAngle(stop), Phases.p_data, grid);
-						}	// sector has data field
-					}	// all sectors
+							drawArc(sector, center, radius, timeAngle(start), timeAngle(stop), SecType.data, grid);
+						}   // sector has data field
+						// Draw gap and data if there
+						if (sector.data2 != null) {
+							start = (double)sector.data2.info.startTime;
+							stop = (double)(sector.data2.info.startTime + sector.data.info.timeLength);
+							//drawArc(sector, center, radius, timeAngle(idStop), timeAngle(start), Phases.p_gap_inner, grid);
+
+							// if SWS we truncate
+							if (((i + 1) < sectors.Count) && ((double)sectors[i + 1].id.info.startTime < stop))
+								stop = (double)sectors[i + 1].id.info.startTime;
+
+							// if shifted we check to see if need truncate
+							if (stop > revolutionTime) {
+								// if SWS we truncate
+								double shiftedBstop = stop - revolutionTime;
+								if ((double)sectors[0].id.info.startTime < shiftedBstop)
+									shiftedBstop = (double)sectors[0].id.info.startTime;
+								stop = shiftedBstop + revolutionTime;
+							}
+							drawArc(sector, center, radius, timeAngle(start), timeAngle(stop), SecType.data2, grid);
+						}   // sector has extra data field
+
+					}   // all sectors
 				}	// one or more sectors
 				else {
 					Path path = new Path();
@@ -649,7 +672,7 @@ namespace Aufit {
 		}	// End of drawDisk()
 
 
-		private void drawArc(Sector sector, Point center, double radius, double startAngle, double stopAngle, Phases phase, Grid grid) {
+		private void drawArc(Sector sector, Point center, double radius, double startAngle, double stopAngle, SecType type, Grid grid) {
 			Brush IGapBrush = new SolidColorBrush(Global.IGapColor);
 			IGapBrush.Freeze();
 			Brush ShortSectorBrush = new SolidColorBrush(Global.ShortSectorColor);
@@ -664,32 +687,39 @@ namespace Aufit {
 			NormalSectorBrush.Freeze();
 			Brush IdBrush = new SolidColorBrush(Global.IdColor);
 			IdBrush.Freeze();
+			Brush NoIdDataBrush = new SolidColorBrush(Global.NoIdDataColor);
+			NoIdDataBrush.Freeze();
 
-			System.Windows.Shapes.Path idPath = new System.Windows.Shapes.Path();
-			idPath.StrokeThickness = diskFineLine;
-			idPath.Stroke = IGapBrush;
+			System.Windows.Shapes.Path path = new System.Windows.Shapes.Path();
+			path.StrokeThickness = diskFineLine;
+			path.Stroke = IGapBrush;
 
-			if (phase == Phases.p_id)
-				idPath.Stroke = IdBrush;
-			if (phase == Phases.p_data) {
-				idPath.Stroke = NormalSectorBrush;
+			if (type == SecType.id)
+				path.Stroke = IdBrush;
+			else if (type == SecType.data) {
+				path.Stroke = NormalSectorBrush;
 				if ((sector.flags & Sector.WIDTH_ABOVE) != 0)
 				//if ((sector.flags & Sector.LONG_SECT) != 0)
-					idPath.Stroke = LongSectorBrush;
+					path.Stroke = LongSectorBrush;
 				if ((sector.flags & Sector.WIDTH_BELOW) != 0)
 				//if ((sector.flags & Sector.SHORT_SECT) != 0)
-					idPath.Stroke = ShortSectorBrush;
+					path.Stroke = ShortSectorBrush;
 				if ((sector.flags & Sector.WIDTH_INTRA) != 0)
-					idPath.Stroke = BitRateSectorBrush;
+					path.Stroke = BitRateSectorBrush;
 				if ((sector.data.info.crc != 0) || (sector.data.fuzzy != null))
-					idPath.Stroke = FuzzySectorBrush;
+					path.Stroke = FuzzySectorBrush;
+			}
+			else if (type == SecType.data2) {
+				path.Stroke = NoIdDataBrush;
+				if ((sector.data2.info.crc != 0) || (sector.data2.fuzzy != null))
+					path.Stroke = FuzzySectorBrush;
 			}
 
 			PathGeometry idPg = new PathGeometry();
 			addArc(idPg, startAngle, stopAngle, center, radius);
-			idPath.Data = idPg;
-			grid.Children.Add(idPath);
-			Grid.SetZIndex(idPath, 100);
+			path.Data = idPg;
+			grid.Children.Add(path);
+			Grid.SetZIndex(path, 100);
 		}
 
 

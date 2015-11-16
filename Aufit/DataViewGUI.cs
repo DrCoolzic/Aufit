@@ -115,9 +115,10 @@ namespace Aufit {
 			currentRow.Cells.Add(new TableCell(new Paragraph(new Run("Fuzzy"))));
 			currentRow.Cells.Add(new TableCell(new Paragraph(new Run("Bytes"))));
 
+			int row = 2;
 			for (int sect = 0; sect < dt.sectors.Count; sect++ ) {
 				tab.RowGroups[0].Rows.Add(new TableRow());
-				currentRow = tab.RowGroups[0].Rows[sect+2];
+				currentRow = tab.RowGroups[0].Rows[sect+row];
 
 				currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
 					String.Format("{0:D}", dt.sectors[sect].id.Sector)))));
@@ -150,8 +151,39 @@ namespace Aufit {
 					else
 						currentRow.Cells.Add(new TableCell(new Paragraph(new Run("0"))));
 
-				}	// sector data
-			}	// for all sectors
+				}   // sector data
+
+				if (dt.sectors[sect].data2 != null) {
+					tab.RowGroups[0].Rows.Add(new TableRow());
+					row++;
+					currentRow = tab.RowGroups[0].Rows[sect + row];
+
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(""))));
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(""))));
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(""))));
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(""))));
+
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+						String.Format("{0:D}", dt.sectors[sect].data2.buffer.DataByte.Count)))));
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+						String.Format("{0:D}", dt.sectors[sect].data2.info.startTime / 1000)))));
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+						String.Format("{0:D}", dt.sectors[sect].data2.info.timeLength / 1000)))));
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+						String.Format("{0}", (dt.sectors[sect].data2.info.crc == 0) ? "OK" : "BAD")))));
+					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+						String.Format("{0}", (dt.sectors[sect].data2.fuzzy != null) ? "Yes" : "No")))));
+
+					if (dt.sectors[sect].postGap != null)
+						currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
+							String.Format("{0:D}", dt.sectors[sect].postGap2.buffer.DataByte.Count)
+							))));
+					else
+						currentRow.Cells.Add(new TableCell(new Paragraph(new Run("0"))));
+
+				}   // sector extra data
+
+			}   // for all sectors
 			doc.Blocks.Add(tab);
 			fdDataView.Document = doc;
 		}
@@ -291,6 +323,76 @@ namespace Aufit {
 				//	p.Inlines.Add(" *** Sector has no Post data GAP ***");
 				//	p.Inlines.Add(new LineBreak());
 				//}
+
+				if (sector.data2 != null) {
+					p.Inlines.Add(new Run("EXTRA DATA Field: ") { FontWeight = FontWeights.Bold });
+					DataField data = sector.data2;
+					if ((data.buffer.DataByte.Count - 3) != Global.sectSize(sector.id.Length))
+						p.Inlines.Add(" *** Incomplete *** ");
+					p.Inlines.Add(String.Format("DAM={0:X2} {1} bytes start at {2}µs length {3}µs CRC={4:X4}{5}{6}",
+						data.DAM, data.buffer.DataByte.Count, data.info.startTime / 1000, data.info.timeLength / 1000,
+						data.CRC, (data.info.crc == 0) ? " Good" : " Bad",
+						(data.fuzzy != null) ? " Fuzzy sector" : ""));
+					p.Inlines.Add(new LineBreak());
+					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
+						data.info.startBit, data.info.startByte, (double)data.info.startTime / 1000000.0));
+					//p.Inlines.Add(new LineBreak());
+					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
+						data.info.bitCount, data.buffer.DataByte.Count, (double)data.info.timeLength / 1000.0));
+					p.Inlines.Add(new LineBreak());
+					drawBuffer(data.buffer, p, data.info.startByte, false);
+
+					if (data.fuzzy != null) {
+						int byte80 = 0;
+						bool onlyByte80 = true;
+						p.Inlines.Add(new LineBreak());
+						p.Inlines.Add(String.Format("Sector {0} Fuzzy Bytes Mask array", sector.id.Sector));
+						p.Inlines.Add(new LineBreak());
+						for (int line = 0; line < data.fuzzy.Count() / 16; line++) {
+							p.Inlines.Add(String.Format("{0:D4} ", line * 16 + data.info.startByte + 1));
+							for (int col = 0; col < 16; col++) {
+								byte b = data.fuzzy[(line * 16) + col + 1];
+								if (b == 0x80)
+									byte80++;
+								else
+									if (b != 0x00)
+									onlyByte80 = false;
+								p.Inlines.Add(new Run(
+									String.Format("{0:X2} ", b)) {
+									FontWeight = (b == 0) ? FontWeights.Normal : FontWeights.Bold
+									// , Background = ((b != 0x80) && (b != 0)) ? Brushes.Yellow : Brushes.Transparent
+								});
+							}
+							p.Inlines.Add(new LineBreak());
+						}
+						if (onlyByte80) {
+							p.Inlines.Add(new Run(
+								String.Format("{0} fuzzy bytes of type Dungeon Master / Chaos Strike Back found", byte80)));
+							p.Inlines.Add(new LineBreak());
+						}
+					}   // fuzzy
+				}   // has data
+					//else {
+					//	p.Inlines.Add(" *** Sector has no data ***");
+					//	p.Inlines.Add(new LineBreak());
+					//}
+
+				if (sector.postGap2 != null) {
+					p.Inlines.Add(new Run("EXTRA POST GAP Field: ") { FontWeight = FontWeights.Bold });
+					p.Inlines.Add(new LineBreak());
+					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
+						sector.postGap2.info.startBit, sector.postGap2.info.startByte, (double)sector.postGap2.info.startTime / 1000000.0));
+					//p.Inlines.Add(new LineBreak());
+					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
+						sector.postGap2.info.bitCount, sector.postGap2.buffer.DataByte.Count, (double)sector.postGap2.info.timeLength / 1000.0));
+					p.Inlines.Add(new LineBreak());
+					drawBuffer(sector.postGap2.buffer, p, sector.postGap.info.startByte, true);
+				}
+				//else {
+				//	p.Inlines.Add(" *** Sector has no Post data GAP ***");
+				//	p.Inlines.Add(new LineBreak());
+				//}
+
 
 				p.Inlines.Add(new LineBreak());
 			}

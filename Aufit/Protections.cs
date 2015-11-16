@@ -370,10 +370,16 @@ namespace Aufit {
 						writeInfo(info, "SBV Sector Bit-rate Variation");
 					}
 
-				}	// sector has data
+					// intra sector bit rate variation
+					if ((dt.sectors[secIndex].flags & Sector.SEC_NO_ID) != 0) {
+						dt.track.hasProtections = true;
+						writeInfo(info, "SNI Sector Data with no ID");
+					}
+
+				}   // sector has data
 				else {
 					dt.track.hasProtections = true;
-					writeInfo(info, "SND Sector with No Data");
+					writeInfo(info, "SND Sector ID with No Data");
 				}
 
 			}	// for all sectors
