@@ -603,10 +603,10 @@ namespace Aufit {
 			else {
 				BackgroundWorker bgWorker;
 				bgWorker = new BackgroundWorker();
-				bgWorker.DoWork += new DoWorkEventHandler(bgWorkerDecodeAndReadAll);
-				//bgWorker.ProgressChanged += new ProgressChangedEventHandler(xxx)
-				bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bgWorkerDecodeAndReadCompleted);
-				// Launch background thread to do decode flux.  This will trigger BackgroundWorker.DoWork().
+				bgWorker.DoWork += new DoWorkEventHandler(bgWorkerDecodeAndProcessAll);
+				//bgWorker.ProgressChanged += new ProgressChangedEventHandler(xxx);
+				bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bgWorkerDecodeAndProcessCompleted);
+				// Launch background thread to do decode flux.  This will trigger bgWorker.DoWork()
 				bgWorker.RunWorkerAsync();
 			}
 			return true;
@@ -618,7 +618,7 @@ namespace Aufit {
 		/// <param name="sender">Not used</param>
 		/// <param name="e">Not used</param>
 		// http://stuff.seans.com/2009/05/21/net-basics-do-work-in-background-thread-to-keep-gui-responsive/
-		void bgWorkerDecodeAndReadAll(object sender, DoWorkEventArgs e) {
+		void bgWorkerDecodeAndProcessAll(object sender, DoWorkEventArgs e) {
 			Task<List<Sector>>[] tasks = new Task<List<Sector>>[168];
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {
@@ -634,7 +634,7 @@ namespace Aufit {
 		/// </summary>
 		/// <param name="sender">not used</param>
 		/// <param name="e">Event argument</param>
-		void bgWorkerDecodeAndReadCompleted(object sender, RunWorkerCompletedEventArgs e) {
+		void bgWorkerDecodeAndProcessCompleted(object sender, RunWorkerCompletedEventArgs e) {
 			if (e.Error != null) {
 				MessageBox.Show(e.Error.Message);
 				return;

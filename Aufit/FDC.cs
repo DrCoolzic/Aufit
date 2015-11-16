@@ -870,7 +870,7 @@ namespace WD1772Package {
 											data.info.startTime = runningTime;
 											data.info.startIndex = startIndex;
 										}	// normal data block
-										else if ((idCount > 0) && (sector.data != null)) {
+										else if ( (idCount > 0) && (sector.data != null) && (SectorNotFoundException.ExceptionMessage == null) ) {
 											data2 = true;
 											sector.flags |= Sector.SEC_NO_ID;
 											data = new DataField();
@@ -991,7 +991,7 @@ namespace WD1772Package {
 											}
 										}
 
-										//if (idBitPosition >= 0) breakLoop = true;	// TODO
+										if (idBitPosition >= 0) breakLoop = true;	// TODO
 
 										sector.flags |= flags;  // We OR the flags from all revolutions for max detection
 
@@ -1002,7 +1002,7 @@ namespace WD1772Package {
 												sector.data = data;
 										}   // not compare mode
 
-										else if (sector.data != null) {
+										else if ( (!data2 && (sector.data != null)) || (data2 && (sector.data2 != null)) ) {
 											DataField sdata;
 											if (data2)
 												sdata = sector.data2;
@@ -1119,7 +1119,10 @@ namespace WD1772Package {
 				for (int i = 0; i < Global.Disk[track, side].sectors.Count; i++) {
 					// in recover we delete things we might have already found
 					Global.Disk[track, side].sectors[i].data = null;
+					Global.Disk[track, side].sectors[i].data2 = null;
 					Global.Disk[track, side].sectors[i].recovered_data = null;
+					Global.Disk[track, side].sectors[i].flags = 0;
+
 
 					byte sectorNumber = Global.Disk[track, side].sectors[i].id.Sector;
 					int idBitPosition = Global.Disk[track, side].sectors[i].id.info.startBit;
