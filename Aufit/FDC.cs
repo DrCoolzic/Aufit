@@ -733,7 +733,7 @@ namespace WD1772Package {
 							//////////////////
 
 							// if we have found at least an ID we accumulate the GAP data
-							if ((phase == Phases.p_gap_inner) && (idCount > 0) && (sector != null) && !compare)
+							if ((phase == Phases.p_gap_inner) && (idCount > 0) && (sector != null) && (sector.innerGap != null) && !compare)
 								sector.innerGap.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, runningTime, phase);
 							else if ((idCount > 0) && (sector != null) && (sector.postGap2 != null) && !compare)
 								sector.postGap2.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, runningTime, phase);
@@ -742,7 +742,7 @@ namespace WD1772Package {
 
 							if (dsr.IAM) {
 								// here we remove the three sync and the IAM
-								if ((phase == Phases.p_gap_inner) && (idCount > 0) && (sector != null) && !compare)
+								if ((phase == Phases.p_gap_inner) && (idCount > 0) && (sector != null) && (sector.innerGap != null) && !compare)
 									sector.innerGap.buffer.removeLastBytes(4);
 								else if ((idCount > 0) && (sector != null) && (sector.postGap2 != null) && !compare)
 									sector.postGap2.buffer.removeLastBytes(4);
@@ -776,7 +776,7 @@ namespace WD1772Package {
 												sector.innerGap.info.bitCount = currentBit - sector.innerGap.info.startBit;
 												sector.innerGap.info.lastIndex = i;
 											}
-										}
+										}	// terminate gap
 
 										if (idBitPosition < 0) {
 											// if not found and past index we have no data (except if very close)
@@ -803,8 +803,6 @@ namespace WD1772Package {
 													track, side, Global.Disk[track, side].sectors.Count));
 											}
 
-											// correct start byte value here as it could be different from value from readAddress
-											sector.id.info.startByte = byteRead;
 											sector.flags |= Sector.SEC_PROCESSED;
 											flags = 0;
 
@@ -820,6 +818,7 @@ namespace WD1772Package {
 												breakLoop = true;   // don't need to continue
 												break;
 											}
+
 											// if we have not yet reach the requested position we ignore
 											if ((currentBit + 10) < idBitPosition) {
 												dsr.sectorMode();
@@ -830,12 +829,9 @@ namespace WD1772Package {
 											// otherwise we need to read the ID block
 											byteLeftInBlock = 7;
 											phase = Phases.p_id;
-
-											// correct start byte value here as it could be different 
-											// from value found in readAddress
-											sector.id.info.startByte = byteRead;
 											sector.flags |= Sector.SEC_PROCESSED;
 											flags = 0;
+
 										}   // read one sector mode
 										break;
 
@@ -917,7 +913,7 @@ namespace WD1772Package {
 									case 4:
 										if (idBitPosition < 0) {
 											idFound = true; // used to read data
-										}
+										}	// read multiple sectors
 										else {
 											// we only check if we have the right sector number
 											if (sectToRead != dsr.Data) {
@@ -926,7 +922,7 @@ namespace WD1772Package {
 											}
 											else
 												idFound = true;
-										}
+										}	// read one sector
 										break;
 									case 0: // end of ID block
 										dsr.sectorMode();
@@ -991,7 +987,7 @@ namespace WD1772Package {
 											}
 										}
 
-										if (idBitPosition >= 0) breakLoop = true;	// TODO
+										if (idBitPosition >= 0) breakLoop = true;	// TODO =================
 
 										sector.flags |= flags;  // We OR the flags from all revolutions for max detection
 
@@ -1056,6 +1052,7 @@ namespace WD1772Package {
 										break;
 								}   // switch
 							}   // DATA Segment
+
 						} // ID or DATA segment
 						startIndex = 0;
 					}   // Data ready
@@ -1149,8 +1146,88 @@ namespace WD1772Package {
 			}
 
 			readTrack(track, side, rev);
-			Global.trackPosition(track, side);
+			trackTruncatedSector(track, side);
+			trackPositionAndSplice(track, side);
 			Protections.checkProtection(track, side);
+		}
+
+
+		private static void trackTruncatedSector(int track, int side) {
+			Global.DiskTrack dt = Global.Disk[track, side];
+			if ((dt.sectors == null) || (dt.sectors.Count == 0))
+				return;
+
+			for (int current = 0; current < dt.sectors.Count; current++) {
+				Sector s = dt.sectors[current];
+				int next = (current == (dt.sectors.Count - 1)) ? 0 : current + 1;
+				int dataEnd = s.data.info.startByte + s.data.buffer.DataByte.Count;
+				int idStart = dt.sectors[next].id.info.startByte;
+                if (idStart < s.data.info.startByte)
+					idStart += dt.track.buffer.DataByte.Count;
+				int diff;
+                if (dataEnd > idStart) {
+					diff = idStart - s.data.info.startByte;
+				}
+
+			}   // for all sectors
+
+
+			//Global.Disk[track, side].track.firstSectIndex = firstBlock;
+
+		}
+
+
+		/// <summary>
+		/// Find the first sector and position of track write splice
+		/// </summary>
+		/// <param name="track">Track number</param>
+		/// <param name="side">Side number</param>
+		/// <remarks>We search the first and last block of track and fill the firstSectIndex in Track structure.
+		/// Then we find the write splice located at the end of the last block by searching the first non 4E char.
+		/// This information is stored in the splicePosition field of Track structure. This information can be
+		/// used to find if the track is shifted or not.</remarks>
+		private static void trackPositionAndSplice(int track, int side) {
+			Global.DiskTrack dt = Global.Disk[track, side];
+			if ((dt.sectors == null) || (dt.sectors.Count == 0)) {
+				Global.Disk[track, side].track.splicePosition = 0;
+				return;
+			}
+			int maxPostSize = 0;
+			int lastBlock = 0;
+			Sector s;
+
+			for (int i = 0; i < dt.sectors.Count; i++) {
+				s = dt.sectors[i];
+
+				// we search the last block
+				// for now we take the sector that have the largest post gap size
+				if (s.postGap != null) {
+					if (s.postGap.buffer.DataByte.Count > maxPostSize) {
+						maxPostSize = s.postGap.buffer.DataByte.Count;
+						lastBlock = i;
+					}
+				}   // sector with data
+				else {
+					if (s.innerGap == null) return;
+					if (s.innerGap.buffer.DataByte.Count > maxPostSize) {
+						maxPostSize = s.innerGap.buffer.DataByte.Count;
+						lastBlock = i;
+					}
+				}   // sector no data
+			}   // for all sectors
+			int firstBlock = (lastBlock == (dt.sectors.Count - 1)) ? 0 : lastBlock + 1;
+			Global.Disk[track, side].track.firstSectIndex = firstBlock;
+
+			// search first non 4E byte
+			s = dt.sectors[lastBlock];
+			GapField g = (s.data != null) ? s.postGap : s.innerGap;
+			int pos;
+			for (pos = 1; pos < g.buffer.DataByte.Count - 1; pos++)
+				if (g.buffer.DataByte[pos] != 0x4E) break;
+			if ((g.buffer.DataByte[pos] == 0) || (pos == (g.buffer.DataByte.Count - 1)))
+				pos = (int)((double)g.buffer.DataByte.Count * 0.9);
+			pos += g.info.startByte - dt.track.buffer.DataByte.Count;
+			Global.Disk[track, side].track.splicePosition = pos;
 		}
 
 

@@ -5,6 +5,7 @@ BUGS
 - Data view not updated when selected track changed
 - Fix Vroom track 77.1 Data field not detected?
 - Fix Barbarian track 78.0 not decoded as 00 (KF)
+- After the War SCP track 65 inconsistent # id not detected? (rev 3+4)
 
 Improvements
 ============
@@ -36,7 +37,7 @@ Improvements
 Problem images
 ==============
 - SCP Awesome disk 3: 4 rev max
-BARBARIAN T78 RAW
+
 
 
 DONE

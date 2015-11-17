@@ -96,15 +96,22 @@ namespace ChartPackage {
 				StackPanel sectorInfoPanel = new StackPanel();
 				TextBox snum = new TextBox();
 				int endTime;
-				if (sector.data2 != null)
+				int endByte;
+				if (sector.data2 != null) {
 					endTime = sector.data2.info.startTime + sector.data2.info.timeLength;
-				else if (sector.data != null)
+					endByte = sector.data2.info.startByte + sector.data2.buffer.DataByte.Count;
+				}
+				else if (sector.data != null) {
 					endTime = sector.data.info.startTime + sector.data.info.timeLength;
-				else
+					endByte = sector.data.info.startByte + sector.data.buffer.DataByte.Count;
+				}
+				else {
 					endTime = sector.id.info.startTime + sector.id.info.timeLength;
+					endByte = sector.id.info.startByte + sector.id.buffer.DataByte.Count;
+				}
 
-				snum.Text = String.Format("Sector {0} Start {1:F2} ms - Stop: {2:F2} ms",
-					sector.id.Sector, (double)sector.id.info.startTime / 1000000.0, (double)endTime / 1000000.0);
+					snum.Text = String.Format("Sector {0} --- Start {1} {2:F2}ms - Stop: {3} {4:F2}ms",
+					sector.id.Sector, sector.id.info.startByte, (double)sector.id.info.startTime / 1000000.0, endByte, (double)endTime / 1000000.0);
 				sectorInfoPanel.Children.Add(snum);
 
 				double bstart = 0;
@@ -121,9 +128,9 @@ namespace ChartPackage {
 				sectorBorderPolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.8));
 
 				TextBox tb = new TextBox();
-				tb.Text = String.Format("ID Field (T={0} H={1} S={2} L={3} CRC={4:X4}) - Start @ Bit={5} Time={6:F2} ms",
+				tb.Text = String.Format("ID Field (T={0} H={1} S={2} L={3} CRC={4:X4}) - Start @ {5} {6:F2}ms",
 					sector.id.Track, sector.id.Head, sector.id.Sector, sector.id.Length, sector.id.CRC,
-					sector.id.info.startBit, bstart);
+					sector.id.info.startByte, bstart);
 				sectorInfoPanel.Children.Add(tb);
 
 				drawRectangle(sector, bstart, bstop, SecType.id);
@@ -135,16 +142,16 @@ namespace ChartPackage {
 					bstop = bstart + blength;
 
 					tb = new TextBox();
-					tb.Text = String.Format("IGap Field {0} bytes - Start @ Bit={1} Time={2:F2} ms",
-						sector.innerGap.buffer.DataByte.Count, sector.innerGap.info.startBit, (double)sector.innerGap.info.startTime / 1000000.0);
+					tb.Text = String.Format("IGap Field {0} bytes - Start @ {1} {2:F2}ms",
+						sector.innerGap.buffer.DataByte.Count, sector.innerGap.info.startByte, (double)sector.innerGap.info.startTime / 1000000.0);
 					sectorInfoPanel.Children.Add(tb);
 					//drawRectangle(sector, idbstop, bstart, Phases.p_gap_inner);
 					drawRectangle(sector, (double)sector.innerGap.info.startTime / 1000000.0,
 						(double)(sector.innerGap.info.startTime + sector.innerGap.info.timeLength) / 1000000.0, SecType.gap);
 
 					tb = new TextBox();
-					tb.Text = String.Format("Data Field {0} bytes Length={1:F2} µs - Start @ Bit={2} Time={3:F2} ms {4} {5}",
-						sector.data.buffer.DataByte.Count, blength * 1000, sector.data.info.startBit, bstart,
+					tb.Text = String.Format("Data Field {0} bytes Length={1:F2}µs - Start @ {2} {3:F2}ms {4} {5}",
+						sector.data.buffer.DataByte.Count, blength * 1000, sector.data.info.startByte, bstart,
 						(sector.data.info.crc != 0) ? " - Bad CRC" : "",
 						(sector.data.fuzzy != null) ? " - Fuzzy sector" : "");
 					sectorInfoPanel.Children.Add(tb);
@@ -170,8 +177,8 @@ namespace ChartPackage {
 
 				if (sector.postGap != null) {
 					tb = new TextBox();
-					tb.Text = String.Format("PGap Field {0} bytes - Start @ Bit={1} Time={2:F2} ms",
-						sector.postGap.buffer.DataByte.Count, sector.postGap.info.startBit, (double)sector.postGap.info.startTime / 1000000.0);
+					tb.Text = String.Format("PGap Field {0} bytes - Start @ {1} {2:F2}ms",
+						sector.postGap.buffer.DataByte.Count, sector.postGap.info.startByte, (double)sector.postGap.info.startTime / 1000000.0);
 					sectorInfoPanel.Children.Add(tb);
 				}
 
@@ -182,8 +189,8 @@ namespace ChartPackage {
 					bstop = bstart + blength;
 
 					tb = new TextBox();
-					tb.Text = String.Format("Extra Data Field {0} bytes Length={1:F2} µs - Start @ Bit={2} Time={3:F2} ms {4} {5}",
-						sector.data2.buffer.DataByte.Count, blength * 1000, sector.data2.info.startBit, bstart,
+					tb.Text = String.Format("Extra Data Field {0} bytes Length={1:F2}µs - Start @ {2} {3:F2}ms {4} {5}",
+						sector.data2.buffer.DataByte.Count, blength * 1000, sector.data2.info.startByte, bstart,
 						(sector.data2.info.crc != 0) ? " - Bad CRC" : "",
 						(sector.data2.fuzzy != null) ? " - Fuzzy sector" : "");
 					sectorInfoPanel.Children.Add(tb);
@@ -207,7 +214,7 @@ namespace ChartPackage {
 					}
 					if (sector.postGap2 != null) {
 						tb = new TextBox();
-						tb.Text = String.Format("Extra PGap Field {0} bytes - Start @ Bit={1} Time={2:F2} ms",
+						tb.Text = String.Format("Extra PGap Field {0} bytes - Start @ {1} {2:F2}ms",
 							sector.postGap2.buffer.DataByte.Count, sector.postGap2.info.startBit, (double)sector.postGap2.info.startTime / 1000000.0);
 						sectorInfoPanel.Children.Add(tb);
 					}

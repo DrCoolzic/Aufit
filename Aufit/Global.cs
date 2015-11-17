@@ -258,6 +258,7 @@ namespace GlobalPackage {
 
 			/// <summary>Image some gap information is missing</summary>
 			public bool hasIncompleteGap;
+
 		}
 
 
@@ -508,59 +509,6 @@ namespace GlobalPackage {
 				((flux > (8000 - limit)) && (flux < (8000 + limit))))
 				return false;
 			return true;
-		}
-
-		/// <summary>
-		/// Find the first sector and position of track write splice
-		/// </summary>
-		/// <param name="track">Track number</param>
-		/// <param name="side">Side number</param>
-		/// <remarks>We search the first and last block of track and fill the firstSectIndex in Track structure.
-		/// Then we find the write splice located at the end of the last block by searching the first non 4E char.
-		/// This information is stored in the splicePosition field of Track structure. This information can be
-		/// used to find if the track is shifted or not.</remarks>
-		public static void trackPosition(int track, int side) {
-			Global.DiskTrack dt = Global.Disk[track, side];
-			if ((dt.sectors == null) || (dt.sectors.Count == 0)) {
-				Global.Disk[track, side].track.splicePosition = 0;
-				return;
-			}
-			int maxPostSize = 0;
-			int lastBlock = 0;
-			Sector s;
-
-			for (int i = 0; i < dt.sectors.Count; i++) {
-				s = dt.sectors[i];
-
-				// we search the last block
-				// for now we take the sector that have the largest post gap size
-				if (s.postGap != null) {
-					if (s.postGap.buffer.DataByte.Count > maxPostSize) {
-						maxPostSize = s.postGap.buffer.DataByte.Count;
-						lastBlock = i;
-					}
-				}   // sector with data
-				else {
-					if (s.innerGap == null) return;
-					if (s.innerGap.buffer.DataByte.Count > maxPostSize) {
-						maxPostSize = s.innerGap.buffer.DataByte.Count;
-						lastBlock = i;
-					}
-				}   // sector no data
-			}   // for all sectors
-			int firstBlock = (lastBlock == (dt.sectors.Count - 1)) ? 0 : lastBlock + 1;
-			Global.Disk[track, side].track.firstSectIndex = firstBlock;
-
-			// search first non 4E byte
-			s = dt.sectors[lastBlock];
-			GapField g = (s.data != null) ? s.postGap : s.innerGap;
-			int pos;
-			for (pos = 1; pos < g.buffer.DataByte.Count; pos++)
-				if (g.buffer.DataByte[pos] != 0x4E) break;
-			if ((g.buffer.DataByte[pos] == 0) || (pos == g.buffer.DataByte.Count))
-				pos = (int)((double)g.buffer.DataByte.Count * 0.9);
-			pos += g.info.startByte - dt.track.buffer.DataByte.Count;
-			Global.Disk[track, side].track.splicePosition = pos;
 		}
 
 	}   // class Global
