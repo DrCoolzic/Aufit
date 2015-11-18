@@ -233,8 +233,8 @@ namespace Aufit {
 				p.Inlines.Add(String.Format("IAM={0:X2} T={1:X2} H={2:X2} S={3:X2} L={4:X2} CRC={5:X4} {6}", sector.id.IDAM,
 					sector.id.Track, sector.id.Head, sector.id.Sector, sector.id.Length, sector.id.CRC, (sector.id.info.crc == 0) ? "Good" : "Bad"));
 				p.Inlines.Add(new LineBreak());
-				p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms", 
-					sector.id.info.startBit, sector.id.info.startByte, (double)sector.id.info.startTime / 1000000.0));
+				p.Inlines.Add(String.Format("   START Bit={0} Byte={1} ({2}) Time={3:F2} ms", 
+					sector.id.info.startBit, sector.id.info.startByte, sector.id.info.trackStartByte, (double)sector.id.info.startTime / 1000000.0));
 				//p.Inlines.Add(new LineBreak());
 				p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
 					sector.id.info.bitCount, sector.id.buffer.DataByte.Count, (double)sector.id.info.timeLength / 1000.0));
@@ -247,8 +247,8 @@ namespace Aufit {
 					else
 						p.Inlines.Add(new Run("Post GAP Field:") { FontWeight = FontWeights.Bold });
 					p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
-						sector.innerGap.info.startBit, sector.innerGap.info.startByte, (double)sector.innerGap.info.startTime / 1000000.0));
+					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} ({2}) Time={3:F2} ms",
+						sector.innerGap.info.startBit, sector.innerGap.info.startByte, sector.innerGap.info.trackStartByte, (double)sector.innerGap.info.startTime / 1000000.0));
 					//p.Inlines.Add(new LineBreak());
 					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
 						sector.innerGap.info.bitCount, sector.innerGap.buffer.DataByte.Count, (double)sector.innerGap.info.timeLength / 1000.0));
@@ -260,13 +260,13 @@ namespace Aufit {
 					p.Inlines.Add(new Run("DATA Field: ") { FontWeight = FontWeights.Bold });
 					if ((sector.data.buffer.DataByte.Count - 3) != Global.sectSize(sector.id.Length))
 						p.Inlines.Add(" *** Incomplete *** ");
-					p.Inlines.Add(String.Format("DAM={0:X2} {1} bytes start at {2}µs length {3}µs CRC={4:X4}{5}{6}",
+					p.Inlines.Add(String.Format("DAM={0:X2} {1} bytes start at {2}µs length {3}µs CRC={4:X4}{5}{6}{7}",
 						sector.data.DAM, sector.data.buffer.DataByte.Count, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000,
 						sector.data.CRC, (sector.data.info.crc == 0) ? " Good" : " Bad",
-						(sector.data.fuzzy != null) ? " Fuzzy sector" : ""));
+						(sector.data.fuzzy != null) ? " Fuzzy sector" : "", ((sector.flags & Sector.SEC_EQ_TRACK) == 0) ? "" : " Sect=Track"));
 					p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
-						sector.data.info.startBit, sector.data.info.startByte, (double)sector.data.info.startTime / 1000000.0));
+					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} ({2}) Time={3:F2} ms",
+						sector.data.info.startBit, sector.data.info.startByte, sector.data.info.trackStartByte, (double)sector.data.info.startTime / 1000000.0));
 					//p.Inlines.Add(new LineBreak());
 					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
 						sector.data.info.bitCount, sector.data.buffer.DataByte.Count, (double)sector.data.info.timeLength / 1000.0));
@@ -311,8 +311,8 @@ namespace Aufit {
 				if (sector.postGap != null) {
 					p.Inlines.Add(new Run("Post GAP Field: ") { FontWeight = FontWeights.Bold });
 					p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
-						sector.postGap.info.startBit, sector.postGap.info.startByte, (double)sector.postGap.info.startTime / 1000000.0));
+					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} ({2}) Time={3:F2} ms",
+						sector.postGap.info.startBit, sector.postGap.info.startByte, sector.postGap.info.trackStartByte, (double)sector.postGap.info.startTime / 1000000.0));
 					//p.Inlines.Add(new LineBreak());
 					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
 						sector.postGap.info.bitCount, sector.postGap.buffer.DataByte.Count, (double)sector.postGap.info.timeLength / 1000.0));
@@ -334,8 +334,8 @@ namespace Aufit {
 						data.CRC, (data.info.crc == 0) ? " Good" : " Bad",
 						(data.fuzzy != null) ? " Fuzzy sector" : ""));
 					p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
-						data.info.startBit, data.info.startByte, (double)data.info.startTime / 1000000.0));
+					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} ({2}) Time={3:F2} ms",
+						data.info.startBit, data.info.startByte, data.info.trackStartByte, (double)data.info.startTime / 1000000.0));
 					//p.Inlines.Add(new LineBreak());
 					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
 						data.info.bitCount, data.buffer.DataByte.Count, (double)data.info.timeLength / 1000.0));
@@ -380,8 +380,8 @@ namespace Aufit {
 				if (sector.postGap2 != null) {
 					p.Inlines.Add(new Run("EXTRA POST GAP Field: ") { FontWeight = FontWeights.Bold });
 					p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
-						sector.postGap2.info.startBit, sector.postGap2.info.startByte, (double)sector.postGap2.info.startTime / 1000000.0));
+					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} ({2}) Time={3:F2} ms",
+						sector.postGap2.info.startBit, sector.postGap2.info.startByte, sector.postGap2.info.trackStartByte, (double)sector.postGap2.info.startTime / 1000000.0));
 					//p.Inlines.Add(new LineBreak());
 					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
 						sector.postGap2.info.bitCount, sector.postGap2.buffer.DataByte.Count, (double)sector.postGap2.info.timeLength / 1000.0));

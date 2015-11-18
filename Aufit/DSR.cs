@@ -233,7 +233,7 @@ namespace WD1772Package {
 				// process Sync if detected
 				if (bitsInDetector != SyncType.None) {
 					_dataDelay = 1;	// we have just read the last data bit of an AM
-					if (bitsInDetector == SyncType.A1) _syncSeq++;
+					/* if (bitsInDetector == SyncType.A1) */ _syncSeq++;
 					if (_lastSyncFound != bitsInDetector)
 						_syncSeq = 1;
 

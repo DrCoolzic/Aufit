@@ -236,18 +236,12 @@ namespace ChartPackage {
 				int start = Global.firstIndex(track, side, rev);
 				int stop = Global.lastIndex(track, side, rev);
 				int currentTime = 0;
-				PhaseSector ps = new PhaseSector(dt, dt.fluxDataRev[rev].revolutionTime);
+				//PhaseSector ps = new PhaseSector(dt, dt.fluxDataRev[rev].revolutionTime);
 
 				for (int bitPosition = start; bitPosition < stop; bitPosition++) {
 					int flux = dt.fluxData.fluxValue[bitPosition];
 					currentTime += flux;
-
 					int bitWidth = dt.decodedData.bitSpacing[bitPosition];
-					// currentBit += bitWidth;
-
-
-					ps.computePhaseAndSector(currentTime);
-					if (!FDC.isGapPhase(ps.Phase)) continue;
 
 					int percent = 8;
 					int upper_high = 4 * bitWidth + ((4 * percent * bitWidth) / 100);
@@ -259,13 +253,11 @@ namespace ChartPackage {
 
 					if (((flux > upper_high) || ((flux < upper_low) && (flux > middle_high)) ||
 							(flux < lower_low) || ((flux > lower_high) && (flux < middle_low)))
-							&& (dt.sectors.Count > 0) && FDC.isGapPhase(ps.Phase)) {
+							&& (dt.sectors.Count > 0)) {
 						if (OOBCount++ > 50) break;
 						Line splice = new Line();
 						splice.Stroke = Brushes.DarkBlue;
 						splice.StrokeThickness = 1.5;
-						//DoubleCollection dashPattern = new DoubleCollection(new double[2] { 2, 1 });
-						//splice.StrokeDashArray = dashPattern;
 						splice.X1 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
 						splice.Y1 = _dataChartLayout.NormY(_dataChartLayout.Ymin);
 						splice.X2 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;

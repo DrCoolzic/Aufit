@@ -370,11 +370,18 @@ namespace Aufit {
 						writeInfo(info, "SBV Sector Bit-rate Variation");
 					}
 
-					// intra sector bit rate variation
+					// sector with no id SNI
 					if ((dt.sectors[secIndex].flags & Sector.SEC_NO_ID) != 0) {
 						dt.track.hasProtections = true;
 						writeInfo(info, "SNI Sector Data with no ID");
 					}
+
+					// Truncated sector
+					if ((dt.sectors[secIndex].flags & Sector.TRUNC_SECT) != 0) {
+						//dt.track.hasProtections = true;
+						writeInfo(info, String.Format("Sector truncated to {0} bytes", dt.sectors[secIndex].truncSectSize));
+					}
+
 
 				}   // sector has data
 				else {
