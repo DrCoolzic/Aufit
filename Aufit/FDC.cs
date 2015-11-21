@@ -48,7 +48,7 @@ namespace WD1772Package {
 
 
 	/// <summary>Store information about a block of data</summary>
-	public struct BlockInfo {
+	public class BlockInfo {
 		/// <summary>First byte of the block</summary> 
 		public int startByte;
 
@@ -70,8 +70,6 @@ namespace WD1772Package {
 		/// <summary>CRC value at the end of reading an ID or DATA block.</summary>
 		/// <remarks> Should be zero on a "good" block</remarks>
 		public ushort crc;
-
-		public int trackStartByte;
 	}
 
 
@@ -238,7 +236,7 @@ namespace WD1772Package {
 
 		public DataField data2;
 		public GapField postGap2;
-		public int truncSectSize;
+		public int truncSectBitSize;
 	}
 
 
@@ -369,6 +367,10 @@ namespace WD1772Package {
 		ushort[] _mfmBuffer = new ushort[4];
 		int _ringIndex;
 
+		public int ByteCount {
+			get { return _byteCount; }
+		}
+
 		public BitTrackInfo(DSR dsr) {
 			_dsr = dsr;
 		}
@@ -405,35 +407,36 @@ namespace WD1772Package {
 		}
 
 		public void addByte(TrackBuffer b, Phases phase, bool flushBuffer) {
+			ushort bitWidthAvg = (_bitWidthCount != 0) ? (ushort)(_bitWidthSum / _bitWidthCount) : (ushort)2000;
 			if (flushBuffer) {
 				for (int i = 0; i < 3; i++) {
 					int x = (_ringIndex + i) % 4;
-					b.addByte(_dataBuffer[x], _mfmBuffer[x], (ushort)(_bitWidthSum / _bitWidthCount), _startTime[x], phase);
+					b.addByte(_dataBuffer[x], _mfmBuffer[x], bitWidthAvg, _startTime[x], phase);
 				}
 			}
-			b.addByte(_dsr.Data, _dsr.MFM, (ushort)(_bitWidthSum / _bitWidthCount), _startTime[(_ringIndex + 3) % 4], phase);
+			b.addByte(_dsr.Data, _dsr.MFM, bitWidthAvg, _startTime[(_ringIndex + 3) % 4], phase);
 		}
 
-		public void storeStartInfo(IdField id, bool flushBuffer) {
+		public void storeStartInfo(BlockInfo bi, bool flushBuffer) {
 			int x;
-			id.info.startByte = _byteCount;
+			bi.startByte = _byteCount;
 			if (flushBuffer) {
 				x = _ringIndex;
-				id.info.startByte = _byteCount - 3;
+				bi.startByte = _byteCount - 3;
 			}
 			else {
 				x = (_ringIndex + 3) % 4;
-				id.info.startByte = _byteCount;
+				bi.startByte = _byteCount;
 			}
-			id.info.startBit = _startBit[x];
-			id.info.startTime = _startTime[x];
-			id.info.startIndex = _startIndex[x];
+			bi.startBit = _startBit[x];
+			bi.startTime = _startTime[x];
+			bi.startIndex = _startIndex[x];
 		}
 
-		public void storeEndInfo(IdField id, int currentIndex) {
-			id.info.timeLength = _currentTime - id.info.startTime;
-			id.info.bitCount = _bitCount - id.info.startBit;
-			id.info.lastIndex = currentIndex;
+		public void storeEndInfo(BlockInfo bi, int currentIndex) {
+			bi.timeLength = _currentTime - bi.startTime;
+			bi.bitCount = _bitCount - bi.startBit;
+			bi.lastIndex = currentIndex;
 		}
 	}
 
@@ -459,25 +462,16 @@ namespace WD1772Package {
 		/// Therefore this function must be called last.</remarks>
 		public static void readTrack(int track, int side, int rev) {
 			if (Global.Disk[track, side].track != null) return;
-
 			int start = Global.firstIndex(track, side, rev);
 			int stop = Global.lastIndex(track, side, rev);
 
 			Global.Disk[track, side].track = new Track();
-			Global.Disk[track, side].track.info.startTime = 0;
-			Global.Disk[track, side].track.info.startByte = 0;
-			Global.Disk[track, side].track.info.startBit = 0;
-			Global.Disk[track, side].track.info.startIndex = start;
-
 			Global.DiskTrack dt = Global.Disk[track, side];
 			DSR dsr = new DSR();
 			dsr.trackMode();
+			BitTrackInfo bti = new BitTrackInfo(dsr);
+			bti.storeStartInfo(Global.Disk[track, side].track.info, false);
 
-			int currentTime = 0;
-			int byteCount = 0;
-			int currentBit = 0;
-			int bitWidthSum = 0;
-			int bitWidthCount = 0;
 			int invalidByteInGap = 0;
 			int nfaCount = 0;
 			Phases currentPhase = Phases.p_gap_post;
@@ -487,32 +481,16 @@ namespace WD1772Package {
 			bool data2 = false;
 
 			// We read from the beginning to end of a track looking with AM decoder on all time
-			for (int i = start; i < stop; i++) {
-
-				int flux = dt.fluxData.fluxValue[i];
-				currentTime += flux;
-
-				int bitSpacing = dt.decodedData.bitSpacing[i];
-				currentBit += bitSpacing;
-
-				int bitWidth = dt.decodedData.bitWidth[i];
-				bitWidthSum += bitWidth;
-				bitWidthCount++;
-
-				int runningTime = currentTime - flux;
+			for (int currentIndex = start; currentIndex < stop; currentIndex++) {
+				int bitSpacing = bti.nextFlux(dt, currentIndex);
 				while (bitSpacing-- > 0) {
 					dsr.shiftIn(bitSpacing > 0 ? 0 : 1);
-					runningTime += bitWidth;
+					bti.nextBit();
 					if ((dsr.MFM == 0x4489) || (dsr.MFM == 0x5224))
 						syncCount++;
 
 					if (dsr.DataReady) {
-						byteCount++;
-
-						if (bitWidthCount > 0) {
-							bitWidth = bitWidthSum / bitWidthCount;
-							bitWidthSum = bitWidthCount = 0;
-						}   // average one time
+						bti.nextByte();
 
 						if (dsr.SyncSeq > 4)
 							Global.Disk[track, side].track.flags |= Track.INV_SYNC_SEQ;
@@ -529,37 +507,24 @@ namespace WD1772Package {
 						if (dsr.IAM)
 							switch (dsr.Data) {
 								// Case ID field //
-								case 0xFC:  // IBM IAM
-								case 0xFD:
-								case 0xFE:  // IAM - start of an ID block
-								case 0xFF:
+								case 0xFC: case 0xFD: case 0xFE: case 0xFF:
 									if (dt.track.firstSyncOffset == 0)
-										Global.Disk[track, side].track.firstSyncOffset = byteCount - 3;
+										Global.Disk[track, side].track.firstSyncOffset = bti.ByteCount - 3;
 									currentSector++;
 									byteLeftInBlock = 7;
 									currentPhase = Phases.p_id;
-									dt.sectors[currentSector].id.info.trackStartByte = byteCount;
 									data2 = false;
 									break;
 
 								// Case DATA field
-								case 0xF8:  // DDAM
-								case 0xF9:
-								case 0xFA:
-								case 0xFB:  // DAM - Start of a DATA block
+								case 0xF8: case 0xF9: case 0xFA: case 0xFB:
 									int s = (currentSector != -1) ? currentSector : dt.sectors.Count - 1;
 									byteLeftInBlock = Global.sectSize(dt.sectors[s].id.Length) + 3; // AM + 2 CRC + Size
 									currentPhase = Phases.p_data;
 									syncCount = 0;
 									if (dt.sectors[s].data != null) {
-										if (!data2) {
-											dt.sectors[s].data.info.trackStartByte = byteCount;
-											data2 = true;
-										}   // normal data
-										else {
-											dt.sectors[s].data2.info.trackStartByte = byteCount;
-											data2 = false;
-										}   // extra data
+										if (!data2) data2 = true;
+										else data2 = false;
 									}   // sector has data
 									break;
 
@@ -573,43 +538,35 @@ namespace WD1772Package {
 							switch (currentPhase) {
 								case Phases.p_id:
 									byteLeftInBlock--;
-									if (byteLeftInBlock == 0) {
+									if (byteLeftInBlock == 0) 
 										currentPhase = Phases.p_gap_inner;
-										dt.sectors[currentSector].innerGap.info.trackStartByte = byteCount;
-									}
 									break;
+
 								case Phases.p_data:
 									byteLeftInBlock--;
 									if (byteLeftInBlock == 0) {
 										int s = (currentSector != -1) ? currentSector : dt.sectors.Count - 1;
 										currentPhase = Phases.p_gap_post;
-										if (data2) {
-											if (syncCount == 0)
-												dt.sectors[s].flags |= Sector.SEC_EQ_TRACK;
-											if (dt.sectors[s].postGap != null)
-												dt.sectors[s].postGap.info.trackStartByte = byteCount;
-										}
-									}
+										if (data2 && (syncCount == 0))
+											dt.sectors[s].flags |= Sector.SEC_EQ_TRACK;
+									}	// last byte
 									break;
+
 								default:    // gap
 									if ((dsr.Data >= 0xF5) && (dsr.Data <= 0xF7))
 										invalidByteInGap++;
 									break;
 							}   // not IAM
 
-						Global.Disk[track, side].track.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, runningTime, currentPhase);
+						bti.addByte(Global.Disk[track, side].track.buffer, currentPhase, false);
 					}   // data ready
 				}   // shift bit in
 			}   // for all bits
 
-			Global.Disk[track, side].track.info.timeLength = currentTime;
-			Global.Disk[track, side].track.info.bitCount = currentBit;
-			Global.Disk[track, side].track.info.lastIndex = stop;
+			bti.storeEndInfo(Global.Disk[track, side].track.info, stop);
 
-			if (invalidByteInGap > 5) {
+			if (invalidByteInGap > 5)
 				Global.Disk[track, side].track.flags |= Track.BAD_DATA_GAP;
-			}
-
 		}   // end of readTrack()
 
 
@@ -636,9 +593,9 @@ namespace WD1772Package {
 						bti.nextByte();
 
 						IdField id = new IdField();
-						bti.storeStartInfo(id, false);
+						bti.storeStartInfo(id.info, false);
 						bti.addByte(id.buffer, phase, false);
-						bti.storeEndInfo(id, currentIndex);
+						bti.storeEndInfo(id.info, currentIndex);
 					}   // one byte ready
 
 				}   // shift in all bits;
@@ -699,7 +656,7 @@ namespace WD1772Package {
 									sectorIndex++;
 									byteLeftInBlock = 7;
 									phase = Phases.p_id;
-									bti.storeStartInfo(sector.id, true);
+									bti.storeStartInfo(sector.id.info, true);
 									bti.addByte(sector.id.buffer, phase, true);
 									sectors.Add(sector);
 								}   // IDAM
@@ -717,7 +674,7 @@ namespace WD1772Package {
 							}
 							else {
 								sectors[sectorIndex].id.info.crc = crc;
-								bti.storeEndInfo(sectors[sectorIndex].id, currentIndex);
+								bti.storeEndInfo(sectors[sectorIndex].id.info, currentIndex);
 								phase = Phases.p_gap_inner;
 								dsr.sectorMode();   // we re-enable sync
 							}   // byteInBlock == 0
@@ -729,7 +686,7 @@ namespace WD1772Package {
 			// We are still in ID phase due to end of file 
 			if (phase == Phases.p_id) {
 				sectors[sectorIndex].id.info.crc = crc;
-				bti.storeEndInfo(sectors[sectorIndex].id, currentIndex);
+				bti.storeEndInfo(sectors[sectorIndex].id.info, currentIndex);
 			}
 
 			// since we now continue when finding sync over index it is possible to have duplicate sector in first last position
@@ -1311,13 +1268,13 @@ namespace WD1772Package {
 				Sector s = dt.sectors[current];
 				if (s.data == null) continue;
 				int next = (current == (dt.sectors.Count - 1)) ? 0 : current + 1;
-				int dataEnd = s.data.info.trackStartByte + s.data.buffer.DataByte.Count;
-				int idStart = dt.sectors[next].id.info.trackStartByte;
-				if (idStart < s.data.info.trackStartByte)
-					idStart += dt.track.buffer.DataByte.Count;
+				int dataEnd = s.data.info.startBit + s.data.info.bitCount;
+				int idStart = dt.sectors[next].id.info.startBit;
+				if (idStart < s.data.info.startBit)
+					idStart += dt.track.info.bitCount;
 				if (dataEnd > idStart) {
 					s.flags |= Sector.TRUNC_SECT;
-					s.truncSectSize = idStart - s.data.info.trackStartByte;
+					s.truncSectBitSize = idStart - s.data.info.startBit;
 				}   // truncated
 			}   // for all sectors
 
@@ -1354,7 +1311,7 @@ namespace WD1772Package {
 					for (lastBlock = dt.sectors.Count - 1; lastBlock >= 0; lastBlock--)
 						if ((dt.sectors[lastBlock].flags & Sector.TRUNC_SECT) != 0)
 							break;
-					splicePosition = dt.sectors[lastBlock].data.info.startByte + dt.sectors[lastBlock].truncSectSize - dt.track.buffer.DataByte.Count;
+					splicePosition = (dt.sectors[lastBlock].data.info.startBit + dt.sectors[lastBlock].truncSectBitSize - dt.track.info.bitCount) / 16;
 					break;
 				}   // NFA
 				else {
