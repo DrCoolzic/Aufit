@@ -165,6 +165,7 @@ namespace WD1772Package {
 		/// </summary>
 		public int SyncSeq {
 			get { return _syncSeq;  }
+			set { _syncSeq = value;  }
 		}
 
 		#endregion properties
@@ -176,7 +177,7 @@ namespace WD1772Package {
 			_syncOverlapCount = 0;
 			_decoderFlags = DecoderFlags.None;
 			_lastSyncFound = SyncType.None;
-			_dataDelay = 0;
+			_dataDelay = 1;
 			_dsrInvalid = 0;
 			_dsrBitCount = 0;
 			_syncSeq = 0;

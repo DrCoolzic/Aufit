@@ -386,7 +386,7 @@ namespace Aufit {
 					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
 						sector.postGap2.info.bitCount, sector.postGap2.buffer.DataByte.Count, (double)sector.postGap2.info.timeLength / 1000.0));
 					p.Inlines.Add(new LineBreak());
-					drawBuffer(sector.postGap2.buffer, p, sector.postGap.info.startByte, true);
+					drawBuffer(sector.postGap2.buffer, p, sector.postGap2.info.startByte, true);
 				}
 				//else {
 				//	p.Inlines.Add(" *** Sector has no Post data GAP ***");
