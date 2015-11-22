@@ -233,11 +233,11 @@ namespace Aufit {
 				p.Inlines.Add(String.Format("IAM={0:X2} T={1:X2} H={2:X2} S={3:X2} L={4:X2} CRC={5:X4} {6}", sector.id.IDAM,
 					sector.id.Track, sector.id.Head, sector.id.Sector, sector.id.Length, sector.id.CRC, (sector.id.info.crc == 0) ? "Good" : "Bad"));
 				p.Inlines.Add(new LineBreak());
-				p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms", 
+				p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms", 
 					sector.id.info.startBit, sector.id.info.startByte, (double)sector.id.info.startTime / 1000000.0));
-				//p.Inlines.Add(new LineBreak());
-				p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
+				p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
 					sector.id.info.bitCount, sector.id.buffer.DataByte.Count, (double)sector.id.info.timeLength / 1000.0));
+				p.Inlines.Add(String.Format(" - FLUX={0}-{1}", sector.id.info.startIndex, sector.id.info.lastIndex));
 				p.Inlines.Add(new LineBreak());
 				drawBuffer(sector.id.buffer, p, sector.id.info.startByte, false);
 
@@ -247,11 +247,12 @@ namespace Aufit {
 					else
 						p.Inlines.Add(new Run("Post GAP Field:") { FontWeight = FontWeights.Bold });
 					p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
+					p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
 						sector.innerGap.info.startBit, sector.innerGap.info.startByte, (double)sector.innerGap.info.startTime / 1000000.0));
 					//p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
+					p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
 						sector.innerGap.info.bitCount, sector.innerGap.buffer.DataByte.Count, (double)sector.innerGap.info.timeLength / 1000.0));
+					p.Inlines.Add(String.Format(" - FLUX={0}-{1}", sector.innerGap.info.startIndex, sector.innerGap.info.lastIndex));
 					p.Inlines.Add(new LineBreak());
 					drawBuffer(sector.innerGap.buffer, p, sector.innerGap.info.startByte, true);
 				}
@@ -265,11 +266,12 @@ namespace Aufit {
 						sector.data.CRC, (sector.data.info.crc == 0) ? " Good" : " Bad",
 						(sector.data.fuzzy != null) ? " Fuzzy sector" : "", ((sector.flags & Sector.SEC_EQ_TRACK) == 0) ? "" : " Sect=Track"));
 					p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
+					p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
 						sector.data.info.startBit, sector.data.info.startByte, (double)sector.data.info.startTime / 1000000.0));
 					//p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
+					p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
 						sector.data.info.bitCount, sector.data.buffer.DataByte.Count, (double)sector.data.info.timeLength / 1000.0));
+					p.Inlines.Add(String.Format(" - FLUX={0}-{1}", sector.data.info.startIndex, sector.data.info.lastIndex));
 					p.Inlines.Add(new LineBreak());
 					drawBuffer(sector.data.buffer, p, sector.data.info.startByte, false);
 
@@ -303,19 +305,16 @@ namespace Aufit {
 						}
 					}	// fuzzy
 				}	// has data
-				//else {
-				//	p.Inlines.Add(" *** Sector has no data ***");
-				//	p.Inlines.Add(new LineBreak());
-				//}
 
 				if (sector.postGap != null) {
 					p.Inlines.Add(new Run("Post GAP Field: ") { FontWeight = FontWeights.Bold });
 					p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
+					p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
 						sector.postGap.info.startBit, sector.postGap.info.startByte, (double)sector.postGap.info.startTime / 1000000.0));
 					//p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
+					p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
 						sector.postGap.info.bitCount, sector.postGap.buffer.DataByte.Count, (double)sector.postGap.info.timeLength / 1000.0));
+					p.Inlines.Add(String.Format(" - FLUX={0}-{1}", sector.postGap.info.startIndex, sector.postGap.info.lastIndex));
 					p.Inlines.Add(new LineBreak());
 					drawBuffer(sector.postGap.buffer, p, sector.postGap.info.startByte, true);
 				}
@@ -334,11 +333,12 @@ namespace Aufit {
 						data.CRC, (data.info.crc == 0) ? " Good" : " Bad",
 						(data.fuzzy != null) ? " Fuzzy sector" : ""));
 					p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
+					p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
 						data.info.startBit, data.info.startByte, (double)data.info.startTime / 1000000.0));
 					//p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
+					p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
 						data.info.bitCount, data.buffer.DataByte.Count, (double)data.info.timeLength / 1000.0));
+					p.Inlines.Add(String.Format(" - FLUX={0}-{1}", data.info.startIndex, data.info.lastIndex));
 					p.Inlines.Add(new LineBreak());
 					drawBuffer(data.buffer, p, data.info.startByte, false);
 
@@ -372,27 +372,19 @@ namespace Aufit {
 						}
 					}   // fuzzy
 				}   // has data
-					//else {
-					//	p.Inlines.Add(" *** Sector has no data ***");
-					//	p.Inlines.Add(new LineBreak());
-					//}
 
 				if (sector.postGap2 != null) {
 					p.Inlines.Add(new Run("EXTRA POST GAP Field: ") { FontWeight = FontWeights.Bold });
 					p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
+					p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
 						sector.postGap2.info.startBit, sector.postGap2.info.startByte, (double)sector.postGap2.info.startTime / 1000000.0));
 					//p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
+					p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
 						sector.postGap2.info.bitCount, sector.postGap2.buffer.DataByte.Count, (double)sector.postGap2.info.timeLength / 1000.0));
+					p.Inlines.Add(String.Format(" - FLUX={0}-{1}", sector.postGap2.info.startIndex, sector.postGap2.info.lastIndex));
 					p.Inlines.Add(new LineBreak());
 					drawBuffer(sector.postGap2.buffer, p, sector.postGap2.info.startByte, true);
 				}
-				//else {
-				//	p.Inlines.Add(" *** Sector has no Post data GAP ***");
-				//	p.Inlines.Add(new LineBreak());
-				//}
-
 
 				p.Inlines.Add(new LineBreak());
 			}
@@ -434,11 +426,11 @@ namespace Aufit {
 			doc.Blocks.Add(p);
 
 			TrackBuffer buffer = tr.buffer;
-			p.Inlines.Add(String.Format("   START Bit={0} Byte={1} Time={2:F2} ms",
+			p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
 				tr.info.startBit, tr.info.startByte, (double)tr.info.startTime / 1000000.0));
-			p.Inlines.Add(new LineBreak());
-			p.Inlines.Add(String.Format("   LENGTH Bit={0} Byte={1} Time={2:F2} µs",
+			p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
 				tr.info.bitCount, tr.buffer.DataByte.Count, (double)tr.info.timeLength / 1000.0));
+			p.Inlines.Add(String.Format(" - FLUX={0}-{1}", tr.info.startIndex, tr.info.lastIndex));
 			p.Inlines.Add(new LineBreak());
 			p.Inlines.Add(new LineBreak());
 

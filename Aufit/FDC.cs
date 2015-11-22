@@ -348,9 +348,14 @@ namespace WD1772Package {
 	/// Data fields. The class has been design  to store information accurate at the
 	/// bit level.</remarks>
 	public class BitTrackInfo {
-		private int _currentTime;
-		private int _bitCount;
+		private int _runningTime;
+		private int _runningBit;
+		private int _runningIndex;
 		private int _byteCount;
+
+		private int[] _currentTime = new int[4];
+		private int[] _bitCount = new int[4];
+		private int[] _currentIndex = new int[4];
 
 		private int[] _startIndex = new int[4];
 		private int[] _startTime = new int[4];
@@ -376,8 +381,10 @@ namespace WD1772Package {
 		}
 
 		public void nextBit() {
-			_bitCount++;
-			_currentTime += _fluxTimeInc;
+			_runningBit++;
+			_bitCount[_ringIndex] = _runningBit;
+			_runningTime += _fluxTimeInc;
+			_currentTime[_ringIndex] = _runningTime;
 		}
 
 		public void nextByte() {
@@ -389,6 +396,8 @@ namespace WD1772Package {
 		}
 
 		public int nextFlux(Global.DiskTrack dt, int currentIndex) {
+			_runningIndex = currentIndex;
+			_currentIndex[_ringIndex] = currentIndex;
 			int flux = dt.fluxData.fluxValue[currentIndex];
 			int bitSpacing = dt.decodedData.bitSpacing[currentIndex];
 			int bitWidth = dt.decodedData.bitWidth[currentIndex];
@@ -398,8 +407,8 @@ namespace WD1772Package {
 			_bitWidthCount++;
 			if (_first) {
 				_startIndex[_ringIndex] = currentIndex;
-				_startTime[_ringIndex] = _currentTime + _fluxRem;
-				_startBit[_ringIndex] = _bitCount;
+				_startTime[_ringIndex] = _runningTime + _fluxRem;
+				_startBit[_ringIndex] = _runningBit;
 				_bitWidthCount = _bitWidthSum = 0;
 				_first = false;
 			}
@@ -407,7 +416,8 @@ namespace WD1772Package {
 		}
 
 		public void addByte(TrackBuffer b, Phases phase, bool flushBuffer) {
-			ushort bitWidthAvg = (_bitWidthCount != 0) ? (ushort)(_bitWidthSum / _bitWidthCount) : (ushort)2000;
+			// count can be null due to NFA
+			ushort bitWidthAvg = (_bitWidthCount == 0) ? (ushort)2000 : (ushort)(_bitWidthSum / _bitWidthCount);
 			if (flushBuffer) {
 				for (int i = 0; i < 3; i++) {
 					int x = (_ringIndex + i) % 4;
@@ -433,10 +443,11 @@ namespace WD1772Package {
 			bi.startIndex = _startIndex[x];
 		}
 
-		public void storeEndInfo(BlockInfo bi, int currentIndex) {
-			bi.timeLength = _currentTime - bi.startTime;
-			bi.bitCount = _bitCount - bi.startBit;
-			bi.lastIndex = currentIndex;
+		public void storeEndInfo(BlockInfo bi /*, int currentIndex*/) {
+			int x = (_ringIndex + 3) % 4;
+			bi.timeLength = _currentTime[x] - bi.startTime;
+			bi.bitCount = _bitCount[x] - bi.startBit;
+			bi.lastIndex = _currentIndex[x];
 		}
 	}
 
@@ -563,7 +574,7 @@ namespace WD1772Package {
 				}   // shift bit in
 			}   // for all bits
 
-			bti.storeEndInfo(Global.Disk[track, side].track.info, stop);
+			bti.storeEndInfo(Global.Disk[track, side].track.info /*, stop*/);
 
 			if (invalidByteInGap > 5)
 				Global.Disk[track, side].track.flags |= Track.BAD_DATA_GAP;
@@ -595,7 +606,7 @@ namespace WD1772Package {
 						IdField id = new IdField();
 						bti.storeStartInfo(id.info, false);
 						bti.addByte(id.buffer, phase, false);
-						bti.storeEndInfo(id.info, currentIndex);
+						bti.storeEndInfo(id.info/*, currentIndex*/);
 					}   // one byte ready
 
 				}   // shift in all bits;
@@ -674,7 +685,7 @@ namespace WD1772Package {
 							}
 							else {
 								sectors[sectorIndex].id.info.crc = crc;
-								bti.storeEndInfo(sectors[sectorIndex].id.info, currentIndex);
+								bti.storeEndInfo(sectors[sectorIndex].id.info /*, currentIndex*/);
 								phase = Phases.p_gap_inner;
 								dsr.sectorMode();   // we re-enable sync
 							}   // byteInBlock == 0
@@ -686,7 +697,7 @@ namespace WD1772Package {
 			// We are still in ID phase due to end of file 
 			if (phase == Phases.p_id) {
 				sectors[sectorIndex].id.info.crc = crc;
-				bti.storeEndInfo(sectors[sectorIndex].id.info, currentIndex);
+				bti.storeEndInfo(sectors[sectorIndex].id.info /*, currentIndex*/);
 			}
 
 			// since we now continue when finding sync over index it is possible to have duplicate sector in first last position
@@ -703,9 +714,9 @@ namespace WD1772Package {
 		/// <param name="track">Track</param>
 		/// <param name="side">Side</param>
 		/// <param name="rev">Revolution value</param>
-		/// <param name="sectToRead">Sector number to read</param>
-		/// <param name="idBitPosition">If positive the sector to find must be located just after this specified 
-		/// position in nanosecond. If negative this means we try to read all sector at once</param>
+		/// <param name="sectToRead">Sector number to read (only used when idBitPosition is not negative.</param>
+		/// <param name="idBitPosition">If positive value the sector to find must be located just after 
+		/// the specified bit position. If negative this means we try to read all sector at once</param>
 		/// <param name="compare">If set to true we are in compare mode, else we are in read mode</param>
 		/// <remarks>The position parameter is necessary to read the right data of a duplicated sector
 		/// (i.e. we have several sectors with same number). Otherwise the data for the first encountered
@@ -714,13 +725,13 @@ namespace WD1772Package {
 		/// to read all sectors in one revolution. But as we may have sector within sector it is possible 
 		/// that some of the sectors are not read in one pass. This can be checked with the SEC_PROCESSED flag. 
 		/// For all sectors not read the function must be called again this time using a positive idBitPosition value.\n
-		/// When compare is false we are reading the sector normally and we fill the SectorContent structure. 
+		/// When compare is false we are reading the sector normally and we fill the Sector structure. 
 		/// But if compare==true we are in "compare" mode. In that case we read the same sector using the rev parameter 
 		/// and we compare the data buffer read with the "reference" data buffer to fill the fuzzy structure.\n
-		/// New for being able to write IPF file: We are now storing the GAP bytes between ID and DATA (inner gap) and
-		/// beyond DATA (post gap). We store the data just after the ID field and DATA field have been read. The value
-		/// read should be the value used to write the track. The WD1772 never return this kind of data because during 
-		/// a read track the data are often shifted due to presence of false 0x5224 sync mark. /// </remarks>
+		/// NEW for being able to retrieve master information: We are now storing the GAP bytes between ID and DATA 
+		/// (inner gap) and beyond DATA (post gap). These values are useful to write the master information. 
+		/// With the WD1772 it is not possible to read this kind of data because during a read track the data 
+		/// are often shifted due to presence of false 0x5224 sync mark. /// </remarks>
 		public static void readSector(int track, int side, int rev, byte sectToRead, int idBitPosition, bool compare) {
 			Global.DiskTrack dt = Global.Disk[track, side];
 			int start = Global.firstIndex(track, side, rev);
