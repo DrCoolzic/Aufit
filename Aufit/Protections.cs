@@ -310,7 +310,7 @@ namespace Aufit {
 						dt.track.hasProtections = true;
 						int byte80 = 0;
 						int byteXX = 0;
-						for (int i = 0; i < dt.sectors[secIndex].data.fuzzy.Count(); i++) {
+						for (int i = 4; i < dt.sectors[secIndex].data.fuzzy.Count() - 2; i++) {
 							byte b = dt.sectors[secIndex].data.fuzzy[i];
 							if (b != 00) {
 								if (b == 0x80)
@@ -321,7 +321,7 @@ namespace Aufit {
 						}
 						if ((byte80 > byteXX) && (track == 0) && (side == 0)) {
 							if (byteXX != 0) {
-								for (int i = 0; i < dt.sectors[secIndex].data.fuzzy.Count(); i++) {
+								for (int i = 4; i < dt.sectors[secIndex].data.fuzzy.Count() - 2; i++) {
 									if ((dt.sectors[secIndex].data.fuzzy[i] != 0x80) && (dt.sectors[secIndex].data.fuzzy[i] != 00))
 										dt.sectors[secIndex].data.fuzzy[i] = 0x80;
 									if ((i > 21) && (i < 510) &&

@@ -139,8 +139,8 @@ namespace Aufit {
 				blocks[i].dataOffset = 0;
 
 				// we compute the Block data bytes and the Gap bytes
-				int dataBytes = s.id.buffer.DataByte.Count + 3 + s.innerGap.buffer.DataByte.Count +
-					((s.data != null) ? (s.data.buffer.DataByte.Count + 3) : 0);
+				int dataBytes = s.id.buffer.DataByte.Count + s.innerGap.buffer.DataByte.Count +
+					((s.data != null) ? (s.data.buffer.DataByte.Count) : 0);
 				trackDataBytes += dataBytes;
 				blocks[i].dataBits = (uint)(16 * dataBytes);
 				int gapBytes = (s.postGap != null) ? s.postGap.buffer.DataByte.Count : 0;

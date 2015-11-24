@@ -93,7 +93,7 @@ namespace ChartPackage {
 
 			int bitAvgCount = 1;
 			if (_avgCheckBox.IsChecked == true)
-				bitAvgCount = 500;
+				bitAvgCount = 300;
 
 			if (track == -1) track = _track;
 			else _track = track;

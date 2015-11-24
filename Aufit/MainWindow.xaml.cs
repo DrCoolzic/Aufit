@@ -120,6 +120,8 @@ namespace Aufit {
 			_fluxDrawing.Chart.FixOffset = true;
 
 			_histoDrawing = new HistoDrawing(histoGrid, cvTextHisto, cvGraphicHisto, this);
+			_histoDrawing.Chart.FixOffset = true;
+			_histoDrawing.Chart.LeftFixOffset = 38;
 
 			_clockDrawing = new BitWidthDrawing(clockGrid, cvTextClock, cvGraphicClock, cbClkAvg);
 			_clockDrawing.Chart.OptimalYSpacing = 18;
@@ -830,7 +832,7 @@ namespace Aufit {
 					//infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", 
 					//	_dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, sector.id.Sector));
 					//infoBox.ScrollToEnd();
-					int first = sector.id.info.startIndex;
+					int first = sector.data.info.startIndex;
 					int last = sector.data.info.lastIndex;
 					int[] segment = Global.Disk[CurrentTrack, CurrentSide].fluxData.fluxValue.Skip(first).Take(last - first).ToArray();
 					HistoData h = Global.computeSegmentHisto(segment);

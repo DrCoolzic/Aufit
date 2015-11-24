@@ -1,7 +1,9 @@
 * Aufit 1.4
+- Fix left offset for Histogram chart (cleaner)
 - Fixed Vroom multiple back to back id/data fields not decoded correctly
 - New class to handle read function decoding at bit level
 - redesign of readAddr() function - now ID buffer contains sync sequence
+- redesign of readSector() function - now DATA buffer contains sync sequence
 - redesign of readTrack() function
 - Added detection of truncated 
 - Added detection of Sector with No ID (SNI) + display information in all views.

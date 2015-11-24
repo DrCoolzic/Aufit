@@ -74,6 +74,7 @@ public class ChartLayout {
 	/// When set to true the X left and right offset are fixed so we can align several charts
 	/// </summary>
 	public bool FixOffset { get; set; }
+	public int LeftFixOffset { get; set; }
 
 	/// <summary>
 	/// Access the Graphic canvas of the chart
@@ -183,6 +184,7 @@ public class ChartLayout {
 		_graphicCanvas = graphics;
 		_textCanvas = text;
 		FixOffset = false;
+		LeftFixOffset = 30;
 	}
 
 	/// <summary>
@@ -408,7 +410,7 @@ public class ChartLayout {
 			}
 		}
 		leftOffset = offset + 5;
-		if (FixOffset) leftOffset = 30;
+		if (FixOffset) leftOffset = LeftFixOffset;
 
 		Canvas.SetLeft(_graphicCanvas, leftOffset);
 		Canvas.SetBottom(GraphicCanvas, bottomOffset);

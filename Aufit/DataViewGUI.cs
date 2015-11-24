@@ -233,8 +233,8 @@ namespace Aufit {
 				p.Inlines.Add(String.Format("IAM={0:X2} T={1:X2} H={2:X2} S={3:X2} L={4:X2} CRC={5:X4} {6}", sector.id.IDAM,
 					sector.id.Track, sector.id.Head, sector.id.Sector, sector.id.Length, sector.id.CRC, (sector.id.info.crc == 0) ? "Good" : "Bad"));
 				p.Inlines.Add(new LineBreak());
-				p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms", 
-					sector.id.info.startBit, sector.id.info.startByte, (double)sector.id.info.startTime / 1000000.0));
+				p.Inlines.Add(String.Format("   START b={0}/{1} B={2} T={3:F2}ms", 
+					sector.id.info.startBit, sector.id.info.startBitIAM, sector.id.info.startByte, (double)sector.id.info.startTime / 1000000.0));
 				p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
 					sector.id.info.bitCount, sector.id.buffer.DataByte.Count, (double)sector.id.info.timeLength / 1000.0));
 				p.Inlines.Add(String.Format(" - FLUX={0}-{1}", sector.id.info.startIndex, sector.id.info.lastIndex));
@@ -259,15 +259,15 @@ namespace Aufit {
 
 				if (sector.data != null) {
 					p.Inlines.Add(new Run("DATA Field: ") { FontWeight = FontWeights.Bold });
-					if ((sector.data.buffer.DataByte.Count - 3) != Global.sectSize(sector.id.Length))
+					if ((sector.data.buffer.DataByte.Count - 6) != Global.sectSize(sector.id.Length))
 						p.Inlines.Add(" *** Incomplete *** ");
 					p.Inlines.Add(String.Format("DAM={0:X2} {1} bytes start at {2}µs length {3}µs CRC={4:X4}{5}{6}{7}",
 						sector.data.DAM, sector.data.buffer.DataByte.Count, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000,
 						sector.data.CRC, (sector.data.info.crc == 0) ? " Good" : " Bad",
 						(sector.data.fuzzy != null) ? " Fuzzy sector" : "", ((sector.flags & Sector.SEC_EQ_TRACK) == 0) ? "" : " Sect=Track"));
 					p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
-						sector.data.info.startBit, sector.data.info.startByte, (double)sector.data.info.startTime / 1000000.0));
+					p.Inlines.Add(String.Format("   START b={0}/{1} B={2} T={3:F2}ms",
+						sector.data.info.startBit, sector.data.info.startBitIAM, sector.data.info.startByte, (double)sector.data.info.startTime / 1000000.0));
 					//p.Inlines.Add(new LineBreak());
 					p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
 						sector.data.info.bitCount, sector.data.buffer.DataByte.Count, (double)sector.data.info.timeLength / 1000.0));
@@ -282,9 +282,9 @@ namespace Aufit {
 						p.Inlines.Add(String.Format("Sector {0} Fuzzy Bytes Mask array", sector.id.Sector));
 						p.Inlines.Add(new LineBreak());
 						for (int line = 0; line < sector.data.fuzzy.Count() / 16; line++) {
-							p.Inlines.Add(String.Format("{0:D4} ", line * 16 + sector.data.info.startByte + 1));
+							p.Inlines.Add(String.Format("{0:D4} ", line * 16 + sector.data.info.startByte + 4));
 							for (int col = 0; col < 16; col++) {
-								byte b = sector.data.fuzzy[(line * 16) + col + 1];
+								byte b = sector.data.fuzzy[(line * 16) + col + 4];
 								if (b == 0x80)
 									byte80++;
 								else
@@ -318,23 +318,19 @@ namespace Aufit {
 					p.Inlines.Add(new LineBreak());
 					drawBuffer(sector.postGap.buffer, p, sector.postGap.info.startByte, true);
 				}
-				//else {
-				//	p.Inlines.Add(" *** Sector has no Post data GAP ***");
-				//	p.Inlines.Add(new LineBreak());
-				//}
 
 				if (sector.data2 != null) {
 					p.Inlines.Add(new Run("EXTRA DATA Field: ") { FontWeight = FontWeights.Bold });
 					DataField data = sector.data2;
-					if ((data.buffer.DataByte.Count - 3) != Global.sectSize(sector.id.Length))
+					if ((data.buffer.DataByte.Count - 6) != Global.sectSize(sector.id.Length))
 						p.Inlines.Add(" *** Incomplete *** ");
 					p.Inlines.Add(String.Format("DAM={0:X2} {1} bytes start at {2}µs length {3}µs CRC={4:X4}{5}{6}",
 						data.DAM, data.buffer.DataByte.Count, data.info.startTime / 1000, data.info.timeLength / 1000,
 						data.CRC, (data.info.crc == 0) ? " Good" : " Bad",
 						(data.fuzzy != null) ? " Fuzzy sector" : ""));
 					p.Inlines.Add(new LineBreak());
-					p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
-						data.info.startBit, data.info.startByte, (double)data.info.startTime / 1000000.0));
+					p.Inlines.Add(String.Format("   START b={0}/{1} B={2} T={3:F2}ms",
+						data.info.startBit, data.info.startBitIAM, data.info.startByte, (double)data.info.startTime / 1000000.0));
 					//p.Inlines.Add(new LineBreak());
 					p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
 						data.info.bitCount, data.buffer.DataByte.Count, (double)data.info.timeLength / 1000.0));
@@ -349,7 +345,7 @@ namespace Aufit {
 						p.Inlines.Add(String.Format("Sector {0} Fuzzy Bytes Mask array", sector.id.Sector));
 						p.Inlines.Add(new LineBreak());
 						for (int line = 0; line < data.fuzzy.Count() / 16; line++) {
-							p.Inlines.Add(String.Format("{0:D4} ", line * 16 + data.info.startByte + 1));
+							p.Inlines.Add(String.Format("{0:D4} ", line * 16 + data.info.startByte + 4));
 							for (int col = 0; col < 16; col++) {
 								byte b = data.fuzzy[(line * 16) + col + 1];
 								if (b == 0x80)

@@ -45,6 +45,10 @@ namespace ChartPackage {
 		private ChartLayout _histoChartLayout = null;
 		private MainWindow _win;
 
+		public ChartLayout Chart {
+			get { return _histoChartLayout; }
+		}
+
 		/// <summary>
 		/// Create a new HistoDrawing object and sets the default values.
 		/// </summary>

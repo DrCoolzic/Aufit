@@ -190,7 +190,7 @@ namespace PastiPackage {
 						}
 
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].recovered_data == null))
-							tdesc.fuzzyCount += (uint)dt.sectors[sect].data.fuzzy.Count() - 3;
+							tdesc.fuzzyCount += (uint)dt.sectors[sect].data.fuzzy.Count() - 6;
 					}
 					tdesc.recordSize += tdesc.fuzzyCount;
 
@@ -224,7 +224,7 @@ namespace PastiPackage {
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.buffer.DataByte.Count != 0)) {
 							// we do not add up if we can use the info in track
 							if (!optimize || !needTrackData || ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) == 0))
-								tdesc.recordSize += (uint)dt.sectors[sect].data.buffer.DataByte.Count - 3;
+								tdesc.recordSize += (uint)dt.sectors[sect].data.buffer.DataByte.Count - 6;
 						}
 					}
 
@@ -260,7 +260,7 @@ namespace PastiPackage {
 									sd.dataOffset = (uint)dt.sectors[sect].trackOffset + 1;
 								else {
 									sd.dataOffset = startSectorOffset;
-									startSectorOffset += (uint)dt.sectors[sect].data.buffer.DataByte.Count - 3;
+									startSectorOffset += (uint)dt.sectors[sect].data.buffer.DataByte.Count - 6;
 								}	// no optimization
 							}	// we have data
 							else
@@ -325,10 +325,10 @@ namespace PastiPackage {
 					for (int sect = 0; sect < sectorCount; sect++) {
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].recovered_data == null) && (dt.sectors[sect].data.info.crc != 0)) {
 							start = buffer.Count;
-							for (int i = 1; i < dt.sectors[sect].data.fuzzy.Count() - 2; i++)
+							for (int i = 4; i < dt.sectors[sect].data.fuzzy.Count() - 2; i++)
 								writeByte(buffer, (byte)~dt.sectors[sect].data.fuzzy[i]);
 							if (_debug) _saveImageBox.AppendText(String.Format("   Writing Fuzzy {0} bytes for sector {1} ({2}-{3})\n",
-								dt.sectors[sect].data.fuzzy.Count() - 3, dt.sectors[sect].id.Sector, start, buffer.Count - 1));
+								dt.sectors[sect].data.fuzzy.Count() - 6, dt.sectors[sect].id.Sector, start, buffer.Count - 1));
 							else
 								_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} found fuzzy sector {2}\n",
 										trackNum, side, dt.sectors[sect].id.Sector));
@@ -363,10 +363,10 @@ namespace PastiPackage {
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.buffer.DataByte.Count != 0)) {
 							if (optimize && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) !=0)) {
 								if (_debug) _saveImageBox.AppendText(String.Format("      Sector {0} {1} bytes already in track data @{2}\n",
-									dt.sectors[sect].id.Sector, dt.sectors[sect].data.buffer.DataByte.Count - 3, dt.sectors[sect].trackOffset));
+									dt.sectors[sect].id.Sector, dt.sectors[sect].data.buffer.DataByte.Count - 6, dt.sectors[sect].trackOffset));
 							}
 							else {
-								for (int i = 1; i < dt.sectors[sect].data.buffer.DataByte.Count - 2; i++) {
+								for (int i = 4; i < dt.sectors[sect].data.buffer.DataByte.Count - 2; i++) {
 									if (dt.sectors[sect].recovered_data != null)
 										writeByte(buffer, dt.sectors[sect].recovered_data.buffer.DataByte[i]);
 									else
@@ -374,7 +374,7 @@ namespace PastiPackage {
 								}
 								if (_debug) 
 									_saveImageBox.AppendText(String.Format("      Writing Sector {0} {1} bytes ({2}-{3}) {4}\n",
-									dt.sectors[sect].id.Sector, dt.sectors[sect].data.buffer.DataByte.Count - 3, start, buffer.Count - 1,
+									dt.sectors[sect].id.Sector, dt.sectors[sect].data.buffer.DataByte.Count - 6, start, buffer.Count - 1,
 									(dt.sectors[sect].recovered_data != null) ? "recovered" : ""));
 								else if (dt.sectors[sect].recovered_data != null) {
 									_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} recovered Sector {2}\n", 
@@ -396,7 +396,7 @@ namespace PastiPackage {
 						for (int sect = 0; sect < sectorCount; sect++) {
 							if (((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0) && (dt.sectors[sect].data != null)) {
 								int timingSum = 0;
-								for (int i = 1; i < (dt.sectors[sect].data.buffer.DataByte.Count - 2); i++) {
+								for (int i = 4; i < (dt.sectors[sect].data.buffer.DataByte.Count - 2); i++) {
 									timingSum += (dt.sectors[sect].data.buffer.BitWidth[i] * 16);
 									if (((i+1) % 16) == 0) {
 										timingSum = timingSum / 4000;
@@ -407,7 +407,7 @@ namespace PastiPackage {
 								}
 								start = buffer.Count;
 								if (_debug) _saveImageBox.AppendText(String.Format("   Writing Timing {0} values for sector {1} ({2}-{3})\n",
-									dt.sectors[sect].data.buffer.DataByte.Count - 3, dt.sectors[sect].id.Sector, start, buffer.Count - 1));
+									dt.sectors[sect].data.buffer.DataByte.Count - 6, dt.sectors[sect].id.Sector, start, buffer.Count - 1));
 								else
 									_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} writing timing information for sector {2} \n",
 										trackNum, side, dt.sectors[sect].id.Sector));

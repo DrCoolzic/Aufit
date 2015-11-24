@@ -54,6 +54,7 @@ namespace WD1772Package {
 
 		/// <summary>First bit of the block</summary> 
 		public int startBit;
+		public int startBitIAM;
 
 		/// <summary>Number of bits (clock + data) in the block</summary>
 		public int bitCount;
@@ -117,7 +118,7 @@ namespace WD1772Package {
 	public class DataField {
 		/// <summary>Returns the Data Address Mark</summary> 
 		public byte DAM {
-			get { return buffer.DataByte[0]; }
+			get { return buffer.DataByte[3]; }
 		}
 
 		/// <summary>Returns the CRC</summary> 
@@ -353,19 +354,15 @@ namespace WD1772Package {
 		private int _runningIndex;
 		private int _byteCount;
 
-		private int[] _currentTime = new int[4];
-		private int[] _bitCount = new int[4];
 		private int[] _currentIndex = new int[4];
-
-		private int[] _startIndex = new int[4];
-		private int[] _startTime = new int[4];
-		private int[] _startBit = new int[4];
+		private int[] _currentTime = new int[4];
+		private int[] _currentBit = new int[4];
 
 		private int _bitWidthSum;
 		private int _bitWidthCount;
+		private ushort _bitWidthAvg;
 		private int _fluxTimeInc;
 		private int _fluxRem;
-		private bool _first = true;
 		DSR _dsr;
 
 		byte[] _dataBuffer = new byte[4];
@@ -376,28 +373,39 @@ namespace WD1772Package {
 			get { return _byteCount; }
 		}
 
+		public int BitCount {
+			get { return _runningBit; }
+		}
+
+		public int BitWidthAvg {
+			get { return _bitWidthAvg; }
+		}
+
 		public BitTrackInfo(DSR dsr) {
 			_dsr = dsr;
 		}
 
+
 		public void nextBit() {
 			_runningBit++;
-			_bitCount[_ringIndex] = _runningBit;
 			_runningTime += _fluxTimeInc;
-			_currentTime[_ringIndex] = _runningTime;
 		}
 
 		public void nextByte() {
 			_byteCount++;
-			_first = true;
+			_ringIndex = (_ringIndex + 1) % 4;
 			_dataBuffer[_ringIndex] = _dsr.Data;
 			_mfmBuffer[_ringIndex] = _dsr.MFM;
-			_ringIndex = (_ringIndex + 1) % 4;
+			_currentIndex[_ringIndex] = _runningIndex;
+			_currentTime[_ringIndex] = _runningTime + _fluxRem;
+			_currentBit[_ringIndex] = _runningBit;
+			_bitWidthAvg = (_bitWidthCount == 0) ? (ushort)2000 : (ushort)(_bitWidthSum / _bitWidthCount);
+            _bitWidthCount = _bitWidthSum = 0;
 		}
+
 
 		public int nextFlux(Global.DiskTrack dt, int currentIndex) {
 			_runningIndex = currentIndex;
-			_currentIndex[_ringIndex] = currentIndex;
 			int flux = dt.fluxData.fluxValue[currentIndex];
 			int bitSpacing = dt.decodedData.bitSpacing[currentIndex];
 			int bitWidth = dt.decodedData.bitWidth[currentIndex];
@@ -405,48 +413,40 @@ namespace WD1772Package {
 			_fluxRem = flux % bitSpacing;
 			_bitWidthSum += bitWidth;
 			_bitWidthCount++;
-			if (_first) {
-				_startIndex[_ringIndex] = currentIndex;
-				_startTime[_ringIndex] = _runningTime + _fluxRem;
-				_startBit[_ringIndex] = _runningBit;
-				_bitWidthCount = _bitWidthSum = 0;
-				_first = false;
-			}
 			return bitSpacing;
 		}
 
-		public void addByte(TrackBuffer b, Phases phase, bool flushBuffer) {
-			// count can be null due to NFA
-			ushort bitWidthAvg = (_bitWidthCount == 0) ? (ushort)2000 : (ushort)(_bitWidthSum / _bitWidthCount);
-			if (flushBuffer) {
-				for (int i = 0; i < 3; i++) {
+		public void addByte(TrackBuffer b, Phases phase, bool addSync) {
+			// count can be null due to NFA - TODO check ???
+			if (addSync) {
+				for (int i = 1; i < 4; i++) {
 					int x = (_ringIndex + i) % 4;
-					b.addByte(_dataBuffer[x], _mfmBuffer[x], bitWidthAvg, _startTime[x], phase);
+					b.addByte(_dataBuffer[x], _mfmBuffer[x], _bitWidthAvg, _currentTime[x], phase);
 				}
 			}
-			b.addByte(_dsr.Data, _dsr.MFM, bitWidthAvg, _startTime[(_ringIndex + 3) % 4], phase);
+			b.addByte(_dsr.Data, _dsr.MFM, _bitWidthAvg, _currentTime[_ringIndex], phase);
 		}
 
-		public void storeStartInfo(BlockInfo bi, bool flushBuffer) {
+		public void storeStartInfo(BlockInfo bi, bool addSync) {
 			int x;
-			bi.startByte = _byteCount;
-			if (flushBuffer) {
-				x = _ringIndex;
+			if (addSync) {
+				x = (_ringIndex + 1) % 4;
 				bi.startByte = _byteCount - 3;
-			}
+				bi.startBitIAM = _currentBit[_ringIndex];
+            }
 			else {
-				x = (_ringIndex + 3) % 4;
+				x = _ringIndex;
 				bi.startByte = _byteCount;
 			}
-			bi.startBit = _startBit[x];
-			bi.startTime = _startTime[x];
-			bi.startIndex = _startIndex[x];
+			bi.startBit = _currentBit[x];
+			bi.startTime = _currentTime[x];
+			bi.startIndex = _currentIndex[x];
 		}
 
-		public void storeEndInfo(BlockInfo bi /*, int currentIndex*/) {
-			int x = (_ringIndex + 3) % 4;
+		public void storeEndInfo(BlockInfo bi, bool removeSync) {
+			int x = (removeSync) ? (_ringIndex + 1) % 4 : _ringIndex;
 			bi.timeLength = _currentTime[x] - bi.startTime;
-			bi.bitCount = _bitCount[x] - bi.startBit;
+			bi.bitCount = _currentBit[x] - bi.startBit;
 			bi.lastIndex = _currentIndex[x];
 		}
 	}
@@ -574,7 +574,7 @@ namespace WD1772Package {
 				}   // shift bit in
 			}   // for all bits
 
-			bti.storeEndInfo(Global.Disk[track, side].track.info /*, stop*/);
+			bti.storeEndInfo(Global.Disk[track, side].track.info, false);
 
 			if (invalidByteInGap > 5)
 				Global.Disk[track, side].track.flags |= Track.BAD_DATA_GAP;
@@ -606,7 +606,7 @@ namespace WD1772Package {
 						IdField id = new IdField();
 						bti.storeStartInfo(id.info, false);
 						bti.addByte(id.buffer, phase, false);
-						bti.storeEndInfo(id.info/*, currentIndex*/);
+						bti.storeEndInfo(id.info, false);
 					}   // one byte ready
 
 				}   // shift in all bits;
@@ -685,7 +685,7 @@ namespace WD1772Package {
 							}
 							else {
 								sectors[sectorIndex].id.info.crc = crc;
-								bti.storeEndInfo(sectors[sectorIndex].id.info /*, currentIndex*/);
+								bti.storeEndInfo(sectors[sectorIndex].id.info, false);
 								phase = Phases.p_gap_inner;
 								dsr.sectorMode();   // we re-enable sync
 							}   // byteInBlock == 0
@@ -697,7 +697,7 @@ namespace WD1772Package {
 			// We are still in ID phase due to end of file 
 			if (phase == Phases.p_id) {
 				sectors[sectorIndex].id.info.crc = crc;
-				bti.storeEndInfo(sectors[sectorIndex].id.info /*, currentIndex*/);
+				bti.storeEndInfo(sectors[sectorIndex].id.info, false);
 			}
 
 			// since we now continue when finding sync over index it is possible to have duplicate sector in first last position
@@ -738,9 +738,9 @@ namespace WD1772Package {
 			int stop = Global.lastIndex(track, side, rev);
 
 			int byteLeftInBlock = 0;
-			int currentTime = 0;
-			int currentBit = 0;
-			int byteRead = 0;
+			//int currentTime = 0;
+			//int currentBit = 0;
+			//int byteRead = 0;
 			ushort crc = 0;
 			bool idFound = false;
 			int widthOver = 0;
@@ -748,9 +748,9 @@ namespace WD1772Package {
 			Phases phase = Phases.p_gap_post;
 			uint flags = 0;
 			int idCount = 0;
-			int bitWidthSum = 0;
-			int bitWidthCount = 0;
-			int startIndex = 0;
+			//int bitWidthSum = 0;
+			//int bitWidthCount = 0;
+			//int startIndex = 0;
 
 			Sector sector = null;
 			if (idBitPosition >= 0) {
@@ -761,6 +761,7 @@ namespace WD1772Package {
 
 			DSR dsr = new DSR();
 			dsr.sectorMode();
+			BitTrackInfo bti = new BitTrackInfo(dsr);
 			DataField data = null;
 
 			// in the new loop scheme to read gap data we start from startBit
@@ -780,29 +781,19 @@ namespace WD1772Package {
 			//	We continue the loop until the detected ID is beyond the end of current revolution.
 			bool breakLoop = false;
 			bool data2 = false;
-			for (int i = start; !breakLoop; i++) {
-				if (startIndex == 0) startIndex = i;
-				//if (currentByte == Global.Disk[track, side].packedFluxData.packedBits.Count()) {
-				if (i >= dt.fluxData.fluxValue.Count()) {
+			for (int currentIndex = start; !breakLoop; currentIndex++) {
+				//if (startIndex == 0) startIndex = i;
+				if (currentIndex >= dt.fluxData.fluxValue.Count()) {
 					// We have reach the end of the buffer
 					if (!compare) {
 						if ((phase == Phases.p_gap_post) || (phase == Phases.p_gap_inner)) {
 							Global.Disk[track, side].hasIncompleteGap = true;
-							if ((phase == Phases.p_gap_post) && (sector.postGap2 != null)) {
-								sector.postGap2.info.timeLength = currentTime - sector.postGap.info.startTime;
-								sector.postGap2.info.bitCount = currentBit - sector.postGap.info.startBit;
-								sector.postGap2.info.lastIndex = i - 1;
-							}
-							else if ((phase == Phases.p_gap_post) && (sector.postGap != null)) {
-								sector.postGap.info.timeLength = currentTime - sector.postGap.info.startTime;
-								sector.postGap.info.bitCount = currentBit - sector.postGap.info.startBit;
-								sector.postGap.info.lastIndex = i - 1;
-							}
-							else {
-								sector.innerGap.info.timeLength = currentTime - sector.innerGap.info.startTime;
-								sector.innerGap.info.bitCount = currentBit - sector.innerGap.info.startBit;
-								sector.innerGap.info.lastIndex = i - 1;
-							}
+							if ((phase == Phases.p_gap_post) && (sector.postGap2 != null))
+								bti.storeEndInfo(sector.postGap2.info, false);
+							else if ((phase == Phases.p_gap_post) && (sector.postGap != null))
+								bti.storeEndInfo(sector.postGap.info, false);
+							else
+								bti.storeEndInfo(sector.innerGap.info, false);
 						}
 						else
 							Global.Disk[track, side].hasIncompleteData = true;
@@ -810,27 +801,14 @@ namespace WD1772Package {
 					break;
 				}   // end of buffer
 
-				int flux = dt.fluxData.fluxValue[i];
-				currentTime += flux;
-				int bitSpacing = dt.decodedData.bitSpacing[i];
-				currentBit += bitSpacing;
+				int bitSpacing = bti.nextFlux(dt, currentIndex);
 
-				int bitWidth = dt.decodedData.bitWidth[i];
-				bitWidthSum += bitWidth;
-				bitWidthCount++;
-
-				int runningTime = currentTime - flux;
 				while (bitSpacing-- > 0) {
 					dsr.shiftIn(bitSpacing > 0 ? 0 : 1);
+					bti.nextBit();
+
 					if (dsr.DataReady) {
-						byteRead++;
-
-						if (bitWidthCount > 0) {
-							bitWidth = bitWidthSum / bitWidthCount;
-							bitWidthSum = bitWidthCount = 0;
-						}   // average one time
-
-
+						bti.nextByte();
 
 						if ((phase != Phases.p_id) && (phase != Phases.p_data)) {
 							//////////////////
@@ -839,11 +817,11 @@ namespace WD1772Package {
 
 							// if we have found at least an ID we accumulate the GAP data
 							if ((phase == Phases.p_gap_inner) && (idCount > 0) && (sector != null) && (sector.innerGap != null) && !compare)
-								sector.innerGap.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, runningTime, phase);
+								bti.addByte(sector.innerGap.buffer, phase, false);
 							else if ((idCount > 0) && (sector != null) && (sector.postGap2 != null) && !compare)
-								sector.postGap2.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, runningTime, phase);
+								bti.addByte(sector.postGap2.buffer, phase, false);
 							else if ((idCount > 0) && (sector != null) && (sector.postGap != null) && !compare)
-								sector.postGap.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, runningTime, phase);
+								bti.addByte(sector.postGap.buffer, phase, false);
 
 							if (dsr.IAM) {
 								// here we remove the three sync and the IAM
@@ -855,57 +833,37 @@ namespace WD1772Package {
 									sector.postGap.buffer.removeLastBytes(4);
 
 								switch (dsr.Data) {
-									case 0xFC:  // IBM IAM
-									case 0xFD:
-									case 0xFE:  // IAM - start of an ID block
-									case 0xFF:
-										// Case ID field //
-
-										// terminate gap block
-										if ((sector != null) && !compare) {
-											if ((sector.postGap2 != null) && (phase == Phases.p_gap_post)) {
-												// terminate post gap block
-												sector.postGap2.info.timeLength = runningTime - sector.postGap.info.startTime;
-												sector.postGap2.info.bitCount = currentBit - sector.postGap.info.startBit;
-												sector.postGap2.info.lastIndex = i;
-											}
-											else if ((sector.postGap != null) && (phase == Phases.p_gap_post)) {
-												// terminate post gap block
-												sector.postGap.info.timeLength = runningTime - sector.postGap.info.startTime;
-												sector.postGap.info.bitCount = currentBit - sector.postGap.info.startBit;
-												sector.postGap.info.lastIndex = i;
-											}
-											else if ((sector.innerGap != null)) {
-												// terminate inner gap block
-												sector.innerGap.info.timeLength = runningTime - sector.innerGap.info.startTime;
-												sector.innerGap.info.bitCount = currentBit - sector.innerGap.info.startBit;
-												sector.innerGap.info.lastIndex = i;
-											}
+									// Case ID field //		
+									case 0xFC: case 0xFD: case 0xFE: case 0xFF:								
+										if ((sector != null) && !compare) {	// terminate gap block
+											if ((sector.postGap2 != null) && (phase == Phases.p_gap_post))												
+												bti.storeEndInfo(sector.postGap2.info, true);
+											else if ((sector.postGap != null) && (phase == Phases.p_gap_post)) 
+												bti.storeEndInfo(sector.postGap.info, true);
+											else if ((sector.innerGap != null))
+												bti.storeEndInfo(sector.innerGap.info, true);
 										}   // terminate gap
 
-										if (idBitPosition < 0) {
-											// if not found and past index we have no data (except if very close)
-											int delta = runningTime - Global.Disk[track, side].fluxDataRev[rev].revolutionTime;
-											if (delta > 32000) {
+										if (idBitPosition < 0) {	// read multiple sector mode
+											// if not found and past index we have no data (except if very close to index)									
+											if ((currentIndex - 8) > stop) {    // ================> TODO < ====================== check
+											//if ((runningTime - Global.Disk[track, side].fluxDataRev[rev].revolutionTime) > 32000) {
 												breakLoop = true;
 												break;  // break switch statement
 											}
 
-											// search the corresponding sector
+											// search the corresponding sector -- start position can vary from rev to rev
 											sector = null;
-											// start position can vary if sector with random noise happen before
 											foreach (Sector s in Global.Disk[track, side].sectors)
-												// if (((currentBit - startBit) - s.id.info.startBit) < 300) {
-												// if (runningTime - s.id.info.startTime < 16000) {
-												if ((byteRead - s.id.info.startByte) < 32) {
+												if (Math.Abs(bti.BitCount - s.id.info.startBitIAM) < 300) {
 													sector = s;
 													break;  // break loop
 												}
 
 											if (sector == null) {
 												throw new SectorNotFoundException(
-													String.Format("*** Sector not found exception T{0:D2}.{1:D1} Sect count={2} *** switching to safe mode",
-													track, side, Global.Disk[track, side].sectors.Count));
+													String.Format("*** Sector not found exception T{0:D2}.{1:D1} @{2} Sect count={3} *** switching to safe mode",
+													track, side, bti.ByteCount, Global.Disk[track, side].sectors.Count));
 											}
 
 											sector.flags |= Sector.SEC_PROCESSED;
@@ -916,16 +874,15 @@ namespace WD1772Package {
 											phase = Phases.p_id;
 										}   // read multiple sectors mode
 
-										else {
-											// if we have already found the requested ID we break
-											if (idFound) {
+										else {	// read one sector mode											
+											if (idFound) {	// if we have already found the requested ID we break
 												phase = Phases.p_id;
 												breakLoop = true;   // don't need to continue
 												break;
 											}
 
 											// if we have not yet reach the requested position we ignore
-											if ((currentBit + 10) < idBitPosition) {
+											if ((bti.BitCount + 16) < idBitPosition) { 
 												dsr.sectorMode();
 												phase = Phases.p_gap_post;
 												break;
@@ -936,68 +893,45 @@ namespace WD1772Package {
 											phase = Phases.p_id;
 											sector.flags |= Sector.SEC_PROCESSED;
 											flags = 0;
-
 										}   // read one sector mode
-										break;
+										break;	
 
-									case 0xF8:  // DDAM
-									case 0xF9:
-									case 0xFA:
-									case 0xFB:  // DAM - Start of a DATA block
-												// case DATA field
-
-										// If we have found the right ID field we check that this
-										// Data field is less than 43 bytes apart from the Id.
-										// Id field is already 7 bytes 43 + 7 = 50
-										if (idFound && ((byteRead - sector.id.info.startByte) <= 60)) {
+									// case DATA field
+									case 0xF8: case 0xF9: case 0xFA: case 0xFB:
+										// If we have found the right ID field we check that this Data field is less than 
+										// 43 bytes apart from the Id. Id field is already 7 bytes 43 + 7 = 50
+										if (idFound && ((bti.ByteCount - sector.id.info.startByte) <= 60)) { 
 											data2 = false;
 											data = new DataField();
 											byteLeftInBlock = Global.sectSize(sector.id.Length) + 3; // AM + 2 CRC + Size
 											phase = Phases.p_data;
-											data.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, runningTime, phase);
+											bti.addByte(data.buffer, phase, true);      // we add the sync seq
 											widthOver = 0;
 											widthUnder = 0;
 
-											if (!compare) {
-												// terminate inner gap block
-												sector.innerGap.info.timeLength = runningTime - sector.innerGap.info.startTime;
-												sector.innerGap.info.bitCount = currentBit - sector.innerGap.info.startBit;
-												sector.innerGap.info.lastIndex = i;
-											}
-
-											// start data block
-											data.info.startBit = currentBit;
-											data.info.startByte = byteRead;
-											data.info.startTime = runningTime;
-											data.info.startIndex = startIndex;
+											if (!compare)
+												bti.storeEndInfo(sector.innerGap.info, true);
+											bti.storeStartInfo(data.info, true);
 										}   // normal data block
-										else if ((idCount > 0) && (sector.data != null) && (SectorNotFoundException.ExceptionMessage == null)) {
+
+										else if ((idCount > 0) && (sector.data != null) && (SectorNotFoundException.ExceptionMessage == null) ) {
 											data2 = true;
 											sector.flags |= Sector.SEC_NO_ID;
 											data = new DataField();
 											byteLeftInBlock = Global.sectSize(sector.id.Length) + 3; // AM + 2 CRC + Size
 											phase = Phases.p_data;
-											data.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, runningTime, phase);
+											bti.addByte(data.buffer, phase, true);     // we add the sync seq
 											widthOver = 0;
 											widthUnder = 0;
 
-											if (!compare) {
-												// terminate inner gap block
-												sector.postGap.info.timeLength = runningTime - sector.innerGap.info.startTime;
-												sector.postGap.info.bitCount = currentBit - sector.innerGap.info.startBit;
-												sector.postGap.info.lastIndex = i;
-											}
-
-											// start data block
-											data.info.startBit = currentBit;
-											data.info.startByte = byteRead;
-											data.info.startTime = runningTime;
-											data.info.startIndex = startIndex;
+											if (!compare)
+												bti.storeEndInfo(sector.innerGap.info, true);
+											bti.storeStartInfo(data.info, true);
 										}   //	second data sector (sector with no id)
 										else {
 											dsr.sectorMode();
 											phase = Phases.p_gap_post;
-										}
+										}	// no data
 										break;
 
 									default:
@@ -1007,6 +941,7 @@ namespace WD1772Package {
 								}   // switch AM
 							}   // IAM
 						}   // GAP
+
 						else {
 							//////////////////////////////////
 							// We are in an ID or DATA segment
@@ -1024,7 +959,7 @@ namespace WD1772Package {
 											if (sectToRead != dsr.Data) {
 												idFound = false;
 												dsr.sectorMode();
-											}
+											}	// not the right id
 											else
 												idFound = true;
 										}   // read one sector
@@ -1032,40 +967,32 @@ namespace WD1772Package {
 									case 0: // end of ID block
 										dsr.sectorMode();
 										// if we have id and data back to back the first sync is not detected (vroom)
-										if (dsr.Data == 0xA1)
-											dsr.SyncSeq = 1;
+										if (dsr.Data == 0xA1) dsr.SyncSeq = 1;
 										idCount++;
 										phase = Phases.p_gap_inner;
 
 										if (!compare) {
-											// start new inner GAP
 											sector.innerGap = new GapField();
-											sector.innerGap.info.startBit = currentBit;
-											sector.innerGap.info.startByte = byteRead;
-											sector.innerGap.info.startTime = runningTime;
-											sector.innerGap.info.startIndex = startIndex;
-											sector.innerGap.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, runningTime, phase);
+											bti.storeStartInfo(sector.innerGap.info, false);
+											bti.addByte(sector.innerGap.buffer, phase, false);
 										}
 
 										break;
 									default:
 										break;
 								}   // ID Segment
-							else {
+							else {	// DATA SEGMENT
 								switch (byteLeftInBlock) {
 									case 1:
-										data.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, runningTime, phase);
+										bti.addByte(data.buffer, phase, false);
 										crc = dsr.CRC;
 										break;
 									case 0: // end of DATA block
 										data.info.crc = crc;
-										data.info.timeLength = runningTime - data.info.startTime;
-										data.info.bitCount = currentBit - data.info.startBit;
-										data.info.lastIndex = i;
+										bti.storeEndInfo(data.info, false);
 										dsr.sectorMode();
 										// if we have id and data back to back the first sync is not detected (vroom)
-										if (dsr.Data == 0xA1)
-											dsr.SyncSeq = 1;
+										if (dsr.Data == 0xA1) dsr.SyncSeq = 1;
 										idFound = false;
 
 										if ((widthOver > (Global.sectSize(sector.id.Length) / 2)) || (widthUnder > (Global.sectSize(sector.id.Length) / 2))) {
@@ -1080,25 +1007,19 @@ namespace WD1772Package {
 										phase = Phases.p_gap_post;
 										if (!compare) {
 											if (sector.postGap == null) {
-												// start new post GAP
 												sector.postGap = new GapField();
-												sector.postGap.info.startBit = currentBit;
-												sector.postGap.info.startByte = byteRead;
-												sector.postGap.info.startTime = runningTime;
-												sector.postGap.info.startIndex = startIndex;
-												sector.postGap.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, runningTime, phase);
+												bti.storeStartInfo(sector.postGap.info, false);
+												bti.addByte(sector.postGap.buffer, phase, false);
 											}
 											else if (sector.postGap2 == null) {
 												sector.postGap2 = new GapField();
-												sector.postGap2.info.startBit = currentBit;
-												sector.postGap2.info.startByte = byteRead;
-												sector.postGap2.info.startTime = runningTime;
-												sector.postGap2.info.startIndex = startIndex;
-												sector.postGap2.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, runningTime, phase);
+												bti.storeStartInfo(sector.postGap2.info, false);
+												bti.addByte(sector.postGap2.buffer, phase, false);
 											}
-										}
+										}   // not compare start post gap
 
-										if (idBitPosition >= 0) breakLoop = true;   // TODO =================
+										if (idBitPosition >= 0)
+											breakLoop = true;   // TODO ================= now we need to capture post gap data
 
 										sector.flags |= flags;  // We OR the flags from all revolutions for max detection
 
@@ -1155,27 +1076,23 @@ namespace WD1772Package {
 										} // compare mode with data
 										break;
 
-									default:
-										data.buffer.addByte(dsr.Data, dsr.MFM, (ushort)bitWidth, runningTime, phase);
+									default:	// data bytes
+										bti.addByte(data.buffer, phase, false);
 										//int segment = 3 - ((byteLeftInBlock - 3) / (Global.sectSize(sector.id.size) / 4));
-										if (bitWidth > WIDTH_UPPER_LIMIT) widthOver++;
-										if (bitWidth < WIDTH_LOWER_LIMIT) widthUnder++;
+										if (bti.BitWidthAvg > WIDTH_UPPER_LIMIT) widthOver++;
+										if (bti.BitWidthAvg < WIDTH_LOWER_LIMIT) widthUnder++;
 										break;
 								}   // switch
 							}   // DATA Segment
 
 						} // ID or DATA segment
-						startIndex = 0;
+						//startIndex = 0;
 					}   // Data ready
 				}   // shift bit in
 			}   // For all bits
 
-			if (phase == Phases.p_data) {
-				data.info.timeLength = currentTime - data.info.startTime;
-				data.info.bitCount = currentBit - data.info.startBit;
-				data.info.lastIndex = dt.fluxData.fluxValue.Count() - 1;
-			}
-
+			if (phase == Phases.p_data)
+				bti.storeEndInfo(data.info, false);
 		}   // readSector()
 
 
@@ -1285,7 +1202,7 @@ namespace WD1772Package {
 					idStart += dt.track.info.bitCount;
 				if (dataEnd > idStart) {
 					s.flags |= Sector.TRUNC_SECT;
-					s.truncSectBitSize = idStart - s.data.info.startBit;
+					s.truncSectBitSize = idStart - s.data.info.startBitIAM;
 				}   // truncated
 			}   // for all sectors
 
