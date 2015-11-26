@@ -379,7 +379,8 @@ namespace Aufit {
 					// Truncated sector
 					if ((dt.sectors[secIndex].flags & Sector.TRUNC_SECT) != 0) {
 						//dt.track.hasProtections = true;
-						writeInfo(info, String.Format("Sector truncated to {0} bits ({1} Bytes)", dt.sectors[secIndex].truncSectBitSize, dt.sectors[secIndex].truncSectBitSize / 16));
+						writeInfo(info, String.Format("Sector truncated to {0} bits ({1} Bytes)", 
+							dt.sectors[secIndex].data.truncDataBitSize, dt.sectors[secIndex].data.truncDataBitSize / 16));
 					}
 
 
