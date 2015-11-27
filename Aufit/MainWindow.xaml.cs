@@ -832,7 +832,7 @@ namespace Aufit {
 					//infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", 
 					//	_dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, sector.id.Sector));
 					//infoBox.ScrollToEnd();
-					int first = sector.data.info.startIndex;
+					int first = sector.data.info.firstIndex;
 					int last = sector.data.info.lastIndex;
 					int[] segment = Global.Disk[CurrentTrack, CurrentSide].fluxData.fluxValue.Skip(first).Take(last - first).ToArray();
 					HistoData h = Global.computeSegmentHisto(segment);

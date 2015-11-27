@@ -143,11 +143,11 @@ namespace ChartPackage {
 
 					tb = new TextBox();
 					tb.Text = String.Format("IGap Field {0} bytes - Start @ {1} {2:F2}ms",
-						sector.id.gap.buffer.DataByte.Count, sector.id.gap.info.startByte, (double)sector.id.gap.info.startTime / 1000000.0);
+						sector.id.idGap.buffer.DataByte.Count, sector.id.idGap.info.startByte, (double)sector.id.idGap.info.startTime / 1000000.0);
 					sectorInfoPanel.Children.Add(tb);
 					//drawRectangle(sector, idbstop, bstart, Phases.p_gap_inner);
-					drawRectangle(sector, (double)sector.id.gap.info.startTime / 1000000.0,
-						(double)(sector.id.gap.info.startTime + sector.id.gap.info.timeLength) / 1000000.0, SecType.gap);
+					drawRectangle(sector, (double)sector.id.idGap.info.startTime / 1000000.0,
+						(double)(sector.id.idGap.info.startTime + sector.id.idGap.info.timeLength) / 1000000.0, SecType.gap);
 
 					tb = new TextBox();
 					tb.Text = String.Format("Data Field {0} bytes Length={1:F2}µs - Start @ {2} {3:F2}ms {4} {5}",
@@ -173,10 +173,10 @@ namespace ChartPackage {
 
 						drawRectangle(sector, shiftedBstart, shiftedBstop, SecType.data);
 					}
-					if (sector.data.gap != null) {
+					if (sector.data.dataGap != null) {
 						tb = new TextBox();
 						tb.Text = String.Format("PGap Field {0} bytes - Start @ {1} {2:F2}ms",
-							sector.data.gap.buffer.DataByte.Count, sector.data.gap.info.startByte, (double)sector.data.gap.info.startTime / 1000000.0);
+							sector.data.dataGap.buffer.DataByte.Count, sector.data.dataGap.info.startByte, (double)sector.data.dataGap.info.startTime / 1000000.0);
 						sectorInfoPanel.Children.Add(tb);
 					}
 				}   // sector has data field
@@ -212,10 +212,10 @@ namespace ChartPackage {
 
 						drawRectangle(sector, shiftedBstart, shiftedBstop, SecType.data2);
 					}
-					if (sector.dataNoId.gap != null) {
+					if (sector.dataNoId.dataGap != null) {
 						tb = new TextBox();
 						tb.Text = String.Format("Extra PGap Field {0} bytes - Start @ {1} {2:F2}ms",
-							sector.dataNoId.gap.buffer.DataByte.Count, sector.dataNoId.gap.info.startBit, (double)sector.dataNoId.gap.info.startTime / 1000000.0);
+							sector.dataNoId.dataGap.buffer.DataByte.Count, sector.dataNoId.dataGap.info.startBit, (double)sector.dataNoId.dataGap.info.startTime / 1000000.0);
 						sectorInfoPanel.Children.Add(tb);
 					}
 				}   // sector has extra data field

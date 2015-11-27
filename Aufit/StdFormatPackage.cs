@@ -101,7 +101,7 @@ namespace StdFormatPackage {
 					// write all sectors data
 					int sectorCount = dt.sectors.Count;
 					for (int sect = 0; sect < sectorCount; sect++) {
-						Sector s = FDC.findSector(track, side, sect + 1, -1);
+						Sector s = FDC.findSector(track, side, sect + 1);
 						Debug.Assert(s != null, "Did not found the sector?");
 						start = buffer.Count;
 						for (int i = 4; i < s.data.buffer.DataByte.Count - 2; i++) {
@@ -200,7 +200,7 @@ namespace StdFormatPackage {
 
 			// process all sectors data
 			for (int sect = 0; sect < sectorCount; sect++) {
-				Sector s = FDC.findSector(track, side, sect + 1, -1);
+				Sector s = FDC.findSector(track, side, sect + 1);
 				Debug.Assert(s != null, "Did not found the sector?");
 
 				TrackBuffer data;
