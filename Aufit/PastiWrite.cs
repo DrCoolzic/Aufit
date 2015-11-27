@@ -176,20 +176,20 @@ namespace PastiPackage {
 					// do we need fuzzy record
 					for (int sect = 0; sect < sectorCount; sect++) {
 						// if we recover data from other revolution we disable data in track
-						if (dt.sectors[sect].recovered_data != null)
+						if (dt.sectors[sect].dataRecovered != null)
 							dt.sectors[sect].flags &= ~Sector.SEC_EQ_TRACK;
 						// recovered or good CRC => no fuzzy
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) &&
-							((dt.sectors[sect].recovered_data != null) || (dt.sectors[sect].data.info.crc == 0))) {
+							((dt.sectors[sect].dataRecovered != null) || (dt.sectors[sect].data.info.crc == 0))) {
 							dt.sectors[sect].data.fuzzy = null;
 							if (_debug) {
 								_saveImageBox.AppendText(String.Format("Track {0:D2}.{1:D1} ", trackNum, side));
 								_saveImageBox.AppendText(String.Format("Reseting fuzzy for sector {0} - CRC={1} Recover={2}\n", sect,
-								(dt.sectors[sect].data.info.crc == 0) ? "Good" : "Bad", (dt.sectors[sect].recovered_data != null) ? "Yes" : "No"));
+								(dt.sectors[sect].data.info.crc == 0) ? "Good" : "Bad", (dt.sectors[sect].dataRecovered != null) ? "Yes" : "No"));
 							}
 						}
 
-						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].recovered_data == null))
+						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].dataRecovered == null))
 							tdesc.fuzzyCount += (uint)dt.sectors[sect].data.fuzzy.Count() - 6;
 					}
 					tdesc.recordSize += tdesc.fuzzyCount;
@@ -285,7 +285,7 @@ namespace PastiPackage {
 							else {
 								if (dt.sectors[sect].data.DAM != 0xFB)
 									fdcFlag |= SectorDesc.REC_TYPE;
-								if ((dt.sectors[sect].data.info.crc != 0) && (dt.sectors[sect].recovered_data == null)) 
+								if ((dt.sectors[sect].data.info.crc != 0) && (dt.sectors[sect].dataRecovered == null)) 
 									fdcFlag |= SectorDesc.CRC_ERR;
 							}	// these two flags are only meaningful if record has bytes
 							if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null))
@@ -323,7 +323,7 @@ namespace PastiPackage {
 
 					// write fuzzy mask if needed
 					for (int sect = 0; sect < sectorCount; sect++) {
-						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].recovered_data == null) && (dt.sectors[sect].data.info.crc != 0)) {
+						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) && (dt.sectors[sect].dataRecovered == null) && (dt.sectors[sect].data.info.crc != 0)) {
 							start = buffer.Count;
 							for (int i = 4; i < dt.sectors[sect].data.fuzzy.Count() - 2; i++)
 								writeByte(buffer, (byte)~dt.sectors[sect].data.fuzzy[i]);
@@ -367,16 +367,16 @@ namespace PastiPackage {
 							}
 							else {
 								for (int i = 4; i < dt.sectors[sect].data.buffer.DataByte.Count - 2; i++) {
-									if (dt.sectors[sect].recovered_data != null)
-										writeByte(buffer, dt.sectors[sect].recovered_data.buffer.DataByte[i]);
+									if (dt.sectors[sect].dataRecovered != null)
+										writeByte(buffer, dt.sectors[sect].dataRecovered.buffer.DataByte[i]);
 									else
 										writeByte(buffer, dt.sectors[sect].data.buffer.DataByte[i]);
 								}
 								if (_debug) 
 									_saveImageBox.AppendText(String.Format("      Writing Sector {0} {1} bytes ({2}-{3}) {4}\n",
 									dt.sectors[sect].id.Sector, dt.sectors[sect].data.buffer.DataByte.Count - 6, start, buffer.Count - 1,
-									(dt.sectors[sect].recovered_data != null) ? "recovered" : ""));
-								else if (dt.sectors[sect].recovered_data != null) {
+									(dt.sectors[sect].dataRecovered != null) ? "recovered" : ""));
+								else if (dt.sectors[sect].dataRecovered != null) {
 									_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} recovered Sector {2}\n", 
 										trackNum, side, dt.sectors[sect].id.Sector));
 								}

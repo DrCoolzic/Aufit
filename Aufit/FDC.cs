@@ -40,10 +40,10 @@ using System.Windows;
 namespace WD1772Package {
 	/// <summary>Different phases of a sector: ID, Inner Gap, Data, Post GAP</summary>
 	public enum Phases : byte {
-		p_gap_post = 0, ///<! Post Data GAP
-		p_gap_inner,    ///!< GAP between ID and DATA
-		p_id,           ///<! ID (Address) block
-		p_data          ///<! DATA block
+		postDataGap,	///<! Post Data GAP
+		postIdGap,		///!< GAP between ID and DATA
+		id,				///<! ID (Address) block
+		data			///<! DATA block
 	}
 
 
@@ -55,6 +55,7 @@ namespace WD1772Package {
 		/// <summary>First bit of the block</summary> 
 		public int startBit;
 		public int startBitIAM;
+		public int startTimeIAM;
 
 		/// <summary>Number of bits (clock + data) in the block</summary>
 		public int bitCount;
@@ -111,6 +112,8 @@ namespace WD1772Package {
 
 		/// <summary> Contains information about the Id field block</summary>
 		public BlockInfo info = new BlockInfo();
+
+		public GapField gap;
 	}
 
 
@@ -140,14 +143,14 @@ namespace WD1772Package {
 		public BlockInfo info = new BlockInfo();
 
 		public int truncDataBitSize;
+		public GapField gap;
 	}
 
 
 	public class NonStdField {
-
 		public byte IAM { get; set; }
+		public BlockInfo info = new BlockInfo();
 		//public TrackBuffer buffer = new TrackBuffer();
-		//public BlockInfo info = new BlockInfo();
 	}
 
 
@@ -221,17 +224,14 @@ namespace WD1772Package {
 		/// <summary>Pointer to the Id Field of a sector</summary>
 		public IdField id;
 
-		/// <summary>Pointer to the Inner GAP field</summary>
-		public GapField innerGap;
-
 		/// <summary>Pointer to the Data Field of the sector (can be null)</summary>
 		public DataField data;
 
-		/// <summary>Pointer to the Post Gap field</summary>
-		public GapField postGap;
+		public DataField dataNoId;
 
-		public DataField data2;
-		public GapField postGap2;
+		/// <summary>Pointer to the Recovered Data Field of the sector (can be null)</summary>
+		/// <remarks>If we find fuzzy bytes and good CRC we recover in this field</remarks>
+		public DataField dataRecovered;
 
 		public NonStdField nonStd;
 
@@ -241,9 +241,6 @@ namespace WD1772Package {
 		/// <summary>the content of the sector start at this track offset</summary>
 		public int trackOffset;
 
-		/// <summary>Pointer to the Recovered Data Field of the sector (can be null)</summary>
-		/// <remarks>If we find fuzzy bytes and good CRC we recover in this field</remarks>
-		public DataField recovered_data;
 
 	}
 
@@ -440,6 +437,7 @@ namespace WD1772Package {
 				x = (_ringIndex + 1) % 4;
 				bi.startByte = _byteCount - 3;
 				bi.startBitIAM = _currentBit[_ringIndex];
+				bi.startTimeIAM = _currentTime[_ringIndex];
             }
 			else {
 				x = _ringIndex;
@@ -456,6 +454,12 @@ namespace WD1772Package {
 			bi.bitCount = _currentBit[x] - bi.startBit;
 			bi.lastIndex = _currentIndex[x];
 		}
+
+		public void setInfo(BlockInfo bi, int currentIndex) {
+			_runningIndex = currentIndex;
+			_runningBit = bi.startBitIAM;
+			_runningTime = bi.startTimeIAM;
+		}
 	}
 
 
@@ -466,7 +470,7 @@ namespace WD1772Package {
 		private readonly static int WIDTH_LOWER_LIMIT = 1930;
 
 		public static bool isGapPhase(Phases p) {
-			return ((p == Phases.p_gap_inner) || (p == Phases.p_gap_post));
+			return ((p == Phases.postIdGap) || (p == Phases.postDataGap));
 		}
 
 
@@ -491,7 +495,7 @@ namespace WD1772Package {
 
 			int invalidByteInGap = 0;
 			int nfaCount = 0;
-			Phases currentPhase = Phases.p_gap_post;
+			Phases currentPhase = Phases.postDataGap;
 			int currentSector = -1;
 			int byteLeftInBlock = 0;
 			int syncCount = 0;
@@ -531,7 +535,7 @@ namespace WD1772Package {
 										Global.Disk[track, side].track.firstSyncOffset = bti.ByteCount - 3;
 									currentSector++;
 									byteLeftInBlock = 7;
-									currentPhase = Phases.p_id;
+									currentPhase = Phases.id;
 									data2 = false;
 									break;
 
@@ -539,7 +543,7 @@ namespace WD1772Package {
 								case 0xF8: case 0xF9: case 0xFA: case 0xFB:
 									int s = (currentSector != -1) ? currentSector : dt.sectors.Count - 1;
 									byteLeftInBlock = Global.sectSize(dt.sectors[s].id.Length) + 3; // AM + 2 CRC + Size
-									currentPhase = Phases.p_data;
+									currentPhase = Phases.data;
 									syncCount = 0;
 									if (dt.sectors[s].data != null) {
 										if (!data2) data2 = true;
@@ -555,17 +559,17 @@ namespace WD1772Package {
 
 						else  // not IAM
 							switch (currentPhase) {
-								case Phases.p_id:
+								case Phases.id:
 									byteLeftInBlock--;
 									if (byteLeftInBlock == 0) 
-										currentPhase = Phases.p_gap_inner;
+										currentPhase = Phases.postIdGap;
 									break;
 
-								case Phases.p_data:
+								case Phases.data:
 									byteLeftInBlock--;
 									if (byteLeftInBlock == 0) {
 										int s = (currentSector != -1) ? currentSector : dt.sectors.Count - 1;
-										currentPhase = Phases.p_gap_post;
+										currentPhase = Phases.postDataGap;
 										if (data2 && (syncCount == 0))
 											dt.sectors[s].flags |= Sector.SEC_EQ_TRACK;
 									}	// last byte
@@ -594,7 +598,7 @@ namespace WD1772Package {
 			int start = Global.firstIndex(track, side, rev);
 			int stop = Global.lastIndex(track, side, rev);
 
-			Phases phase = Phases.p_gap_post;
+			Phases phase = Phases.postDataGap;
 			DSR dsr = new DSR();
 			dsr.sectorMode();
 
@@ -622,46 +626,41 @@ namespace WD1772Package {
 		}
 
 
-		/// <summary>Read all the ID fields of a track</summary>
+		/// <summary>Read all the IAM fields of a track</summary>
 		/// <param name="track">The track index</param>
 		/// <param name="side">The side index</param>
 		/// <param name="rev">The revolution index</param>
-		/// <remarks>Interpret the flux transition as the WD1772 would do with
-		/// a read address command. For each new ID a sector is added to the list
-		/// of sectors.</remarks>
-		public static List<Sector> readAddr(int track, int side, int rev) {
+		/// <remarks>Reads all the IAM of a track</remarks>
+		public static List<Sector> readIAM(int track, int side, int rev) {
 			Global.DiskTrack dt = Global.Disk[track, side];
 			int start = Global.firstIndex(track, side, rev);
 			int stop = Global.lastIndex(track, side, rev);
 			List<Sector> sectors = new List<Sector>();
 			Sector sector = null;
-
-			//int sectorIndex = -1;
 			int byteLeftInBlock = 0;
 			ushort crc = 0;
 			int currentIndex;
 			DataField saveData = null;
+			Phases phase = Phases.postDataGap;
 
-			Phases phase = Phases.p_gap_post;
 			DSR dsr = new DSR();
 			dsr.sectorMode();
 			BitTrackInfo bti = new BitTrackInfo(dsr);
 
-			// We read from the beginning to end of a track looking only for ID fields (in current revolution).
-			// If the end of track happen in the middle of an ID field or a sync sequence we continue with 
-			// flux from the next revolution.
-
-			for (currentIndex = start; (currentIndex < stop) || (phase != Phases.p_gap_post) || (dsr.SyncSeq > 0); currentIndex++) {
+			// We read from the beginning to end of a track looking only for all IAM in current revolution.
+			for (currentIndex = start; (currentIndex < stop) || (phase != Phases.postDataGap) || (dsr.SyncSeq > 0); currentIndex++) {
+				if (currentIndex == (stop - 2))
+					Global.Disk[track, side].bitCount = bti.BitCount;
 				// break immediately if we are beyond buffer
 				if (currentIndex >= dt.fluxData.fluxValue.Count()) {
-					if ((phase == Phases.p_id) || (dsr.SyncSeq > 0)) {
+					if ((phase == Phases.id) || (dsr.SyncSeq > 0)) {
 						Global.Disk[track, side].hasIncompleteData = true;
-						if (phase == Phases.p_id)
+						if (phase == Phases.id)
 							bti.storeEndInfo(sector.id.info, false);
 					}
-					else if ((phase == Phases.p_gap_inner) && (sector.innerGap != null)) {
+					else if ((phase == Phases.postIdGap) && (sector.id.gap != null)) {
 						Global.Disk[track, side].hasIncompleteGap = true;
-						bti.storeEndInfo(sector.innerGap.info, false);
+						bti.storeEndInfo(sector.id.gap.info, false);
 					}
 					break;
 				}
@@ -674,34 +673,33 @@ namespace WD1772Package {
 					if (dsr.DataReady) {
 						bti.nextByte();
 
-						if (phase != Phases.p_id) { // we are in GAP
-							if ((phase == Phases.p_gap_inner) && (sector != null) && (sector.innerGap != null))
-								bti.addByte(sector.innerGap.buffer, phase, false);
+						if (phase != Phases.id) { // we are in GAP
+							if ((phase == Phases.postIdGap) && (sector != null) && (sector.id.gap != null))
+								bti.addByte(sector.id.gap.buffer, phase, false);
 
 							if (dsr.IAM) {	// IAM position
-								if ((phase == Phases.p_gap_inner) && (sector != null) && (sector.innerGap != null)) {
-									sector.innerGap.buffer.removeLastBytes(4);
-									bti.storeEndInfo(sector.innerGap.info, true);
+								if ((phase == Phases.postIdGap) && (sector != null) && (sector.id.gap != null)) {
+									sector.id.gap.buffer.removeLastBytes(4);
+									bti.storeEndInfo(sector.id.gap.info, true);
 								}
 
-								// test IDAM in range 0xFC - 0xFF
+								// test ID AM in range 0xFC - 0xFF
 								if (Enumerable.Range(0xFC, 4).Contains(dsr.Data)) {
 									if (currentIndex > stop) {
-										phase = Phases.p_gap_post;
+										phase = Phases.postDataGap;
 										break;
 									}
-									// Found an ID Field so we create a new sector that we add to the list
 									sector = new Sector();
+									sectors.Add(sector);
+
 									sector.id = new IdField();
-									//sectorIndex++;
 									byteLeftInBlock = 7;
-									phase = Phases.p_id;
+									phase = Phases.id;
 									bti.storeStartInfo(sector.id.info, true);
 									bti.addByte(sector.id.buffer, phase, true);
-									sectors.Add(sector);
 								}   // IDAM
 
-								// test DAM in range 0xF8 - 0xFB
+								// test Data AM in range 0xF8 - 0xFB
 								else if (Enumerable.Range(0xF8, 4).Contains(dsr.Data)) {
 									DataField data = new DataField();
 									bti.storeStartInfo(data.info, true);
@@ -710,18 +708,21 @@ namespace WD1772Package {
 									else if (sector.data == null)
 										sector.data = data;
 									else
-										sector.data2 = data;
-									phase = Phases.p_gap_post;
+										sector.dataNoId = data;
+									phase = Phases.postDataGap;
 									dsr.sectorMode();
 								}	// DAM
 
 								else {
-									//NonStdField nonStd = new NonStdField();
-									//nonStd.IAM = dsr.Data;
-									//sectors[sectorIndex].nonStd = nonStd;
-									phase = Phases.p_gap_post;
+									//sector = new Sector();
+									//sectors.Add(sector);
+									//sector.nonStd = new NonStdField();
+									//sector.nonStd.IAM = dsr.Data;
+									//bti.storeStartInfo(sector.nonStd.info, true);
+
+									phase = Phases.postDataGap;
 									dsr.sectorMode();
-								}	// unknown IAM
+								}	// non standard IAM
 							}   // IAM position
 						}   // we are in GAP
 
@@ -733,29 +734,21 @@ namespace WD1772Package {
 							}	// not last byte
 							else {
 								dsr.sectorMode();   // we re-enable sync
-								phase = Phases.p_gap_inner;
+								phase = Phases.postIdGap;
 								sector.id.info.crc = crc;
 								bti.storeEndInfo(sector.id.info, false);
 								// if we have id and data back to back the first sync is not detected (vroom)
 								if (dsr.Data == 0xA1) dsr.SyncSeq = 1;
-								sector.innerGap = new GapField();
-								bti.storeStartInfo(sector.innerGap.info, false);
-								bti.addByte(sector.innerGap.buffer, phase, false);
+								sector.id.gap = new GapField();
+								bti.storeStartInfo(sector.id.gap.info, false);
+								bti.addByte(sector.id.gap.buffer, phase, false);
 							}   // byteInBlock == 0
 						} // we are in ID
-
 					}   // one byte ready
 				}   // shift all bits
 			}   // for all index
 
-			if (saveData != null)
-				sector.data = saveData;
-
-			// We are still in ID phase due to end of file 
-			if (phase == Phases.p_id) {
-				sector.id.info.crc = crc;
-				bti.storeEndInfo(sector.id.info, false);
-			}
+			if (saveData != null) sector.data = saveData;
 
 			// since we now continue when finding sync over index it is possible to have duplicate sector in first last position
 			if ((sectors.Count > 0) && (sectors[0].id.Sector == sectors[sectors.Count - 1].id.Sector) &&
@@ -763,8 +756,156 @@ namespace WD1772Package {
 				sectors.RemoveAt(sectors.Count - 1);
 				Debug.Assert(true, String.Format("Remove duplicate sector {0} (ignore)", sectors[0].id.Sector));
 			}
+
 			return sectors;
 		}   // end of readAddr()
+
+
+		public static uint readData(Global.DiskTrack dt, DataField data, int size) {
+			Phases phase = Phases.postIdGap;
+			DSR dsr = new DSR();
+			dsr.sectorMode();
+			BitTrackInfo bti = new BitTrackInfo(dsr);
+			bool doLoop = true;
+			int byteLeftInBlock = 0;
+			int widthOver = 0;
+			int widthUnder = 0;
+			ushort crc = 0;
+			uint flags = 0;
+			bool alreadyFound = false;
+
+			int start = data.info.startIndex - 20;
+			if (start < 0) start = 0;
+
+            for (int currentIndex = start; doLoop; currentIndex++) { 
+				int bitSpacing = bti.nextFlux(dt, currentIndex);
+
+				while (bitSpacing-- > 0) {
+					dsr.shiftIn(bitSpacing > 0 ? 0 : 1);
+					bti.nextBit();
+
+					if (dsr.DataReady) {
+						bti.nextByte();
+
+						if (phase != Phases.data) { // we are in GAP
+							if (phase == Phases.postDataGap)
+								bti.addByte(data.gap.buffer, phase, false);
+
+							if (dsr.IAM) {  // IAM position
+								if (phase == Phases.postDataGap) {
+									data.gap.buffer.removeLastBytes(4);
+									bti.storeEndInfo(data.gap.info, true);
+								}
+
+								// test Data AM (range 0xF8 - 0xFB)
+								if (Enumerable.Range(0xF8, 4).Contains(dsr.Data)) {
+									if (!alreadyFound) {										
+										bti.setInfo(data.info, currentIndex);			// we are synchronized set running values
+										bti.addByte(data.buffer, Phases.data, true);	// we add the sync seq
+										byteLeftInBlock = size;
+										phase = Phases.data;
+										widthOver = widthUnder = 0;
+										alreadyFound = true;
+									}
+									else
+										doLoop = false;
+								}	// Data IAM
+								else {  // all other AM => stop
+									if (data.gap != null)
+										bti.storeEndInfo(data.gap.info, true);
+									doLoop = false;
+								}   // not DAM
+							}   // IAM
+						}   // we are in GAP
+
+						else {  // we are in DATA
+							byteLeftInBlock--;
+							switch (byteLeftInBlock) {
+								case 1:
+									bti.addByte(data.buffer, phase, false);
+									crc = dsr.CRC;
+									break;
+
+								case 0: // end of DATA block
+									data.info.crc = crc;
+									bti.storeEndInfo(data.info, false);
+									dsr.sectorMode();
+
+									if ( (widthOver > (size / 2)) || (widthUnder > (size / 2)) ) {
+										if (widthOver > (size / 2))		flags |= Sector.WIDTH_ABOVE;
+										if (widthUnder > (size / 2))	flags |= Sector.WIDTH_BELOW;
+									}
+									else if ((widthOver > 0) && (widthUnder > 0) && ((widthOver + widthUnder) > (size / 4)))
+										flags |= Sector.WIDTH_INTRA;
+
+									phase = Phases.postDataGap;
+									// if we have id and data back to back the first sync is not detected (vroom)
+									if (dsr.Data == 0xA1) dsr.SyncSeq = 1;
+									data.gap = new GapField();
+									bti.storeStartInfo(data.gap.info, false);
+									bti.addByte(data.gap.buffer, phase, false);
+									break;
+
+								default:    // other data bytes
+									bti.addByte(data.buffer, phase, false);
+									if (bti.BitWidthAvg > WIDTH_UPPER_LIMIT) widthOver++;
+									if (bti.BitWidthAvg < WIDTH_LOWER_LIMIT) widthUnder++;
+									break;
+							}   // switch byte
+
+						} // we are in DATA
+
+					}   // one byte ready
+
+				}   // shift in all bits;
+
+			}   // for all index
+			return flags;
+		}
+
+
+
+
+		public static uint readSectorCompare (int track, int side, int rev, Sector sector, bool dataNoId) {
+			Global.DiskTrack dt = Global.Disk[track, side];
+			int size = Global.sectSize(sector.id.Length) + 3; // AM + 2 CRC + Size
+			DataField data = dataNoId ? sector.dataNoId : sector.data;
+
+			uint flags = readData(dt, data, size);
+			for (int j = 0; j < Global.Disk[track, side].fluxDataRev.Count(); j++) {
+				if (j == rev) continue;
+				DataField dataRev = new DataField();
+				int indexIncrement = Global.firstIndex(track, side, rev + 1) - Global.firstIndex(track, side, rev);
+				dataRev.info.startIndex = data.info.startIndex + indexIncrement;
+				readData(dt, dataRev, size);
+				// check fuzzy bytes if same size
+				if (dataRev.buffer.DataByte.Count == data.buffer.DataByte.Count) {
+					byte[] fuzzy = new byte[dataRev.buffer.DataByte.Count];
+					bool fuzzyFound = false;
+
+					for (int i = 3; i < dataRev.buffer.DataByte.Count; i++) {
+						byte xor = (byte)(dataRev.buffer.DataByte[i] ^ data.buffer.DataByte[i]);
+						if (xor != 0) {
+							fuzzyFound = true;
+							fuzzy[i] |= xor;
+						}
+					}   // compare all bytes
+
+					if (fuzzyFound) {
+						if (data.fuzzy == null) data.fuzzy = fuzzy;
+						else
+							for (int i = 3; i < dataRev.buffer.DataByte.Count; i++)
+								data.fuzzy[i] |= fuzzy[i];
+					}
+
+					// if we have fuzzy sector and CRC is correct this indicates
+					// that we need to keep the correctly read sector.
+					if (fuzzyFound && (dataRev.info.crc == 0))
+						sector.dataRecovered = dataRev;
+				}	// same size
+			}
+			return flags;		
+		}
 
 
 		/// <summary>
@@ -804,7 +945,7 @@ namespace WD1772Package {
 			bool idFound = false;
 			int widthOver = 0;
 			int widthUnder = 0;
-			Phases phase = Phases.p_gap_post;
+			Phases phase = Phases.postDataGap;
 			uint flags = 0;
 			int idCount = 0;
 			//int bitWidthSum = 0;
@@ -845,14 +986,14 @@ namespace WD1772Package {
 				if (currentIndex >= dt.fluxData.fluxValue.Count()) {
 					// We have reach the end of the buffer
 					if (!compare) {
-						if ((phase == Phases.p_gap_post) || (phase == Phases.p_gap_inner)) {
+						if ((phase == Phases.postDataGap) || (phase == Phases.postIdGap)) {
 							Global.Disk[track, side].hasIncompleteGap = true;
-							if ((phase == Phases.p_gap_post) && (sector.postGap2 != null))
-								bti.storeEndInfo(sector.postGap2.info, false);
-							else if ((phase == Phases.p_gap_post) && (sector.postGap != null))
-								bti.storeEndInfo(sector.postGap.info, false);
+							if ((phase == Phases.postDataGap) && (sector.dataNoId.gap != null))
+								bti.storeEndInfo(sector.dataNoId.gap.info, false);
+							else if ((phase == Phases.postDataGap) && (sector.data.gap != null))
+								bti.storeEndInfo(sector.data.gap.info, false);
 							else
-								bti.storeEndInfo(sector.innerGap.info, false);
+								bti.storeEndInfo(sector.id.gap.info, false);
 						}
 						else
 							Global.Disk[track, side].hasIncompleteData = true;
@@ -869,38 +1010,38 @@ namespace WD1772Package {
 					if (dsr.DataReady) {
 						bti.nextByte();
 
-						if ((phase != Phases.p_id) && (phase != Phases.p_data)) {
+						if ((phase != Phases.id) && (phase != Phases.data)) {
 							//////////////////
 							// We are in a GAP
 							//////////////////
 
 							// if we have found at least an ID we accumulate the GAP data
-							if ((phase == Phases.p_gap_inner) && (idCount > 0) && (sector != null) && (sector.innerGap != null) && !compare)
-								bti.addByte(sector.innerGap.buffer, phase, false);
-							else if ((idCount > 0) && (sector != null) && (sector.postGap2 != null) && !compare)
-								bti.addByte(sector.postGap2.buffer, phase, false);
-							else if ((idCount > 0) && (sector != null) && (sector.postGap != null) && !compare)
-								bti.addByte(sector.postGap.buffer, phase, false);
+							if ((phase == Phases.postIdGap) && (idCount > 0) && (sector != null) && (sector.id.gap != null) && !compare)
+								bti.addByte(sector.id.gap.buffer, phase, false);
+							else if ((idCount > 0) && (sector != null) && (sector.dataNoId != null) && (sector.dataNoId.gap != null) && !compare)
+								bti.addByte(sector.dataNoId.gap.buffer, phase, false);
+							else if ((idCount > 0) && (sector != null) && (sector.data != null) && (sector.data.gap != null) && !compare)
+								bti.addByte(sector.data.gap.buffer, phase, false);
 
 							if (dsr.IAM) {
 								// here we remove the three sync and the IAM
-								if ((phase == Phases.p_gap_inner) && (idCount > 0) && (sector != null) && (sector.innerGap != null) && !compare)
-									sector.innerGap.buffer.removeLastBytes(4);
-								else if ((idCount > 0) && (sector != null) && (sector.postGap2 != null) && !compare)
-									sector.postGap2.buffer.removeLastBytes(4);
-								else if ((idCount > 0) && (sector != null) && (sector.postGap != null) && !compare)
-									sector.postGap.buffer.removeLastBytes(4);
+								if ((phase == Phases.postIdGap) && (idCount > 0) && (sector != null) && (sector.id.gap != null) && !compare)
+									sector.id.gap.buffer.removeLastBytes(4);
+								else if ((idCount > 0) && (sector != null) && (sector.dataNoId != null) && (sector.dataNoId.gap != null) && !compare)
+									sector.dataNoId.gap.buffer.removeLastBytes(4);
+								else if ((idCount > 0) && (sector != null) && (sector.data != null) && (sector.data.gap != null) && !compare)
+									sector.data.gap.buffer.removeLastBytes(4);
 
 								switch (dsr.Data) {
 									// Case ID field //		
 									case 0xFC: case 0xFD: case 0xFE: case 0xFF:								
 										if ((sector != null) && !compare) {	// terminate gap block
-											if ((sector.postGap2 != null) && (phase == Phases.p_gap_post))												
-												bti.storeEndInfo(sector.postGap2.info, true);
-											else if ((sector.postGap != null) && (phase == Phases.p_gap_post)) 
-												bti.storeEndInfo(sector.postGap.info, true);
-											else if ((sector.innerGap != null))
-												bti.storeEndInfo(sector.innerGap.info, true);
+											if ((sector.dataNoId != null) && (sector.dataNoId.gap != null) && (phase == Phases.postDataGap))												
+												bti.storeEndInfo(sector.dataNoId.gap.info, true);
+											else if ((sector.data != null) && (sector.data.gap != null) && (phase == Phases.postDataGap)) 
+												bti.storeEndInfo(sector.data.gap.info, true);
+											else if ((sector.id.gap != null))
+												bti.storeEndInfo(sector.id.gap.info, true);
 										}   // terminate gap
 
 										if (idBitPosition < 0) {	// read multiple sector mode
@@ -930,12 +1071,12 @@ namespace WD1772Package {
 
 											// ready to read the ID block
 											byteLeftInBlock = 7;
-											phase = Phases.p_id;
+											phase = Phases.id;
 										}   // read multiple sectors mode
 
 										else {	// read one sector mode											
 											if (idFound) {	// if we have already found the requested ID we break
-												phase = Phases.p_id;
+												phase = Phases.id;
 												breakLoop = true;   // don't need to continue
 												break;
 											}
@@ -943,13 +1084,13 @@ namespace WD1772Package {
 											// if we have not yet reach the requested position we ignore
 											if ((bti.BitCount + 16) < idBitPosition) { 
 												dsr.sectorMode();
-												phase = Phases.p_gap_post;
+												phase = Phases.postDataGap;
 												break;
 											}
 
 											// otherwise we need to read the ID block
 											byteLeftInBlock = 7;
-											phase = Phases.p_id;
+											phase = Phases.id;
 											sector.flags |= Sector.SEC_PROCESSED;
 											flags = 0;
 										}   // read one sector mode
@@ -963,13 +1104,13 @@ namespace WD1772Package {
 											data2 = false;
 											data = new DataField();
 											byteLeftInBlock = Global.sectSize(sector.id.Length) + 3; // AM + 2 CRC + Size
-											phase = Phases.p_data;
+											phase = Phases.data;
 											bti.addByte(data.buffer, phase, true);      // we add the sync seq
 											widthOver = 0;
 											widthUnder = 0;
 
 											if (!compare)
-												bti.storeEndInfo(sector.innerGap.info, true);
+												bti.storeEndInfo(sector.id.gap.info, true);
 											bti.storeStartInfo(data.info, true);
 										}   // normal data block
 
@@ -978,18 +1119,18 @@ namespace WD1772Package {
 											sector.flags |= Sector.SEC_NO_ID;
 											data = new DataField();
 											byteLeftInBlock = Global.sectSize(sector.id.Length) + 3; // AM + 2 CRC + Size
-											phase = Phases.p_data;
+											phase = Phases.data;
 											bti.addByte(data.buffer, phase, true);     // we add the sync seq
 											widthOver = 0;
 											widthUnder = 0;
 
 											if (!compare)
-												bti.storeEndInfo(sector.innerGap.info, true);
+												bti.storeEndInfo(sector.id.gap.info, true);
 											bti.storeStartInfo(data.info, true);
 										}   //	second data sector (sector with no id)
 										else {
 											dsr.sectorMode();
-											phase = Phases.p_gap_post;
+											phase = Phases.postDataGap;
 										}	// no data
 										break;
 
@@ -1006,7 +1147,7 @@ namespace WD1772Package {
 							// We are in an ID or DATA segment
 							//////////////////////////////////
 							byteLeftInBlock--;
-							if (phase == Phases.p_id)
+							if (phase == Phases.id)
 								// ID segment
 								switch (byteLeftInBlock) {
 									case 4:
@@ -1028,12 +1169,12 @@ namespace WD1772Package {
 										// if we have id and data back to back the first sync is not detected (vroom)
 										if (dsr.Data == 0xA1) dsr.SyncSeq = 1;
 										idCount++;
-										phase = Phases.p_gap_inner;
+										phase = Phases.postIdGap;
 
 										if (!compare) {
-											sector.innerGap = new GapField();
-											bti.storeStartInfo(sector.innerGap.info, false);
-											bti.addByte(sector.innerGap.buffer, phase, false);
+											sector.id.gap = new GapField();
+											bti.storeStartInfo(sector.id.gap.info, false);
+											bti.addByte(sector.id.gap.buffer, phase, false);
 										}
 
 										break;
@@ -1063,17 +1204,17 @@ namespace WD1772Package {
 										else if ((widthOver > 0) && (widthUnder > 0) && ((widthOver + widthUnder) > (Global.sectSize(sector.id.Length) / 4)))
 											flags |= Sector.WIDTH_INTRA;
 
-										phase = Phases.p_gap_post;
+										phase = Phases.postDataGap;
 										if (!compare) {
-											if (sector.postGap == null) {
-												sector.postGap = new GapField();
-												bti.storeStartInfo(sector.postGap.info, false);
-												bti.addByte(sector.postGap.buffer, phase, false);
+											if (sector.data.gap == null) {
+												sector.data.gap = new GapField();
+												bti.storeStartInfo(sector.data.gap.info, false);
+												bti.addByte(sector.data.gap.buffer, phase, false);
 											}
-											else if (sector.postGap2 == null) {
-												sector.postGap2 = new GapField();
-												bti.storeStartInfo(sector.postGap2.info, false);
-												bti.addByte(sector.postGap2.buffer, phase, false);
+											else if (sector.dataNoId.gap == null) {
+												sector.dataNoId.gap = new GapField();
+												bti.storeStartInfo(sector.dataNoId.gap.info, false);
+												bti.addByte(sector.dataNoId.gap.buffer, phase, false);
 											}
 										}   // not compare start post gap
 
@@ -1084,15 +1225,15 @@ namespace WD1772Package {
 
 										if (!compare) {
 											if (data2)
-												sector.data2 = data;
+												sector.dataNoId = data;
 											else
 												sector.data = data;
 										}   // not compare mode
 
-										else if ((!data2 && (sector.data != null)) || (data2 && (sector.data2 != null))) {
+										else if ((!data2 && (sector.data != null)) || (data2 && (sector.dataNoId != null))) {
 											DataField sdata;
 											if (data2)
-												sdata = sector.data2;
+												sdata = sector.dataNoId;
 											else
 												sdata = sector.data;
 
@@ -1129,8 +1270,8 @@ namespace WD1772Package {
 
 											// if we have fuzzy sector and CRC is correct this indicates
 											// that we need to keep the correctly read sector.
-											if (fuzzyFound && (data.info.crc == 0) && (sdata == sector.data2))
-												sector.recovered_data = data;
+											if (fuzzyFound && (data.info.crc == 0) && (sdata == sector.dataNoId))
+												sector.dataRecovered = data;
 
 										} // compare mode with data
 										break;
@@ -1150,122 +1291,161 @@ namespace WD1772Package {
 				}   // shift bit in
 			}   // For all bits
 
-			if (phase == Phases.p_data)
+			if (phase == Phases.data)
 				bti.storeEndInfo(data.info, false);
 		}   // readSector()
 
 
-		/// <summary>
-		/// This function calls readAddr(), readSector(), readTrack(), and checkProtection()
-		/// </summary>
-		/// <param name="track">The track to read</param>
-		/// <param name="side">The side to read</param>
-		/// <param name="rev">The revolution to use</param>
 		public static void processTrack(int track, int side, int rev) {
 			if ((Global.Disk[track, side].sectors != null) && (Global.Disk[track, side].sectors.Count > 0))
 				return;
-
 			// non existing track
 			if (Global.Disk[track, side].fluxData == null) return;
 
-			//if (Global.Disk[track, side].sectors == null)
-			//	Global.Disk[track, side].sectors = new List<Sector>();
 
-			//readTemplate(track, side, rev);
-			Global.Disk[track, side].sectors = readAddr(track, side, rev);
-
-			if (Global.Disk[track, side].sectors.Count > 12)
-				readOneByOne(track, side, rev);
-			else
-				try {
-					// we try to read all in one pass
-					if (Global.Disk[track, side].sectors.Count > 0) {
-						readSector(track, side, rev, 0, -1, false);
-						for (int j = 0; j < Global.Disk[track, side].fluxDataRev.Count(); j++) {
-							if (j == rev) continue;
-							readSector(track, side, j, 0, -1, true);
-						}
-						// check SWS
-						// TODO if included sector is at start of track not detected
-						foreach (Sector sector in Global.Disk[track, side].sectors) {
-							if ((sector.flags & Sector.SEC_PROCESSED) == 0) {
-								sector.flags |= Sector.SEC_IN_SEC;
-								byte sectorNumber = sector.id.Sector;
-								int idBitPosition = sector.id.info.startBit;
-								readSector(track, side, rev, sectorNumber, idBitPosition, false);
-								// now multiple readSector() for fuzzy bits
-								for (int j = 0; j < Global.Disk[track, side].fluxDataRev.Count(); j++) {
-									if (j == rev) continue;
-									readSector(track, side, j, sectorNumber, idBitPosition, true);
-								}
-							}   // not processed = SWS
-						}   // check all sectors
-					}   // non empty
-				}
-				catch (SectorNotFoundException e) {
-					SectorNotFoundException.ExceptionMessage = e.Message;
-					readOneByOne(track, side, rev);
-				}
-
-			// remove post GAP TODO does not work if last
-			for (int i = 0; i < Global.Disk[track, side].sectors.Count - 1; i++) {
-				Sector s = Global.Disk[track, side].sectors[i];
-				Sector sp1 = Global.Disk[track, side].sectors[i + 1];
-				int endCurrentData = 0;
-				if (s.data != null)
-					endCurrentData = s.data.info.startByte + s.data.buffer.DataByte.Count;
-				int startNextId = sp1.id.info.startByte;
-				if (endCurrentData > startNextId)
-					s.postGap = null;
-			}
-
-			readTrack(track, side, rev);
-			findTruncatedSector(track, side);
-			trackPositionAndSplice(track, side);
-			Protections.checkProtection(track, side);
-		}
-
-		private static void readOneByOne(int track, int side, int rev) {
-			for (int i = 0; i < Global.Disk[track, side].sectors.Count; i++) {
-				// in recover we delete things we might have already found
-				Global.Disk[track, side].sectors[i].data = null;
-				Global.Disk[track, side].sectors[i].data2 = null;
-				Global.Disk[track, side].sectors[i].recovered_data = null;
-				Global.Disk[track, side].sectors[i].flags = 0;
-
-
-				byte sectorNumber = Global.Disk[track, side].sectors[i].id.Sector;
-				int idBitPosition = Global.Disk[track, side].sectors[i].id.info.startBit;
-				readSector(track, side, rev, sectorNumber, idBitPosition, false);
-
-				// now multiple readSector() for fuzzy bits
-				for (int j = 0; j < Global.Disk[track, side].fluxDataRev.Count(); j++) {
-					if (j == rev) continue;
-					readSector(track, side, j, sectorNumber, idBitPosition, true);
-				}
-			}
-		}
-
-		private static void findTruncatedSector(int track, int side) {
+			Global.Disk[track, side].sectors = readIAM(track, side, rev);
 			Global.DiskTrack dt = Global.Disk[track, side];
-			if ((dt.sectors == null) || (dt.sectors.Count == 0))
-				return;
+
 
 			for (int current = 0; current < dt.sectors.Count; current++) {
-				Sector s = dt.sectors[current];
-				if (s.data == null) continue;
-				int next = (current == (dt.sectors.Count - 1)) ? 0 : current + 1;
-				int dataEnd = s.data.info.startBit + s.data.info.bitCount;
-				int idStart = dt.sectors[next].id.info.startBit;
-				if (idStart < s.data.info.startBit)
-					idStart += dt.track.info.bitCount;
-				if (dataEnd > idStart) {
-					s.flags |= Sector.TRUNC_SECT;
-					s.data.truncDataBitSize = idStart - s.data.info.startBitIAM;
-				}   // truncated
-			}   // for all sectors
+				Sector sector = dt.sectors[current];
+				if (sector.data != null) {
+					sector.flags |= readSectorCompare(track, side, rev, sector, false);
+					int next = (current == (dt.sectors.Count - 1)) ? 0 : current + 1;
+					int dataEnd = sector.data.info.startBit + sector.data.info.bitCount;
+					int nextIdStart = dt.sectors[next].id.info.startBit;
+					if (nextIdStart < sector.data.info.startBit)
+						nextIdStart += dt.bitCount;
+					if (dataEnd > nextIdStart) {
+						sector.flags |= Sector.TRUNC_SECT;
+						sector.data.truncDataBitSize = nextIdStart - sector.data.info.startBitIAM;
+						sector.data.gap = null;
+					}   // truncated
+				}   // sector has data
+
+				if (sector.dataNoId != null)
+					readSectorCompare(track, side, rev, sector, true);
+			}   // all sectors
+
+			readTrack(track, side, rev);
+			//findTruncatedSector(track, side);
+			trackPositionAndSplice(track, side);
+			Protections.checkProtection(track, side);
 
 		}
+
+		///// <summary>
+		///// This function calls readAddr(), readSector(), readTrack(), and checkProtection()
+		///// </summary>
+		///// <param name="track">The track to read</param>
+		///// <param name="side">The side to read</param>
+		///// <param name="rev">The revolution to use</param>
+		//public static void processTrack(int track, int side, int rev) {
+		//	if ((Global.Disk[track, side].sectors != null) && (Global.Disk[track, side].sectors.Count > 0))
+		//		return;
+
+		//	// non existing track
+		//	if (Global.Disk[track, side].fluxData == null) return;
+
+		//	//if (Global.Disk[track, side].sectors == null)
+		//	//	Global.Disk[track, side].sectors = new List<Sector>();
+
+		//	//readTemplate(track, side, rev);
+		//	Global.Disk[track, side].sectors = readIAM(track, side, rev);
+		//	readAllSectors(track, side, rev);
+
+		//	//if (Global.Disk[track, side].sectors.Count > 12)
+		//	//	readOneByOne(track, side, rev);
+		//	//else
+		//	//	try {
+		//	//		// we try to read all in one pass
+		//	//		if (Global.Disk[track, side].sectors.Count > 0) {
+		//	//			readSector(track, side, rev, 0, -1, false);
+		//	//			for (int j = 0; j < Global.Disk[track, side].fluxDataRev.Count(); j++) {
+		//	//				if (j == rev) continue;
+		//	//				readSector(track, side, j, 0, -1, true);
+		//	//			}
+		//	//			// check SWS
+		//	//			// TODO if included sector is at start of track not detected
+		//	//			foreach (Sector sector in Global.Disk[track, side].sectors) {
+		//	//				if ((sector.flags & Sector.SEC_PROCESSED) == 0) {
+		//	//					sector.flags |= Sector.SEC_IN_SEC;
+		//	//					byte sectorNumber = sector.id.Sector;
+		//	//					int idBitPosition = sector.id.info.startBit;
+		//	//					readSector(track, side, rev, sectorNumber, idBitPosition, false);
+		//	//					// now multiple readSector() for fuzzy bits
+		//	//					for (int j = 0; j < Global.Disk[track, side].fluxDataRev.Count(); j++) {
+		//	//						if (j == rev) continue;
+		//	//						readSector(track, side, j, sectorNumber, idBitPosition, true);
+		//	//					}
+		//	//				}   // not processed = SWS
+		//	//			}   // check all sectors
+		//	//		}   // non empty
+		//	//	}
+		//	//	catch (SectorNotFoundException e) {
+		//	//		SectorNotFoundException.ExceptionMessage = e.Message;
+		//	//		readOneByOne(track, side, rev);
+		//	//	}
+
+		//	//// remove post GAP TODO does not work if last
+		//	//for (int i = 0; i < Global.Disk[track, side].sectors.Count - 1; i++) {
+		//	//	Sector s = Global.Disk[track, side].sectors[i];
+		//	//	Sector sp1 = Global.Disk[track, side].sectors[i + 1];
+		//	//	int endCurrentData = 0;
+		//	//	if (s.data != null)
+		//	//		endCurrentData = s.data.info.startByte + s.data.buffer.DataByte.Count;
+		//	//	int startNextId = sp1.id.info.startByte;
+		//	//	if (endCurrentData > startNextId)
+		//	//		s.data.gap = null;
+		//	//}
+
+		//	readTrack(track, side, rev);
+		//	//findTruncatedSector(track, side);
+		//	trackPositionAndSplice(track, side);
+		//	Protections.checkProtection(track, side);
+		//}
+
+		//private static void readOneByOne(int track, int side, int rev) {
+		//	for (int i = 0; i < Global.Disk[track, side].sectors.Count; i++) {
+		//		// in recover we delete things we might have already found
+		//		Global.Disk[track, side].sectors[i].data = null;
+		//		Global.Disk[track, side].sectors[i].data2 = null;
+		//		Global.Disk[track, side].sectors[i].recovered_data = null;
+		//		Global.Disk[track, side].sectors[i].flags = 0;
+
+
+		//		byte sectorNumber = Global.Disk[track, side].sectors[i].id.Sector;
+		//		int idBitPosition = Global.Disk[track, side].sectors[i].id.info.startBit;
+		//		readSector(track, side, rev, sectorNumber, idBitPosition, false);
+
+		//		// now multiple readSector() for fuzzy bits
+		//		for (int j = 0; j < Global.Disk[track, side].fluxDataRev.Count(); j++) {
+		//			if (j == rev) continue;
+		//			readSector(track, side, j, sectorNumber, idBitPosition, true);
+		//		}
+		//	}
+		//}
+
+		//private static void findTruncatedSector(int track, int side) {
+		//	Global.DiskTrack dt = Global.Disk[track, side];
+		//	if ((dt.sectors == null) || (dt.sectors.Count == 0))
+		//		return;
+
+		//	for (int current = 0; current < dt.sectors.Count; current++) {
+		//		Sector s = dt.sectors[current];
+		//		if (s.data == null) continue;
+		//		int next = (current == (dt.sectors.Count - 1)) ? 0 : current + 1;
+		//		int dataEnd = s.data.info.startBit + s.data.info.bitCount;
+		//		int idStart = dt.sectors[next].id.info.startBit;
+		//		if (idStart < s.data.info.startBit)
+		//			idStart += dt.track.info.bitCount;
+		//		if (dataEnd > idStart) {
+		//			s.flags |= Sector.TRUNC_SECT;
+		//			s.data.truncDataBitSize = idStart - s.data.info.startBitIAM;
+		//		}   // truncated
+		//	}   // for all sectors
+
+		//}
 
 
 		/// <summary>
@@ -1291,7 +1471,7 @@ namespace WD1772Package {
 			for (int i = 0; i < dt.sectors.Count; i++) {
 				s = dt.sectors[i];
 				//
-				// we search the last block
+				// we search the last block of the track
 				//
 				// if track has NFA and SWS the last truncated sect is the last block
 				if ((dt.track.flags & Track.NO_FLUX_AREA) != 0) {
@@ -1303,22 +1483,22 @@ namespace WD1772Package {
 				}   // NFA
 				else {
 					// for now we take the sector that have the largest post gap size
-					if (s.postGap != null) {
-						if (s.postGap.buffer.DataByte.Count > maxPostSize) {
-							maxPostSize = s.postGap.buffer.DataByte.Count;
+					if ((s.data != null) && (s.data.gap != null)) {
+						if (s.data.gap.buffer.DataByte.Count > maxPostSize) {
+							maxPostSize = s.data.gap.buffer.DataByte.Count;
 							lastBlock = i;
 						}
 					}   // sector with data
 					else {
-						if (s.innerGap == null) return;
-						if (s.innerGap.buffer.DataByte.Count > maxPostSize) {
-							maxPostSize = s.innerGap.buffer.DataByte.Count;
+						if (s.id.gap == null) return;
+						if (s.id.gap.buffer.DataByte.Count > maxPostSize) {
+							maxPostSize = s.id.gap.buffer.DataByte.Count;
 							lastBlock = i;
 						}
 					}   // sector no data
 						// search first non 4E byte
 					s = dt.sectors[lastBlock];
-					GapField g = (s.data != null) ? s.postGap : s.innerGap;
+					GapField g = (s.data != null) ? s.data.gap : s.id.gap;
 					if (g != null) {
 						for (splicePosition = 1; splicePosition < g.buffer.DataByte.Count - 1; splicePosition++)
 							if (g.buffer.DataByte[splicePosition] != 0x4E) break;

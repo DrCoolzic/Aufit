@@ -105,16 +105,16 @@ namespace StdFormatPackage {
 						Debug.Assert(s != null, "Did not found the sector?");
 						start = buffer.Count;
 						for (int i = 4; i < s.data.buffer.DataByte.Count - 2; i++) {
-							if (s.recovered_data != null)
-								buffer.Add(s.recovered_data.buffer.DataByte[i]);
+							if (s.dataRecovered != null)
+								buffer.Add(s.dataRecovered.buffer.DataByte[i]);
 							else
 								buffer.Add(s.data.buffer.DataByte[i]);
 						}
 						if (_debug) 
 							_saveImageBox.AppendText(String.Format("      Writing Sector {0} {1} bytes ({2}-{3}) {4}\n",
 							s.id.Sector, s.data.buffer.DataByte.Count - 6, start, buffer.Count - 1,
-							(s.recovered_data != null) ? "recovered" : ""));
-						else if (s.recovered_data != null)
+							(s.dataRecovered != null) ? "recovered" : ""));
+						else if (s.dataRecovered != null)
 							_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} recovered Sector {2}\n", 
 								track, side, s.id.Sector));			
 					}	// sectors
@@ -204,8 +204,8 @@ namespace StdFormatPackage {
 				Debug.Assert(s != null, "Did not found the sector?");
 
 				TrackBuffer data;
-				if (s.recovered_data != null)
-					data = s.recovered_data.buffer;
+				if (s.dataRecovered != null)
+					data = s.dataRecovered.buffer;
 				else
 					data = s.data.buffer;
 
@@ -214,8 +214,8 @@ namespace StdFormatPackage {
 
 				if (_debug)
 					_saveImageBox.AppendText(String.Format("   Writing Sector {0} {1} bytes {2}\n",
-					s.id.Sector, data.DataByte.Count, (s.recovered_data != null) ? "recovered" : ""));
-				else if (s.recovered_data != null)
+					s.id.Sector, data.DataByte.Count, (s.dataRecovered != null) ? "recovered" : ""));
+				else if (s.dataRecovered != null)
 					_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} recovered Sector {2}\n",
 						track, side, s.id.Sector));
 			}	// sectors

@@ -139,25 +139,25 @@ namespace Aufit {
 				blocks[i].dataOffset = 0;
 
 				// we compute the Block data bytes and the Gap bytes
-				int dataBytes = s.id.buffer.DataByte.Count + s.innerGap.buffer.DataByte.Count +
+				int dataBytes = s.id.buffer.DataByte.Count + s.id.gap.buffer.DataByte.Count +
 					((s.data != null) ? (s.data.buffer.DataByte.Count) : 0);
 				trackDataBytes += dataBytes;
 				blocks[i].dataBits = (uint)(16 * dataBytes);
-				int gapBytes = (s.postGap != null) ? s.postGap.buffer.DataByte.Count : 0;
+				int gapBytes = (s.data.gap != null) ? s.data.gap.buffer.DataByte.Count : 0;
 				trackGapBytes += gapBytes;
 				blocks[i].gapBits = (uint)(16 * gapBytes);
 
 				// we search the last block
 				// for now we take the sector that have the largest post gap size
-				if (s.postGap != null) {
-					if (s.postGap.buffer.DataByte.Count > maxPostSize) {
-						maxPostSize = s.postGap.buffer.DataByte.Count;
+				if (s.data.gap != null) {
+					if (s.data.gap.buffer.DataByte.Count > maxPostSize) {
+						maxPostSize = s.data.gap.buffer.DataByte.Count;
 						lastBlock = i;
 					}
 				}
 				else {
-					if (s.innerGap.buffer.DataByte.Count > maxPostSize) {
-						maxPostSize = s.innerGap.buffer.DataByte.Count;
+					if (s.id.gap.buffer.DataByte.Count > maxPostSize) {
+						maxPostSize = s.id.gap.buffer.DataByte.Count;
 						lastBlock = i;
 					}
 				}
@@ -262,8 +262,8 @@ namespace Aufit {
 				p = new Paragraph();
 				p.LineHeight = 1;
 				p.Margin = new Thickness(5, 0, 0, 0);
-				//gapBadData = checkGAP_OLD(s.innerGap, gap, false);
-				gapBadData = checkGAP(s.innerGap, gap);
+				//gapBadData = checkGAP_OLD(s.id.gap, gap, false);
+				gapBadData = checkGAP(s.id.gap, gap);
 				List<byte> igap = new List<byte>();
 				for (int j = 0; j < gap.count4E; j++)
 					igap.Add(0x4E);
@@ -274,7 +274,7 @@ namespace Aufit {
 				//	p.Inlines.Add(String.Format("Inner gap: {0}x4E - {1}x00", gap.count4E, gap.count00));
 				if (gapBadData)
 					p.Inlines.Add(String.Format(" has bad data @ {0} {1:F2} ms", gap.spliceByte, (double)gap.spliceTime / 1000000.0));
-				displayContent(igap, p, s.innerGap.info.startByte, false);
+				displayContent(igap, p, s.id.gap.info.startByte, false);
  				//p.Inlines.Add(new LineBreak());
 				li.Blocks.Add(p);
 				l.ListItems.Add(li);
@@ -314,8 +314,8 @@ namespace Aufit {
 					p = new Paragraph();
 					p.LineHeight = 1;
 					p.Margin = new Thickness(5, 0, 0, 0);
-					//gapBadData = checkGAP_OLD(s.postGap, gap, false);
-					gapBadData = checkGAP(s.postGap, gap);
+					//gapBadData = checkGAP_OLD(s.data.gap, gap, false);
+					gapBadData = checkGAP(s.data.gap, gap);
 					List<byte> pgap = new List<byte>();
 					for (int j = 0; j < gap.count4E; j++)
 						pgap.Add(0x4E);
@@ -325,8 +325,8 @@ namespace Aufit {
 					//	p.Inlines.Add(String.Format("Post gap: {0}x4E - {1}x00", gap.count4E, gap.count00));
 					if (gapBadData)
 						p.Inlines.Add(String.Format(" has bad data @ {0} {1:F2} ms", gap.spliceByte, (double)gap.spliceTime / 1000000.0));
-					if (s.postGap != null)
-						displayContent(pgap, p, s.postGap.info.startByte, false);
+					if (s.data.gap != null)
+						displayContent(pgap, p, s.data.gap.info.startByte, false);
 					//p.Inlines.Add(new LineBreak());
 					li.Blocks.Add(p);
 					l.ListItems.Add(li);

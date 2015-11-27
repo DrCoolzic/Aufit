@@ -553,9 +553,9 @@ namespace Aufit {
 							drawArc(sector, center, radius, timeAngle(start), timeAngle(stop), SecType.data, grid);
 						}   // sector has data field
 						// Draw gap and data if there
-						if (sector.data2 != null) {
-							start = (double)sector.data2.info.startTime;
-							stop = (double)(sector.data2.info.startTime + sector.data.info.timeLength);
+						if (sector.dataNoId != null) {
+							start = (double)sector.dataNoId.info.startTime;
+							stop = (double)(sector.dataNoId.info.startTime + sector.data.info.timeLength);
 							//drawArc(sector, center, radius, timeAngle(idStop), timeAngle(start), Phases.p_gap_inner, grid);
 
 							// if SWS we truncate
@@ -711,7 +711,7 @@ namespace Aufit {
 			}
 			else if (type == SecType.data2) {
 				path.Stroke = NoIdDataBrush;
-				if ((sector.data2.info.crc != 0) || (sector.data2.fuzzy != null))
+				if ((sector.dataNoId.info.crc != 0) || (sector.dataNoId.fuzzy != null))
 					path.Stroke = FuzzySectorBrush;
 			}
 
