@@ -1,4 +1,8 @@
 * Aufit 1.4
+- Data View added information
+	Layout display truncated size for data sector
+	Track fix bug to diplay correct information 100% correct
+	Sector display accurate startBit for Sync and IAM
 - Fix left offset for Histogram chart (cleaner)
 - Fixed Vroom multiple back to back id/data fields not decoded correctly
 - New class to handle read function decoding at bit level
@@ -6,6 +10,7 @@
 - redesign of readSector() function - now DATA buffer contains sync sequence
 - redesign of readTrack() function
 - Added detection of truncated 
+- Added detection of Track Splice
 - Added detection of Sector with No ID (SNI) + display information in all views.
 - Added capability to display Histogram/Entropy for track AND SECTORS
 - Detect First sector and track splice - display in track view
