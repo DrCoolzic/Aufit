@@ -259,7 +259,7 @@ namespace GlobalPackage {
 			/// <summary>Image some gap information is missing</summary>
 			public bool hasIncompleteGap;
 
-			public int bitCount;
+			public List<IAM>[] iams;
 
 		}
 

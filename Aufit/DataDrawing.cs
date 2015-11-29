@@ -110,7 +110,7 @@ namespace ChartPackage {
 					endByte = sector.id.info.startByte + sector.id.buffer.DataByte.Count;
 				}
 
-					snum.Text = String.Format("Sector {0} --- Start {1} {2:F2}ms - Stop: {3} {4:F2}ms",
+				snum.Text = String.Format("Sector {0} --- Start {1} {2:F2}ms - Stop: {3} {4:F2}ms",
 					sector.id.Sector, sector.id.info.startByte, (double)sector.id.info.startTime / 1000000.0, endByte, (double)endTime / 1000000.0);
 				sectorInfoPanel.Children.Add(snum);
 
@@ -127,27 +127,32 @@ namespace ChartPackage {
 				sectorBorderPolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.2));
 				sectorBorderPolygon.Points.Add(_dataChartLayout.NormPoint(bstart, 0.8));
 
+				// ID FIELD
 				TextBox tb = new TextBox();
 				tb.Text = String.Format("ID Field (T={0} H={1} S={2} L={3} CRC={4:X4}) - Start @ {5} {6:F2}ms",
 					sector.id.Track, sector.id.Head, sector.id.Sector, sector.id.Length, sector.id.CRC,
 					sector.id.info.startByte, bstart);
 				sectorInfoPanel.Children.Add(tb);
-
 				drawRectangle(sector, bstart, bstop, SecType.id);
+
+				// POST ID GAP
+				if (sector.id.postIdGap != null) {
+					tb = new TextBox();
+					tb.Text = String.Format("Post ID Gap {0} bytes - Start @ {1} {2:F2}ms",
+						sector.id.postIdGap.buffer.DataByte.Count, sector.id.postIdGap.info.startByte, (double)sector.id.postIdGap.info.startTime / 1000000.0);
+					sectorInfoPanel.Children.Add(tb);
+					drawRectangle(sector, (double)sector.id.postIdGap.info.startTime / 1000000.0,
+						(double)(sector.id.postIdGap.info.startTime + sector.id.postIdGap.info.timeLength) / 1000000.0, SecType.gap);
+					bstop = (double)(sector.id.postIdGap.info.startTime + sector.id.postIdGap.info.timeLength) / 1000000.0;
+				}
 
 				// draw DATA field
 				if (sector.data != null) {
 					bstart = (double)sector.data.info.startTime / 1000000.0;
+					if (bstart < (double)sector.id.info.startTime / 1000000.0)
+						bstart += revolutionTime;
 					blength = (double)sector.data.info.timeLength / 1000000.0;
 					bstop = bstart + blength;
-
-					tb = new TextBox();
-					tb.Text = String.Format("IGap Field {0} bytes - Start @ {1} {2:F2}ms",
-						sector.id.idGap.buffer.DataByte.Count, sector.id.idGap.info.startByte, (double)sector.id.idGap.info.startTime / 1000000.0);
-					sectorInfoPanel.Children.Add(tb);
-					//drawRectangle(sector, idbstop, bstart, Phases.p_gap_inner);
-					drawRectangle(sector, (double)sector.id.idGap.info.startTime / 1000000.0,
-						(double)(sector.id.idGap.info.startTime + sector.id.idGap.info.timeLength) / 1000000.0, SecType.gap);
 
 					tb = new TextBox();
 					tb.Text = String.Format("Data Field {0} bytes Length={1:F2}µs - Start @ {2} {3:F2}ms {4} {5}",
@@ -173,10 +178,11 @@ namespace ChartPackage {
 
 						drawRectangle(sector, shiftedBstart, shiftedBstop, SecType.data);
 					}
-					if (sector.data.dataGap != null) {
+
+					if (sector.data.postDataGap != null) {
 						tb = new TextBox();
-						tb.Text = String.Format("PGap Field {0} bytes - Start @ {1} {2:F2}ms",
-							sector.data.dataGap.buffer.DataByte.Count, sector.data.dataGap.info.startByte, (double)sector.data.dataGap.info.startTime / 1000000.0);
+						tb.Text = String.Format("Post Data Gap {0} bytes - Start @ {1} {2:F2}ms",
+							sector.data.postDataGap.buffer.DataByte.Count, sector.data.postDataGap.info.startByte, (double)sector.data.postDataGap.info.startTime / 1000000.0);
 						sectorInfoPanel.Children.Add(tb);
 					}
 				}   // sector has data field
@@ -212,10 +218,10 @@ namespace ChartPackage {
 
 						drawRectangle(sector, shiftedBstart, shiftedBstop, SecType.data2);
 					}
-					if (sector.dataNoId.dataGap != null) {
+					if (sector.dataNoId.postDataGap != null) {
 						tb = new TextBox();
 						tb.Text = String.Format("Extra PGap Field {0} bytes - Start @ {1} {2:F2}ms",
-							sector.dataNoId.dataGap.buffer.DataByte.Count, sector.dataNoId.dataGap.info.startBit, (double)sector.dataNoId.dataGap.info.startTime / 1000000.0);
+							sector.dataNoId.postDataGap.buffer.DataByte.Count, sector.dataNoId.postDataGap.info.startBit, (double)sector.dataNoId.postDataGap.info.startTime / 1000000.0);
 						sectorInfoPanel.Children.Add(tb);
 					}
 				}   // sector has extra data field
@@ -236,7 +242,6 @@ namespace ChartPackage {
 				int start = Global.firstIndex(track, side, rev);
 				int stop = Global.lastIndex(track, side, rev);
 				int currentTime = 0;
-				//PhaseSector ps = new PhaseSector(dt, dt.fluxDataRev[rev].revolutionTime);
 
 				for (int bitPosition = start; bitPosition < stop; bitPosition++) {
 					int flux = dt.fluxData.fluxValue[bitPosition];

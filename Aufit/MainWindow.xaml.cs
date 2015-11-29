@@ -538,7 +538,7 @@ namespace Aufit {
 			CurrentTrack = CurrentSide = CurrentRev = 0;
 			Global.resetDisk();
 			tbAnalysis.Clear();
-			SectorNotFoundException.resetException();
+			//SectorNotFoundException.resetException();
 			diskClear();
 			_view = DataView.None;
 			fdDataView.Document = null;
@@ -649,11 +649,11 @@ namespace Aufit {
 					ButtonMatrix.setButtonBG(track, side);
 				}
 			}
-			string message = SectorNotFoundException.ExceptionMessage;
-			if (message != null) {
-				infoBox.AppendText(message);
-				redDot.Visibility = System.Windows.Visibility.Visible;
-			}	// we have found inconsistencies while processing sectors
+			//string message = SectorNotFoundException.ExceptionMessage;
+			//if (message != null) {
+			//	infoBox.AppendText(message);
+			//	redDot.Visibility = System.Windows.Visibility.Visible;
+			//}	// we have found inconsistencies while processing sectors
 		}
 
 
@@ -829,9 +829,9 @@ namespace Aufit {
 				int endPos = (sector.data != null) ? sector.data.info.startTime + sector.data.info.timeLength :
 					sector.id.info.startTime + sector.id.info.timeLength;
 				if ((startPos < pos) && (endPos > pos)) {
-					//infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", 
-					//	_dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, sector.id.Sector));
-					//infoBox.ScrollToEnd();
+					infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n",
+						_dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, sector.id.Sector));
+					infoBox.ScrollToEnd();
 					int first = sector.data.info.firstIndex;
 					int last = sector.data.info.lastIndex;
 					int[] segment = Global.Disk[CurrentTrack, CurrentSide].fluxData.fluxValue.Skip(first).Take(last - first).ToArray();

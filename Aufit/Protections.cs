@@ -139,7 +139,8 @@ namespace Aufit {
 						dt.sectors[dt.track.firstSectIndex].id.Sector));
 				}
 				else if (lastSector.data != null) {
-					if (lastSector.data.info.startByte > dt.track.buffer.DataByte.Count) {
+					//if (lastSector.data.info.startByte > dt.track.buffer.DataByte.Count) {
+					if (lastSector.data.info.startByte < lastSector.id.info.startByte) { 
 						dt.track.flags |= Track.DATA_AFTER_IDX;
 						dt.track.shiftedTrack = true;
 						writeInfo(info, String.Format("SHT Shifted Track with Data Beyond Index - first sector {0}",

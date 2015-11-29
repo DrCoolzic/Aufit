@@ -535,7 +535,9 @@ namespace Aufit {
 						// Draw gap and data if there
 						if (sector.data != null) {
 							start = (double)sector.data.info.startTime;
-							stop = (double)(sector.data.info.startTime + sector.data.info.timeLength);
+							if (start < (double)sector.id.info.startTime)
+								start += revolutionTime;
+							stop = start + (double)sector.data.info.timeLength;
 							drawArc(sector, center, radius, timeAngle(idStop), timeAngle(start), SecType.gap, grid);
 
 							// if SWS we truncate
