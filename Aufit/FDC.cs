@@ -147,6 +147,7 @@ namespace WD1772Package {
 
 	public class IAM {
 		public IAMType Type { get; set; }
+		public bool Error { get; set; }
 		public BlockInfo info = new BlockInfo();
 	}
 
@@ -308,34 +309,32 @@ namespace WD1772Package {
 
 	}
 
-	///// <summary>
-	///// We raise an exception if a sector is not found in readSector()
-	///// </summary>
-	//public class SectorNotFoundException : Exception {
-	//	/// <summary>SectorNotFoundException Constructor</summary>
-	//	public SectorNotFoundException() : base() { }
-	//	/// <summary>SectorNotFoundException Constructor</summary>
-	//	public SectorNotFoundException(string message) : base(message) { }
-	//	/// <summary>SectorNotFoundException Constructor</summary>
-	//	public SectorNotFoundException(string message, Exception e) : base(message, e) { }
+	/// <summary>We raise an exception to indicate bad error</summary>
+	public class ImageErrorException : Exception {
+		/// <summary>SectorNotFoundException Constructor</summary>
+		public ImageErrorException() : base() { }
+		/// <summary>SectorNotFoundException Constructor</summary>
+		public ImageErrorException(string message) : base(message) { }
+		/// <summary>SectorNotFoundException Constructor</summary>
+		public ImageErrorException(string message, Exception e) : base(message, e) { }
 
-	//	private static string _ExceptionMessage;
+		private static string _ExceptionMessage;
 
-	//	/// <summary>
-	//	/// Get/SEt the content of the Exception message
-	//	/// </summary>
-	//	public static string ExceptionMessage {
-	//		get { return _ExceptionMessage; }
-	//		set { _ExceptionMessage += value + "\n"; }
-	//	}
+		/// <summary>
+		/// Get/SEt the content of the Exception message
+		/// </summary>
+		public static string ExceptionMessage {
+			get { return _ExceptionMessage; }
+			set { _ExceptionMessage += value + "\n"; }
+		}
 
-	//	/// <summary>
-	//	/// Reset content of exception message
-	//	/// </summary>
-	//	public static void resetException() {
-	//		_ExceptionMessage = null;
-	//	}
-	//}
+		/// <summary>
+		/// Reset content of exception message
+		/// </summary>
+		public static void resetException() {
+			_ExceptionMessage = null;
+		}
+	}
 
 	/// <summary>FDC read functions helper</summary>
 	/// <remarks>We use ring buffers to handle the 4 last bytes information. 
@@ -474,7 +473,6 @@ namespace WD1772Package {
 		private readonly static int WIDTH_UPPER_LIMIT = 2070;
 		private readonly static int WIDTH_LOWER_LIMIT = 1930;
 
-
 		public static bool isGapPhase(Phases p) {
 			return ((p == Phases.postIdGap) || (p == Phases.postDataGap));
 		}
@@ -556,16 +554,19 @@ namespace WD1772Package {
 								case 0xF9:
 								case 0xFA:
 								case 0xFB:
-									int s = (currentSector != -1) ? currentSector : dt.sectors.Count - 1;
-									// ===================== TODO CHECK => optimize for pasti ====================================================
-									dt.sectors[s].trackOffset = bti.ByteCount + 1;
-									byteLeftInBlock = Global.sectSize(dt.sectors[s].id.Length) + 3; // AM + 2 CRC + Size
 									phase = Phases.data;
-									syncCount = 0;
-									if (dt.sectors[s].data != null) {
-										if (!dataNoId) dataNoId = true;
-										else dataNoId = false;
-									}   // sector has data
+									byteLeftInBlock = 1;
+									if ((dt.sectors != null) && (dt.sectors.Count > 0)) {
+										int s = (currentSector != -1) ? currentSector : dt.sectors.Count - 1;
+										// ===================== TODO CHECK => optimize for pasti ====================================================
+										dt.sectors[s].trackOffset = bti.ByteCount + 1;
+										byteLeftInBlock = Global.sectSize(dt.sectors[s].id.Length) + 3; // AM + 2 CRC + Size
+										syncCount = 0;
+										if (dt.sectors[s].data != null) {
+											if (!dataNoId) dataNoId = true;
+											else dataNoId = false;
+										}   // sector has data
+									}	// data but no sector => inconsistent
 									break;
 
 								// other = data track ?
@@ -653,6 +654,7 @@ namespace WD1772Package {
 							iams[rev].Add(iam);
 							bti.storeStartInfo(iam.info, true);
 							dsr.sectorMode();
+							iam.Error = false;
 
 							if (Enumerable.Range(0xFC, 4).Contains(dsr.Data))	// ID AM
 								iam.Type = IAMType.Id;
@@ -676,7 +678,7 @@ namespace WD1772Package {
 		/// <param name="rev">The revolution index</param>
 		//public static List<Sector> readId(int track, int side, int rev) {
 		public static void readId(Global.DiskTrack dt, IdField id) {
-			int firstIndex = id.info.firstIndex - 5;
+			int firstIndex = (id.info.firstIndex - 5) < 0 ? 0 : id.info.firstIndex - 5;
 			int lastIndex = id.info.lastIndex;
 			int byteLeftInBlock = 0;
 			ushort crc = 0;
@@ -748,7 +750,7 @@ namespace WD1772Package {
 
 
 		public static uint readData(Global.DiskTrack dt, DataField data, int size, bool full) {
-			int firstIndex = data.info.firstIndex - 5;
+			int firstIndex = (data.info.firstIndex - 5) < 0 ? 0 : data.info.firstIndex - 5;
 			int lastIndex = data.info.lastIndex;
 			Phases phase = Phases.postIdGap;
 			DSR dsr = new DSR();
@@ -847,7 +849,7 @@ namespace WD1772Package {
 				}   // shift in all bits;
 			}   // for all index
 
-			if (phase == Phases.postDataGap) {
+			if ((phase == Phases.postDataGap) && (data.postDataGap != null)) {
 				bti.storeEndInfo(data.postDataGap.info, false);
 				data.postDataGap.buffer.removeLastBytes(1);
 				if (data.postDataGap.buffer.DataByte.Count == 0)
@@ -875,6 +877,7 @@ namespace WD1772Package {
 			DataField data = dataNoId ? sector.dataNoId : sector.data;
 
 			uint flags = readData(dt, data, size, true);
+
 
 			for (int j = 0; j < Global.Disk[track, side].fluxDataRev.Count(); j++) {
 				if (j == rev) continue;
@@ -906,7 +909,7 @@ namespace WD1772Package {
 					if (fuzzyFound && (dataRev.info.crc == 0))
 						sector.dataRecovered = dataRev;
 				}   // same size
-			}
+			}   // compare other rev
 			return flags;
 		}	// readDataCompare()
 
@@ -917,9 +920,55 @@ namespace WD1772Package {
 			if (dt.fluxData == null) return;
 
 			Global.Disk[track, side].sectors = new List<Sector>();
+			bool consistentIAM = true;
 
 			readIAM(track, side);
-			// TODO check consistency
+			int maxSize = 0;
+			for (int r = 0; r < Global.Disk[track, side].fluxDataRev.Count(); r++) {
+				if (Global.Disk[track, side].iams[r].Count > maxSize)
+					maxSize = Global.Disk[track, side].iams[r].Count;
+ 			}
+			for (int r = 0; r < Global.Disk[track, side].fluxDataRev.Count(); r++) {
+				int refRev = 0;
+				int diff = maxSize - Global.Disk[track, side].iams[r].Count;
+                if (diff > 0) {
+					if (diff > 1) {
+						try {
+							throw new ImageErrorException(
+								String.Format("*** T{0:D2}.{1:D1} Too many inconsistencies turning off sector detection ***", track, side));
+						}
+						catch (ImageErrorException e) {
+							ImageErrorException.ExceptionMessage = e.Message;
+						}
+						consistentIAM = false;
+						break;
+					}
+					for (refRev = 0; refRev < Global.Disk[track, side].fluxDataRev.Count(); refRev++) {
+						if (Global.Disk[track, side].iams[refRev].Count == maxSize)
+							break;
+					}   // first good
+					for (int iamIndex = 0; iamIndex < Global.Disk[track, side].iams[r].Count; iamIndex++) {
+						IAM iam = Global.Disk[track, side].iams[r][iamIndex];
+						IAM refIAM = Global.Disk[track, side].iams[refRev][iamIndex];
+						if (iam.info.startByte > (refIAM.info.startByte + 5)) {
+							IAM repair = new IAM();
+							repair.Type = refIAM.Type;
+							repair.Error = true;
+							transferInfo(refIAM, repair.info);
+							Global.Disk[track, side].iams[r].Insert(iamIndex, repair);
+							try {
+								throw new ImageErrorException(
+									String.Format("*** T{0:D2}.{1:D1} {2} not found in Revolution {3} *** Recovering from {4}", 
+									track, side, refIAM.Type, r + 1, refRev + 1));
+							}
+							catch (ImageErrorException e) {
+								ImageErrorException.ExceptionMessage = e.Message;
+							}
+                            break;
+						}
+					}	// search first error
+				}   // found problem
+			}	// check all rev
 
 			Sector sector = null;
 			bool dataNoId = false;
@@ -928,39 +977,41 @@ namespace WD1772Package {
 			int lastTruncNFABlock = -1;
 			int splicePosition = 0;
 
-			// read all index field
-			foreach (IAM iam in Global.Disk[track, side].iams[rev]) {
-				if (iam.Type == IAMType.Id) {
-					sector = new Sector();
-					Global.Disk[track, side].sectors.Add(sector);
-					sector.id = new IdField();
-					transferInfo(iam, sector.id.info);
-					readId(Global.Disk[track, side], sector.id);
-				}   // id
+			if (consistentIAM) {
+				// read all index field
+				foreach (IAM iam in Global.Disk[track, side].iams[rev]) {
+					if (iam.Type == IAMType.Id) {
+						sector = new Sector();
+						Global.Disk[track, side].sectors.Add(sector);
+						sector.id = new IdField();
+						transferInfo(iam, sector.id.info);
+						readId(Global.Disk[track, side], sector.id);
+					}   // id
+				}
+
+				// read all data fields
+				int idCount = -1;
+				for (int iamIndex = 0; iamIndex < Global.Disk[track, side].iams[rev].Count; iamIndex++) {
+					IAM iam = Global.Disk[track, side].iams[rev][iamIndex];
+					if (iam.Type == IAMType.Id) idCount++;
+
+					if ((iam.Type == IAMType.Data) && (Global.Disk[track, side].sectors.Count > 0)) {
+						int secIndex = (idCount < 0) ? Global.Disk[track, side].sectors.Count - 1 : idCount;
+						sector = Global.Disk[track, side].sectors[secIndex];
+						if (sector.data != null) {
+							sector.dataNoId = new DataField();
+							transferInfo(iam, sector.dataNoId.info);
+							dataNoId = true;
+						}   // second data
+						else {
+							sector.data = new DataField();
+							transferInfo(iam, sector.data.info);
+							dataNoId = false;
+						}   // normal data
+						sector.flags |= readDataCompare(track, side, rev, sector, iamIndex, dataNoId);
+					}   // data IAM
+				}   // all IAM
 			}
-
-			// read all data fields
-			int idCount = -1;
-			for (int iamIndex = 0; iamIndex < Global.Disk[track, side].iams[rev].Count; iamIndex++) {
-				IAM iam = Global.Disk[track, side].iams[rev][iamIndex];
-				if (iam.Type == IAMType.Id) idCount++;
-
-				if (iam.Type == IAMType.Data) {
-					int secIndex = (idCount < 0) ? Global.Disk[track, side].sectors.Count - 1 : idCount;
-                    sector = Global.Disk[track, side].sectors[secIndex];
-					if (sector.data != null) {
-						sector.dataNoId = new DataField();
-						transferInfo(iam, sector.dataNoId.info);
-						dataNoId = true;
-					}	// second data
-					else {
-						sector.data = new DataField();
-						transferInfo(iam, sector.data.info);
-						dataNoId = false;
-					}	// normal data
-					sector.flags |= readDataCompare(track, side, rev, sector, iamIndex, dataNoId);
-                }   // data IAM
-			}   // all IAM
 
 			// read track
 			readTrack(track, side, rev);

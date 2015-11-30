@@ -35,6 +35,7 @@ using System.Windows;
 
 using KFStreamPackage;
 using GlobalPackage;
+using WD1772Package;
 
 namespace ChartPackage {
 	/// <summary>
@@ -141,6 +142,42 @@ namespace ChartPackage {
 				clockLine.Points.Add(_bitWidthChartLayout.NormPoint((double)currentTime / 1000000.0, bitWidth));
 			}
 			_bitWidthChartLayout.GraphicCanvas.Children.Add(clockLine);
+
+			// draw IAM sync
+			if (Global.Disk[track, side].iams != null)
+				foreach (IAM iam in Global.Disk[track, side].iams[rev]) {
+					Line iamLine = new Line();
+					switch (iam.Type) {
+						case IAMType.Id:
+							iamLine.Stroke = Brushes.DarkOrange;
+							break;
+						case IAMType.Data:
+							iamLine.Stroke = Brushes.DarkBlue;
+							break;
+						default:
+							iamLine.Stroke = Brushes.Black;
+							break;
+					}
+					iamLine.StrokeThickness = 1.5;
+					if (iam.Error) {
+						iamLine.StrokeDashArray = new DoubleCollection(new double[2] { 2, 2 });
+						iamLine.Stroke = Brushes.Red;
+						iamLine.StrokeThickness = 3;
+					}
+
+					iamLine.X1 = _bitWidthChartLayout.NormPoint(new Point((double)iam.info.startTime / 1000000.0, 2)).X;
+					iamLine.Y1 = _bitWidthChartLayout.NormY(_bitWidthChartLayout.Ymin);
+					iamLine.X2 = _bitWidthChartLayout.NormPoint(new Point((double)iam.info.startTime / 1000000.0, 10)).X;
+					iamLine.Y2 = _bitWidthChartLayout.NormY(_bitWidthChartLayout.Ymax);
+
+					//TextBox spliceInfo = new TextBox();
+					//spliceInfo.Text = String.Format("Out of band at {0} ms -- flux value={1:F3} µs", (double)currentTime / 1000000.0, flux);
+					//ToolTipService.SetToolTip(iamLine, spliceInfo);
+					//ToolTipService.SetShowDuration(iamLine, 100000);
+					_bitWidthChartLayout.GraphicCanvas.Children.Add(iamLine);
+
+				}
+
 		}
 
 

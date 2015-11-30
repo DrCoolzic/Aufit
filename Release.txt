@@ -1,7 +1,11 @@
 * Aufit 1.4
+- Detection of IAM inconsistencies => red dot + display in cell width graph 
+- Added display of IAM in cell width graph
+- bug fix After the War / Z-out / D1 Gunship scp
+- Detection fuzzy in Data with no Id
 - Data View added information
 	Layout display truncated size for data sector
-	Track fix bug to diplay correct information 100% correct
+	Track fix bug to display correct information 100% correct
 	Sector display accurate startBit for Sync and IAM
 - Fix left offset for Histogram chart (cleaner)
 - Fixed Vroom multiple back to back id/data fields not decoded correctly

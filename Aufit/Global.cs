@@ -39,6 +39,7 @@ using System.Windows;
 using System.IO;
 using Microsoft.Win32;
 using System.ComponentModel;
+using Aufit;
 
 namespace GlobalPackage {
 
@@ -212,13 +213,13 @@ namespace GlobalPackage {
 		public static Color IdColor = Colors.Yellow;
 		public static Color NoIdDataColor = Colors.Yellow;
 
-		private static DiskTrack[,] _disk = new DiskTrack[85, 2];
-
 		public const uint FORCE_DS = Bit.BIT_01;
 		public const uint OPTIMIZE = Bit.BIT_02;
 		public const uint DEBUG = Bit.BIT_03;
 		public const uint SYNC_HEAD = Bit.BIT_04;
 		public const uint NO_TRACK_DATA = Bit.BIT_05;
+
+		private static DiskTrack[,] _disk = new DiskTrack[85, 2];
 
 		/// <summary>
 		/// The entropy crossing value between formatted and unformatted

@@ -1,4 +1,7 @@
-Master
+check trackOffset + firstSyncOffset
+
+when fuzzy at end not possible to detect splice find other way?
+unformatted broken
 
 BUGS
 ====
@@ -6,6 +9,15 @@ BUGS
 - Fix Vroom track 77.1 Data field not detected?
 - Fix Barbarian track 78.0 not decoded as 00 (KF)
 - After the War SCP track 65 inconsistent # id not detected? (rev 3+4)
+
+GOOD FOR TEST
+=============
+Dragon Ninja NFA truncated
+Vroom fuzzy truncated ...
+Night shift SNI
+Time of Lore shifted tracks
+After the war inconsistent number of id in rev -- track 65
+Z-Out KF side 1 lots of inconsistencies
 
 Improvements
 ============

@@ -361,12 +361,10 @@ namespace Aufit {
 			cbLimitFlux.IsChecked = (Global.computeTrackHisto(track, side, rev, infoBox) < Global.UNFORMATED_ENTROPY);
 			//_histoDrawing.drawHisto(track, side, rev);
 			_histoDrawing.drawTrackHisto();
+			FDC.processTrack(track, side, rev);
 
-			if (!tabItemTrack.IsSelected) {
-				// still want to read track/id/sector
-				FDC.processTrack(track, side, rev);
+			if (!tabItemTrack.IsSelected)
 				return;
-			}
 
 			_fluxDrawing.setFluxDefault(track, side, rev);
 			_fluxDrawing.drawFlux(track, side, rev);
@@ -538,7 +536,7 @@ namespace Aufit {
 			CurrentTrack = CurrentSide = CurrentRev = 0;
 			Global.resetDisk();
 			tbAnalysis.Clear();
-			//SectorNotFoundException.resetException();
+			ImageErrorException.resetException();
 			diskClear();
 			_view = DataView.None;
 			fdDataView.Document = null;
@@ -649,11 +647,12 @@ namespace Aufit {
 					ButtonMatrix.setButtonBG(track, side);
 				}
 			}
-			//string message = SectorNotFoundException.ExceptionMessage;
-			//if (message != null) {
-			//	infoBox.AppendText(message);
-			//	redDot.Visibility = System.Windows.Visibility.Visible;
-			//}	// we have found inconsistencies while processing sectors
+			string message = ImageErrorException.ExceptionMessage;
+			if (message != null) {
+				infoBox.AppendText(message);
+				infoBox.ScrollToEnd();
+				redDot.Visibility = System.Windows.Visibility.Visible;
+			}   // we have found error
 		}
 
 
