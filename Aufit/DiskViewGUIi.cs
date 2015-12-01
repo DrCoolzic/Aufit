@@ -702,13 +702,11 @@ namespace Aufit {
 				path.Stroke = IdBrush;
 			else if (type == SecType.data) {
 				path.Stroke = NormalSectorBrush;
-				if ((sector.flags & Sector.WIDTH_ABOVE) != 0)
-				//if ((sector.flags & Sector.LONG_SECT) != 0)
+				if (sector.flags.HasFlag(SectorFlags.WIDTH_ABOVE))
 					path.Stroke = LongSectorBrush;
-				if ((sector.flags & Sector.WIDTH_BELOW) != 0)
-				//if ((sector.flags & Sector.SHORT_SECT) != 0)
+				if (sector.flags.HasFlag(SectorFlags.WIDTH_BELOW))
 					path.Stroke = ShortSectorBrush;
-				if ((sector.flags & Sector.WIDTH_INTRA) != 0)
+				if (sector.flags.HasFlag(SectorFlags.WIDTH_VARIATION))
 					path.Stroke = BitRateSectorBrush;
 				if ((sector.data.info.crc != 0) || (sector.data.fuzzy != null))
 					path.Stroke = FuzzySectorBrush;

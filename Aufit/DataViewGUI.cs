@@ -230,6 +230,8 @@ namespace Aufit {
 			foreach (Sector sector in sectors) {
 				p.Inlines.Add(new Run(String.Format(" --- Sector {0} --- ", sector.id.Sector)) 
 					{ Background = Brushes.LightGray, FontWeight = FontWeights.Bold });
+				if (sector.flags != SectorFlags.None)
+					p.Inlines.Add(String.Format(" {0}", sector.flags));
 				p.Inlines.Add(new LineBreak());
 
 				p.Inlines.Add(new Run("ID Field: ") { FontWeight = FontWeights.Bold });
@@ -261,10 +263,10 @@ namespace Aufit {
 					p.Inlines.Add(new Run("DATA Field: ") { FontWeight = FontWeights.Bold });
 					if ((sector.data.buffer.DataByte.Count - 6) != Global.sectSize(sector.id.Length))
 						p.Inlines.Add(" *** Incomplete *** ");
-					p.Inlines.Add(String.Format("DAM={0:X2} {1} bytes start at {2}µs length {3}µs CRC={4:X4}{5}{6}{7}",
+					p.Inlines.Add(String.Format("DAM={0:X2} {1} bytes start at {2}µs length {3}µs CRC={4:X4}{5}{6}",
 						sector.data.DAM, sector.data.buffer.DataByte.Count, sector.data.info.startTime / 1000, sector.data.info.timeLength / 1000,
 						sector.data.CRC, (sector.data.info.crc == 0) ? " Good" : " Bad",
-						(sector.data.fuzzy != null) ? " Fuzzy sector" : "", ((sector.flags & Sector.SEC_EQ_TRACK) == 0) ? "" : " Sect=Track"));
+						(sector.data.fuzzy != null) ? " Fuzzy sector" : ""));
 					p.Inlines.Add(new LineBreak());
 					p.Inlines.Add(String.Format("   START b={0}/{1} B={2} T={3:F2}ms",
 						sector.data.info.startBit, sector.data.info.startBitIAM, sector.data.info.startByte, (double)sector.data.info.startTime / 1000000.0));
@@ -426,16 +428,17 @@ namespace Aufit {
 			p.Inlines.Add(new LineBreak());
 			doc.Blocks.Add(p);
 
-			TrackBuffer buffer = tr.buffer;
 			p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
 				tr.info.startBit, tr.info.startByte, (double)tr.info.startTime / 1000000.0));
 			p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
 				tr.info.bitCount, tr.buffer.DataByte.Count, (double)tr.info.timeLength / 1000.0));
 			p.Inlines.Add(String.Format(" - FLUX={0}-{1}", tr.info.firstIndex, tr.info.lastIndex));
 			p.Inlines.Add(new LineBreak());
+			p.Inlines.Add(String.Format("   FLAGS = {0}", tr.flags));
+			p.Inlines.Add(new LineBreak());
 			p.Inlines.Add(new LineBreak());
 
-			drawBuffer(buffer, p, 0, false);
+			drawBuffer(tr.buffer, p, 0, false);
 			fdDataView.Document = doc;
 		}
 
@@ -447,7 +450,11 @@ namespace Aufit {
 		/// <param name="message">an optional message to display before the buffer</param>
 		public void drawBuffer(TrackBuffer buffer, Paragraph p, int startPos, bool isGap) {
 			int bytes = buffer.DataByte.Count;
-			for (int i = 0; i < bytes; i += 16) {
+			int lineLength = 16;
+			if (cbMFM.IsChecked == true)
+				lineLength = 8;
+
+			for (int i = 0; i < bytes; i += lineLength) {
 				// display position
 				p.Inlines.Add(new Run(String.Format("{0:D5}  ", i + startPos)));
 
@@ -464,7 +471,7 @@ namespace Aufit {
 				p.Inlines.Add(String.Format("{0:D6}  ", buffer.StartTime[i] / 1000));
 
 				string ascii = "  ";
-				for (int j = 0; j < 16; j++) {
+				for (int j = 0; j < lineLength; j++) {
 					if ((i + j) < bytes) {
 						if (_noColor)
 							p.Inlines.Add(String.Format("{0:X2} ", buffer.DataByte[i + j]));
@@ -495,26 +502,32 @@ namespace Aufit {
 									//(buffer.Bytes[i + j].startTime > 200000000) ? FontStyle = FontStyles.Italic :
 									//FontStyles.Normal
 								});
-						char ch = Convert.ToChar(buffer.DataByte[i + j]);
+
+							
+							char ch = Convert.ToChar(buffer.DataByte[i + j]);
 						ascii += Char.IsControl(ch) ? "." : ch.ToString();
 					}
 					else
 						p.Inlines.Add(String.Format("   "));
-				}	// one more line
-				p.Inlines.Add(ascii);
-				p.Inlines.Add(new LineBreak());
+				}   // one more line
 
 				if (cbMFM.IsChecked == true) {
-					p.Inlines.Add("       ");
-					for (int j = 0; j < 16; j++) {
+					p.Inlines.Add("  ");
+					for (int j = 0; j < lineLength; j++) {
 						if ((i + j) < bytes)
 							p.Inlines.Add(new Run(
-								String.Format("{0:X4} ", buffer.MFMWord[i + j])) { 
-							Background = Brushes.LightGray});
+								String.Format("{0:X4} ", buffer.MFMWord[i + j])) {
+								Background =
+										((buffer.MFMWord[i + j] == 0x0000) || (buffer.MFMWord[i + j] == 0xFFFF)) ? Brushes.Coral :
+										((buffer.MFMWord[i + j] == 0x4489) || (buffer.MFMWord[i + j] == 0x5224)) ? Brushes.Yellow :
+										Brushes.Lavender
+							});
+						else p.Inlines.Add(String.Format("     "));
 					}
-					p.Inlines.Add(new LineBreak());
 				}
-			}	// all lines
+				p.Inlines.Add(ascii);
+				p.Inlines.Add(new LineBreak());
+			}   // all lines
 		}
 
 

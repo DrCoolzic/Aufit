@@ -94,7 +94,7 @@ namespace ChartPackage {
 
 			int bitAvgCount = 1;
 			if (_avgCheckBox.IsChecked == true)
-				bitAvgCount = 300;
+				bitAvgCount = 150;
 
 			if (track == -1) track = _track;
 			else _track = track;
@@ -149,16 +149,16 @@ namespace ChartPackage {
 					Line iamLine = new Line();
 					switch (iam.Type) {
 						case IAMType.Id:
-							iamLine.Stroke = Brushes.DarkOrange;
+							iamLine.Stroke = Brushes.Red;
 							break;
 						case IAMType.Data:
-							iamLine.Stroke = Brushes.DarkBlue;
+							iamLine.Stroke = Brushes.Blue;
 							break;
 						default:
 							iamLine.Stroke = Brushes.Black;
 							break;
 					}
-					iamLine.StrokeThickness = 1.5;
+					iamLine.StrokeThickness = 2.0;
 					if (iam.Error) {
 						iamLine.StrokeDashArray = new DoubleCollection(new double[2] { 2, 2 });
 						iamLine.Stroke = Brushes.Red;

@@ -252,8 +252,8 @@
 									MouseLeftButtonUp="fluxMouseLBU" MouseMove="fluxMouseMove" MouseRightButtonDown="fluxMouseRBDown" />
 						</Canvas>
 						<StackPanel Grid.Column="5" Margin="10,20,15,0" Orientation="Horizontal" HorizontalAlignment="Right">
-							<CheckBox Grid.Column="8" x:Name="cbA1" Content="A1" Margin="5,0,5,0" VerticalAlignment="Top" 
-								HorizontalAlignment="Right" IsChecked="True">
+							<CheckBox Grid.Column="8" x:Name="cbA1" Content="A1" Margin="5,0,5,0" VerticalAlignment="Top" Background="Transparent"
+								HorizontalAlignment="Right" IsChecked="True" Opacity="0.6">
 								<CheckBox.ToolTip>
 									<ToolTip>
 										<TextBlock>Display A1 Sync Marks as red line</TextBlock>
@@ -261,7 +261,7 @@
 								</CheckBox.ToolTip>
 							</CheckBox>
 							<CheckBox Grid.Column="9" x:Name="cbC2" Content="C2" Margin="5,0,5,0" VerticalAlignment="Top" Click="cbDetailClick"
-								HorizontalAlignment="Right" IsChecked="False">
+								HorizontalAlignment="Right" IsChecked="False" Background="Transparent" Opacity="0.6">
 								<CheckBox.ToolTip>
 									<ToolTip>
 										<TextBlock>Display C2 Sync Marks as blue line</TextBlock>
@@ -273,35 +273,35 @@
 
 					<GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Top" />
 					<Grid Grid.Row="2" Margin="10,0,10,0"  x:Name ="clockGrid"  ClipToBounds="False" SizeChanged="clockGridSizeChanged" >
-						<Button Margin="33,12,0,0" BorderThickness="0" Width="20" Height="20"  Opacity="0.7" Background="Transparent"
+                        <Button Margin="33,12,0,0" BorderThickness="0" Width="20" Height="20"  Opacity="0.7" Background="Transparent"
 								HorizontalAlignment="Left" VerticalAlignment="Top" Panel.ZIndex="1000" ToolTipService.ShowDuration="60000">
-							<Image Source="Resources/help.png"/>
-							<Button.ToolTip>
-								<ToolTip>
-									<StackPanel>
-										<TextBlock FontWeight="Bold" FontSize="15">Cell-width chart</TextBlock>
-										<TextBlock>Displays the cell's width as computed by WD1772 DPLL</TextBlock>
-										<TextBlock>X axis is in ms - Y axis is in ns</TextBlock>
-										<StackPanel Orientation="Horizontal">
-											<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-											<TextBlock>Moving the above splitter line resizes the graph</TextBlock>
-										</StackPanel>
-									</StackPanel>
-								</ToolTip>
-							</Button.ToolTip>
-						</Button>
-						<CheckBox x:Name="cbClkAvg" Content="Avg" VerticalAlignment="Top" Click="cbAvgClick" Background="Transparent" Margin="0,14,15,0"
-								HorizontalAlignment="Right" IsChecked="True" >
-							<CheckBox.ToolTip>
-								<ToolTip>
-									<TextBlock>When checked a moving average is displayed instead of instantaneous values</TextBlock>
-								</ToolTip>
-							</CheckBox.ToolTip>
-						</CheckBox>
-						<Canvas Margin="2" x:Name="cvTextClock" ClipToBounds="True">
+                            <Image Source="Resources/help.png"/>
+                            <Button.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="Bold" FontSize="15">Cell-width chart</TextBlock>
+                                        <TextBlock>Displays the cell's width as computed by WD1772 DPLL</TextBlock>
+                                        <TextBlock>X axis is in ms - Y axis is in ns</TextBlock>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                            <TextBlock>Moving the above splitter line resizes the graph</TextBlock>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </ToolTip>
+                            </Button.ToolTip>
+                        </Button>
+                        <Canvas Margin="2" x:Name="cvTextClock" ClipToBounds="True">
 							<Canvas x:Name="cvGraphicClock" ClipToBounds="True" />
 						</Canvas>
-					</Grid>
+                        <CheckBox x:Name="cbClkAvg" Content="Avg" VerticalAlignment="Top" Click="cbAvgClick" Background="Transparent" Margin="0,14,15,0"
+								HorizontalAlignment="Right" IsChecked="True" Opacity="0.5" >
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>When checked a moving average is displayed instead of instantaneous values</TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                    </Grid>
 
 					<Grid Grid.Row="3" Margin="10,0,10,0"  x:Name ="dataGrid"  ClipToBounds="False" Background="Transparent" SizeChanged="dataGridSizeChanged" >
 						<Button Margin="33,12,0,0" BorderThickness="0" Width="20" Height="20"  Opacity="0.7" Background="{x:Null}"

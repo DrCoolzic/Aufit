@@ -309,13 +309,11 @@ namespace ChartPackage {
 				sectorPhasePolygon.Fill = IGapBrush;
 			else {
 				sectorPhasePolygon.Fill = NormalSectorBrush;
-				if ((sector.flags & Sector.WIDTH_ABOVE) != 0)
-					//if ((sector.flags & Sector.LONG_SECT) != 0)
+				if (sector.flags.HasFlag(SectorFlags.WIDTH_ABOVE))
 					sectorPhasePolygon.Fill = LongSectorBrush;
-				if ((sector.flags & Sector.WIDTH_BELOW) != 0)
-					//if ((sector.flags & Sector.SHORT_SECT) != 0)
+				if (sector.flags.HasFlag(SectorFlags.WIDTH_BELOW))
 					sectorPhasePolygon.Fill = ShortSectorBrush;
-				if ((sector.flags & Sector.WIDTH_INTRA) != 0)
+				if (sector.flags.HasFlag(SectorFlags.WIDTH_VARIATION))
 					sectorPhasePolygon.Fill = BitRateSectorBrush;
 
 				DataField data;

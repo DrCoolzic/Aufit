@@ -158,69 +158,56 @@ namespace WD1772Package {
 		public BlockInfo info = new BlockInfo();
 	}
 
-
-	/// <summary>
-	/// Sector information. Contains ID & Data fields and flags
-	/// </summary>
-	public class Sector {
-		/// <summary>50% of bits above normal + 3.5%</summary>
-		public const uint WIDTH_ABOVE = Bit.BIT_01;
-
-		/// <summary>50% of bits below normal - 3.5%</summary>
-		public const uint WIDTH_BELOW = Bit.BIT_02;
-
-		/// <summary>Mix of bits below and above normal</summary>
-		public const uint WIDTH_INTRA = Bit.BIT_03;
-
+	[Flags]
+	public enum SectorFlags : uint {
+		None = 0,
+		/// <summary>50% of bits cell width above normal (+3.5%)</summary>
+		WIDTH_ABOVE = Bit.BIT_01,
+		/// <summary>50% of bits cell width below normal (-3.5%)</summary>
+		WIDTH_BELOW = Bit.BIT_02,
+		/// <summary>50% of bits cell below and above normal</summary>
+		WIDTH_VARIATION = Bit.BIT_03,
 		/// <summary>IDAM not equal $FE</summary>
-		public const uint NO_STD_IDAM = Bit.BIT_04;
-
+		NOT_STD_IDAM = Bit.BIT_04,
 		/// <summary>Wrong track number in ID</summary>
-		public const uint BAD_TRK_NUM = Bit.BIT_05;
-
+		ID_BAD_TRK_NUM = Bit.BIT_05,
 		/// <summary>Wrong head number in ID</summary>
-		public const uint BAD_HEAD_NUM = Bit.BIT_06;
-
+		ID_BAD_HEAD_NUM = Bit.BIT_06,
 		/// <summary>Invalid sector number in ID</summary>
-		public const uint BAD_SEC_NUM = Bit.BIT_07;
-
+		ID_BAD_SEC_NUM = Bit.BIT_07,
 		/// <summary>Invalid sector length in ID</summary>
-		public const uint BAD_SEC_LEN = Bit.BIT_08;
-
-		/// <summary>Sector within sector (overlapping)</summary>
-		public const uint SEC_IN_SEC = Bit.BIT_09;
-
+		ID_BAD_SEC_LEN = Bit.BIT_08,
 		/// <summary>DAM not equal to $FB</summary>
-		public const uint NO_STD_DAM = Bit.BIT_10;
-
+		NOT_STD_DAM = Bit.BIT_09,
+		/// <summary>Sector contains NFA region</summary>
+		NFA_IN_SECT = Bit.BIT_10,
 		/// <summary>Two or more sector with same number</summary>
-		public const uint DUP_SEC_NUM = Bit.BIT_11;
-
+		DUP_SEC_NUM = Bit.BIT_11,
 		/// <summary>Sector read time is 3% above normal</summary>
-		public const uint LONG_SECT = Bit.BIT_12;
-
+		LONG_SECT = Bit.BIT_12,
 		/// <summary>Sector read time is 3% below normal</summary>
-		public const uint SHORT_SECT = Bit.BIT_13;
-
+		SHORT_SECT = Bit.BIT_13,
+		/// <summary>Data field with no ID field</summary>
+		DATA_NO_ID = Bit.BIT_14,
+		/// <summary>Truncated sector</summary>
+		TRUNC_SECT = Bit.BIT_15,
 		/// <summary>Sector has DM type of fuzzy byte</summary>
-		public const uint DM_FUZZY = Bit.BIT_14;
+		DM_FUZZY = Bit.BIT_16,
 
-		/// <summary>Sector data field but no ID field</summary>
-		public const uint SEC_NO_ID = Bit.BIT_15;
-
-		/// <summary>STruncated sector</summary>
-		public const uint TRUNC_SECT = Bit.BIT_16;
-
-		public const uint NFA_SECT = Bit.BIT_17;
-
-		public const uint DM_HACK = Bit.BIT_30;
-		public const uint SEC_EQ_TRACK = Bit.BIT_31;
+		DM_HACK = Bit.BIT_30,
+		SEC_IN_TRACK = Bit.BIT_31
 
 		// BAD_ID_CRC => id.info.crc != 0
 		// SECT_NO_DATA => data == null
 		// BAD_DATA_CRC => data.info.crc != 0
 		// FUZZY_SECT => data.fuzzy != null
+	}
 
+
+	/// <summary>
+	/// Sector information. Contains ID & Data fields and flags
+	/// </summary>
+	public class Sector {
 		/// <summary>Pointer to the Id Field of a sector</summary>
 		public IdField id;
 
@@ -234,57 +221,47 @@ namespace WD1772Package {
 		public DataField dataRecovered;
 
 		/// <summary>Sector's flags</summary>
-		public uint flags;
+		public SectorFlags flags;
 
 		/// <summary>Same sector content than track at offset (Pasti optimize) </summary>
 		public int trackOffset;
 	}
 
 
+	[Flags]
+	public enum TrackFlag : uint {
+		None = 0,
+		/// <summary>Track has less than 6062 bytes</summary>
+		SHORT_TRACK = Bit.BIT_01,
+		/// <summary>Track has more 6437 bytes</summary>
+		LONG_TRACK = Bit.BIT_02,
+		/// <summary>Data track detected</summary>
+		DATA_TRACK = Bit.BIT_03,
+		/// <summary>Track has more than 5 invalid bytes ($F5-F7) in GAP</summary>
+		BAD_DATA_IN_GAP = Bit.BIT_04,
+		/// <summary>Sector numbered non sequentially</summary>
+		SECTORS_NOT_IN_SEQ = Bit.BIT_05,
+		/// <summary>Hidden Data in track (DF & JMD)</summary>
+		HIDDEN_DATA = Bit.BIT_06,
+		/// <summary>Track has Sync sequence > 4</summary>
+		INVALID_SYNC_SEQ = Bit.BIT_07,
+		/// <summary>Track contains No Flux Area</summary>
+		NFA_IN_TRACK = Bit.BIT_08,
+		/// <summary>Track contains sector with non standard size</summary>
+		SECTORS_NOT_STD_SIZE = Bit.BIT_09
+	///// <summary>Shifted Track with data over index pulse</summary>
+	//public const uint DATA_OVER_IDX = Bit.BIT_08;
+	///// <summary>Shifted Track with data after index pulse</summary>
+	//public const uint DATA_AFTER_IDX = Bit.BIT_09;
+	///// <summary>Shifted Track with id over index pulse</summary>
+	//public const uint ID_OVER_IDX = Bit.BIT_10;
+	///// <summary>Shifted Track with id after index pulse</summary>
+	//public const uint ID_AFTER_IDX = Bit.BIT_11;
+	}
+
+
 	/// <summary>Track information</summary>
 	public class Track {
-		/// <summary>Track has less than 6062 bytes</summary>
-		public const uint SHORT_TRACK = Bit.BIT_01;
-
-		/// <summary>Track has more 6437 bytes</summary>
-		public const uint LONG_TRACK = Bit.BIT_02;
-
-		/// <summary>Data track detected</summary>
-		public const uint DATA_TRACK = Bit.BIT_03;
-
-		/// <summary>Track has more than 5 invalid bytes ($F5-F7) in GAP</summary>
-		public const uint BAD_DATA_GAP = Bit.BIT_04;
-
-		/// <summary>Sector numbered non sequentially</summary>
-		public const uint SECTOR_SNS = Bit.BIT_05;
-
-		/// <summary>Track contains sector with non standard size</summary>
-		public const uint NOT_STD_SIZ = Bit.BIT_06;
-
-		/// <summary>Track contains No Flux Area</summary>
-		public const uint NO_FLUX_AREA = Bit.BIT_07;
-
-		/// <summary>Shifted Track with data over index pulse</summary>
-		public const uint DATA_OVER_IDX = Bit.BIT_08;
-
-		/// <summary>Shifted Track with data after index pulse</summary>
-		public const uint DATA_AFTER_IDX = Bit.BIT_09;
-
-		/// <summary>Shifted Track with id over index pulse</summary>
-		public const uint ID_OVER_IDX = Bit.BIT_10;
-
-		/// <summary>Shifted Track with id after index pulse</summary>
-		public const uint ID_AFTER_IDX = Bit.BIT_11;
-
-		/// <summary>Hidden Data in track (DF & JMD)</summary>
-		public const uint HIDDEN_DATA = Bit.BIT_12;
-
-		/// <summary>Track has Sync sequence > 4</summary>
-		public const uint INV_SYNC_SEQ = Bit.BIT_13;
-
-		// partially formatted track
-		// Fuzzy track ???
-
 		/// <summary>buffer for all the byte read in the DATA field of the sector</summary>
 		public TrackBuffer buffer = new TrackBuffer();
 
@@ -292,7 +269,7 @@ namespace WD1772Package {
 		public BlockInfo info = new BlockInfo();
 
 		/// <summary>Track's flags</summary>
-		public uint flags;
+		public TrackFlag flags;
 
 		/// <summary>
 		/// Location in byte of the first A1 sync before an IAM sequence
@@ -523,14 +500,14 @@ namespace WD1772Package {
 						bti.nextByte();
 
 						if (dsr.SyncSeq > 4)
-							Global.Disk[track, side].track.flags |= Track.INV_SYNC_SEQ;
+							Global.Disk[track, side].track.flags |= TrackFlag.INVALID_SYNC_SEQ;
 
 						// check NFA
 						if ((dsr.MFM == 0) || (dsr.MFM == 0xFFFF))
 							nfaCount++;
 						else {
 							if (nfaCount > 8)
-								Global.Disk[track, side].track.flags |= Track.NO_FLUX_AREA;
+								Global.Disk[track, side].track.flags |= TrackFlag.NFA_IN_TRACK;
 							nfaCount = 0;
 						}
 
@@ -589,7 +566,7 @@ namespace WD1772Package {
 										int s = (currentSector != -1) ? currentSector : dt.sectors.Count - 1;
 										phase = Phases.postDataGap;
 										if (dataNoId && (syncCount == 0))
-											dt.sectors[s].flags |= Sector.SEC_EQ_TRACK;
+											dt.sectors[s].flags |= SectorFlags.SEC_IN_TRACK;
 									}   // last byte
 									break;
 
@@ -607,7 +584,7 @@ namespace WD1772Package {
 			bti.storeEndInfo(Global.Disk[track, side].track.info, false);
 
 			if (invalidByteInGap > 5)
-				Global.Disk[track, side].track.flags |= Track.BAD_DATA_GAP;
+				Global.Disk[track, side].track.flags |= TrackFlag.BAD_DATA_IN_GAP;
 		}   // end of readTrack()
 
 
@@ -631,7 +608,7 @@ namespace WD1772Package {
 			BitTrackInfo bti = new BitTrackInfo(dsr);
 			int rev = 0;
 
-			// We read from the first to last index of the track looking only for all IAM in the current revolution.
+			// We read from the first to last index looking only for all IAM
 			for (int  currentIndex = start; currentIndex < stop; currentIndex++) {
 				int last = Global.lastIndex(track, side, rev);
 				if (currentIndex > last) {
@@ -749,7 +726,7 @@ namespace WD1772Package {
 		}   // end of readId()
 
 
-		public static uint readData(Global.DiskTrack dt, DataField data, int size, bool full) {
+		public static SectorFlags readData(Global.DiskTrack dt, DataField data, int size, bool full) {
 			int firstIndex = (data.info.firstIndex - 5) < 0 ? 0 : data.info.firstIndex - 5;
 			int lastIndex = data.info.lastIndex;
 			Phases phase = Phases.postIdGap;
@@ -761,7 +738,7 @@ namespace WD1772Package {
 			int widthOver = 0;
 			int widthUnder = 0;
 			ushort crc = 0;
-			uint flags = 0;
+			SectorFlags flags = 0;
 			int nfaCount = 0;
 
 			for (int currentIndex = firstIndex; (currentIndex <= lastIndex) || (phase != Phases.postDataGap); currentIndex++) {
@@ -777,16 +754,16 @@ namespace WD1772Package {
 					if (dsr.DataReady) {
 						bti.nextByte();
 						if (full) {
-							if ((currentIndex > lastIndex) && ((flags & Sector.TRUNC_SECT) == 0)) {
-								flags |= Sector.TRUNC_SECT;
-								data.truncBitSize = bti.ByteCount - data.info.startByte - 1;
+							if ((currentIndex > lastIndex) && !flags.HasFlag(SectorFlags.TRUNC_SECT)) {
+								flags |= SectorFlags.TRUNC_SECT;
+								data.truncBitSize = bti.ByteCount - data.info.startByte;
 							}
 							// check NFA
 							if ((dsr.MFM == 0) || (dsr.MFM == 0xFFFF))
 								nfaCount++;
 							else {
 								if (nfaCount > 8)
-									flags |= Sector.NFA_SECT;
+									flags |= SectorFlags.NFA_IN_SECT;
 								nfaCount = 0;
 							}
 						}
@@ -827,11 +804,11 @@ namespace WD1772Package {
 									phase = Phases.postDataGap;
 
 									if ((widthOver > (size / 2)) || (widthUnder > (size / 2))) {
-										if (widthOver > (size / 2)) flags |= Sector.WIDTH_ABOVE;
-										if (widthUnder > (size / 2)) flags |= Sector.WIDTH_BELOW;
+										if (widthOver > (size / 2)) flags |= SectorFlags.WIDTH_ABOVE;
+										if (widthUnder > (size / 2)) flags |= SectorFlags.WIDTH_BELOW;
 									}
 									else if ((widthOver > 0) && (widthUnder > 0) && ((widthOver + widthUnder) > (size / 4)))
-										flags |= Sector.WIDTH_INTRA;
+										flags |= SectorFlags.WIDTH_VARIATION;
 
 									data.postDataGap = new GapField();
 									bti.storeStartInfo(data.postDataGap.info, false);
@@ -870,13 +847,13 @@ namespace WD1772Package {
 		/// <param name="sector"></param>
 		/// <param name="dataNoId"></param>
 		/// <returns></returns>
-		public static uint readDataCompare(int track, int side, int rev, Sector sector, int iamIndex, bool dataNoId) {
+		public static SectorFlags readDataCompare(int track, int side, int rev, Sector sector, int iamIndex, bool dataNoId) {
 			Global.DiskTrack dt = Global.Disk[track, side];
 
 			int size = Global.sectSize(sector.id.Length) + 3; // AM + 2 CRC + Size
 			DataField data = dataNoId ? sector.dataNoId : sector.data;
 
-			uint flags = readData(dt, data, size, true);
+			SectorFlags flags = readData(dt, data, size, true);
 
 
 			for (int j = 0; j < Global.Disk[track, side].fluxDataRev.Count(); j++) {
@@ -918,7 +895,6 @@ namespace WD1772Package {
 			Global.DiskTrack dt = Global.Disk[track, side];
             if ((dt.sectors != null) && (dt.sectors.Count > 0)) return;
 			if (dt.fluxData == null) return;
-
 			Global.Disk[track, side].sectors = new List<Sector>();
 			bool consistentIAM = true;
 
@@ -933,19 +909,15 @@ namespace WD1772Package {
 				int diff = maxSize - Global.Disk[track, side].iams[r].Count;
                 if (diff > 0) {
 					if (diff > 1) {
-						try {
-							throw new ImageErrorException(
+						try { throw new ImageErrorException(
 								String.Format("*** T{0:D2}.{1:D1} Too many inconsistencies turning off sector detection ***", track, side));
 						}
-						catch (ImageErrorException e) {
-							ImageErrorException.ExceptionMessage = e.Message;
-						}
+						catch (ImageErrorException e) { ImageErrorException.ExceptionMessage = e.Message; }
 						consistentIAM = false;
-						break;
+                        break;
 					}
 					for (refRev = 0; refRev < Global.Disk[track, side].fluxDataRev.Count(); refRev++) {
-						if (Global.Disk[track, side].iams[refRev].Count == maxSize)
-							break;
+						if (Global.Disk[track, side].iams[refRev].Count == maxSize) break;
 					}   // first good
 					for (int iamIndex = 0; iamIndex < Global.Disk[track, side].iams[r].Count; iamIndex++) {
 						IAM iam = Global.Disk[track, side].iams[r][iamIndex];
@@ -958,14 +930,14 @@ namespace WD1772Package {
 							Global.Disk[track, side].iams[r].Insert(iamIndex, repair);
 							try {
 								throw new ImageErrorException(
-									String.Format("*** T{0:D2}.{1:D1} {2} not found in Revolution {3} *** Recovering from {4}", 
-									track, side, refIAM.Type, r + 1, refRev + 1));
+								  String.Format("*** T{0:D2}.{1:D1} {2} not found in Revolution {3} recovering from {4} ***",
+								  track, side, refIAM.Type, r + 1, refRev + 1));
 							}
-							catch (ImageErrorException e) {
-								ImageErrorException.ExceptionMessage = e.Message;
-							}
-                            break;
-						}
+							catch (ImageErrorException e) { ImageErrorException.ExceptionMessage = e.Message; }
+							break;
+						}   // found the guilty
+						else
+							Debug.Assert(true, "Damned IAM problem");
 					}	// search first error
 				}   // found problem
 			}	// check all rev
@@ -994,7 +966,6 @@ namespace WD1772Package {
 				for (int iamIndex = 0; iamIndex < Global.Disk[track, side].iams[rev].Count; iamIndex++) {
 					IAM iam = Global.Disk[track, side].iams[rev][iamIndex];
 					if (iam.Type == IAMType.Id) idCount++;
-
 					if ((iam.Type == IAMType.Data) && (Global.Disk[track, side].sectors.Count > 0)) {
 						int secIndex = (idCount < 0) ? Global.Disk[track, side].sectors.Count - 1 : idCount;
 						sector = Global.Disk[track, side].sectors[secIndex];
@@ -1011,7 +982,7 @@ namespace WD1772Package {
 						sector.flags |= readDataCompare(track, side, rev, sector, iamIndex, dataNoId);
 					}   // data IAM
 				}   // all IAM
-			}
+			}	// consistent
 
 			// read track
 			readTrack(track, side, rev);
@@ -1040,7 +1011,7 @@ namespace WD1772Package {
 					}
 				}   // sector no data
 				// store info if Truncated and NFA
-				if (((sector.flags & Sector.NFA_SECT) != 0) && ((sector.flags & Sector.TRUNC_SECT) != 0))
+				if (sector.flags.HasFlag(SectorFlags.NFA_IN_SECT) && sector.flags.HasFlag(SectorFlags.TRUNC_SECT))
 					lastTruncNFABlock = Global.Disk[track, side].sectors.Count - 1;
 			}
 

@@ -1,7 +1,7 @@
 check trackOffset + firstSyncOffset
 
 when fuzzy at end not possible to detect splice find other way?
-unformatted broken
+check fuzzy type => DM / random / DrT
 
 BUGS
 ====
@@ -17,7 +17,7 @@ Vroom fuzzy truncated ...
 Night shift SNI
 Time of Lore shifted tracks
 After the war inconsistent number of id in rev -- track 65
-Z-Out KF side 1 lots of inconsistencies
+Alternate realty side 1 lots of inconsistencies
 
 Improvements
 ============

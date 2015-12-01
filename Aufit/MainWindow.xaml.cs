@@ -828,15 +828,15 @@ namespace Aufit {
 				int endPos = (sector.data != null) ? sector.data.info.startTime + sector.data.info.timeLength :
 					sector.id.info.startTime + sector.id.info.timeLength;
 				if ((startPos < pos) && (endPos > pos)) {
-					infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n",
-						_dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, sector.id.Sector));
-					infoBox.ScrollToEnd();
+				//	infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n",
+				//		_dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, sector.id.Sector));
+				//	infoBox.ScrollToEnd();
 					int first = sector.data.info.firstIndex;
 					int last = sector.data.info.lastIndex;
 					int[] segment = Global.Disk[CurrentTrack, CurrentSide].fluxData.fluxValue.Skip(first).Take(last - first).ToArray();
-					HistoData h = Global.computeSegmentHisto(segment);
+					HistoData histo = Global.computeSegmentHisto(segment);
 					string message = String.Format("Sect {0}", sector.id.Sector);
-					_histoDrawing.drawHisto(h, message);
+					_histoDrawing.drawHisto(histo, message);
 				}
 			}
 		}
@@ -1051,8 +1051,7 @@ namespace Aufit {
 				for (int track = 0; track < 84; track++) {
 					if (Global.Disk[track, side].track != null) {
 						hasProtection |= Global.Disk[track, side].track.hasProtections | Global.Disk[track, side].track.shiftedTrack;
-                        STIncompatible |= (((Global.Disk[track, side].track.flags & Track.NOT_STD_SIZ) != 0) ||
-							((Global.Disk[track, side].track.flags & Track.SECTOR_SNS) != 0));
+						STIncompatible |= Global.Disk[track, side].track.flags.HasFlag(TrackFlag.SECTORS_NOT_STD_SIZE | TrackFlag.SECTORS_NOT_IN_SEQ);
 					}
 					hasIncompleteData |= Global.Disk[track, side].hasIncompleteData;
 				}   // all tracks

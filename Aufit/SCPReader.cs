@@ -315,6 +315,7 @@ namespace SCPReaderPackage {
 
 			// check track number
 			if (ti.trackSide != trackSide) {
+				// TODO fails on Devon Aire.scp - Dive Bomber - A.scp - Dive Bomber - B.scp
 				return SCPStatus.stsFileContent;
 			}
 

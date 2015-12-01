@@ -67,6 +67,7 @@ namespace BatchAufit {
 						baseName = fi.Directory + ".raw";
 
 					if ((File.Exists(baseName + ".disk_view." + suffix + ".png")) ||
+						(File.Exists(baseName + ".disk." + suffix + ".png")) ||
 						(File.Exists(baseName + ".image." + suffix + ".stx")) ||
 						(File.Exists(baseName + ".protections." + suffix + ".txt"))) {
 						ftp.Done = true;
@@ -249,6 +250,7 @@ namespace BatchAufit {
 					tbResult.AppendText("Cleaned " + baseName);
 					tbResult.AppendText("\n");
 					File.Delete(baseName + ".disk_view." + tbSuffix.Text + ".png");
+					File.Delete(baseName + ".disk." + tbSuffix.Text + ".png");
 					File.Delete(baseName + ".image." + tbSuffix.Text + ".stx");
 					File.Delete(baseName + ".protections." + tbSuffix.Text + ".txt");
 					ftp.Done = false;

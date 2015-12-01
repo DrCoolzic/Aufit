@@ -142,9 +142,9 @@ namespace PastiPackage {
 			}
 						
 			// Write all track records
-			for (int trackNum = 0; trackNum < 84; trackNum++) {
+			for (int track = 0; track < 84; track++) {
 				for (int side = 0; side < sideCount; side++) {
-					Global.DiskTrack dt = Global.Disk[trackNum, side];
+					Global.DiskTrack dt = Global.Disk[track, side];
 					if (dt.track == null) 
 						continue;
 
@@ -160,7 +160,7 @@ namespace PastiPackage {
 					tdesc.sectorCount = (ushort)sectorCount;
 
 					tdesc.trackLength = (ushort)dt.track.buffer.DataByte.Count;
-					tdesc.trackNumber = (byte)trackNum;
+					tdesc.trackNumber = (byte)track;
 					if (side == 1) tdesc.trackNumber |= 0x80;
 					tdesc.trackType = 0;
 
@@ -177,13 +177,13 @@ namespace PastiPackage {
 					for (int sect = 0; sect < sectorCount; sect++) {
 						// if we recover data from other revolution we disable data in track
 						if (dt.sectors[sect].dataRecovered != null)
-							dt.sectors[sect].flags &= ~Sector.SEC_EQ_TRACK;
+							dt.sectors[sect].flags &= ~SectorFlags.SEC_IN_TRACK;
 						// recovered or good CRC => no fuzzy
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null) &&
 							((dt.sectors[sect].dataRecovered != null) || (dt.sectors[sect].data.info.crc == 0))) {
 							dt.sectors[sect].data.fuzzy = null;
 							if (_debug) {
-								_saveImageBox.AppendText(String.Format("Track {0:D2}.{1:D1} ", trackNum, side));
+								_saveImageBox.AppendText(String.Format("Track {0:D2}.{1:D1} ", track, side));
 								_saveImageBox.AppendText(String.Format("Reseting fuzzy for sector {0} - CRC={1} Recover={2}\n", sect,
 								(dt.sectors[sect].data.info.crc == 0) ? "Good" : "Bad", (dt.sectors[sect].dataRecovered != null) ? "Yes" : "No"));
 							}
@@ -195,7 +195,7 @@ namespace PastiPackage {
 					tdesc.recordSize += tdesc.fuzzyCount;
 
 					// do we have track data
-					if (trackNeedTrackData(dt)) {
+					if (trackNeedTrackData(track, side)) {
 						needTrackData = true;
 						if (_trkSync) {
 							tdesc.trackFlags |= TrackDesc.TRK_IMAGE | TrackDesc.TRK_SYNC;
@@ -213,7 +213,7 @@ namespace PastiPackage {
 					// do we need timing record
 					int timingEntries = 0;
 					for (int sect = 0; sect < sectorCount; sect++)
-						if (((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0) && (dt.sectors[sect].data != null))
+						if ((dt.sectors[sect].flags.HasFlag(SectorFlags.WIDTH_VARIATION)) && (dt.sectors[sect].data != null))
 							timingEntries += Global.sectSize(dt.sectors[sect].id.Length) / 16;
 
 					if (timingEntries > 0)
@@ -223,7 +223,7 @@ namespace PastiPackage {
 					for (int sect = 0; sect < sectorCount; sect++) {
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.buffer.DataByte.Count != 0)) {
 							// we do not add up if we can use the info in track
-							if (!optimize || !needTrackData || ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) == 0))
+							if (!optimize || !needTrackData || !dt.sectors[sect].flags.HasFlag(SectorFlags.SEC_IN_TRACK))
 								tdesc.recordSize += (uint)dt.sectors[sect].data.buffer.DataByte.Count - 6;
 						}
 					}
@@ -255,7 +255,7 @@ namespace PastiPackage {
 							if ((dt.sectors[sect].data != null) && ((dt.sectors[sect].data.buffer.DataByte.Count) != 0)) {
 								
 								// we check to see if we already have the same content in track data
-								if (optimize && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) != 0))
+								if (optimize && needTrackData && dt.sectors[sect].flags.HasFlag(SectorFlags.SEC_IN_TRACK))
 									// TODO Why +1 ? already done in readTrack?
 									sd.dataOffset = (uint)dt.sectors[sect].trackOffset + 1;
 								else {
@@ -290,12 +290,12 @@ namespace PastiPackage {
 							}	// these two flags are only meaningful if record has bytes
 							if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.fuzzy != null))
 								fdcFlag |= SectorDesc.FUZZY_BITS;
-							if ((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0)
+							if (dt.sectors[sect].flags.HasFlag(SectorFlags.WIDTH_VARIATION))
 								fdcFlag |= SectorDesc.BIT_WIDTH;
 
 							if (((fdcFlag & SectorDesc.CRC_ERR) != 0) && ((fdcFlag & SectorDesc.FUZZY_BITS) == 0) && ((fdcFlag & SectorDesc.SECT_RNF) != 0))
 								_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} S{2} CRC error on non fuzzy sector. Check image quality\n",
-										trackNum, side, dt.sectors[sect].id.Sector));
+										track, side, dt.sectors[sect].id.Sector));
 
 							sd.fdcFlags = fdcFlag;
 							sd.reserved = 0;
@@ -331,7 +331,7 @@ namespace PastiPackage {
 								dt.sectors[sect].data.fuzzy.Count() - 6, dt.sectors[sect].id.Sector, start, buffer.Count - 1));
 							else
 								_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} found fuzzy sector {2}\n",
-										trackNum, side, dt.sectors[sect].id.Sector));
+										track, side, dt.sectors[sect].id.Sector));
 						}	// fuzzy found
 					}	// all sect
 
@@ -361,7 +361,7 @@ namespace PastiPackage {
 					for (int sect = 0; sect < sectorCount; sect++) {
 						start = buffer.Count;
 						if ((dt.sectors[sect].data != null) && (dt.sectors[sect].data.buffer.DataByte.Count != 0)) {
-							if (optimize && needTrackData && ((dt.sectors[sect].flags & Sector.SEC_EQ_TRACK) !=0)) {
+							if (optimize && needTrackData && dt.sectors[sect].flags.HasFlag(SectorFlags.SEC_IN_TRACK)) {
 								if (_debug) _saveImageBox.AppendText(String.Format("      Sector {0} {1} bytes already in track data @{2}\n",
 									dt.sectors[sect].id.Sector, dt.sectors[sect].data.buffer.DataByte.Count - 6, dt.sectors[sect].trackOffset));
 							}
@@ -378,7 +378,7 @@ namespace PastiPackage {
 									(dt.sectors[sect].dataRecovered != null) ? "recovered" : ""));
 								else if (dt.sectors[sect].dataRecovered != null) {
 									_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} recovered Sector {2}\n", 
-										trackNum, side, dt.sectors[sect].id.Sector));
+										track, side, dt.sectors[sect].id.Sector));
 								}
 							}
 						}
@@ -394,7 +394,7 @@ namespace PastiPackage {
 						if (_debug) _saveImageBox.AppendText(String.Format("   Writing Timing header Flag=5 size={0} ({1}-{2})\n", 2 * timingEntries + 4, start, buffer.Count - 1));
 						// write timing
 						for (int sect = 0; sect < sectorCount; sect++) {
-							if (((dt.sectors[sect].flags & Sector.WIDTH_INTRA) != 0) && (dt.sectors[sect].data != null)) {
+							if ((dt.sectors[sect].flags.HasFlag(SectorFlags.WIDTH_VARIATION)) && (dt.sectors[sect].data != null)) {
 								int timingSum = 0;
 								for (int i = 4; i < (dt.sectors[sect].data.buffer.DataByte.Count - 2); i++) {
 									timingSum += (dt.sectors[sect].data.buffer.BitWidth[i] * 16);
@@ -410,7 +410,7 @@ namespace PastiPackage {
 									dt.sectors[sect].data.buffer.DataByte.Count - 6, dt.sectors[sect].id.Sector, start, buffer.Count - 1));
 								else
 									_saveImageBox.AppendText(String.Format("T{0:D2}.{1:D1} writing timing information for sector {2} \n",
-										trackNum, side, dt.sectors[sect].id.Sector));
+										track, side, dt.sectors[sect].id.Sector));
 							}	// timing found
 						}	// all sect
 					}
@@ -511,7 +511,9 @@ namespace PastiPackage {
 		}
 
 
-		private bool trackNeedTrackData(Global.DiskTrack tdata) {
+		private bool trackNeedTrackData(int track, int side) {
+			Global.DiskTrack dt = Global.Disk[track, side];
+			bool needTrack = false;
 			// We need Optional Track Data when:
 			// - Single Data Segment = ID found but no data
 			// - Invalid Data in Gap ?
@@ -519,9 +521,13 @@ namespace PastiPackage {
 			// - Invalid sync mark sequence
 			// - Sector within Sector
 			// - No Flux Area
-			// - Short long track ??
 			// - SWS
 			// - no data
+
+			// CHECKED
+			// short/long track
+			needTrack |= dt.track.flags.HasFlag(TrackFlag.SHORT_TRACK | TrackFlag.LONG_TRACK);
+
 			if (_noTrackData) return false;
 			return true;
 		}
