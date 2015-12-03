@@ -48,11 +48,8 @@ using System.Threading;
 
 namespace Aufit {
 
-	enum DataView { None, Layout, Track, Sector }
-
 	public partial class MainWindow : Window {
 		bool _noColor = false;
-		DataView _view = DataView.None;
 
 		public void drawLayout(int track, int side, int rev) {
 			// Force reread
@@ -64,7 +61,6 @@ namespace Aufit {
 			FlowDocument doc = new FlowDocument();
 			doc.FontFamily = new FontFamily("Consolas");
 			doc.FontSize = 15;
-			_view = DataView.Layout;
 
 			Paragraph p = new Paragraph();
 			p.Margin = new Thickness(0);
@@ -72,7 +68,7 @@ namespace Aufit {
 			p.Inlines.Add(Aufit.MainWindow.ImageName);
 			p.Inlines.Add(new LineBreak());
 
-			p.Inlines.Add(String.Format("Track {0:D2}.{1} {2} bytes has {3} sectors", track, side, dt.track.buffer.DataByte.Count, dt.sectors.Count));
+			p.Inlines.Add(String.Format("Track {0:D2}.{1} {2} bytes has {3} sectors (rev={4})", track, side, dt.track.buffer.DataByte.Count, dt.sectors.Count, rev + 1));
 			doc.Blocks.Add(p);
 
 			Table tab = new Table();
@@ -206,14 +202,13 @@ namespace Aufit {
 			FlowDocument doc = new FlowDocument();
 			doc.FontFamily = new FontFamily("Consolas");
 			doc.FontSize = 15;
-			_view = DataView.Sector;
 
 			Paragraph p = new Paragraph();
 			p.Margin = new Thickness(0);
 			p.Inlines.Add(Aufit.MainWindow.ImageName);
 			p.Inlines.Add(new LineBreak());
 
-			p.Inlines.Add(String.Format("Track {0:D2}.{1} has {2} sectors", track, side, sectors.Count));
+			p.Inlines.Add(String.Format("Track {0:D2}.{1} has {2} sectors (rev={3})", track, side, sectors.Count, rev + 1));
 			if (Global.Disk[track, side].hasIncompleteData)
 				p.Inlines.Add(new Run(
 					String.Format(" *** Incomplete Data *** ", track, side, sectors.Count)
@@ -414,7 +409,6 @@ namespace Aufit {
 			//d.FontFamily = new FontFamily("Lucida Console");			
 			doc.FontFamily = new FontFamily("Consolas");
 			doc.FontSize = 15;
-			_view = DataView.Track;
 
 			Paragraph p = new Paragraph(new Run(Aufit.MainWindow.ImageName));
 			//p.FontWeight = FontWeights.Bold;
@@ -422,8 +416,8 @@ namespace Aufit {
 			p.Margin = new Thickness(0);
 			doc.Blocks.Add(p);
 
-			p = new Paragraph(new Run(String.Format("Track {0:D2}.{1} {2} bytes Length {3} µs",
-				track, side, tr.buffer.DataByte.Count, tr.info.timeLength / 1000)) { FontWeight = FontWeights.Normal });
+			p = new Paragraph(new Run(String.Format("Track {0:D2}.{1} {2} bytes (rev={3}) Length {4} µs",
+				track, side, tr.buffer.DataByte.Count, rev + 1, tr.info.timeLength / 1000)) { FontWeight = FontWeights.Normal });
 			p.Margin = new Thickness(0);
 			p.Inlines.Add(new LineBreak());
 			doc.Blocks.Add(p);
@@ -531,20 +525,20 @@ namespace Aufit {
 		}
 
 
-		private void bufferSaveClick(object sender, RoutedEventArgs e) {
-			SaveFileDialog dlg = new SaveFileDialog();
-			dlg.Filter = "Rich Text Format|*.rtf|All files (*.*)|*.*";
-			//dlg.Filter = "Text Format|*.txt|All files (*.*)|*.*";
-			if (dlg.ShowDialog() == true) {
-				//TextRange range = new TextRange(_flowDoc.ContentStart, _flowDoc.ContentEnd);
-				TextRange range = new TextRange(fdDataView.Document.ContentStart, fdDataView.Document.ContentEnd);
-				using (FileStream file = new FileStream(dlg.FileName, FileMode.Create)) {
-					range.Save(file, System.Windows.DataFormats.Rtf);
-					//range.Save(file, System.Windows.DataFormats.Text);
-					file.Close();
-				}
-			}
-
+		private void dataSaveClick(object sender, RoutedEventArgs e) {
+			saveFlowDocumentScrollViewer(fdDataView);
+			//SaveFileDialog dlg = new SaveFileDialog();
+			//dlg.Filter = "Rich Text Format|*.rtf|All files (*.*)|*.*";
+			////dlg.Filter = "Text Format|*.txt|All files (*.*)|*.*";
+			//if (dlg.ShowDialog() == true) {
+			//	//TextRange range = new TextRange(_flowDoc.ContentStart, _flowDoc.ContentEnd);
+			//	TextRange range = new TextRange(fdDataView.Document.ContentStart, fdDataView.Document.ContentEnd);
+			//	using (FileStream file = new FileStream(dlg.FileName, FileMode.Create)) {
+			//		range.Save(file, System.Windows.DataFormats.Rtf);
+			//		//range.Save(file, System.Windows.DataFormats.Text);
+			//		file.Close();
+			//	}
+			//}
 		}
 
 

@@ -1,4 +1,6 @@
 * Aufit 1.4
+- Now track/sector information is updated on track selection  ++ revolution change
+- Modified GUI for tab items
 - Pasti optimization: no empty track above 79 -- output Tracks based on protections
 - New improved MFM display for track and sector
 - Detection of IAM inconsistencies => red dot + display in cell width graph 

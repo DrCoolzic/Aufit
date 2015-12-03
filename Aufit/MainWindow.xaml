@@ -286,6 +286,9 @@
                                             <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
                                             <TextBlock>Moving the above splitter line resizes the graph</TextBlock>
                                         </StackPanel>
+                                        <TextBlock>Red Line indicates ID sync seq</TextBlock>
+                                        <TextBlock>Blue Line indicates DATA sync seq</TextBlock>
+                                        <TextBlock>Black Line indicates Unknown sync seq</TextBlock>
                                     </StackPanel>
                                 </ToolTip>
                             </Button.ToolTip>
@@ -367,17 +370,110 @@
 			<TabItem x:Name="tabItemDisk" Header="Disk View" Background="Transparent"  Width="80">
 				<Grid>
 					<Grid.RowDefinitions>
-						<RowDefinition Height="*"/>
 						<RowDefinition Height="auto"/>
+						<RowDefinition Height="*"/>
 					</Grid.RowDefinitions>
-					<Button Margin="0,0,0,0" BorderThickness="0" Width="20" Height="20"  Opacity="0.7" Background="{x:Null}"
+					
+                   <Grid Grid.Row="0" Margin="0,5,5,0" >
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                        </Grid.ColumnDefinitions>
+					   
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" >
+                            <TextBox  Text="Picture Resolution: " BorderThickness="0" VerticalContentAlignment="Center" Background="Transparent" IsReadOnly="True"/>
+                            <RadioButton  Name="rbHigh" Content="High" Margin="0,0,7,0" VerticalContentAlignment="Center"/>
+                            <RadioButton  Name="rbMed" Content="Med" IsChecked="True"  Margin="0,0,7,0" VerticalContentAlignment="Center"/>
+                            <RadioButton  Name="rbLow" Content="Low" Margin="0,0,7,0" VerticalContentAlignment="Center"/>
+                            <StackPanel.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock>Define the resolution of the picture saved</TextBlock>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                            <TextBlock>High resolution produces a very detailed picture</TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                            <TextBlock>Medium resolution is the recommended intermediate value</TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                            <TextBlock>Low resolution is useful for Web publishing</TextBlock>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </ToolTip>
+                            </StackPanel.ToolTip>
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" x:Name="cbOutOfBand" Content="Out of Band" Margin="20,0,10,0" VerticalAlignment="Center" 
+							HorizontalAlignment="Right" IsChecked="True" Click="btDiskRedraw" >
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>Displays the "Out of Band" flux transitions in white</TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <CheckBox Grid.Column="2" x:Name="cbDiskNFA" Content="Unformatted NFA" Margin="15,0,10,0" VerticalAlignment="Center" 
+							HorizontalAlignment="Right" IsChecked="False" Click="btDiskRedraw">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>Allow to display NFA for unformatted track (can be very slow)</TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <CheckBox Grid.Column="3" x:Name="cbMagnifier" Content="Magnifier" Margin="15,0,10,0" VerticalAlignment="Center" 
+							HorizontalAlignment="Right" IsChecked="False" Click="magnifierClicked">
+                            <CheckBox.ToolTip>
+                                <StackPanel>
+                                    <TextBlock FontWeight="Bold" FontSize="15">Magnifier Glass</TextBlock>
+                                    <TextBlock>Placing the mouse over a disk image displays a magnification region</TextBlock>
+                                    <TextBlock>Mouse buttons usage:</TextBlock>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Mouse wheel increase/decrease zoom factor</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Mouse right click reset zoom factor</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Mouse left click freeze/unfreeze the magnified region</TextBlock>
+                                    </StackPanel>
+                                    <TextBlock>Magnifier regions for Side 0/1 are independent</TextBlock>
+                                    <TextBlock>Saving picture also saves Magnifier region(s)</TextBlock>
+                                </StackPanel>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <Button Grid.Column="4" Content="Save Picture" Width="80" Margin="0,2,0,0" VerticalContentAlignment="Center" Click="saveImageClick" HorizontalAlignment="Right">
+                            <Button.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>Save the picture on file</TextBlock>
+                                </ToolTip>
+                            </Button.ToolTip>
+                        </Button>
+                        <Button Grid.Column="5" Name="btDisk" Margin="5,2,0,0"  Content="Redraw" Width="80"  Click="btDiskRedraw" VerticalContentAlignment="Center" HorizontalAlignment="Right" >
+                            <Button.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>Redraw disk picture (Useful to remove track selection)</TextBlock>
+                                </ToolTip>
+                            </Button.ToolTip>
+                        </Button>
+                    </Grid>
+					
+                    <Button Grid.Row="1" Margin="0,0,0,0" BorderThickness="0" Width="20" Height="20"  Opacity="0.7" Background="{x:Null}"
 								HorizontalAlignment="Left" VerticalAlignment="Top" Panel.ZIndex="1000" ToolTipService.ShowDuration="60000" >
 						<Image Source="Resources/help.png"/>
 						<Button.ToolTip>
 							<ToolTip>
 								<StackPanel>
 									<TextBlock FontWeight="Bold" FontSize="15">Disk View</TextBlock>
-									<TextBlock>Displays the layout of the two sides of the disk image</TextBlock>
+									<TextBlock>Displays the layout of the two sides of the floppy disk</TextBlock>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
 										<TextBlock>Sync marks displayed in Red</TextBlock>
@@ -388,7 +484,7 @@
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>Intra-GAP fields displayed in Ligth Green</TextBlock>
+										<TextBlock>Intra-GAP fields displayed in Light Green</TextBlock>
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
@@ -420,15 +516,15 @@
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>NFA regions displayed in Black</TextBlock>
+                                        <TextBlock>NFA regions</TextBlock>
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>Unformatted tracks displayed in Slate Gray</TextBlock>
+										<TextBlock>Gray = Unformatted tracks</TextBlock>
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>Data tracks with sync in Blue</TextBlock>
+										<TextBlock>Blue = Data tracks with sync</TextBlock>
 									</StackPanel>
 									<StackPanel Orientation="Horizontal">
 										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
@@ -443,7 +539,80 @@
 						</Button.ToolTip>
 					</Button>
 
-					<Grid Grid.Row="0" Name="gridImageView" Background="White">
+                    <Button Grid.Row="1" Margin="0,0,0,0" BorderThickness="0" Width="20" Height="20"  Opacity="0.7" Background="{x:Null}"
+								HorizontalAlignment="Left" VerticalAlignment="Top" Panel.ZIndex="1000" ToolTipService.ShowDuration="60000" >
+                        <Image Source="Resources/help.png"/>
+                        <Button.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock FontWeight="Bold" FontSize="15">Disk View</TextBlock>
+                                    <TextBlock>Displays the layout of the two sides of the disk image</TextBlock>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Sync marks displayed in Red</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>ID fields displayed in Yellow</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Intra-GAP fields displayed in Ligth Green</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Data field is displayed in:</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
+                                        <TextBlock>Deep Blue = Normal sector</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
+                                        <TextBlock>Blue = Long sector</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
+                                        <TextBlock>Aqua = Short sector</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
+                                        <TextBlock>Purple = sector with bit-width variations</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
+                                        <TextBlock>Yellow = extra DATA sector with no ID</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="15,0,5,0"/>
+                                        <TextBlock>Orange = sector with Fuzzy bytes or CRC error</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>NFA regions displayed in Black</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Unformatted tracks displayed in Gray</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Track contain data with sync seq in Blue</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Track contains data without sync seq in Light Blue</TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
+                                        <TextBlock>Out of Band transitions in White</TextBlock>
+                                    </StackPanel>
+                                </StackPanel>
+                            </ToolTip>
+                        </Button.ToolTip>
+                    </Button>
+
+                    <Grid Grid.Row="1" Name="gridImageView" Background="White">
 						<Grid.RowDefinitions>
 							<RowDefinition Height="*"/>
 							<RowDefinition Height="auto"/>
@@ -476,96 +645,6 @@
 						</Grid>
 					</Grid>
 
-					<Grid Grid.Row="1" >
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="auto"/>
-							<ColumnDefinition Width="auto"/>
-							<ColumnDefinition Width="auto"/>
-							<ColumnDefinition Width="auto"/>
-							<ColumnDefinition Width="*"/>
-							<ColumnDefinition Width="auto"/>
-							<ColumnDefinition Width="auto"/>
-						</Grid.ColumnDefinitions>
-						<StackPanel Grid.Column="0" Orientation="Horizontal" >
-							<TextBox  Text="Picture Resolution: " BorderThickness="0" VerticalContentAlignment="Center" Background="Transparent" IsReadOnly="True"/>
-							<RadioButton  Name="rbHigh" Content="High" Margin="0,0,7,0" VerticalContentAlignment="Center"/>
-							<RadioButton  Name="rbMed" Content="Med" IsChecked="True"  Margin="0,0,7,0" VerticalContentAlignment="Center"/>
-							<RadioButton  Name="rbLow" Content="Low" Margin="0,0,7,0" VerticalContentAlignment="Center"/>
-							<StackPanel.ToolTip>
-								<ToolTip>
-									<StackPanel>
-										<TextBlock>Define the resolution of saved disk's picture</TextBlock>
-										<StackPanel Orientation="Horizontal">
-											<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-											<TextBlock>High produces a very detailed picture</TextBlock>
-										</StackPanel>
-										<StackPanel Orientation="Horizontal">
-											<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-											<TextBlock>Medium is the recommended intermediate value</TextBlock>
-										</StackPanel>
-										<StackPanel Orientation="Horizontal">
-											<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-											<TextBlock>Low resolution is useful for Web publishing</TextBlock>
-										</StackPanel>
-									</StackPanel>
-								</ToolTip>
-							</StackPanel.ToolTip>
-						</StackPanel>
-						<CheckBox Grid.Column="1" x:Name="cbOutOfBand" Content="Out of Band" Margin="20,0,10,0" VerticalAlignment="Center" 
-							HorizontalAlignment="Right" IsChecked="True" Click="btDiskRedraw" >
-							<CheckBox.ToolTip>
-								<ToolTip>
-									<TextBlock>Displays the "Out of Band" flux transitions in white</TextBlock>
-								</ToolTip>
-							</CheckBox.ToolTip>
-						</CheckBox>
-						<CheckBox Grid.Column="2" x:Name="cbDiskNFA" Content="Unformatted NFA" Margin="15,0,10,0" VerticalAlignment="Center" 
-							HorizontalAlignment="Right" IsChecked="False" Click="btDiskRedraw">
-							<CheckBox.ToolTip>
-								<ToolTip>
-									<TextBlock>Allow to display NFA for unformatted track</TextBlock>
-								</ToolTip>
-							</CheckBox.ToolTip>
-						</CheckBox>
-						<CheckBox Grid.Column="3" x:Name="cbMagnifier" Content="Magnifier" Margin="15,0,10,0" VerticalAlignment="Center" 
-							HorizontalAlignment="Right" IsChecked="False" Click="magnifierClicked">
-							<CheckBox.ToolTip>
-								<StackPanel>
-									<TextBlock FontWeight="Bold" FontSize="15">Magnifier Glass</TextBlock>
-									<TextBlock>Mouse over disk image displays a magnification region</TextBlock>
-									<TextBlock>Mouse buttons usage:</TextBlock>
-									<StackPanel Orientation="Horizontal">
-										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>Mouse wheel increase/decrease zoom factor</TextBlock>
-									</StackPanel>
-									<StackPanel Orientation="Horizontal">
-										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>Mouse right click reset zoom factor</TextBlock>
-									</StackPanel>
-									<StackPanel Orientation="Horizontal">
-										<Ellipse Fill="Black" Height="5" Width="5" Margin="5,0"/>
-										<TextBlock>Mouse left click freeze/unfreeze magnifier region</TextBlock>
-									</StackPanel>
-									<TextBlock>Magnifier regions for Side 0/1 are independent</TextBlock>
-									<TextBlock>Saving picture also saves Magnifier region(s)</TextBlock>
-								</StackPanel>
-							</CheckBox.ToolTip>
-						</CheckBox>
-						<Button Grid.Column="4" Content="Save Picture" Width="80" Margin="0,2,0,0" VerticalContentAlignment="Center" Click="saveImageClick" HorizontalAlignment="Right">
-							<Button.ToolTip>
-								<ToolTip>
-									<TextBlock>Open a write selector to save picture of the disk</TextBlock>
-								</ToolTip>
-							</Button.ToolTip>
-						</Button>
-						<Button Grid.Column="5" Name="btDisk" Margin="5,2,0,0"  Content="Redraw" Width="80"  Click="btDiskRedraw" VerticalContentAlignment="Center" HorizontalAlignment="Right" >
-							<Button.ToolTip>
-								<ToolTip>
-									<TextBlock>Redraw disk picture. Useful to remove track selection</TextBlock>
-								</ToolTip>
-							</Button.ToolTip>
-						</Button>
-					</Grid>
 
 				</Grid>
 			</TabItem>
@@ -573,139 +652,122 @@
 			<TabItem x:Name="tabItemData" Header="Data View" Width="80" Background="Transparent">
 				<Grid>
 					<Grid.RowDefinitions>
-						<RowDefinition Height="*"/>
 						<RowDefinition Height="auto"/>
+						<RowDefinition Height="*"/>
 					</Grid.RowDefinitions>
-					<FlowDocumentScrollViewer Margin="0" Grid.Row="0" ScrollViewer.VerticalScrollBarVisibility="Auto"  ScrollViewer.HorizontalScrollBarVisibility="Auto" Name="fdDataView" />
-					<Grid Grid.Row="1">
+					
+					<Grid Grid.Row="0" Margin="0,5,0,0">
 						<Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="60"/>
+							<ColumnDefinition Width="60"/>
+							<ColumnDefinition Width="60"/>
 							<ColumnDefinition Width="auto"/>
-							<ColumnDefinition Width="*"/>
-							<ColumnDefinition Width="auto"/>
-							<ColumnDefinition Width="auto"/>
-							<ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="auto"/>
 						</Grid.ColumnDefinitions>
-						<CheckBox Grid.Column="0" Name="cbMFM" Content=" MFM"  HorizontalAlignment="Left" VerticalContentAlignment="Center" >
-							<CheckBox.ToolTip>
-								<ToolTip>
-									<TextBlock>Allow to display MFM value for bytes in buffer</TextBlock>
-								</ToolTip>
-							</CheckBox.ToolTip>
-
-						</CheckBox>
-						<Button Grid.Column="1" Margin="0,0,5,0" Content="Save content" Width="80" Click="bufferSaveClick" HorizontalAlignment="Right">
+                        <TextBox Grid.Column="0" Text="Display " Margin="0,0,10,0" FontWeight="Bold" BorderThickness="0"/>
+                        <RadioButton Grid.Column="1" Content="Layout" Name="rbLayout"  GroupName="Data" Width="80" VerticalAlignment="Center" Click="btLayoutClick" IsChecked="True">
+                            <RadioButton.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>Display the "Layout" of the track</TextBlock>
+                                </ToolTip>
+                            </RadioButton.ToolTip>
+                        </RadioButton>
+                        <RadioButton Grid.Column="2" Content="Track" Name="rbTrack" GroupName="Data" Width="80" VerticalAlignment="Center" Click="btTrackClick" >
+                            <RadioButton.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>Display the content of the track</TextBlock>
+                                </ToolTip>
+                            </RadioButton.ToolTip>
+                        </RadioButton>
+                        <RadioButton Grid.Column="3" Content="Sectors" Name="rbSectors" GroupName="Data" Width="80" VerticalAlignment="Center" Click="btSectorClick">
+                            <RadioButton.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>Display the content of all the sectors in a track</TextBlock>
+                                </ToolTip>
+                            </RadioButton.ToolTip>
+                        </RadioButton>
+                        <CheckBox Grid.Column="4" Name="cbMFM" Content=" MFM"  Margin="20,0,0,0" HorizontalAlignment="Left" VerticalContentAlignment="Center" Click="MFMClick" >
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>Also display MFM values for bytes in buffer</TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+						<Button Grid.Column="6" Margin="0,0,5,0" Content="Save content" Width="80" Click="dataSaveClick" HorizontalAlignment="Right">
 							<Button.ToolTip>
 								<ToolTip>
-									<TextBlock>Save the content of the windows in a .rtf file</TextBlock>
-								</ToolTip>
-							</Button.ToolTip>
-						</Button>
-						<Button Grid.Column="2" Margin="0,0,5,0" Content="Layout" Width="80" Click="btLayoutClick">
-							<Button.ToolTip>
-								<ToolTip>
-									<TextBlock>Display the "Layout" of the track</TextBlock>
-								</ToolTip>
-							</Button.ToolTip>
-						</Button>
-						<Button Grid.Column="3" Margin="0,0,5,0" Content="Track" Width="80" Click="btTrackClick" >
-							<Button.ToolTip>
-								<ToolTip>
-									<TextBlock>Display content of the track (Sync Mark enabled all time)</TextBlock>
-								</ToolTip>
-							</Button.ToolTip>
-
-						</Button>
-						<Button Grid.Column="4" Margin="0,0,5,0" Content="Sectors" Width="80" Click="btSectorClick">
-							<Button.ToolTip>
-								<ToolTip>
-									<TextBlock>Display content of all the sectors (Sync Mark enabled at start of sector blocks only)</TextBlock>
+									<TextBlock>Save the content of the windows in a rtf file</TextBlock>
 								</ToolTip>
 							</Button.ToolTip>
 						</Button>
 					</Grid>
-				</Grid>
+                    <FlowDocumentScrollViewer Margin="0" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto"  
+											  ScrollViewer.HorizontalScrollBarVisibility="Auto" Name="fdDataView" />
+                </Grid>
 			</TabItem>
 
-			<TabItem Name="tabItemMaster" Header="Master View" Width="80" Background="Transparent">
+			<TabItem x:Name="tabItemProtections" Header="Protections" Width="80" Background="Transparent">
 				<Grid>
 					<Grid.RowDefinitions>
+						<RowDefinition Height="auto"/>
 						<RowDefinition Height="*"/>
-						<RowDefinition Height="Auto"/>
 					</Grid.RowDefinitions>
 
-					<Grid Grid.Row="0" >
-						<FlowDocumentScrollViewer Margin="0" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" Name="fdMasterView" Padding="0"/>
-					</Grid>
-
-					<Grid Grid.Row="1" >
+					<Grid Grid.Row="0" Margin="0,5,0,0">
 						<Grid.ColumnDefinitions>
 							<ColumnDefinition Width="*"/>
 							<ColumnDefinition Width="auto"/>
-							<ColumnDefinition Width="auto"/>
 						</Grid.ColumnDefinitions>
-						<Button Grid.Column="0" Name="x1" Margin="0,0,5,0" Content="Save Content" Click="contentSaveClick" Width="80" HorizontalAlignment="Right"/>
-						<Button Grid.Column="1" Name="x2" Margin="0,0,5,0" Content="Formats" Click="formatClick" Width="80" />
-						<Button Grid.Column="2" Name="x3" Margin="0,0,5,0"  Content="Protections" Click="btProtectionClick" Width="80" />
-					</Grid>
-				</Grid>
-
-			</TabItem>
-
-			<TabItem x:Name="tabItemAnalysis" Header="Analysis" Width="80" Background="Transparent">
-				<Grid>
-					<Grid.RowDefinitions>
-						<RowDefinition Height="*"/>
-						<RowDefinition Height="Auto"/>
-					</Grid.RowDefinitions>
-
-					<Grid Grid.Row="0" >
-						<TextBox BorderThickness="0" VerticalScrollBarVisibility="Auto" Margin="2" Name="tbAnalysis" FontFamily="Consolas" FontSize="15" IsReadOnly="True"/>
-					</Grid>
-
-					<Grid Grid.Row="1" >
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="66*"/>
-							<ColumnDefinition Width="85*"/>
-							<ColumnDefinition Width="auto"/>
-							<ColumnDefinition Width="auto"/>
-						</Grid.ColumnDefinitions>
-						<Button Grid.Column="1" Name="btAnaSave" Margin="0,0,5,0" Content="Save content" Click="contentSaveClick" Width="80" HorizontalAlignment="Right" >
+						<Button Grid.Column="1" Name="btAnaSave" Margin="0,0,5,0" Content="Save content" Click="protectionSaveClick" Width="80" HorizontalAlignment="Right" >
 							<Button.ToolTip>
 								<ToolTip>
 									<TextBlock>Save the content of the windows in a .txt file</TextBlock>
 								</ToolTip>
 							</Button.ToolTip>
 						</Button>
-						<Button Grid.Column="2" Name="btFormat" Margin="0,0,5,0" Content="Formats" Click="formatClick" Width="80">
-							<Button.ToolTip>
-								<ToolTip>
-									<TextBlock>Not yet implemented</TextBlock>
-								</ToolTip>
-							</Button.ToolTip>
-						</Button>
-						<Button Grid.Column="3" Name="btProt" Margin="0,0,5,0"  Content="Protections" Click="btProtectionClick" Width="80" >
-							<Button.ToolTip>
-								<ToolTip>
-									<TextBlock>Analyzes and displays all the protections found on the image</TextBlock>
-								</ToolTip>
-							</Button.ToolTip>
-						</Button>
 					</Grid>
-				</Grid>
+					
+                    <Grid Grid.Row="1" >
+                        <TextBox BorderThickness="0" VerticalScrollBarVisibility="Auto" Margin="2" Name="tbProtections" FontFamily="Consolas" FontSize="15" IsReadOnly="True"/>
+                    </Grid>
+
+                </Grid>
+			</TabItem>
+			
+			<TabItem Name="tabItemMaster" Header="Master View" Width="80" Background="Transparent">
+				<Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,5,0,0">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="auto"/>
+							<ColumnDefinition Width="auto"/>
+						</Grid.ColumnDefinitions>
+						<Button Grid.Column="0" Name="x1" Margin="0,0,5,0" Content="Save Content" Click="masterSaveClick" Width="80" HorizontalAlignment="Right"/>	
+					</Grid>
+
+                    <Grid Grid.Row="1" >
+                        <FlowDocumentScrollViewer Margin="0" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" Name="fdMasterView" Padding="0"/>
+                    </Grid>
+
+                </Grid>
+
 			</TabItem>
 
 			<TabItem x:Name="tabItemExport" Header="Export" Width="80" Background="Transparent" Height="22" Margin="0,-2,0,0" VerticalAlignment="Bottom">
 				<Grid>
 					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>						
 						<RowDefinition Height="*"/>
-						<RowDefinition Height="Auto"/>
 					</Grid.RowDefinitions>
 
-					<Grid Grid.Row="0" >
-						<TextBox BorderThickness="0" VerticalScrollBarVisibility="Auto" Margin="5" Name="tbSaveImage" FontFamily="Consolas" FontSize="15" IsReadOnly="True"/>
-					</Grid>
-
-					<Grid Grid.Row="1" >
+					<Grid Grid.Row="0" Margin="0,5,0,5" >
 						<Grid.ColumnDefinitions>
 							<ColumnDefinition Width="auto"/>
 							<ColumnDefinition Width="auto"/>
@@ -734,7 +796,7 @@
 							  HorizontalAlignment="Right" IsChecked="True">
 							<CheckBox.ToolTip>
 								<ToolTip>
-									<TextBlock>Optimize size of output (useful for STX and MSA)</TextBlock>
+									<TextBlock>Optimize the size of output (STX and MSA)</TextBlock>
 								</ToolTip>
 							</CheckBox.ToolTip>
 						</CheckBox>
@@ -742,19 +804,11 @@
 							  HorizontalAlignment="Right" IsChecked="False">
 							<CheckBox.ToolTip>
 								<ToolTip>
-									<TextBlock>Allow to force detection of double sided diskette in output</TextBlock>
+									<TextBlock>Force exported file to contain Double Sided description</TextBlock>
 								</ToolTip>
 							</CheckBox.ToolTip>
 						</CheckBox>
-						<CheckBox Grid.Column="4" x:Name="cbDebug" Content="Debug" Margin="5,0,0,0" VerticalAlignment="Center" 
-							  HorizontalAlignment="Right" IsChecked="False">
-							<CheckBox.ToolTip>
-								<ToolTip>
-									<TextBlock>Output debug information</TextBlock>
-								</ToolTip>
-							</CheckBox.ToolTip>
-						</CheckBox>
-						<CheckBox Grid.Column="5" x:Name="cbSync" Content="WriteSync" Margin="5,0,0,0" VerticalAlignment="Center" 
+						<CheckBox Grid.Column="4" x:Name="cbSync" Content="WriteSync" Margin="5,0,0,0" VerticalAlignment="Center" 
 							  HorizontalAlignment="Right" IsChecked="False">
 							<CheckBox.ToolTip>
 								<ToolTip>
@@ -762,15 +816,23 @@
 								</ToolTip>
 							</CheckBox.ToolTip>
 						</CheckBox>
-						<CheckBox Grid.Column="6" x:Name="cbTrackData" Content="ForceTracks" Margin="5,0,0,0" VerticalAlignment="Center" 
+						<CheckBox Grid.Column="5" x:Name="cbTrackData" Content="ForceTracks" Margin="5,0,0,0" VerticalAlignment="Center" 
 							  HorizontalAlignment="Right" IsChecked="False">
 							<CheckBox.ToolTip>
 								<ToolTip>
-									<TextBlock>Force track data to be written -- STX file bigger but safer</TextBlock>
+									<TextBlock>Force track data to be written (only use if you understand)</TextBlock>
 								</ToolTip>
 							</CheckBox.ToolTip>
 						</CheckBox>
-						<Button Grid.Column="7" Margin="0,0,5,0"  Content="Clear content" Width="80"  Click="btWriteClearClick" HorizontalAlignment="Right" VerticalAlignment="Top">
+                        <CheckBox Grid.Column="6" x:Name="cbDebug" Content="Debug" Margin="5,0,0,0" VerticalAlignment="Center" 
+							  HorizontalAlignment="Right" IsChecked="False">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>Output debug information</TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <Button Grid.Column="7" Margin="0,0,5,0"  Content="Clear content" Width="80"  Click="btWriteClearClick" HorizontalAlignment="Right" VerticalAlignment="Top">
 							<Button.ToolTip>
 								<ToolTip>
 									<TextBlock>Clear the content of the windows and re-analyze possible formats</TextBlock>
@@ -780,19 +842,22 @@
 						<Button Grid.Column="8" Margin="0,0,5,0"  Content="Save content" Width="80"  Click="btWriteSaveClick" HorizontalAlignment="Right" VerticalAlignment="Top">
 							<Button.ToolTip>
 								<ToolTip>
-									<TextBlock>Save the content of the windows in a .txt file</TextBlock>
+									<TextBlock>Save the content of the window in a text file</TextBlock>
 								</ToolTip>
 							</Button.ToolTip>
 						</Button>
 						<Button Grid.Column="9" Margin="0,0,5,0"  Content="Export Image" Width="80"  Click="btExportImageClick" HorizontalAlignment="Right" VerticalAlignment="Top">
 							<Button.ToolTip>
 								<ToolTip>
-									<TextBlock>Write the image in the selected output format</TextBlock>
+									<TextBlock>Export the Floppy image in the selected output format</TextBlock>
 								</ToolTip>
 							</Button.ToolTip>
 						</Button>
 					</Grid>
-				</Grid>
+                    <Grid Grid.Row="1" >
+                        <TextBox BorderThickness="0,2,0,0" VerticalScrollBarVisibility="Auto" Margin="5" Name="tbSaveImage" FontFamily="Consolas" FontSize="15" IsReadOnly="True" />
+                    </Grid>
+                </Grid>
 			</TabItem>
 		</TabControl>
 	</Grid>

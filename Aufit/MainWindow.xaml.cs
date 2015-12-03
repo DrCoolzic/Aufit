@@ -48,6 +48,7 @@ using PastiPackage;
 using StdFormatPackage;
 using System.Globalization;
 using System.Windows.Media;
+using System.Windows.Documents;
 
 namespace Aufit {
 	//http://www.thomaslevesque.com/2008/11/18/wpf-binding-to-application-settings-using-a-markup-extension/
@@ -319,6 +320,7 @@ namespace Aufit {
 			_histoDrawing.drawTrackHisto();
 			FDC.resetTrack(CurrentTrack, CurrentSide);
 			drawAllCharts();
+			if (tabItemData.IsSelected) drawData();
 		}
 
 
@@ -339,6 +341,7 @@ namespace Aufit {
 			_histoDrawing.drawTrackHisto();
 			FDC.resetTrack(CurrentTrack, CurrentSide);
 			drawAllCharts();
+			if (tabItemData.IsSelected) drawData();
 		}
 		#endregion
 
@@ -465,11 +468,11 @@ namespace Aufit {
 
 			if (Application.Current.Properties["Protections"] != null) {
 				tabDisplay.SelectedIndex = 3;
-				tbAnalysis.Clear();
-				tbAnalysis.AppendText(String.Format("Protection analysis for {0}\n\n", ImageName));
-				await checkProtectionAsync(tbAnalysis);
+				tbProtections.Clear();
+				tbProtections.AppendText(String.Format("Protection analysis for {0}\n\n", ImageName));
+				await checkProtectionAsync(tbProtections);
 				string fileName = Aufit.MainWindow.ImageName + ".protections." + suffix + ".txt";
-				File.WriteAllText(fileName, tbAnalysis.Text);
+				File.WriteAllText(fileName, tbProtections.Text);
 			}
 
 			if (Application.Current.Properties["SaveImage"] != null) {
@@ -535,10 +538,9 @@ namespace Aufit {
 			bool readOK = false;
 			CurrentTrack = CurrentSide = CurrentRev = 0;
 			Global.resetDisk();
-			tbAnalysis.Clear();
+			tbProtections.Clear();
 			ImageErrorException.resetException();
 			diskClear();
-			_view = DataView.None;
 			fdDataView.Document = null;
 			redDot.Visibility = System.Windows.Visibility.Hidden;
 			cbOutputFormat.SelectedIndex = 0;
@@ -841,55 +843,10 @@ namespace Aufit {
 			}
 		}
 
+
 		private void dataMouseRBD(object sender, MouseButtonEventArgs e) {
 			_histoDrawing.drawHisto(Global.Disk[CurrentTrack, CurrentSide].histoData);
 
-		}
-
-		//private void dataMouseLBD(object sender, MouseButtonEventArgs e) {
-
-		//	if (e.ClickCount > 1) {
-		//		Point p = e.GetPosition(_dataDrawing.Chart.GraphicCanvas);
-		//		int pos = (int)_dataDrawing.Chart.WorldPoint(p).X * 1000000;
-
-		//		foreach (Sector sector in Global.Disk[CurrentTrack, CurrentSide].sectors) {
-		//			int startPos = sector.id.info.startTime;
-		//			int endPos = (sector.data != null) ? sector.data.info.startTime + sector.data.info.timeLength :
-		//				sector.id.info.startTime + sector.id.info.timeLength;
-		//			if ((startPos < pos) && (endPos > pos)) {
-		//				// infoBox.AppendText(String.Format("Mouse {0} - {1} - sector {2}\n", _dataDrawing.Chart.WorldPoint(p).X, _dataDrawing.Chart.WorldPoint(p).Y, indexStart));
-
-		//				string message = String.Format("Sector {0} - {1} bytes DAM={2:X2} {3}={4:X4} {5}\n",
-		//					sector.id.Sector, Global.sectSize(sector.id.Length), sector.data.DAM,
-		//					(sector.data.info.crc == 0) ? "Good CRC" : "Bad CRC", sector.data.CRC,
-		//					(sector.data.fuzzy != null) ? "Has fuzzy bits" : "");
-		//				// TODO
-		//				//if (_sectorWindowIsOpen)
-		//				//	_sectorWindow.Close();
-
-		//				//_sectorWindow = new BufferWindow();
-		//				//_sectorWindow.drawBuffer(sector.data.buffer, message);
-
-		//				//_sectorWindow.Closed += new EventHandler(sectorWindowClosed);
-		//				//_sectorWindowIsOpen = true;
-		//				//_sectorWindow.Show();
-
-		//			}
-		//		}
-		//	}
-		//}
-
-
-		private async void btProtectionClick(object sender, RoutedEventArgs e) {
-			//await checkProtectionAsync();
-			tbAnalysis.Clear();
-			tbAnalysis.AppendText(String.Format("Protection analysis for {0}\n\n", ImageName));
-			for (int side = 0; side < 2; side++) {
-				for (int track = 0; track < 84; track++) {
-					await Global.decodeAndProcessTrackAsync(track, side, 1);
-					Protections.checkProtection(track, side, tbAnalysis);
-				}
-			}
 		}
 
 
@@ -906,10 +863,6 @@ namespace Aufit {
 
 		private void btScreenshotClick(object sender, RoutedEventArgs e) {
 			Global.saveImage(mainGrid, 1, "", true);
-		}
-
-
-		private void formatClick(object sender, RoutedEventArgs e) {
 		}
 
 
@@ -994,6 +947,25 @@ namespace Aufit {
 		//}
 
 
+		private static int _dataTrack = -1;
+		private static int _dataSide = -1;
+		private static int _dataRev = -1;
+		private void drawData() {
+			if (Global.Disk[CurrentTrack, CurrentSide].track == null) return;
+			if ((_dataTrack != CurrentTrack) || (_dataSide != CurrentSide) || (_dataRev != CurrentRev)) {
+				if (rbLayout.IsChecked == true)
+					drawLayout(CurrentTrack, CurrentSide, CurrentRev);
+				if (rbTrack.IsChecked == true)
+					drawTrackBuffer(CurrentTrack, CurrentSide, CurrentRev);
+				if (rbSectors.IsChecked == true)
+					drawSectorBuffer(CurrentTrack, CurrentSide, CurrentRev);
+				_dataSide = CurrentSide;
+				_dataTrack = CurrentTrack;
+				_dataRev = CurrentRev;
+			}
+		}
+
+
 		private async void tabDisplaySelectionChanged(object sender, SelectionChangedEventArgs e) {
 			if (BatchMode) return;
 
@@ -1010,9 +982,8 @@ namespace Aufit {
 			}
 			if (tabItemData.IsSelected) {
 				btPlay.IsEnabled = false;
-				infoBox.AppendText("Data View Selected\n");
-				if ((Global.Disk[CurrentTrack, CurrentSide].track != null) && (fdDataView.Document == null))
-					drawLayout(CurrentTrack, CurrentSide, CurrentRev);
+				infoBox.AppendText("Data View Selected\n");				
+				drawData();
 			}
 
 			if (tabItemMaster.IsSelected) {
@@ -1021,10 +992,18 @@ namespace Aufit {
 				displayDiskFormat(CurrentTrack, CurrentSide);
 			}
 
-			if (tabItemAnalysis.IsSelected) {
+			if (tabItemProtections.IsSelected) {
 				btPlay.IsEnabled = false;
-				infoBox.AppendText("Analysis Selected\n");
-
+				infoBox.AppendText("Protection Selected\n");
+				if (tbProtections.Text == "") {
+					tbProtections.AppendText(String.Format("Protection analysis for {0}\n", ImageName));
+					for (int side = 0; side < 2; side++) {
+						for (int track = 0; track < 84; track++) {
+							await Global.decodeAndProcessTrackAsync(track, side, 1);
+							Protections.checkProtection(track, side, tbProtections);
+						}
+					}
+				}
 			}
 
 			if (tabItemExport.IsSelected) {
@@ -1096,26 +1075,35 @@ namespace Aufit {
 				displayDiskFormat(track, side);
 			}
 
-			if (tabItemData.IsSelected) {
-				switch (_view) {
-				case DataView.Track:
-					drawTrackBuffer(track, side, CurrentRev);
-					break;
-				case DataView.Sector:
-					drawSectorBuffer(track, side, CurrentRev);
-					break;
-				case DataView.Layout:
-					drawLayout(track, side, CurrentRev);
-					break;
+			if (tabItemData.IsSelected)
+				drawData();
+		}
+
+
+		private void protectionSaveClick(object sender, RoutedEventArgs e) {
+			saveTextboxContent(tbProtections);
+		}
+
+
+		private void masterSaveClick(object sender, RoutedEventArgs e) {
+			saveFlowDocumentScrollViewer(fdMasterView);
+		}
+
+
+		private void saveFlowDocumentScrollViewer(FlowDocumentScrollViewer fd) {
+			SaveFileDialog dlg = new SaveFileDialog();
+			dlg.InitialDirectory = DirectoryName;
+			dlg.RestoreDirectory = true;
+
+			dlg.Filter = "Rich Text Format|*.rtf|All files (*.*)|*.*";
+			if (dlg.ShowDialog() == true) {
+				TextRange range = new TextRange(fd.Document.ContentStart, fd.Document.ContentEnd);
+				using (FileStream file = new FileStream(dlg.FileName, FileMode.Create)) {
+					range.Save(file, System.Windows.DataFormats.Rtf);
+					file.Close();
 				}
 			}
 		}
-
-
-		private void contentSaveClick(object sender, RoutedEventArgs e) {
-			saveTextboxContent(tbAnalysis);
-		}
-
 
 		private void infoSaveClick(object sender, RoutedEventArgs e) {
 			saveTextboxContent(infoBox);
@@ -1251,6 +1239,12 @@ namespace Aufit {
 
 		private void cbAvgClick(object sender, RoutedEventArgs e) {
 			_clockDrawing.drawBitWidth();
+		}
+
+		private void MFMClick(object sender, RoutedEventArgs e) {
+			if (rbLayout.IsChecked == true) return;
+			_dataTrack = _dataSide = _dataRev = -1;
+			drawData();
 		}
 
 
