@@ -480,11 +480,11 @@ namespace Aufit {
 				}
 				tabDisplay.SelectedIndex = 4;
 				string fileName = Aufit.MainWindow.ImageName + ".image." + suffix + ".stx";
-				uint flags = 0;
-				flags |= Global.OPTIMIZE;
-				//flags |= Global.FORCE_DS;
-				//flags |= Global.DEBUG;
-				//flags |= Global.SYNC_HEAD;
+				ExportFlags flags = ExportFlags.None;
+				flags |= ExportFlags.OPTIMIZE;
+				//flags |= ExportFlags.FORCE_DS;
+				//flags |= ExportFlags.DEBUG;
+				//flags |= ExportFlags.SYNC_HEAD;
 				tbSaveImage.Clear();
 				tbSaveImage.AppendText(String.Format("Writing STX file {0}\n", fileName));
 				PastiWriter pasti = new PastiWriter(tbSaveImage);
@@ -913,23 +913,23 @@ namespace Aufit {
 		}
 
 
-		private void btWriteDiskClick(object sender, RoutedEventArgs e) {
+		private void btExportImageClick(object sender, RoutedEventArgs e) {
 			SaveFileDialog sfd = new SaveFileDialog();
 			sfd.InitialDirectory = DirectoryName;
 			sfd.RestoreDirectory = true;
 			bool status = false;
 
-			uint flags = 0;
+			ExportFlags flags = ExportFlags.None;
 			if (cbForceDS.IsChecked.Value == true)
-				flags |= Global.FORCE_DS;
+				flags |= ExportFlags.FORCE_DS;
 			if (cbOptimize.IsChecked.Value == true)
-				flags |= Global.OPTIMIZE;
+				flags |= ExportFlags.OPTIMIZE;
 			if (cbDebug.IsChecked.Value == true)
-				flags |= Global.DEBUG;
+				flags |= ExportFlags.DEBUG;
 			if (cbSync.IsChecked.Value == true)
-				flags |= Global.SYNC_HEAD;
+				flags |= ExportFlags.SYNC_HEAD;
 			if (cbTrackData.IsChecked.Value == true)
-				flags |= Global.NO_TRACK_DATA;
+				flags |= ExportFlags.FORCE_TRACK;
 
 
 			switch (((ComboBoxItem)cbOutputFormat.SelectedItem).Content.ToString()) {
@@ -1027,9 +1027,9 @@ namespace Aufit {
 
 			}
 
-			if (tabItemSave.IsSelected) {
+			if (tabItemExport.IsSelected) {
 				btPlay.IsEnabled = false;
-				infoBox.AppendText("Save Image Selected\n");
+				infoBox.AppendText("Export Image Selected\n");
 				await checkWriteImage();
 			}
 		}
@@ -1051,7 +1051,8 @@ namespace Aufit {
 				for (int track = 0; track < 84; track++) {
 					if (Global.Disk[track, side].track != null) {
 						hasProtection |= Global.Disk[track, side].track.hasProtections | Global.Disk[track, side].track.shiftedTrack;
-						STIncompatible |= Global.Disk[track, side].track.flags.HasFlag(TrackFlag.SECTORS_NOT_STD_SIZE | TrackFlag.SECTORS_NOT_IN_SEQ);
+						STIncompatible |= Global.Disk[track, side].track.flags.HasFlag(TrackFlag.SECTORS_NOT_STD_SIZE) ||
+							Global.Disk[track, side].track.flags.HasFlag(TrackFlag.SECTORS_NOT_IN_SEQ);
 					}
 					hasIncompleteData |= Global.Disk[track, side].hasIncompleteData;
 				}   // all tracks

@@ -190,6 +190,15 @@ namespace GlobalPackage {
 		//#endregion flag_helper_functions
 	}
 
+	[Flags]
+	public enum ExportFlags : uint {
+		None = 0,
+		FORCE_DS = Bit.BIT_01,
+		OPTIMIZE = Bit.BIT_02,
+		DEBUG = Bit.BIT_03,
+		SYNC_HEAD = Bit.BIT_04,
+		FORCE_TRACK = Bit.BIT_05
+	}
 
 	/// <summary>
 	/// Contains all global parameters and functions for AUFIT
@@ -213,11 +222,6 @@ namespace GlobalPackage {
 		public static Color IdColor = Colors.Yellow;
 		public static Color NoIdDataColor = Colors.Yellow;
 
-		public const uint FORCE_DS = Bit.BIT_01;
-		public const uint OPTIMIZE = Bit.BIT_02;
-		public const uint DEBUG = Bit.BIT_03;
-		public const uint SYNC_HEAD = Bit.BIT_04;
-		public const uint NO_TRACK_DATA = Bit.BIT_05;
 
 		private static DiskTrack[,] _disk = new DiskTrack[85, 2];
 

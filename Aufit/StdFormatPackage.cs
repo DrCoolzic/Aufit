@@ -31,9 +31,9 @@ namespace StdFormatPackage {
 		/// <param name="forceDs">When set to true this force writing Pasti 
 		/// information for a Double sided floppy disk</param>
 		/// <returns>True if succeeds; false if fails</returns>
-		public bool writeStd(string fileName, uint flags, FileType type) {
+		public bool writeStd(string fileName, ExportFlags flags, FileType type) {
 			FileStream fs;
-			_debug = ((flags & Global.DEBUG) != 0) ? true : false;
+			_debug = flags.HasFlag(ExportFlags.DEBUG);
 
 			// encode file into buffer
 			List<byte> sbuf = new List<byte>();
@@ -64,13 +64,13 @@ namespace StdFormatPackage {
 		/// </summary>
 		/// <param name="buffer">Contains the data to be written to Pasti file</param>
 		/// <returns>Always returns true!</returns>
-		private void encodeST(List<byte> buffer, uint  flags) {
+		private void encodeST(List<byte> buffer, ExportFlags  flags) {
 			int start = 0;
 			byte trackCount = 0;
 			int sideCount = 1;	// single sided
 
-			bool forceDs = ((flags & Global.FORCE_DS) != 0) ? true : false;
-			bool optimize = ((flags & Global.OPTIMIZE) != 0) ? true : false;
+			bool forceDs = flags.HasFlag(ExportFlags.FORCE_DS);
+			bool optimize = flags.HasFlag(ExportFlags.OPTIMIZE);
 
 			// check for double sided - we check that we have some sectors on side 1
 			if (forceDs) sideCount = 2;
@@ -236,13 +236,13 @@ namespace StdFormatPackage {
 		}
 
 
-		private void encodeMSA(List<byte> buffer, uint  flags) {
+		private void encodeMSA(List<byte> buffer, ExportFlags  flags) {
 			ushort trackCount = 0;
 			ushort sideCount = 1;		// single sided
 			ushort sectorPerTrack = 0;
 
-			bool forceDs = ((flags & Global.FORCE_DS) != 0) ? true : false;
-			bool optimize = ((flags & Global.OPTIMIZE) != 0) ? true : false;
+			bool forceDs = flags.HasFlag(ExportFlags.FORCE_DS);
+			bool optimize = flags.HasFlag(ExportFlags.OPTIMIZE);
 
 			// check for double sided - we check that we have some sectors on side 1
 			if (forceDs) sideCount = 2;

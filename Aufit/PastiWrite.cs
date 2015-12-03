@@ -45,7 +45,7 @@ namespace PastiPackage {
 		bool _trkSync = false;
 
 		bool _debug = false;
-		bool _noTrackData = false;
+		bool _forceTrack = false;
 
 
 
@@ -62,11 +62,11 @@ namespace PastiPackage {
 		/// <param name="forceDs">When set to true this force writing Pasti 
 		/// information for a Double sided floppy disk</param>
 		/// <returns>True if succeeds; false if fails</returns>
-		public bool writePasti(string fileName, uint flags) {
+		public bool writePasti(string fileName, ExportFlags flags) {
 			FileStream fs;
 
-			_debug = ((flags & Global.DEBUG) != 0) ? true : false;
-			_trkSync = ((flags & Global.SYNC_HEAD) != 0) ? true : false;
+			_debug = flags.HasFlag(ExportFlags.DEBUG);
+			_trkSync = flags.HasFlag(ExportFlags.SYNC_HEAD);
 
 			// encode file into buffer
 			List<byte> sbuf = new List<byte>();
@@ -90,14 +90,14 @@ namespace PastiPackage {
 		/// </summary>
 		/// <param name="buffer">Contains the data to be written to Pasti file</param>
 		/// <returns>Always returns true!</returns>
-		private void encodePasti(List<byte> buffer, uint  flags) {
+		private void encodePasti(List<byte> buffer, ExportFlags  flags) {
 			int start = 0;
 			byte trackCount = 0;
-			int sideCount = 1;	// single sided
+			int sideCount = 1;  // single sided
 
-			bool forceDs = ((flags & Global.FORCE_DS) != 0) ? true : false;
-			bool optimize = ((flags & Global.OPTIMIZE) != 0) ? true : false;
-			_noTrackData = ((flags & Global.NO_TRACK_DATA) != 0) ? true : false;
+			bool forceDs = flags.HasFlag(ExportFlags.FORCE_DS);
+			bool optimize = flags.HasFlag(ExportFlags.OPTIMIZE);
+			_forceTrack = flags.HasFlag(ExportFlags.FORCE_TRACK);
 
 			// check for double sided - we check that we have some sectors on side 1
 			if (forceDs) sideCount = 2;
@@ -113,7 +113,9 @@ namespace PastiPackage {
 			// number of track descriptor
 			for (int side = 0; side < sideCount; side++)
 				for (int track = 0; track < 84; track++)
-					if (Global.Disk[track, side].track != null)
+					if ((Global.Disk[track, side].track != null) && 
+						(((Global.Disk[track, side].sectors != null) && (Global.Disk[track, side].sectors.Count > 0)) || (track < 80))
+						)
 						trackCount++;
 
 			_saveImageBox.AppendText(String.Format("{0} Sided Diskette with a total of {1} tracks\n", (sideCount == 1) ? "Single" : "Double", trackCount));
@@ -145,12 +147,13 @@ namespace PastiPackage {
 			for (int track = 0; track < 84; track++) {
 				for (int side = 0; side < sideCount; side++) {
 					Global.DiskTrack dt = Global.Disk[track, side];
-					if (dt.track == null) 
-						continue;
+					if (dt.track == null)  continue;
 
 					int sectorCount = 0;
 					if (dt.sectors != null) 
 						sectorCount = dt.sectors.Count;
+					if ((track >= 80) && (sectorCount == 0)) 
+						continue;
 
 					int startTrackRecord = buffer.Count;
 					TrackDesc tdesc = new TrackDesc();
@@ -526,10 +529,17 @@ namespace PastiPackage {
 
 			// CHECKED
 			// short/long track
-			needTrack |= dt.track.flags.HasFlag(TrackFlag.SHORT_TRACK | TrackFlag.LONG_TRACK);
+			needTrack = dt.track.flags.HasFlag(TrackFlag.SHORT_TRACK) ||
+						dt.track.flags.HasFlag(TrackFlag.LONG_TRACK) ||
+						dt.track.flags.HasFlag(TrackFlag.NFA_IN_TRACK) ||
+						dt.track.flags.HasFlag(TrackFlag.DATA_TRACK) ||
 
-			if (_noTrackData) return false;
-			return true;
+						dt.track.flags.HasFlag(TrackFlag.BAD_DATA_IN_GAP) ||
+						//dt.track.flags.HasFlag(TrackFlag.HIDDEN_DATA) ||
+						dt.track.flags.HasFlag(TrackFlag.INVALID_SYNC_SEQ);
+
+			if (_forceTrack) return true;
+			return needTrack;
 		}
 
 	}

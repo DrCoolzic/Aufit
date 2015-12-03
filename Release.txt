@@ -1,4 +1,5 @@
 * Aufit 1.4
+- Pasti optimization: no empty track above 79 -- output Tracks based on protections
 - New improved MFM display for track and sector
 - Detection of IAM inconsistencies => red dot + display in cell width graph 
 - Added display of IAM in cell width graph

@@ -152,9 +152,9 @@ namespace Aufit {
 				bool jupiterMasterdrive = false;
 				if (dt.sectors[0].id.info.startByte < (dt.track.buffer.DataByte.Count - 15)) {
 					int start = 0;
-					// TODO use string now
+
 					for (int i = start; i < (dt.sectors[0].id.info.startByte); i++) {
-						if ((dt.track.buffer.DataByte[i] == 0x00) &&
+						if ((dt.track.buffer.DataByte[i + 0] == 0x00) &&
 							(dt.track.buffer.DataByte[i + 1] == 0x1C) &&
 							(dt.track.buffer.DataByte[i + 2] == 0x92) &&
 							(dt.track.buffer.DataByte[i + 3] == 0x10) &&
@@ -167,7 +167,7 @@ namespace Aufit {
 					}
 
 					for (int i = start; i < dt.sectors[0].id.info.startByte; i++) {
-						if ((dt.track.buffer.DataByte[i] == 0x0B) &&
+						if ((dt.track.buffer.DataByte[i + 0] == 0x0B) &&
 							(dt.track.buffer.DataByte[i + 1] == 0xCD) &&
 							(dt.track.buffer.DataByte[i + 2] == 0xB4) &&
 							(dt.track.buffer.DataByte[i + 3] == 0xF7)) {
@@ -178,12 +178,12 @@ namespace Aufit {
 					}
 
 					if (jupiterMasterdrive && !
-						((dt.track.buffer.DataByte[start] == 0x00) &&
-						(dt.track.buffer.DataByte[start + 1] == 0xDE) &&
-						(dt.track.buffer.DataByte[start + 2] == 0xAD) &&
-						(dt.track.buffer.DataByte[start + 3] == 0xC0) &&
-						(dt.track.buffer.DataByte[start + 4] == 0xDE)))
-						jupiterMasterdrive = false;
+						((dt.track.buffer.DataByte[start + 0] == 0x00) &&
+						 (dt.track.buffer.DataByte[start + 1] == 0xDE) &&
+						 (dt.track.buffer.DataByte[start + 2] == 0xAD) &&
+						 (dt.track.buffer.DataByte[start + 3] == 0xC0) &&
+						 (dt.track.buffer.DataByte[start + 4] == 0xDE)))
+						 jupiterMasterdrive = false;
 
 
 					if (dragonflight || jupiterMasterdrive) {

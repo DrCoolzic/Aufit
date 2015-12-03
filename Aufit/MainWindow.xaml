@@ -694,7 +694,7 @@
 				</Grid>
 			</TabItem>
 
-			<TabItem x:Name="tabItemSave" Header="Save Image" Width="80" Background="Transparent">
+			<TabItem x:Name="tabItemExport" Header="Export" Width="80" Background="Transparent" Height="22" Margin="0,-2,0,0" VerticalAlignment="Bottom">
 				<Grid>
 					<Grid.RowDefinitions>
 						<RowDefinition Height="*"/>
@@ -762,11 +762,11 @@
 								</ToolTip>
 							</CheckBox.ToolTip>
 						</CheckBox>
-						<CheckBox Grid.Column="6" x:Name="cbTrackData" Content="NoTrackData" Margin="5,0,0,0" VerticalAlignment="Center" 
+						<CheckBox Grid.Column="6" x:Name="cbTrackData" Content="ForceTracks" Margin="5,0,0,0" VerticalAlignment="Center" 
 							  HorizontalAlignment="Right" IsChecked="False">
 							<CheckBox.ToolTip>
 								<ToolTip>
-									<TextBlock>No track data written (only use if you understand)</TextBlock>
+									<TextBlock>Force track data to be written -- STX file bigger but safer</TextBlock>
 								</ToolTip>
 							</CheckBox.ToolTip>
 						</CheckBox>
@@ -784,7 +784,7 @@
 								</ToolTip>
 							</Button.ToolTip>
 						</Button>
-						<Button Grid.Column="9" Margin="0,0,5,0"  Content="Write Image" Width="80"  Click="btWriteDiskClick" HorizontalAlignment="Right" VerticalAlignment="Top">
+						<Button Grid.Column="9" Margin="0,0,5,0"  Content="Export Image" Width="80"  Click="btExportImageClick" HorizontalAlignment="Right" VerticalAlignment="Top">
 							<Button.ToolTip>
 								<ToolTip>
 									<TextBlock>Write the image in the selected output format</TextBlock>
