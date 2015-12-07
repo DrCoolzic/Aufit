@@ -5,4 +5,8 @@
     <Application.Resources>
 		
     </Application.Resources>
+
+    <JumpList.JumpList>
+        <JumpList ShowRecentCategory="True" ShowFrequentCategory="True" />
+    </JumpList.JumpList>
 </Application>

@@ -533,9 +533,10 @@ namespace PastiPackage {
 						dt.track.flags.HasFlag(TrackFlag.LONG_TRACK) ||
 						dt.track.flags.HasFlag(TrackFlag.NFA_IN_TRACK) ||
 						dt.track.flags.HasFlag(TrackFlag.DATA_TRACK) ||
+						dt.track.flags.HasFlag(TrackFlag.DUP_SEC_IN_TRACK) ||
 
 						dt.track.flags.HasFlag(TrackFlag.BAD_DATA_IN_GAP) ||
-						//dt.track.flags.HasFlag(TrackFlag.HIDDEN_DATA) ||
+						dt.track.flags.HasFlag(TrackFlag.HIDDEN_DATA) ||
 						dt.track.flags.HasFlag(TrackFlag.INVALID_SYNC_SEQ);
 
 			if (_forceTrack) return true;

@@ -582,7 +582,7 @@ namespace Aufit {
 					path.StrokeThickness = diskFineLine;
 					PathGeometry pg = new PathGeometry();
 
-					if ((dt.histoData.hasMFM) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
+					if ((dt.histoData.HasMFM) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
 						if (dt.track.firstSyncOffset > 0)
 							path.Stroke = DataOneIdTrackBrush;
 						else
@@ -614,7 +614,7 @@ namespace Aufit {
 
 					// draw out of band
 					if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) && (dt.sectors.Count > 0) && (cbOutOfBand.IsChecked == true) &&
-							(Global.fluxOutOfBand(flux)) && (currentTime > lastOobStopTime) && (oobCount < 50)) {
+							(Global.fluxOutOfBand(flux, 700)) && (currentTime > lastOobStopTime) && (oobCount < 50)) {
 						lastOobStopTime = currentTime + minDisplayWidth;
 						double startAngle = timeAngle(currentTime);
 						double stopAngle = timeAngle(lastOobStopTime);

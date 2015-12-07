@@ -1,4 +1,6 @@
 * Aufit 1.4
+- Histogram now shows peak with tool tip for position / value
+- fix bug in optimized Pasti write based on new flags - test War Heli
 - Now track/sector information is updated on track selection  ++ revolution change
 - Modified GUI for tab items
 - Pasti optimization: no empty track above 79 -- output Tracks based on protections

@@ -5,6 +5,7 @@ check fuzzy type => DM / random / DrT
 
 BUGS
 ====
+- fix war heli
 - Data view not updated when selected track changed
 - Fix Vroom track 77.1 Data field not detected?
 - Fix Barbarian track 78.0 not decoded as 00 (KF)
@@ -18,6 +19,8 @@ Night shift SNI
 Time of Lore shifted tracks
 After the war inconsistent number of id in rev -- track 65
 Alternate realty side 1 lots of inconsistencies
+War Heli T68.0 one A1 sync and data ==> hidden data
+http://www.atari-forum.com/viewtopic.php?f=102&t=26976&hilit=war+heli&start=300
 
 Improvements
 ============

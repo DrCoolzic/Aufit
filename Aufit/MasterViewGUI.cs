@@ -33,15 +33,15 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
+using System.Windows.Input;
 using System.Windows.Media;
 using WD1772Package;
 
 namespace Aufit {
 
-	/// <summary>
-	/// Information about a post GAP (inter sector gap)
-	/// </summary>
+	/// <summary>Information about a post GAP (inter sector gap)</summary>
 	class PostGapInfo {
 		/// <summary></summary>
 		public int spliceTime;
@@ -92,14 +92,14 @@ namespace Aufit {
 		// - invalid id field
 		// - data crc error
 		// - non standard dam
-		
-		
+
+
 		public void displayDiskFormat(int track, int side) {
 			int trackDataBytes = 0;
 			int trackGapBytes = 0;
-			int maxPostSize = 0;
-			int firstBlock = 0;
-			int lastBlock = 0;
+			//int maxPostSize = 0;
+			//int firstBlock = 0;
+			//int lastBlock = 0;
 			int[] sectorSizeCount = new int[4] { 0, 0, 0, 0 };
 			Global.DiskTrack dt = Global.Disk[track, side];
 
@@ -129,7 +129,7 @@ namespace Aufit {
 			ImageRecord image = new ImageRecord();
 			BlockDescriptor[] blocks = new BlockDescriptor[dt.sectors.Count];
 
-			for (int i = 0; i < dt.sectors.Count; i++ ) {
+			for (int i = 0; i < dt.sectors.Count; i++) {
 				Sector s = dt.sectors[i];
 				blocks[i].gapOffset = 0;
 				blocks[i].cellType = SignalType.cell_2us;
@@ -146,32 +146,16 @@ namespace Aufit {
 				int gapBytes = (s.data.postDataGap != null) ? s.data.postDataGap.buffer.DataByte.Count : 0;
 				trackGapBytes += gapBytes;
 				blocks[i].gapBits = (uint)(16 * gapBytes);
-
-				// we search the last block
-				// for now we take the sector that have the largest post gap size
-				if (s.data.postDataGap != null) {
-					if (s.data.postDataGap.buffer.DataByte.Count > maxPostSize) {
-						maxPostSize = s.data.postDataGap.buffer.DataByte.Count;
-						lastBlock = i;
-					}
-				}
-				else {
-					if (s.id.postIdGap.buffer.DataByte.Count > maxPostSize) {
-						maxPostSize = s.id.postIdGap.buffer.DataByte.Count;
-						lastBlock = i;
-					}
-				}
-
 				if (s.data != null) sectorSizeCount[(s.id.Length) & 3]++;
-			}	// for all sectors
-			firstBlock = (lastBlock == (dt.sectors.Count - 1)) ? 0 : lastBlock + 1;
+			}   // for all sectors
 
+			int firstBlock = dt.track.firstSectIndex;
 			image.track = (uint)track;
 			image.side = (uint)side;
 			image.density = Density.Auto;
 			image.signalType = SignalType.cell_2us;
 			image.trackBytes = (uint)dt.track.buffer.DataByte.Count;
-			image.startBitPos = (uint)(dt.sectors[firstBlock].id.info.startBit - 4 * 16);
+			image.startBitPos = (uint)(dt.sectors[firstBlock].id.info.startBitIAM - 48);
 			image.startBytePos = image.startBitPos / 8;
 			image.dataBits = (uint)(trackDataBytes * 16);
 			image.gapBits = (uint)(trackGapBytes * 16);
@@ -195,17 +179,16 @@ namespace Aufit {
 					name += sectorSizeCount[i].ToString();
 					name += "x";
 					name += (128 << i).ToString();
-                }
-            }
-			p.Inlines.Add(new Run(String.Format("Track {0:D2}.{1} {2}", track, side, name)) 
-				{ FontWeight = FontWeights.Bold, FontFamily = new FontFamily("Century Gothic, Courier New") });
+				}
+			}
+			p.Inlines.Add(new Run(String.Format("Track {0:D2}.{1} {2}", track, side, name)) { FontWeight = FontWeights.Bold, FontFamily = new FontFamily("Century Gothic, Courier New") });
 			p.Inlines.Add(new LineBreak());
 			p.Inlines.Add(image.ToString());
 			//p.Inlines.Add(new LineBreak());
 			doc.Blocks.Add(p);
 
 			PostGapInfo gap = new PostGapInfo();
-			for (int i = firstBlock; i < (firstBlock + dt.sectors.Count); i++ ) {
+			for (int i = firstBlock; i < (firstBlock + dt.sectors.Count); i++) {
 				int secIndex = i % dt.sectors.Count;
 				Sector s = dt.sectors[secIndex];
 				bool gapBadData = false;
@@ -213,14 +196,12 @@ namespace Aufit {
 				p = new Paragraph();
 				p.LineHeight = 1;
 				p.Margin = new Thickness(20, 0, 0, 0);
-				p.Inlines.Add(new Run(String.Format("Block {0} Type={1} ID={2} Size={3}", 
-					secIndex, "ID_DATA", s.id.Sector, Global.sectSize(s.id.Length)))
-					{ FontWeight = FontWeights.Bold, FontFamily = new FontFamily("Century Gothic, Courier New") });
+				p.Inlines.Add(new Run(String.Format("Block {0} Type={1} ID={2} Size={3}",
+					secIndex, "ID_DATA", s.id.Sector, Global.sectSize(s.id.Length))) { FontWeight = FontWeights.Bold, FontFamily = new FontFamily("Century Gothic, Courier New") });
 				p.Inlines.Add(new LineBreak());
 				p.Inlines.Add(String.Format(" Data={0} Gap={1} Cell={2} Enc={3} Flags={4}",
-					blocks[secIndex].dataBits, blocks[secIndex].gapBits, blocks[secIndex].cellType, 
+					blocks[secIndex].dataBits, blocks[secIndex].gapBits, blocks[secIndex].cellType,
 					blocks[secIndex].encoderType, blocks[secIndex].blockFlags));
-				//p.Inlines.Add(new LineBreak());
 				doc.Blocks.Add(p);
 
 				// block content
@@ -229,7 +210,7 @@ namespace Aufit {
 				l.LineHeight = 1;
 
 				// standard sync mark for MFM block
-				List<byte> sync = new List<byte>() { 0x44, 0x89, 0x44, 0x89, 0x44, 0x89};
+				List<byte> sync = new List<byte>() { 0x44, 0x89, 0x44, 0x89, 0x44, 0x89 };
 				li = new ListItem();
 				li.LineHeight = 1;
 				li.Margin = new Thickness(30, 0, 0, 0);
@@ -238,7 +219,7 @@ namespace Aufit {
 				p.Margin = new Thickness(5, 0, 0, 0);
 				p.Inlines.Add("Sync 3 MFM bytes");
 				//p.Inlines.Add(new LineBreak());
-				displayContent(sync, p, s.id.info.startByte - 3, true);
+				displayContent(sync, 0, p, s.id.info.startByte, true);
 				li.Blocks.Add(p);
 				l.ListItems.Add(li);
 
@@ -251,37 +232,38 @@ namespace Aufit {
 				p.Margin = new Thickness(5, 0, 0, 0);
 				p.Inlines.Add("ID 7 bytes");
 				//p.Inlines.Add(new LineBreak());
-				displayContent(s.id.buffer.DataByte, p, s.id.info.startByte, false);
+				displayContent(s.id.buffer.DataByte, 3, p, s.id.info.startByte, false);
 				li.Blocks.Add(p);
 				l.ListItems.Add(li);
 
 				// inner gap
 				li = new ListItem();
 				li.LineHeight = 1;
-				li.Margin = new Thickness(30, 0, 0, 0);				
+				li.Margin = new Thickness(30, 0, 0, 0);
 				p = new Paragraph();
 				p.LineHeight = 1;
 				p.Margin = new Thickness(5, 0, 0, 0);
 				//gapBadData = checkGAP_OLD(s.id.gap, gap, false);
-				gapBadData = checkGAP(s.id.postIdGap, gap);
+				gapBadData = scanGap(s.id.postIdGap, gap);
 				List<byte> igap = new List<byte>();
 				for (int j = 0; j < gap.count4E; j++)
 					igap.Add(0x4E);
 				for (int j = 0; j < gap.count00; j++)
 					igap.Add(0);
-				if (s.data != null) p.Inlines.Add(String.Format("IGAP {0} bytes", igap.Count));
-				else p.Inlines.Add(String.Format("PGAP {0} bytes", igap.Count));
+				//if (s.data != null)
+				p.Inlines.Add(String.Format("Post ID Gap {0} bytes", igap.Count));
+				//else p.Inlines.Add(String.Format("PGAP {0} bytes", igap.Count));
 				//	p.Inlines.Add(String.Format("Inner gap: {0}x4E - {1}x00", gap.count4E, gap.count00));
 				if (gapBadData)
 					p.Inlines.Add(String.Format(" has bad data @ {0} {1:F2} ms", gap.spliceByte, (double)gap.spliceTime / 1000000.0));
-				displayContent(igap, p, s.id.postIdGap.info.startByte, false);
- 				//p.Inlines.Add(new LineBreak());
+				displayContent(igap, 0, p, s.id.postIdGap.info.startByte, false);
+				//p.Inlines.Add(new LineBreak());
 				li.Blocks.Add(p);
 				l.ListItems.Add(li);
 
 				// if sector has data field
 				if (s.data != null) {
-                    // display MFM
+					// display MFM
 					li = new ListItem();
 					li.LineHeight = 1;
 					li.Margin = new Thickness(25, 0, 0, 0);
@@ -290,7 +272,7 @@ namespace Aufit {
 					p.Margin = new Thickness(5, 0, 0, 0);
 					p.Inlines.Add("Sync 3 MFM bytes");
 					//p.Inlines.Add(new LineBreak());
-					displayContent(sync, p, s.data.info.startByte - 3, true);
+					displayContent(sync, 0, p, s.data.info.startByte, true);
 					li.Blocks.Add(p);
 					l.ListItems.Add(li);
 
@@ -301,9 +283,9 @@ namespace Aufit {
 					p = new Paragraph();
 					p.LineHeight = 1;
 					p.Margin = new Thickness(5, 0, 0, 0);
-					p.Inlines.Add(String.Format("DATA {0} bytes", s.data.buffer.DataByte.Count));
+					p.Inlines.Add(String.Format("DATA {0} bytes", s.data.buffer.DataByte.Count - 3));
 					//p.Inlines.Add(new LineBreak());
-					displayContent(s.data.buffer.DataByte, p, s.data.info.startByte, false);
+					displayContent(s.data.buffer.DataByte, 3, p, s.data.info.startByte, false);
 					li.Blocks.Add(p);
 					l.ListItems.Add(li);
 
@@ -315,25 +297,25 @@ namespace Aufit {
 					p.LineHeight = 1;
 					p.Margin = new Thickness(5, 0, 0, 0);
 					//gapBadData = checkGAP_OLD(s.data.gap, gap, false);
-					gapBadData = checkGAP(s.data.postDataGap, gap);
+					gapBadData = scanGap(s.data.postDataGap, gap);
 					List<byte> pgap = new List<byte>();
 					for (int j = 0; j < gap.count4E; j++)
 						pgap.Add(0x4E);
 					for (int j = 0; j < gap.count00; j++)
 						pgap.Add(0);
-					p.Inlines.Add(String.Format("PGAP {0} bytes", pgap.Count));
-					//	p.Inlines.Add(String.Format("Post gap: {0}x4E - {1}x00", gap.count4E, gap.count00));
+					p.Inlines.Add(String.Format("Post Data GAP {0} bytes", pgap.Count));
+					//	p.Inlines.Add(String.Format("Post Data Gap: {0}x4E - {1}x00", gap.count4E, gap.count00));
 					if (gapBadData)
 						p.Inlines.Add(String.Format(" has bad data @ {0} {1:F2} ms", gap.spliceByte, (double)gap.spliceTime / 1000000.0));
 					if (s.data.postDataGap != null)
-						displayContent(pgap, p, s.data.postDataGap.info.startByte, false);
+						displayContent(pgap, 0, p, s.data.postDataGap.info.startByte, false);
 					//p.Inlines.Add(new LineBreak());
 					li.Blocks.Add(p);
 					l.ListItems.Add(li);
 				}   // sector has data
 
 				doc.Blocks.Add(l);
-			}	// all sectors
+			}   // all sectors
 
 			// for post gap we generate stream gap elem
 			// TODO
@@ -353,7 +335,7 @@ namespace Aufit {
 				if (in4E) {
 					if (isShifted00(b)) {
 						if (b != 0x00) {
-							if (!gi.badDataFound) { 
+							if (!gi.badDataFound) {
 								gi.spliceTime = gap.buffer.StartTime[i];
 								gi.spliceByte = gap.info.startByte + i;
 							}
@@ -364,7 +346,7 @@ namespace Aufit {
 							gi.count00 = setAside;
 							in4E = false;
 						}
-					}	// 00
+					}   // 00
 					else {
 						gi.count4E += setAside;
 						gi.count4E++;
@@ -376,8 +358,8 @@ namespace Aufit {
 							}
 							gi.badDataFound = true;
 						}
-					}	// not 00
-				}	// in4E
+					}   // not 00
+				}   // in4E
 				else {
 					gi.count00++;
 					if (b != 0x00) {
@@ -387,7 +369,7 @@ namespace Aufit {
 						}
 						gi.badDataFound = true;
 					}
-				}	// !in4e
+				}   // !in4e
 			}
 			return gi.badDataFound;
 		}
@@ -399,12 +381,12 @@ namespace Aufit {
 		/// <param name="gap">The gap field</param>
 		/// <param name="gi">The PostGapInfo structure</param>
 		/// <returns>True if bad gap value found</returns>
-		private bool checkGAP(GapField gap, PostGapInfo gi) {
+		private bool scanGap(GapField gap, PostGapInfo gi) {
 			gi.reset();
 			if (gap == null) return false;
 			bool in4E = false;
 
-			for (int i = gap.buffer.DataByte.Count - 1; i >= 0 ; i--) {
+			for (int i = gap.buffer.DataByte.Count - 1; i >= 0; i--) {
 				byte b = gap.buffer.DataByte[i];
 				if (!in4E && (isShifted00(b) || (i == (gap.buffer.DataByte.Count - 1)))) {
 					gi.count00++;
@@ -413,7 +395,7 @@ namespace Aufit {
 						gi.spliceByte = gap.info.startByte + i;
 						gi.badDataFound = true;
 					}
-				}	// 00
+				}   // 00
 				else {
 					in4E = true;
 					gi.count4E++;
@@ -422,8 +404,8 @@ namespace Aufit {
 						gi.spliceByte = gap.info.startByte + i;
 						gi.badDataFound = true;
 					}
-				}	// not 00
-			}	// all bytes
+				}   // not 00
+			}   // all bytes
 			return gi.badDataFound;
 		}
 
@@ -435,7 +417,7 @@ namespace Aufit {
 		/// <returns>True if byte b is a possible shifted value of 4E</returns>
 		bool isShifted4E(byte b) {
 			return ((b == 0x4E) || (b == 0x12) || (b == 0xC9) || (b == 0x24) || (b == 0x93) || (b == 0x48) || (b == 0x27) || (b == 0x90) ||
-				    (b == 0xE4) || (b == 0x21) || (b == 0x9C) || (b == 0x42) || (b == 0x39) || (b == 0x84) || (b == 0x72) || (b == 0x09) );
+					(b == 0xE4) || (b == 0x21) || (b == 0x9C) || (b == 0x42) || (b == 0x39) || (b == 0x84) || (b == 0x72) || (b == 0x09));
 		}
 
 
@@ -456,17 +438,16 @@ namespace Aufit {
 		/// <param name="p">Paragraph</param>
 		/// <param name="startPos">The starting position of the buffer</param>
 		/// <param name="MFM">When true display MFM 16 bits values otherwise display 8 bits value</param>
-		public void displayContent(List<byte> buffer, Paragraph p, int startPos, bool MFM) {
+		public void displayContent(List<byte> buffer, int offset, Paragraph p, int startPos, bool MFM) {
 			int bytes = buffer.Count;
-			for (int i = 0; i < bytes; i += 16) {
-				// display position
-				p.Inlines.Add(new LineBreak());				
-				p.Inlines.Add(new Run(String.Format("{0:D5}  ", i + startPos)));
+			for (int i = offset; i < bytes; i += 16) {
+				p.Inlines.Add(new LineBreak());
+				//p.Inlines.Add(new Run(String.Format("{0:D5}  ", i + startPos)));
 
 				string ascii = "  ";
 				for (int j = 0; j < 16; j++) {
 					if ((i + j) < bytes) {
-						p.Inlines.Add(String.Format("{0:X2}{1}", 
+						p.Inlines.Add(String.Format("{0:X2}{1}",
 							buffer[i + j], MFM ? ((j % 2 == 0) ? "" : "  ") : " "));
 
 						char ch = Convert.ToChar(buffer[i + j]);
@@ -477,7 +458,71 @@ namespace Aufit {
 				}   // one more line
 				p.Inlines.Add(ascii);
 			}   // all lines
-		}	// displayContent
+		}   // displayContent
 
-	}	// class MainWindow
-}	// namespace Aufit
+	}   // class MainWindow
+
+	// http://blogs.msdn.com/b/jpricket/archive/2009/04/23/collapsiblesection-hiding-paragraphs-until-the-user-wants-to-see-them-in-a-flowdocument.aspx
+	internal class CollapsibleSection : Section {
+		public CollapsibleSection() {
+			CollapsibleBlocks = new List<Block>();
+			Header = new Paragraph();
+
+			m_expandCollapseToggleButton = new ToggleButton();
+			m_expandCollapseToggleButton.Click += new RoutedEventHandler(ExpandCollapseToggleButton_Click);
+			m_inlineUIContainer = new InlineUIContainer(m_expandCollapseToggleButton);
+			m_inlineUIContainer.BaselineAlignment = BaselineAlignment.Center;
+			m_inlineUIContainer.Cursor = Cursors.Arrow;
+
+			Header.Inlines.Add(m_inlineUIContainer);
+		}
+
+		private void ExpandCollapseToggleButton_Click(object sender, RoutedEventArgs e) {
+			Invalidate();
+		}
+
+		public Paragraph Header { get; private set; }
+		public List<Block> CollapsibleBlocks { get; private set; }
+
+		public bool IsCollapsed {
+			get {
+				return !(m_expandCollapseToggleButton.IsChecked ?? false);
+			}
+			set {
+				m_expandCollapseToggleButton.IsChecked = !value;
+			}
+		}
+
+		public void Invalidate() {
+			Blocks.Clear();
+
+			if (CollapsibleBlocks.Count == 0) {
+				m_expandCollapseToggleButton.IsChecked = null;
+			}
+
+			Blocks.Add(Header);
+
+			if (!IsCollapsed) {
+				Blocks.AddRange(CollapsibleBlocks);
+			}
+		}
+
+		private ToggleButton m_expandCollapseToggleButton;
+		private InlineUIContainer m_inlineUIContainer;
+	}
+
+//CollapsibleSection section = new CollapsibleSection();
+//section.Margin = new Thickness(parentIndent, StandardPadding, 0, 0);
+//section.IsCollapsed = false;
+
+//  . . .
+
+//  section.Header.Inlines.Add(header);
+
+//  . . .
+
+//  section.CollapsibleBlocks.Add(new Paragraph(new Run(“test paragraph”));
+
+//  section.Invalidate();
+
+}   // namespace Aufit

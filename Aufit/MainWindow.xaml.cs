@@ -1066,7 +1066,7 @@ namespace Aufit {
 			ButtonMatrix.selectButton(track, side);
 			FDC.resetTrack(CurrentTrack, CurrentSide);
 			drawAllCharts();
-			Protections.checkProtection(track, side, infoBox);
+			//Protections.checkProtection(track, side, infoBox);
 
 			if (tabItemDisk.IsSelected)
 				drawDiskSelectedTrack(track, side);

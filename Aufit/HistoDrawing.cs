@@ -156,7 +156,26 @@ namespace ChartPackage {
 				System.Windows.Shapes.Path path = new System.Windows.Shapes.Path() { Stroke = Brushes.Blue, StrokeThickness = 1, Data = g };
 				_histoChartLayout.GraphicCanvas.Children.Add(path);
 			}   // formatted
+
 			_win.tbEntropy.Text = String.Format("{0} = {1:F2}", (message == null) ? "Track" : message, h.entropy);
+
+			if (h.peaks != null)
+				foreach (Tuple<int, int> peak in h.peaks) {
+					Line peakLine = new Line();
+					peakLine.Stroke = Brushes.Black;
+					peakLine.StrokeThickness = 1.5;
+					peakLine.X1 = _histoChartLayout.NormPoint(new Point((double)peak.Item1 / 1000.0, 0)).X;
+					peakLine.Y1 = _histoChartLayout.NormY(_histoChartLayout.Ymin);
+					peakLine.X2 = _histoChartLayout.NormPoint(new Point((double)peak.Item1 / 1000.0, 0)).X;
+					peakLine.Y2 = _histoChartLayout.NormY(_histoChartLayout.Ymax);
+
+					TextBox peakInfo = new TextBox();
+					peakInfo.Text = String.Format("Peak at {0} ns Value {1}", peak.Item1, peak.Item2);
+					ToolTipService.SetToolTip(peakLine, peakInfo);
+					ToolTipService.SetShowDuration(peakLine, 100000);
+					_histoChartLayout.GraphicCanvas.Children.Add(peakLine);
+				}
+
 		}   // drawHisto()
 	}
 }

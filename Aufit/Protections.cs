@@ -92,7 +92,7 @@ namespace Aufit {
 		/// </remarks>
 		public static void checkProtection(int track, int side, TextBox text = null) {
 			Global.DiskTrack dt = Global.Disk[track, side];
-			if ((dt.track == null) || (dt.sectors.Count == 0))
+			if ((dt.track == null) /*|| (dt.sectors.Count == 0)*/)
 				return;
 
 			PInfo info = new PInfo();
@@ -198,6 +198,16 @@ namespace Aufit {
 
 			}	// number of sectors > 0
 
+			else {
+				// Data track
+				if (dt.histoData.HasMFM) {
+					dt.track.flags |= TrackFlag.DATA_TRACK;
+					dt.track.hasProtections = true;
+					writeInfo(info, "DTT data track contains MFM flux");
+				}
+
+			}	// track with no sector
+
 			if (dt.track.flags.HasFlag(TrackFlag.INVALID_SYNC_SEQ)) {
 				dt.track.hasProtections = true;
 				writeInfo(info, "ISS Invalid Sync-mark Sequence");
@@ -231,6 +241,7 @@ namespace Aufit {
 				for (int comp = secIndex + 1; comp < dt.sectors.Count; comp++) {
 					if (dt.sectors[secIndex].id.Sector == dt.sectors[comp].id.Sector) {
 						dt.sectors[secIndex].flags |= SectorFlags.DUP_SEC_NUM;
+						dt.track.flags |= TrackFlag.DUP_SEC_IN_TRACK;
 						dt.track.hasProtections = true;
 						writeInfo(info, String.Format("DSN Duplicate Sector Number {0}", dt.sectors[secIndex].id.Sector));
 					}

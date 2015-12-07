@@ -81,7 +81,7 @@ namespace ChartPackage {
 			_dataChartLayout.chartResetCanvas();
 			_dataChartLayout.drawChartGrids();
 
-			FDC.processTrack(track, side, rev);
+			//FDC.processTrack(track, side, rev);
 			List<Sector> sectors = Global.Disk[track, side].sectors;
 			double revolutionTime = (double)Global.Disk[track, side].fluxDataRev[rev].revolutionTime / 1000000.0;
 

@@ -120,8 +120,14 @@ namespace GlobalPackage {
 		public double entropy;
 
 		/// <summary>The track seems to have data</summary>
-		public bool hasMFM;
-	}
+		public int MFMBitSum;
+
+		public bool HasMFM {
+			get { return (MFMBitSum > 5000); }
+		}
+
+		public List<Tuple<int, int>> peaks;
+    }
 
 
 	/// <summary>Defines the position of bits in a unsigned int</summary>
@@ -369,8 +375,8 @@ namespace GlobalPackage {
 			text.AppendText(String.Format(" * {0} * (Entropy {1:F2})",
 				(h.entropy > UNFORMATED_ENTROPY) ? "Unformatted track" : "Normal track", h.entropy));
 			text.AppendText(String.Format(" - Fluxes {0}", last - first));
-			text.AppendText(String.Format(" - Histogram size {0} ({1} ns) {2}\n",
-				h.histogram.Length, (h.histogram.Length - 1) * HISTO_SCALE, h.hasMFM ? "HasBits" : "NoBits"));
+			text.AppendText(String.Format(" - Histogram size {0} ({1} ns) {2} ({3})\n",
+				h.histogram.Length, (h.histogram.Length - 1) * HISTO_SCALE, h.HasMFM ? "HasBits" : "NoBits", h.MFMBitSum));
 			text.ScrollToEnd();
 			return h.entropy;
 		}
@@ -386,7 +392,6 @@ namespace GlobalPackage {
 			int sizeBeforeTrim = 0;
 			int fluxCount = 0;
 			HistoData h = new HistoData();
-			h.hasMFM = false;
 			h.entropy = 0;
 
 			sizeBeforeTrim = (fluxSegment.Max() / HISTO_SCALE) + 2;
@@ -411,17 +416,51 @@ namespace GlobalPackage {
 
 			for (int i = 0; i < histoSize; i++)
 				if (h.histogram[i] > 0) {
-					if (h.histogram[i] > 1000) {
-						if ((i > (3400 / HISTO_SCALE)) && (i < (8600 / HISTO_SCALE)))
-							h.hasMFM = true;
-					}   // large number of flux transitions
+					//if (h.histogram[i] > 1000) {
+					//	if ((i > (3400 / HISTO_SCALE)) && (i < (8600 / HISTO_SCALE)))
+					//		h.hasMFM = true;
+					//}   // large number of flux transitions
 					double p = h.histogram[i] / (double)(fluxCount);
 					h.entropy += p * Math.Log(p, 2);
 				}
 			h.entropy = -h.entropy;
+			if (h.entropy < UNFORMATED_ENTROPY) {
+				h.peaks = getPeaks(h.histogram, HISTO_SCALE);
+				int bitSum = 0;
+				foreach (Tuple<int, int> peak in h.peaks) {
+					if (!fluxOutOfBand(peak.Item1, 500))
+						bitSum += peak.Item2;
+				}
+				h.MFMBitSum = bitSum;
+			}
+
 			return h;
 		}
 
+
+		// http://stackoverflow.com/questions/23823860/finding-peak-intervals-from-column-data
+		public static List<Tuple<int, int>> getPeaks(int[] values, int scale) {
+			List<Tuple<int, int>> results = new List<Tuple<int, int>>();
+
+			List<int> curInterval = new List<int>();
+
+			bool decreasing = false;
+			for (int i = 0; i < values.Length; i++) {
+				if (curInterval.Count > 0) {
+					if (values[i] < curInterval.Last() && !decreasing) {
+						if (curInterval.Last() > 2)
+							results.Add(new Tuple<int, int>((i - 1) * scale, curInterval.Last()));
+						curInterval.Clear();
+						decreasing = true;
+					}
+					else if (values[i] >= curInterval.Last() && decreasing) {
+						decreasing = false;
+					}
+				}
+				curInterval.Add(values[i]);
+			}
+			return results;
+		}
 
 		/// <summary>Return the actual size of the data field of a sector</summary>
 		/// <param name="size">encoded size of the sector</param>
@@ -509,11 +548,10 @@ namespace GlobalPackage {
 		}
 
 
-		public static bool fluxOutOfBand(int flux) {
-			const int limit = 700;
-			if (((flux > (4000 - limit)) && (flux < (4000 + limit))) ||
-				((flux > (6000 - limit)) && (flux < (6000 + limit))) ||
-				((flux > (8000 - limit)) && (flux < (8000 + limit))))
+		public static bool fluxOutOfBand(int flux, int range) {
+			if (((flux > (4000 - range)) && (flux < (4000 + range))) ||
+				((flux > (6000 - range)) && (flux < (6000 + range))) ||
+				((flux > (8000 - range)) && (flux < (8000 + range))))
 				return false;
 			return true;
 		}

@@ -481,7 +481,7 @@ namespace Aufit {
 										(buffer.Phase[i + j] == Phases.id) ? Brushes.GreenYellow :
 										Brushes.White,
 									Foreground =
-										(isGap && (buffer.DataByte[i + j] != 0x00) && (buffer.DataByte[i + j] != 0x4E)) ? Brushes.DarkOrange :
+										(isGap && (buffer.DataByte[i + j] != 0x00) && (buffer.DataByte[i + j] != 0x4E)) ? Brushes.DarkBlue :
 										(buffer.MFMWord[i + j] == 0x4489) ? Brushes.Red :
 										(buffer.MFMWord[i + j] == 0x5224) ? Brushes.Navy :
 										(buffer.Phase[i + j] == Phases.id) ? Brushes.Blue :

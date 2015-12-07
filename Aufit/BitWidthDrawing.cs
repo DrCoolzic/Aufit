@@ -165,15 +165,16 @@ namespace ChartPackage {
 						iamLine.StrokeThickness = 3;
 					}
 
-					iamLine.X1 = _bitWidthChartLayout.NormPoint(new Point((double)iam.info.startTime / 1000000.0, 2)).X;
+					iamLine.X1 = _bitWidthChartLayout.NormPoint(new Point((double)iam.info.startTime / 1000000.0, 0)).X;
 					iamLine.Y1 = _bitWidthChartLayout.NormY(_bitWidthChartLayout.Ymin);
-					iamLine.X2 = _bitWidthChartLayout.NormPoint(new Point((double)iam.info.startTime / 1000000.0, 10)).X;
+					iamLine.X2 = _bitWidthChartLayout.NormPoint(new Point((double)iam.info.startTime / 1000000.0, 0)).X;
 					iamLine.Y2 = _bitWidthChartLayout.NormY(_bitWidthChartLayout.Ymax);
 
-					//TextBox spliceInfo = new TextBox();
-					//spliceInfo.Text = String.Format("Out of band at {0} ms -- flux value={1:F3} µs", (double)currentTime / 1000000.0, flux);
-					//ToolTipService.SetToolTip(iamLine, spliceInfo);
-					//ToolTipService.SetShowDuration(iamLine, 100000);
+					TextBox iamInfo = new TextBox();
+					iamInfo.Text = String.Format("IAM Type={0} Value=${1:X2} start @ bit={2} byte={3} time={4:F2}", 
+						iam.Type, iam.Value, iam.info.startBit, iam.info.startByte, iam.info.startTime / 1000000.0);
+					ToolTipService.SetToolTip(iamLine, iamInfo);
+					ToolTipService.SetShowDuration(iamLine, 100000);
 					_bitWidthChartLayout.GraphicCanvas.Children.Add(iamLine);
 
 				}

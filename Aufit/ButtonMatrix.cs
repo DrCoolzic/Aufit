@@ -197,7 +197,7 @@ namespace Aufit {
 						color = new SolidColorBrush(Global.NormalTrackColor);
 				}   // normal sector ==> many id or one id with data
 				else {
-					if ((dt.histoData.hasMFM) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
+					if ((dt.histoData.HasMFM) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
 						if (dt.sectors.Count > 0)
 							color = new SolidColorBrush(Global.DataOneIdTrackColor);   // one id detected
 						else

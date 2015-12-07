@@ -148,6 +148,7 @@ namespace WD1772Package {
 	public class IAM {
 		public IAMType Type { get; set; }
 		public bool Error { get; set; }
+		public byte Value { get; set; }
 		public BlockInfo info = new BlockInfo();
 	}
 
@@ -231,24 +232,36 @@ namespace WD1772Package {
 	[Flags]
 	public enum TrackFlag : uint {
 		None = 0,
+
 		/// <summary>Track has less than 6062 bytes</summary>
 		SHORT_TRACK = Bit.BIT_01,
+
 		/// <summary>Track has more 6437 bytes</summary>
 		LONG_TRACK = Bit.BIT_02,
+
 		/// <summary>Data track detected</summary>
 		DATA_TRACK = Bit.BIT_03,
+
 		/// <summary>Track has more than 5 invalid bytes ($F5-F7) in GAP</summary>
 		BAD_DATA_IN_GAP = Bit.BIT_04,
+
 		/// <summary>Sector numbered non sequentially</summary>
 		SECTORS_NOT_IN_SEQ = Bit.BIT_05,
+
 		/// <summary>Hidden Data in track (DF & JMD)</summary>
 		HIDDEN_DATA = Bit.BIT_06,
+
 		/// <summary>Track has Sync sequence > 4</summary>
 		INVALID_SYNC_SEQ = Bit.BIT_07,
+
 		/// <summary>Track contains No Flux Area</summary>
 		NFA_IN_TRACK = Bit.BIT_08,
+
 		/// <summary>Track contains sector with non standard size</summary>
-		SECTORS_NOT_STD_SIZE = Bit.BIT_09
+		SECTORS_NOT_STD_SIZE = Bit.BIT_09,
+
+		DUP_SEC_IN_TRACK = Bit.BIT_10
+
 	///// <summary>Shifted Track with data over index pulse</summary>
 	//public const uint DATA_OVER_IDX = Bit.BIT_08;
 	///// <summary>Shifted Track with data after index pulse</summary>
@@ -632,6 +645,7 @@ namespace WD1772Package {
 							bti.storeStartInfo(iam.info, true);
 							dsr.sectorMode();
 							iam.Error = false;
+							iam.Value = dsr.Data;
 
 							if (Enumerable.Range(0xFC, 4).Contains(dsr.Data))	// ID AM
 								iam.Type = IAMType.Id;
@@ -655,7 +669,7 @@ namespace WD1772Package {
 		/// <param name="rev">The revolution index</param>
 		//public static List<Sector> readId(int track, int side, int rev) {
 		public static void readId(Global.DiskTrack dt, IdField id) {
-			int firstIndex = (id.info.firstIndex - 5) < 0 ? 0 : id.info.firstIndex - 5;
+			int firstIndex = (id.info.firstIndex - 16) < 0 ? 0 : id.info.firstIndex - 16;
 			int lastIndex = id.info.lastIndex;
 			int byteLeftInBlock = 0;
 			ushort crc = 0;
@@ -727,7 +741,7 @@ namespace WD1772Package {
 
 
 		public static SectorFlags readData(Global.DiskTrack dt, DataField data, int size, bool full) {
-			int firstIndex = (data.info.firstIndex - 5) < 0 ? 0 : data.info.firstIndex - 5;
+			int firstIndex = (data.info.firstIndex - 16) < 0 ? 0 : data.info.firstIndex - 16;
 			int lastIndex = data.info.lastIndex;
 			Phases phase = Phases.postIdGap;
 			DSR dsr = new DSR();
@@ -894,7 +908,7 @@ namespace WD1772Package {
 		public static void processTrack(int track, int side, int rev) {
 			Global.DiskTrack dt = Global.Disk[track, side];
             if ((dt.sectors != null) && (dt.sectors.Count > 0)) return;
-			if (dt.fluxData == null) return;
+			if ((dt.fluxData == null) || (dt.decodedData == null)) return;
 			Global.Disk[track, side].sectors = new List<Sector>();
 			bool consistentIAM = true;
 
