@@ -110,7 +110,7 @@ namespace ChartPackage {
 
 			Global.DiskTrack dt = Global.Disk[track, side];
 			int start = Global.firstIndex(track, side, rev);
-			int stop = Global.lastIndex(track, side, rev);
+			int stop = Global.lastIndex(track, side, rev) + 1000;
 
 			int currentTime = 0;
 			Polyline clockLine = new Polyline();
@@ -122,6 +122,8 @@ namespace ChartPackage {
 
 			// populate
 			for (int i = start; i < stop; i++) {
+				if (i >= dt.fluxData.fluxValue.Length)
+					break;
 				int flux = dt.fluxData.fluxValue[i];
 				currentTime += flux;
 

@@ -127,6 +127,14 @@ namespace GlobalPackage {
 		}
 
 		public List<Tuple<int, int>> peaks;
+
+		public bool Unformatted {
+			get { return (entropy > 6.5); }
+		}
+
+		public bool Formatted {
+			get { return (entropy < 6.5); }
+		}
     }
 
 
@@ -231,11 +239,7 @@ namespace GlobalPackage {
 
 		private static DiskTrack[,] _disk = new DiskTrack[85, 2];
 
-		/// <summary>
-		/// The entropy crossing value between formatted and unformatted
-		/// </summary>
-		public const double UNFORMATED_ENTROPY = 6.5;
-		/// <summary>
+
 
 		/// <summary>
 		/// Scale used to reduce the size of the histogram arrays
@@ -361,8 +365,8 @@ namespace GlobalPackage {
 		/// <param name="rev">We compute the histogram for this revolution</param>
 		/// <param name="text">The TextBox where the information are written</param>
 		/// <returns>the computed entropy</returns>
-		public static double computeTrackHisto(int track, int side, int rev, TextBox text) {
-			if (Global.Disk[track, side].fluxDataRev == null) return 0;
+		public static bool computeTrackHisto(int track, int side, int rev, TextBox text) {
+			if (Global.Disk[track, side].fluxDataRev == null) return true;
 
 			int first = Disk[track, side].fluxDataRev[rev].firstFluxIndex;
 			int last = (Disk[track, side].fluxDataRev[rev].firstFluxIndex + Disk[track, side].fluxDataRev[rev].fluxCount);
@@ -373,12 +377,12 @@ namespace GlobalPackage {
 			// log information
 			text.AppendText(String.Format("Track {0:D2}.{1} Rev {2}", track, side, rev + 1));
 			text.AppendText(String.Format(" * {0} * (Entropy {1:F2})",
-				(h.entropy > UNFORMATED_ENTROPY) ? "Unformatted track" : "Normal track", h.entropy));
+				(h.Unformatted) ? "Unformatted track" : "Normal track", h.entropy));
 			text.AppendText(String.Format(" - Fluxes {0}", last - first));
 			text.AppendText(String.Format(" - Histogram size {0} ({1} ns) {2} ({3})\n",
 				h.histogram.Length, (h.histogram.Length - 1) * HISTO_SCALE, h.HasMFM ? "HasBits" : "NoBits", h.MFMBitSum));
 			text.ScrollToEnd();
-			return h.entropy;
+			return h.Formatted;
 		}
 
 
@@ -424,11 +428,11 @@ namespace GlobalPackage {
 					h.entropy += p * Math.Log(p, 2);
 				}
 			h.entropy = -h.entropy;
-			if (h.entropy < UNFORMATED_ENTROPY) {
+			if (h.Formatted) {
 				h.peaks = getPeaks(h.histogram, HISTO_SCALE);
 				int bitSum = 0;
 				foreach (Tuple<int, int> peak in h.peaks) {
-					if (!fluxOutOfBand(peak.Item1, 500))
+					if (fluxInRange(peak.Item1, 2000, 500))
 						bitSum += peak.Item2;
 				}
 				h.MFMBitSum = bitSum;
@@ -548,12 +552,28 @@ namespace GlobalPackage {
 		}
 
 
-		public static bool fluxOutOfBand(int flux, int range) {
-			if (((flux > (4000 - range)) && (flux < (4000 + range))) ||
-				((flux > (6000 - range)) && (flux < (6000 + range))) ||
-				((flux > (8000 - range)) && (flux < (8000 + range))))
-				return false;
-			return true;
+		//public static bool fluxOutOfBand(int flux, int range) {
+		//	if (((flux > (4000 - range)) && (flux < (4000 + range))) ||
+		//		((flux > (6000 - range)) && (flux < (6000 + range))) ||
+		//		((flux > (8000 - range)) && (flux < (8000 + range))))
+		//		return false;
+		//	return true;
+		//}
+
+
+		public static bool fluxInRange(int flux, int bitWidth, int range) {
+			//int upper_high = 4 * bitWidth + ((4 * percentage * bitWidth) / 100);
+			int upper_high = 4 * bitWidth + range;
+			int upper_low = 4 * bitWidth - range;
+			//int middle_high = 3 * bitWidth + ((3 * percentage * bitWidth) / 100);
+			int middle_high = 3 * bitWidth + range;
+			int middle_low = 3 * bitWidth - range;
+			int lower_high = 2 * bitWidth + range;
+			int lower_low = 2 * bitWidth - range;
+			bool inRange = (((flux < upper_high) && (flux > upper_low)) ||
+							((flux < middle_high) && (flux > lower_low)) ||
+							((flux < lower_high) && (flux > middle_low)));
+            return inRange;
 		}
 
 	}   // class Global

@@ -361,7 +361,7 @@ namespace Aufit {
 			if (Global.Disk[track, side].decodedData == null)
 				Global.mfmDecode(track, side);
 
-			cbLimitFlux.IsChecked = (Global.computeTrackHisto(track, side, rev, infoBox) < Global.UNFORMATED_ENTROPY);
+			cbLimitFlux.IsChecked = Global.computeTrackHisto(track, side, rev, infoBox);
 			//_histoDrawing.drawHisto(track, side, rev);
 			_histoDrawing.drawTrackHisto();
 			FDC.processTrack(track, side, rev);
@@ -381,9 +381,11 @@ namespace Aufit {
 
 			Global.DiskTrack dt = Global.Disk[track, side];
 			tbFluxInfo.AppendText(String.Format(" - {0} bytes {1} sectors", dt.track.buffer.DataByte.Count, dt.sectors.Count));
-			if (dt.sectors.Count > 0)
+			if (dt.sectors.Count > 0) {
 				tbFluxInfo.AppendText(String.Format(" First={0}", dt.sectors[dt.track.firstSectIndex].id.Sector));
-			tbFluxInfo.AppendText(String.Format(" Splice={0}", dt.track.splicePosition));
+				if (dt.track.trackSplice != null)
+					tbFluxInfo.AppendText(String.Format(" Splice @{0:F2}", dt.track.trackSplice.Item1 / 1000000.0));
+			}
 		}
 
 
@@ -1066,7 +1068,7 @@ namespace Aufit {
 			ButtonMatrix.selectButton(track, side);
 			FDC.resetTrack(CurrentTrack, CurrentSide);
 			drawAllCharts();
-			//Protections.checkProtection(track, side, infoBox);
+			Protections.checkProtection(track, side, infoBox);
 
 			if (tabItemDisk.IsSelected)
 				drawDiskSelectedTrack(track, side);

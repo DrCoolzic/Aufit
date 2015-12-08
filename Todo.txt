@@ -2,6 +2,7 @@ check trackOffset + firstSyncOffset
 
 when fuzzy at end not possible to detect splice find other way?
 check fuzzy type => DM / random / DrT
+shifted track should now use trackSplice
 
 BUGS
 ====

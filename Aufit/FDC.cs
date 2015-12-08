@@ -291,7 +291,7 @@ namespace WD1772Package {
 
 		/// <summary>Index of the first sector of the track</summary>
 		public int firstSectIndex = 0;
-		public int splicePosition = 0;
+		public Tuple<int, int> trackSplice = null;
 
 		/// <summary>Protection(s) detected for this track</summary>
 		public bool hasProtections = false;
@@ -596,7 +596,7 @@ namespace WD1772Package {
 
 			bti.storeEndInfo(Global.Disk[track, side].track.info, false);
 
-			if (invalidByteInGap > 5)
+			if ((invalidByteInGap > 5) && (Global.Disk[track, side].sectors.Count > 0))
 				Global.Disk[track, side].track.flags |= TrackFlag.BAD_DATA_IN_GAP;
 		}   // end of readTrack()
 
@@ -961,7 +961,6 @@ namespace WD1772Package {
 			int maxPostSize = 0;
 			int lastBlock = -1;
 			int lastTruncNFABlock = -1;
-			int splicePosition = 0;
 
 			if (consistentIAM) {
 				// read all index field
@@ -1024,32 +1023,48 @@ namespace WD1772Package {
 						lastBlock = secIndex;
 					}
 				}   // sector no data
-				// store info if Truncated and NFA
+
+				// Truncated and NFA
 				if (sector.flags.HasFlag(SectorFlags.NFA_IN_SECT) && sector.flags.HasFlag(SectorFlags.TRUNC_SECT))
 					lastTruncNFABlock = Global.Disk[track, side].sectors.Count - 1;
-			}
+			}	// all sectors
 
-			// search splice
+			// search track splice
 			if (lastTruncNFABlock != -1)	// NFA win over largest gap
 				lastBlock = lastTruncNFABlock;
+
 			else if (lastBlock != -1) {
 				sector = Global.Disk[track, side].sectors[lastBlock];
-				GapField g = (sector.dataNoId != null) ? sector.dataNoId.postDataGap : (sector.data != null) ? sector.data.postDataGap : sector.id.postIdGap;
-				if (g != null) {
-					for (splicePosition = 1; splicePosition < g.buffer.DataByte.Count - 1; splicePosition++)
-						if (g.buffer.DataByte[splicePosition] != 0x4E) break;
-					if ((splicePosition >= (g.buffer.DataByte.Count - 1)) || (g.buffer.DataByte[splicePosition] == 0))
-						splicePosition = (int)(g.buffer.DataByte.Count * 0.9);
-					splicePosition += g.info.startByte - Global.Disk[track, side].track.buffer.DataByte.Count;
-				}	// gap exist
-			}	// block found
+				GapField gap = (sector.dataNoId != null) ? sector.dataNoId.postDataGap : (sector.data != null) ? sector.data.postDataGap : sector.id.postIdGap;
+				if (gap != null) {
+					int currentTime = gap.info.startTime;
+					Tuple<int, int> min = new Tuple<int, int>(0, 100000);
+					int start = gap.info.firstIndex;
+					int stop = gap.info.lastIndex;
+					int[] fluxSegment = Global.Disk[track, side].fluxData.fluxValue.Skip(start).Take(stop - start).ToArray();
+					HistoData h = Global.computeSegmentHisto(fluxSegment);
+					if (h.Formatted)
+					for (int i = start; i < stop; i++) {
+						int flux = Global.Disk[track, side].fluxData.fluxValue[i];
+						currentTime += flux;
+						if ((flux < min.Item2) && (i > (start + (0.3 * (stop - start)))) && !Global.fluxInRange(flux, 2000, 500))
+							min = new Tuple<int, int>(currentTime, flux);
+					}
+					if (min.Item2 != 100000) {
+						if (min.Item1 > Global.Disk[track, side].fluxDataRev[rev].revolutionTime)
+							Global.Disk[track, side].track.trackSplice =
+								new Tuple<int, int>(min.Item1 - Global.Disk[track, side].fluxDataRev[rev].revolutionTime, min.Item2);
+						else
+							Global.Disk[track, side].track.trackSplice = min;
+					}	// oob found
+				}	// gap not null
+			}   // block found
 
 			int firstBlock = (lastBlock == (Global.Disk[track, side].sectors.Count - 1)) ? 0 : lastBlock + 1;
 			Global.Disk[track, side].track.firstSectIndex = firstBlock;
-			Global.Disk[track, side].track.splicePosition = splicePosition;
 
 			// check protections
-			Protections.checkProtection(track, side);
+			//Protections.checkProtection(track, side);
 		}	// processTrack()
 
 

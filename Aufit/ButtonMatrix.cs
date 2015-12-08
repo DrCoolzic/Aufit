@@ -183,7 +183,7 @@ namespace Aufit {
 			// set background color of buttons in matrix
 			if (dt.track == null) {
 				if (dt.histoData.histogram != null)
-					color = (dt.histoData.entropy > Global.UNFORMATED_ENTROPY) ? Brushes.LightGray : Brushes.Lime;
+					color = (dt.histoData.Unformatted) ? Brushes.LightGray : Brushes.Lime;
 				else
 					color = Brushes.White;
 			}   // unprocessed
@@ -197,7 +197,7 @@ namespace Aufit {
 						color = new SolidColorBrush(Global.NormalTrackColor);
 				}   // normal sector ==> many id or one id with data
 				else {
-					if ((dt.histoData.HasMFM) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
+					if ((dt.histoData.HasMFM) && (dt.histoData.Formatted)) {
 						if (dt.sectors.Count > 0)
 							color = new SolidColorBrush(Global.DataOneIdTrackColor);   // one id detected
 						else

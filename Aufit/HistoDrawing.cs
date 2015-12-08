@@ -145,7 +145,7 @@ namespace ChartPackage {
 			_histoChartLayout.GraphicCanvas.Children.Add(pg);
 
 			// compute control pointsInViewport for Bezier curve if formatted	
-			if (h.entropy < Global.UNFORMATED_ENTROPY) {
+			if (h.Formatted) {
 				Point[] cp1, cp2;
 				ovp.BezierSpline.GetCurveControlPoints(points, out cp1, out cp2);
 				PathSegmentCollection lines = new PathSegmentCollection();
@@ -159,8 +159,11 @@ namespace ChartPackage {
 
 			_win.tbEntropy.Text = String.Format("{0} = {1:F2}", (message == null) ? "Track" : message, h.entropy);
 
-			if (h.peaks != null)
+			if (h.peaks != null) {
+				int count = h.peaks.Count;
 				foreach (Tuple<int, int> peak in h.peaks) {
+					if ((count > 10) && (peak.Item2 < 50))
+                        continue;	// filter partially unformatted
 					Line peakLine = new Line();
 					peakLine.Stroke = Brushes.Black;
 					peakLine.StrokeThickness = 1.5;
@@ -175,6 +178,7 @@ namespace ChartPackage {
 					ToolTipService.SetShowDuration(peakLine, 100000);
 					_histoChartLayout.GraphicCanvas.Children.Add(peakLine);
 				}
+			}
 
 		}   // drawHisto()
 	}

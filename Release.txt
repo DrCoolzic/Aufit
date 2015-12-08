@@ -1,4 +1,7 @@
 * Aufit 1.4
+- Better track write splice detection
+- new display of sector and track write splice with information
+- fix bug Black Lamp (bad data in gap when no sectors)
 - Histogram now shows peak with tool tip for position / value
 - fix bug in optimized Pasti write based on new flags - test War Heli
 - Now track/sector information is updated on track selection  ++ revolution change

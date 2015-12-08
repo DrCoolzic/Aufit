@@ -133,13 +133,15 @@ namespace ChartPackage {
 			_fluxChartLayout.drawChartGrids();
 
 			int start = Global.firstIndex(track, side, rev);
-			int stop = Global.lastIndex(track, side, rev);
+			int stop = Global.lastIndex(track, side, rev) + 1000;
 			int pointsInViewport = 0;
 			int currentTime = 0;
 
 			// compute the number of points in the "extended" viewport
 			if (_fluxChartLayout.zoomed()) {
 				for (int i = start; i < stop; i++) {
+					if (i >= dt.fluxData.fluxValue.Length)
+						break;
 					int flux = dt.fluxData.fluxValue[i];
 					currentTime += flux;
 					int bitSpacing = dt.decodedData.bitSpacing[i];
@@ -167,6 +169,8 @@ namespace ChartPackage {
 			Line syncLine;
 
 			for (int i = start; i < stop; i++) {
+				if (i >= dt.fluxData.fluxValue.Length)
+					break;
 				int flux = dt.fluxData.fluxValue[i];
 				currentTime += flux;
 				int bitSpacing = dt.decodedData.bitSpacing[i];

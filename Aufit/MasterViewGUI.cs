@@ -317,6 +317,13 @@ namespace Aufit {
 				doc.Blocks.Add(l);
 			}   // all sectors
 
+			//CollapsibleSection section = new CollapsibleSection();
+			////section.Margin = new Thickness(parentIndent, StandardPadding, 0, 0);
+			//section.IsCollapsed = false;
+			//section.Header.Inlines.Add("This is the header");
+			//section.CollapsibleBlocks.Add(new Paragraph(new Run("test paragraph")));
+			//doc.Blocks.Add(section);
+
 			// for post gap we generate stream gap elem
 			// TODO
 

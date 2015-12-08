@@ -582,7 +582,7 @@ namespace Aufit {
 					path.StrokeThickness = diskFineLine;
 					PathGeometry pg = new PathGeometry();
 
-					if ((dt.histoData.HasMFM) && (dt.histoData.entropy < Global.UNFORMATED_ENTROPY)) {
+					if ((dt.histoData.HasMFM) && (dt.histoData.Formatted)) {
 						if (dt.track.firstSyncOffset > 0)
 							path.Stroke = DataOneIdTrackBrush;
 						else
@@ -613,8 +613,8 @@ namespace Aufit {
 					int bitWidth = dt.decodedData.bitWidth[i];
 
 					// draw out of band
-					if ((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) && (dt.sectors.Count > 0) && (cbOutOfBand.IsChecked == true) &&
-							(Global.fluxOutOfBand(flux, 700)) && (currentTime > lastOobStopTime) && (oobCount < 50)) {
+					if ((dt.histoData.Formatted) && (dt.sectors.Count > 0) && (cbOutOfBand.IsChecked == true) &&
+							!(Global.fluxInRange(flux, 2000, 700)) && (currentTime > lastOobStopTime) && (oobCount < 50)) {
 						lastOobStopTime = currentTime + minDisplayWidth;
 						double startAngle = timeAngle(currentTime);
 						double stopAngle = timeAngle(lastOobStopTime);
@@ -636,7 +636,7 @@ namespace Aufit {
 
 						// draw NFA
 						if (dsr.DataReady) {
-							if (((dt.histoData.entropy < Global.UNFORMATED_ENTROPY) || (cbDiskNFA.IsChecked == true)) && dsr.DataReady) {
+							if (((dt.histoData.Formatted) || (cbDiskNFA.IsChecked == true)) && dsr.DataReady) {
 								if ((nfaStartTime == 0) && ((dsr.MFM == 0) || (dsr.MFM == 0xFFFF)))
 									nfaStartTime = runningTime;
 								if ((dsr.MFM != 0) && (dsr.MFM != 0xFFFF) && (nfaStartTime > 0) && (runningTime > (nfaStartTime + minDisplayWidth))) {

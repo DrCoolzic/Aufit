@@ -85,8 +85,8 @@ namespace ChartPackage {
 			List<Sector> sectors = Global.Disk[track, side].sectors;
 			double revolutionTime = (double)Global.Disk[track, side].fluxDataRev[rev].revolutionTime / 1000000.0;
 
-			for (int i = 0; i < sectors.Count; i++) {
-				Sector sector = sectors[i];
+			for (int secIndex = 0; secIndex < sectors.Count; secIndex++) {
+				Sector sector = sectors[secIndex];
 
 				Polygon sectorBorderPolygon = new Polygon();
 				sectorBorderPolygon.Stroke = Brushes.DarkBlue;
@@ -162,9 +162,9 @@ namespace ChartPackage {
 					sectorInfoPanel.Children.Add(tb);
 
 					// if SWS we truncate
-					if (((i + 1) < sectors.Count) &&
-						(((double)sectors[i + 1].id.info.startTime / 1000000.0) < bstop))
-						bstop = (double)sectors[i + 1].id.info.startTime / 1000000.0;
+					if (((secIndex + 1) < sectors.Count) &&
+						(((double)sectors[secIndex + 1].id.info.startTime / 1000000.0) < bstop))
+						bstop = (double)sectors[secIndex + 1].id.info.startTime / 1000000.0;
 
 					drawRectangle(sector, bstart, bstop, SecType.data);
 
@@ -185,8 +185,8 @@ namespace ChartPackage {
 							sector.data.postDataGap.buffer.DataByte.Count, sector.data.postDataGap.info.startByte, (double)sector.data.postDataGap.info.startTime / 1000000.0);
 						sectorInfoPanel.Children.Add(tb);
 					}
-				}   // sector has data field
 
+				}   // sector has data field
 
 				// draw extra DATA field
 				if (sector.dataNoId != null) {
@@ -202,9 +202,9 @@ namespace ChartPackage {
 					sectorInfoPanel.Children.Add(tb);
 
 					// if SWS we truncate
-					if (((i + 1) < sectors.Count) &&
-						(((double)sectors[i + 1].id.info.startTime / 1000000.0) < bstop))
-						bstop = (double)sectors[i + 1].id.info.startTime / 1000000.0;
+					if (((secIndex + 1) < sectors.Count) &&
+						(((double)sectors[secIndex + 1].id.info.startTime / 1000000.0) < bstop))
+						bstop = (double)sectors[secIndex + 1].id.info.startTime / 1000000.0;
 
 					drawRectangle(sector, bstart, bstop, SecType.data2);
 
@@ -233,50 +233,61 @@ namespace ChartPackage {
 				ToolTipService.SetShowDuration(sectorBorderPolygon, 100000);
 				_dataChartLayout.GraphicCanvas.Children.Add(sectorBorderPolygon);
 
+				// draw out of band in gaps
+				drawOutOfBand(track, side, sector.id.postIdGap);
+				if (sector.data != null)
+					drawOutOfBand(track, side, sector.data.postDataGap);
+				if (sector.dataNoId != null)
+					drawOutOfBand(track, side, sector.dataNoId.postDataGap);
 			}   // all sectors
 
-			// draw out of band
-			int OOBCount = 0;
-			Global.DiskTrack dt = Global.Disk[track, side];
-			if (dt.sectors.Count > 1) {
-				int start = Global.firstIndex(track, side, rev);
-				int stop = Global.lastIndex(track, side, rev);
-				int currentTime = 0;
+			// draw write splice
+			if (Global.Disk[track, side].track.trackSplice != null) {
+				Tuple<int, int> splice = Global.Disk[track, side].track.trackSplice;
+				Line spliceLine = new Line();
+				spliceLine.Stroke = Brushes.Red;
+				spliceLine.StrokeThickness = 3.0;
+				spliceLine.X1 = _dataChartLayout.NormPoint(new Point((double)splice.Item1 / 1000000.0, 0)).X;
+				spliceLine.Y1 = _dataChartLayout.NormY(_dataChartLayout.Ymin);
+				spliceLine.X2 = _dataChartLayout.NormPoint(new Point((double)splice.Item1 / 1000000.0, 0)).X;
+				spliceLine.Y2 = _dataChartLayout.NormY(_dataChartLayout.Ymax);
+				TextBox spliceInfo = new TextBox();
+				spliceInfo.Text = String.Format("Write Splice @ {0:F2} ms - Value={1}", (double)splice.Item1 / 1000000.0, splice.Item2);
+				ToolTipService.SetToolTip(spliceLine, spliceInfo);
+				ToolTipService.SetShowDuration(spliceLine, 100000);
+				_dataChartLayout.GraphicCanvas.Children.Add(spliceLine);
+			}   // splice
+		}
 
-				for (int bitPosition = start; bitPosition < stop; bitPosition++) {
-					int flux = dt.fluxData.fluxValue[bitPosition];
+
+		private void drawOutOfBand(int track, int side, GapField gap) {
+			if (gap == null) return;
+			int currentTime = gap.info.startTime;
+			int start = gap.info.firstIndex;
+			int stop = gap.info.lastIndex;
+			int[] fluxSegment = Global.Disk[track, side].fluxData.fluxValue.Skip(start).Take(stop - start).ToArray();
+			HistoData h = Global.computeSegmentHisto(fluxSegment);
+			if (h.Formatted)
+				for (int index = start; index < stop; index++) {
+					int flux = Global.Disk[track, side].fluxData.fluxValue[index];
 					currentTime += flux;
-					int bitWidth = dt.decodedData.bitSpacing[bitPosition];
-
-					int percent = 8;
-					int upper_high = 4 * bitWidth + ((4 * percent * bitWidth) / 100);
-					int upper_low = 4 * bitWidth - ((4 * percent * bitWidth) / 100);
-					int middle_high = 3 * bitWidth + ((3 * percent * bitWidth) / 100);
-					int middle_low = 3 * bitWidth - ((3 * percent * bitWidth) / 100);
-					int lower_high = 2 * bitWidth + ((2 * percent * bitWidth) / 100);
-					int lower_low = 2 * bitWidth - ((2 * percent * bitWidth) / 100);
-
-					if (((flux > upper_high) || ((flux < upper_low) && (flux > middle_high)) ||
-							(flux < lower_low) || ((flux > lower_high) && (flux < middle_low)))
-							&& (dt.sectors.Count > 0)) {
-						if (OOBCount++ > 50) break;
+					//int bitWidth = dt.decodedData.bitWidth[bitPosition];
+					bool inRange = Global.fluxInRange(flux, 2000, 500);
+					if (!inRange) {
 						Line splice = new Line();
+						splice.StrokeThickness = 1;
 						splice.Stroke = Brushes.DarkBlue;
-						splice.StrokeThickness = 1.5;
-						splice.X1 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 2)).X;
+						splice.X1 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 0)).X;
 						splice.Y1 = _dataChartLayout.NormY(_dataChartLayout.Ymin);
-						splice.X2 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 10)).X;
+						splice.X2 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 0)).X;
 						splice.Y2 = _dataChartLayout.NormY(_dataChartLayout.Ymax);
-
 						TextBox spliceInfo = new TextBox();
-						spliceInfo.Text = String.Format("Out of band at {0} ms -- flux value={1:F3} µs", (double)currentTime / 1000000.0, flux);
+						spliceInfo.Text = String.Format("Out of band at {0:F2} ms -- flux {1:F2} µs", (double)currentTime / 1000000.0, flux);
 						ToolTipService.SetToolTip(splice, spliceInfo);
 						ToolTipService.SetShowDuration(splice, 100000);
 						_dataChartLayout.GraphicCanvas.Children.Add(splice);
-
-					}
-				}
-			}
+					}   // not in range
+				}   // all index
 		}
 
 
