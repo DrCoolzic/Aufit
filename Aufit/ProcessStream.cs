@@ -33,7 +33,7 @@ using System.Windows;
 using System.Windows.Controls;
 
 using KFStreamPackage;
-using WD1772Package;
+using FDCPackage;
 using GlobalPackage;
 using System.IO;
 using System.Diagnostics;

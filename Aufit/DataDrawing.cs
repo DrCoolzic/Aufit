@@ -34,7 +34,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 
 using KFStreamPackage;
-using WD1772Package;
+using FDCPackage;
 using GlobalPackage;
 
 namespace ChartPackage {
@@ -136,14 +136,14 @@ namespace ChartPackage {
 				drawRectangle(sector, bstart, bstop, SecType.id);
 
 				// POST ID GAP
-				if (sector.id.postIdGap != null) {
+				if (sector.id.gap != null) {
 					tb = new TextBox();
 					tb.Text = String.Format("Post ID Gap {0} bytes - Start @ {1} {2:F2}ms",
-						sector.id.postIdGap.buffer.DataByte.Count, sector.id.postIdGap.info.startByte, (double)sector.id.postIdGap.info.startTime / 1000000.0);
+						sector.id.gap.buffer.DataByte.Count, sector.id.gap.info.startByte, (double)sector.id.gap.info.startTime / 1000000.0);
 					sectorInfoPanel.Children.Add(tb);
-					drawRectangle(sector, (double)sector.id.postIdGap.info.startTime / 1000000.0,
-						(double)(sector.id.postIdGap.info.startTime + sector.id.postIdGap.info.timeLength) / 1000000.0, SecType.gap);
-					bstop = (double)(sector.id.postIdGap.info.startTime + sector.id.postIdGap.info.timeLength) / 1000000.0;
+					drawRectangle(sector, (double)sector.id.gap.info.startTime / 1000000.0,
+						(double)(sector.id.gap.info.startTime + sector.id.gap.info.timeLength) / 1000000.0, SecType.gap);
+					bstop = (double)(sector.id.gap.info.startTime + sector.id.gap.info.timeLength) / 1000000.0;
 				}
 
 				// draw DATA field
@@ -179,10 +179,10 @@ namespace ChartPackage {
 						drawRectangle(sector, shiftedBstart, shiftedBstop, SecType.data);
 					}
 
-					if (sector.data.postDataGap != null) {
+					if (sector.data.gap != null) {
 						tb = new TextBox();
 						tb.Text = String.Format("Post Data Gap {0} bytes - Start @ {1} {2:F2}ms",
-							sector.data.postDataGap.buffer.DataByte.Count, sector.data.postDataGap.info.startByte, (double)sector.data.postDataGap.info.startTime / 1000000.0);
+							sector.data.gap.buffer.DataByte.Count, sector.data.gap.info.startByte, (double)sector.data.gap.info.startTime / 1000000.0);
 						sectorInfoPanel.Children.Add(tb);
 					}
 
@@ -218,10 +218,10 @@ namespace ChartPackage {
 
 						drawRectangle(sector, shiftedBstart, shiftedBstop, SecType.data2);
 					}
-					if (sector.dataNoId.postDataGap != null) {
+					if (sector.dataNoId.gap != null) {
 						tb = new TextBox();
 						tb.Text = String.Format("Extra PGap Field {0} bytes - Start @ {1} {2:F2}ms",
-							sector.dataNoId.postDataGap.buffer.DataByte.Count, sector.dataNoId.postDataGap.info.startBit, (double)sector.dataNoId.postDataGap.info.startTime / 1000000.0);
+							sector.dataNoId.gap.buffer.DataByte.Count, sector.dataNoId.gap.info.startBit, (double)sector.dataNoId.gap.info.startTime / 1000000.0);
 						sectorInfoPanel.Children.Add(tb);
 					}
 				}   // sector has extra data field
@@ -233,30 +233,46 @@ namespace ChartPackage {
 				ToolTipService.SetShowDuration(sectorBorderPolygon, 100000);
 				_dataChartLayout.GraphicCanvas.Children.Add(sectorBorderPolygon);
 
-				// draw out of band in gaps
-				drawOutOfBand(track, side, sector.id.postIdGap);
-				if (sector.data != null)
-					drawOutOfBand(track, side, sector.data.postDataGap);
-				if (sector.dataNoId != null)
-					drawOutOfBand(track, side, sector.dataNoId.postDataGap);
-			}   // all sectors
+				//// draw out of band in gaps
+				//drawOutOfBand(track, side, sector.id.postIdGap);
+				//if (sector.data != null)
+				//	drawOutOfBand(track, side, sector.data.postDataGap);
+				//if (sector.dataNoId != null)
+				//	drawOutOfBand(track, side, sector.dataNoId.postDataGap);
 
-			// draw write splice
-			if (Global.Disk[track, side].track.trackSplice != null) {
-				Tuple<int, int> splice = Global.Disk[track, side].track.trackSplice;
+				// draw splices
+				drawSplice(track, side, sector.id.gap);
+				if (sector.data != null)
+					drawSplice(track, side, sector.data.gap);
+				if (sector.dataNoId != null)
+					drawSplice(track, side, sector.dataNoId.gap);
+
+			}   // all sectors
+		}
+
+
+		private void drawSplice(int track, int side, GapField gap) {
+			if (gap == null) return;
+			foreach (Splice splice in gap.splices) {
 				Line spliceLine = new Line();
+				spliceLine.StrokeThickness = 1.5;
 				spliceLine.Stroke = Brushes.Red;
-				spliceLine.StrokeThickness = 3.0;
-				spliceLine.X1 = _dataChartLayout.NormPoint(new Point((double)splice.Item1 / 1000000.0, 0)).X;
+				if (splice.spliceType == SpliceType.Track) {
+					spliceLine.StrokeThickness = 3.0;
+					spliceLine.Stroke = Brushes.Blue;
+				}
+				spliceLine.X1 = _dataChartLayout.NormPoint(new Point((double)splice.spliceTime / 1000000.0, 0)).X;
 				spliceLine.Y1 = _dataChartLayout.NormY(_dataChartLayout.Ymin);
-				spliceLine.X2 = _dataChartLayout.NormPoint(new Point((double)splice.Item1 / 1000000.0, 0)).X;
+				spliceLine.X2 = _dataChartLayout.NormPoint(new Point((double)splice.spliceTime / 1000000.0, 0)).X;
 				spliceLine.Y2 = _dataChartLayout.NormY(_dataChartLayout.Ymax);
 				TextBox spliceInfo = new TextBox();
-				spliceInfo.Text = String.Format("Write Splice @ {0:F2} ms - Value={1}", (double)splice.Item1 / 1000000.0, splice.Item2);
+				spliceInfo.Text = String.Format("{0} Splice @ {1:F2} ms", 
+					splice.spliceType, (double)splice.spliceTime / 1000000.0);
 				ToolTipService.SetToolTip(spliceLine, spliceInfo);
 				ToolTipService.SetShowDuration(spliceLine, 100000);
 				_dataChartLayout.GraphicCanvas.Children.Add(spliceLine);
-			}   // splice
+
+			}   // all index
 		}
 
 
@@ -275,8 +291,8 @@ namespace ChartPackage {
 					bool inRange = Global.fluxInRange(flux, 2000, 500);
 					if (!inRange) {
 						Line splice = new Line();
-						splice.StrokeThickness = 1;
-						splice.Stroke = Brushes.DarkBlue;
+						splice.StrokeThickness = 1.5;
+						splice.Stroke = Brushes.Red;
 						splice.X1 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 0)).X;
 						splice.Y1 = _dataChartLayout.NormY(_dataChartLayout.Ymin);
 						splice.X2 = _dataChartLayout.NormPoint(new Point((double)currentTime / 1000000.0, 0)).X;

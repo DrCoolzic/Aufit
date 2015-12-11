@@ -37,35 +37,9 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using WD1772Package;
+using FDCPackage;
 
 namespace Aufit {
-
-	/// <summary>Information about a post GAP (inter sector gap)</summary>
-	class PostGapInfo {
-		/// <summary></summary>
-		public int spliceTime;
-
-		/// <summary></summary>
-		public int spliceByte;
-
-		/// <summary>Number of 4E gap leading char</summary>
-		public int count4E;
-
-		/// <summary>Number of 00 gap trailing char</summary>
-		public int count00;
-
-		/// <summary>True if char other than 4E/00 found</summary>
-		public bool badDataFound;
-
-		public void reset() {
-			badDataFound = false;
-			count00 = 0;
-			count4E = 0;
-			spliceTime = 0;
-			spliceByte = 0;
-		}
-	}
 
 	class MasterTrack {
 
@@ -139,11 +113,11 @@ namespace Aufit {
 				blocks[i].dataOffset = 0;
 
 				// we compute the Block data bytes and the Gap bytes
-				int dataBytes = s.id.buffer.DataByte.Count + s.id.postIdGap.buffer.DataByte.Count +
+				int dataBytes = s.id.buffer.DataByte.Count + s.id.gap.buffer.DataByte.Count +
 					((s.data != null) ? (s.data.buffer.DataByte.Count) : 0);
 				trackDataBytes += dataBytes;
 				blocks[i].dataBits = (uint)(16 * dataBytes);
-				int gapBytes = (s.data.postDataGap != null) ? s.data.postDataGap.buffer.DataByte.Count : 0;
+				int gapBytes = (s.data.gap != null) ? s.data.gap.buffer.DataByte.Count : 0;
 				trackGapBytes += gapBytes;
 				blocks[i].gapBits = (uint)(16 * gapBytes);
 				if (s.data != null) sectorSizeCount[(s.id.Length) & 3]++;
@@ -187,7 +161,7 @@ namespace Aufit {
 			//p.Inlines.Add(new LineBreak());
 			doc.Blocks.Add(p);
 
-			PostGapInfo gap = new PostGapInfo();
+			GapInfoOld gapInfo = new GapInfoOld();
 			for (int i = firstBlock; i < (firstBlock + dt.sectors.Count); i++) {
 				int secIndex = i % dt.sectors.Count;
 				Sector s = dt.sectors[secIndex];
@@ -244,19 +218,19 @@ namespace Aufit {
 				p.LineHeight = 1;
 				p.Margin = new Thickness(5, 0, 0, 0);
 				//gapBadData = checkGAP_OLD(s.id.gap, gap, false);
-				gapBadData = scanGap(s.id.postIdGap, gap);
+				gapBadData = GapInfoOld.scanGap(s.id.gap, gapInfo);
 				List<byte> igap = new List<byte>();
-				for (int j = 0; j < gap.count4E; j++)
+				for (int j = 0; j < gapInfo.count4E; j++)
 					igap.Add(0x4E);
-				for (int j = 0; j < gap.count00; j++)
+				for (int j = 0; j < gapInfo.count00; j++)
 					igap.Add(0);
 				//if (s.data != null)
 				p.Inlines.Add(String.Format("Post ID Gap {0} bytes", igap.Count));
 				//else p.Inlines.Add(String.Format("PGAP {0} bytes", igap.Count));
 				//	p.Inlines.Add(String.Format("Inner gap: {0}x4E - {1}x00", gap.count4E, gap.count00));
 				if (gapBadData)
-					p.Inlines.Add(String.Format(" has bad data @ {0} {1:F2} ms", gap.spliceByte, (double)gap.spliceTime / 1000000.0));
-				displayContent(igap, 0, p, s.id.postIdGap.info.startByte, false);
+					p.Inlines.Add(String.Format(" has bad data @ {0:F2} ms", (double)gapInfo.spliceTime / 1000000.0));
+				displayContent(igap, 0, p, s.id.gap.info.startByte, false);
 				//p.Inlines.Add(new LineBreak());
 				li.Blocks.Add(p);
 				l.ListItems.Add(li);
@@ -297,18 +271,18 @@ namespace Aufit {
 					p.LineHeight = 1;
 					p.Margin = new Thickness(5, 0, 0, 0);
 					//gapBadData = checkGAP_OLD(s.data.gap, gap, false);
-					gapBadData = scanGap(s.data.postDataGap, gap);
+					gapBadData = GapInfoOld.scanGap(s.data.gap, gapInfo);
 					List<byte> pgap = new List<byte>();
-					for (int j = 0; j < gap.count4E; j++)
+					for (int j = 0; j < gapInfo.count4E; j++)
 						pgap.Add(0x4E);
-					for (int j = 0; j < gap.count00; j++)
+					for (int j = 0; j < gapInfo.count00; j++)
 						pgap.Add(0);
 					p.Inlines.Add(String.Format("Post Data GAP {0} bytes", pgap.Count));
 					//	p.Inlines.Add(String.Format("Post Data Gap: {0}x4E - {1}x00", gap.count4E, gap.count00));
 					if (gapBadData)
-						p.Inlines.Add(String.Format(" has bad data @ {0} {1:F2} ms", gap.spliceByte, (double)gap.spliceTime / 1000000.0));
-					if (s.data.postDataGap != null)
-						displayContent(pgap, 0, p, s.data.postDataGap.info.startByte, false);
+						p.Inlines.Add(String.Format(" has bad data @ {0:F2} ms", (double)gapInfo.spliceTime / 1000000.0));
+					if (s.data.gap != null)
+						displayContent(pgap, 0, p, s.data.gap.info.startByte, false);
 					//p.Inlines.Add(new LineBreak());
 					li.Blocks.Add(p);
 					l.ListItems.Add(li);
@@ -328,113 +302,6 @@ namespace Aufit {
 			// TODO
 
 			fdMasterView.Document = doc;
-		}
-
-
-		private bool checkGAP_OLD(GapField gap, PostGapInfo gi, bool skipFirst) {
-			bool in4E = true;
-			int setAside = 0;
-			gi.reset();
-			if (gap == null) return false;
-
-			for (int i = skipFirst ? 1 : 0; i < gap.buffer.DataByte.Count; i++) {
-				byte b = gap.buffer.DataByte[i];
-				if (in4E) {
-					if (isShifted00(b)) {
-						if (b != 0x00) {
-							if (!gi.badDataFound) {
-								gi.spliceTime = gap.buffer.StartTime[i];
-								gi.spliceByte = gap.info.startByte + i;
-							}
-							gi.badDataFound = true;
-						}
-						setAside++;
-						if (setAside > 2) {
-							gi.count00 = setAside;
-							in4E = false;
-						}
-					}   // 00
-					else {
-						gi.count4E += setAside;
-						gi.count4E++;
-						setAside = 0;
-						if (b != 0x4E) {
-							if (!gi.badDataFound) {
-								gi.spliceTime = gap.buffer.StartTime[i];
-								gi.spliceByte = gap.info.startByte + i;
-							}
-							gi.badDataFound = true;
-						}
-					}   // not 00
-				}   // in4E
-				else {
-					gi.count00++;
-					if (b != 0x00) {
-						if (!gi.badDataFound) {
-							gi.spliceTime = gap.buffer.StartTime[i];
-							gi.spliceByte = gap.info.startByte + i;
-						}
-						gi.badDataFound = true;
-					}
-				}   // !in4e
-			}
-			return gi.badDataFound;
-		}
-
-
-		/// <summary>
-		/// Check a GAP field and fill a PostGapInfo structure
-		/// </summary>
-		/// <param name="gap">The gap field</param>
-		/// <param name="gi">The PostGapInfo structure</param>
-		/// <returns>True if bad gap value found</returns>
-		private bool scanGap(GapField gap, PostGapInfo gi) {
-			gi.reset();
-			if (gap == null) return false;
-			bool in4E = false;
-
-			for (int i = gap.buffer.DataByte.Count - 1; i >= 0; i--) {
-				byte b = gap.buffer.DataByte[i];
-				if (!in4E && (isShifted00(b) || (i == (gap.buffer.DataByte.Count - 1)))) {
-					gi.count00++;
-					if (b != 0x00) {
-						gi.spliceTime = gap.buffer.StartTime[i];
-						gi.spliceByte = gap.info.startByte + i;
-						gi.badDataFound = true;
-					}
-				}   // 00
-				else {
-					in4E = true;
-					gi.count4E++;
-					if ((b != 0x4E) && (i != 0)) {
-						gi.spliceTime = gap.buffer.StartTime[i];
-						gi.spliceByte = gap.info.startByte + i;
-						gi.badDataFound = true;
-					}
-				}   // not 00
-			}   // all bytes
-			return gi.badDataFound;
-		}
-
-
-		/// <summary>
-		/// Check if byte b is a possible MFM shifted value of 4E
-		/// </summary>
-		/// <param name="b">Byte value</param>
-		/// <returns>True if byte b is a possible shifted value of 4E</returns>
-		bool isShifted4E(byte b) {
-			return ((b == 0x4E) || (b == 0x12) || (b == 0xC9) || (b == 0x24) || (b == 0x93) || (b == 0x48) || (b == 0x27) || (b == 0x90) ||
-					(b == 0xE4) || (b == 0x21) || (b == 0x9C) || (b == 0x42) || (b == 0x39) || (b == 0x84) || (b == 0x72) || (b == 0x09));
-		}
-
-
-		/// <summary>
-		/// Check if byte b is a possible MFM shifted value of 00
-		/// </summary>
-		/// <param name="b">Byte to test</param>
-		/// <returns>True if byte b is a possible shifted value of 4E</returns>
-		bool isShifted00(byte b) {
-			return ((b == 0x00) || (b == 0xFF));
 		}
 
 

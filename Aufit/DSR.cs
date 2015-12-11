@@ -32,7 +32,7 @@ using GlobalPackage;
 using System;
 using System.Diagnostics;
 
-namespace WD1772Package {
+namespace FDCPackage {
 	/// <summary>
 	/// The DSR, Sync Mark Detector, and CRC modules of the WD1772
 	/// </summary>

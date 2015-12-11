@@ -39,7 +39,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 // using System.Windows.Controls.RichTextBox;
 
-using WD1772Package;
+using FDCPackage;
 using GlobalPackage;
 using Microsoft.Win32;
 using System.IO;
@@ -123,17 +123,17 @@ namespace Aufit {
 				currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
 					String.Format("{0}", (dt.sectors[sect].id.info.crc == 0) ? "OK" : "BAD")))));
 
-				if (dt.sectors[sect].id.postIdGap != null)
+				if (dt.sectors[sect].id.gap != null)
 					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-						String.Format("{0:D}", dt.sectors[sect].id.postIdGap.buffer.DataByte.Count)
+						String.Format("{0:D}", dt.sectors[sect].id.gap.buffer.DataByte.Count)
 						))));
 				else
 					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(""))));
 
 				if (dt.sectors[sect].data != null) {
 					string cnt = String.Format("{0:D}", dt.sectors[sect].data.buffer.DataByte.Count);
-					if (dt.sectors[sect].data.truncBitSize > 0)
-						cnt += String.Format(" {0:D}", dt.sectors[sect].data.truncBitSize);
+					if (dt.sectors[sect].data.truncByteCount > 0)
+						cnt += String.Format(" {0:D}", dt.sectors[sect].data.truncByteCount);
 					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(cnt))));
 					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
 						String.Format("{0:D}", dt.sectors[sect].data.info.startTime / 1000)))));
@@ -144,9 +144,9 @@ namespace Aufit {
 					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
 						String.Format("{0}", (dt.sectors[sect].data.fuzzy != null) ? "Yes" : "No")))));
 
-					if (dt.sectors[sect].data.postDataGap != null)
+					if (dt.sectors[sect].data.gap != null)
 						currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-							String.Format("{0:D}", dt.sectors[sect].data.postDataGap.buffer.DataByte.Count)
+							String.Format("{0:D}", dt.sectors[sect].data.gap.buffer.DataByte.Count)
 							))));
 					else currentRow.Cells.Add(new TableCell(new Paragraph(new Run(""))));
 
@@ -173,9 +173,9 @@ namespace Aufit {
 					currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
 						String.Format("{0}", (dt.sectors[sect].dataNoId.fuzzy != null) ? "Yes" : "No")))));
 
-					if (dt.sectors[sect].dataNoId.postDataGap != null)
+					if (dt.sectors[sect].dataNoId.gap != null)
 						currentRow.Cells.Add(new TableCell(new Paragraph(new Run(
-							String.Format("{0:D}", dt.sectors[sect].dataNoId.postDataGap.buffer.DataByte.Count)
+							String.Format("{0:D}", dt.sectors[sect].dataNoId.gap.buffer.DataByte.Count)
 							))));
 					else
 						currentRow.Cells.Add(new TableCell(new Paragraph(new Run("0"))));
@@ -242,16 +242,18 @@ namespace Aufit {
 				p.Inlines.Add(new LineBreak());
 				drawBuffer(sector.id.buffer, p, sector.id.info.startByte, false);
 
-				if (sector.id.postIdGap != null) {
+				if (sector.id.gap != null) {
 					p.Inlines.Add(new Run("Inner GAP Field:") { FontWeight = FontWeights.Bold });
+					foreach (Splice splice in sector.id.gap.splices)
+						p.Inlines.Add(String.Format(" {0} Splice @{1:F2}ms {2}", splice.spliceType, splice.spliceTime / 1000000.0, splice.spliceCount));
 					p.Inlines.Add(new LineBreak());
 					p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
-						sector.id.postIdGap.info.startBit, sector.id.postIdGap.info.startByte, (double)sector.id.postIdGap.info.startTime / 1000000.0));
+						sector.id.gap.info.startBit, sector.id.gap.info.startByte, (double)sector.id.gap.info.startTime / 1000000.0));
 					p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
-						sector.id.postIdGap.info.bitCount, sector.id.postIdGap.buffer.DataByte.Count, (double)sector.id.postIdGap.info.timeLength / 1000.0));
-					p.Inlines.Add(String.Format(" - FLUX={0}-{1}", sector.id.postIdGap.info.firstIndex, sector.id.postIdGap.info.lastIndex));
+						sector.id.gap.info.bitCount, sector.id.gap.buffer.DataByte.Count, (double)sector.id.gap.info.timeLength / 1000.0));
+					p.Inlines.Add(String.Format(" - FLUX={0}-{1}", sector.id.gap.info.firstIndex, sector.id.gap.info.lastIndex));
 					p.Inlines.Add(new LineBreak());
-					drawBuffer(sector.id.postIdGap.buffer, p, sector.id.postIdGap.info.startByte, true);
+					drawBuffer(sector.id.gap.buffer, p, sector.id.gap.info.startByte, true);
 				}
 
 				if (sector.data != null) {
@@ -269,9 +271,9 @@ namespace Aufit {
 					p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
 						sector.data.info.bitCount, sector.data.buffer.DataByte.Count, (double)sector.data.info.timeLength / 1000.0));
 					p.Inlines.Add(String.Format(" - FLUX={0}-{1}", sector.data.info.firstIndex, sector.data.info.lastIndex));
-					if (sector.data.truncBitSize > 0) {
+					if (sector.data.truncByteCount > 0) {
 						p.Inlines.Add(new LineBreak());
-						p.Inlines.Add(String.Format("   TRUNCATED to {0} Bytes", sector.data.truncBitSize));
+						p.Inlines.Add(String.Format("   TRUNCATED to {0} Bytes", sector.data.truncByteCount));
 					}
 					p.Inlines.Add(new LineBreak());
 					drawBuffer(sector.data.buffer, p, sector.data.info.startByte, false);
@@ -305,17 +307,19 @@ namespace Aufit {
 							p.Inlines.Add(new LineBreak());
 						}
 					}   // fuzzy
-					if (sector.data.postDataGap != null) {
+					if (sector.data.gap != null) {
 						p.Inlines.Add(new Run("Post GAP Field: ") { FontWeight = FontWeights.Bold });
+						foreach (Splice splice in sector.data.gap.splices)
+							p.Inlines.Add(String.Format(" {0} Splice @{1:F2}ms {2}", splice.spliceType, splice.spliceTime / 1000000.0, splice.spliceCount));
 						p.Inlines.Add(new LineBreak());
 						p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
-							sector.data.postDataGap.info.startBit, sector.data.postDataGap.info.startByte, (double)sector.data.postDataGap.info.startTime / 1000000.0));
+							sector.data.gap.info.startBit, sector.data.gap.info.startByte, (double)sector.data.gap.info.startTime / 1000000.0));
 						//p.Inlines.Add(new LineBreak());
 						p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
-							sector.data.postDataGap.info.bitCount, sector.data.postDataGap.buffer.DataByte.Count, (double)sector.data.postDataGap.info.timeLength / 1000.0));
-						p.Inlines.Add(String.Format(" - FLUX={0}-{1}", sector.data.postDataGap.info.firstIndex, sector.data.postDataGap.info.lastIndex));
+							sector.data.gap.info.bitCount, sector.data.gap.buffer.DataByte.Count, (double)sector.data.gap.info.timeLength / 1000.0));
+						p.Inlines.Add(String.Format(" - FLUX={0}-{1}", sector.data.gap.info.firstIndex, sector.data.gap.info.lastIndex));
 						p.Inlines.Add(new LineBreak());
-						drawBuffer(sector.data.postDataGap.buffer, p, sector.data.postDataGap.info.startByte, true);
+						drawBuffer(sector.data.gap.buffer, p, sector.data.gap.info.startByte, true);
 					}
 				}   // has data
 
@@ -368,17 +372,19 @@ namespace Aufit {
 							p.Inlines.Add(new LineBreak());
 						}
 					}   // fuzzy
-					if (sector.dataNoId.postDataGap != null) {
+					if (sector.dataNoId.gap != null) {
 						p.Inlines.Add(new Run("EXTRA POST GAP Field: ") { FontWeight = FontWeights.Bold });
+						foreach (Splice splice in sector.dataNoId.gap.splices)
+							p.Inlines.Add(String.Format(" {0} Splice @{1:F2}ms {2}", splice.spliceType, splice.spliceTime / 1000000.0, splice.spliceCount));
 						p.Inlines.Add(new LineBreak());
 						p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
-							sector.dataNoId.postDataGap.info.startBit, sector.dataNoId.postDataGap.info.startByte, (double)sector.dataNoId.postDataGap.info.startTime / 1000000.0));
+							sector.dataNoId.gap.info.startBit, sector.dataNoId.gap.info.startByte, (double)sector.dataNoId.gap.info.startTime / 1000000.0));
 						//p.Inlines.Add(new LineBreak());
 						p.Inlines.Add(String.Format(" - LENGTH b={0} B={1} T={2:F2}µs",
-							sector.dataNoId.postDataGap.info.bitCount, sector.dataNoId.postDataGap.buffer.DataByte.Count, (double)sector.dataNoId.postDataGap.info.timeLength / 1000.0));
-						p.Inlines.Add(String.Format(" - FLUX={0}-{1}", sector.dataNoId.postDataGap.info.firstIndex, sector.dataNoId.postDataGap.info.lastIndex));
+							sector.dataNoId.gap.info.bitCount, sector.dataNoId.gap.buffer.DataByte.Count, (double)sector.dataNoId.gap.info.timeLength / 1000.0));
+						p.Inlines.Add(String.Format(" - FLUX={0}-{1}", sector.dataNoId.gap.info.firstIndex, sector.dataNoId.gap.info.lastIndex));
 						p.Inlines.Add(new LineBreak());
-						drawBuffer(sector.dataNoId.postDataGap.buffer, p, sector.dataNoId.postDataGap.info.startByte, true);
+						drawBuffer(sector.dataNoId.gap.buffer, p, sector.dataNoId.gap.info.startByte, true);
 					}
 
 
@@ -477,20 +483,20 @@ namespace Aufit {
 										 FDC.isGapPhase(buffer.Phase[i + j])) ? Brushes.LightBlue :
 										((buffer.MFMWord[i + j] == 0x0000) || (buffer.MFMWord[i + j] == 0xFFFF)) ? Brushes.Coral :
 										((buffer.MFMWord[i + j] == 0x4489) || (buffer.MFMWord[i + j] == 0x5224)) ? Brushes.Yellow :
-										(buffer.Phase[i + j] == Phases.data) ? Brushes.LightGreen :
-										(buffer.Phase[i + j] == Phases.id) ? Brushes.GreenYellow :
+										(buffer.Phase[i + j] == Phase.Data) ? Brushes.LightGreen :
+										(buffer.Phase[i + j] == Phase.Id) ? Brushes.GreenYellow :
 										Brushes.White,
 									Foreground =
 										(isGap && (buffer.DataByte[i + j] != 0x00) && (buffer.DataByte[i + j] != 0x4E)) ? Brushes.DarkBlue :
 										(buffer.MFMWord[i + j] == 0x4489) ? Brushes.Red :
 										(buffer.MFMWord[i + j] == 0x5224) ? Brushes.Navy :
-										(buffer.Phase[i + j] == Phases.id) ? Brushes.Blue :
-										(buffer.Phase[i + j] == Phases.data) ? Brushes.Black :
+										(buffer.Phase[i + j] == Phase.Id) ? Brushes.Blue :
+										(buffer.Phase[i + j] == Phase.Data) ? Brushes.Black :
 										FDC.isGapPhase(buffer.Phase[i + j]) ? Brushes.Black :
 										Brushes.DarkBlue,
 									FontWeight =
 										(buffer.MFMWord[i + j] == 0x4489) || (buffer.MFMWord[i + j] == 0x5224) ||
-										(buffer.Phase[i + j] == Phases.id) ? FontWeights.Bold :
+										(buffer.Phase[i + j] == Phase.Id) ? FontWeights.Bold :
 										FontWeights.Normal,
 									//FontStyle =
 									//(buffer.Bytes[i + j].startTime > 200000000) ? FontStyle = FontStyles.Italic :

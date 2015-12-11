@@ -35,7 +35,7 @@ using System.Windows;
 
 using KFStreamPackage;
 using GlobalPackage;
-using WD1772Package;
+using FDCPackage;
 
 namespace ChartPackage {
 	/// <summary>
@@ -150,10 +150,10 @@ namespace ChartPackage {
 				foreach (IAM iam in Global.Disk[track, side].iams[rev]) {
 					Line iamLine = new Line();
 					switch (iam.Type) {
-						case IAMType.Id:
+						case IamType.IDAM:
 							iamLine.Stroke = Brushes.Red;
 							break;
-						case IAMType.Data:
+						case IamType.DAM:
 							iamLine.Stroke = Brushes.Blue;
 							break;
 						default:
@@ -161,7 +161,7 @@ namespace ChartPackage {
 							break;
 					}
 					iamLine.StrokeThickness = 2.0;
-					if (iam.Error) {
+					if (iam.Repaired) {
 						iamLine.StrokeDashArray = new DoubleCollection(new double[2] { 2, 2 });
 						iamLine.Stroke = Brushes.Red;
 						iamLine.StrokeThickness = 3;

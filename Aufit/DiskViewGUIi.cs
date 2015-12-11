@@ -35,7 +35,7 @@ using System.Threading;
 using System.Threading.Tasks;
 //using System.Diagnostics;
 
-using WD1772Package;
+using FDCPackage;
 using GlobalPackage;
 using System.ComponentModel;
 using System.Windows.Input;

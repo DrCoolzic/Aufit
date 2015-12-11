@@ -30,7 +30,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
 
-using WD1772Package;
+using FDCPackage;
 
 namespace Aufit {
 	/// <summary>
@@ -41,7 +41,7 @@ namespace Aufit {
 		private List<ushort> _mfmWord;
 		private List<int> _bitWidth;
 		private List<int> _startTime;
-		private List<Phases> _phase;
+		private List<Phase> _phase;
 
 		public List<byte> DataByte {
 			get { return _dataByte; }
@@ -59,7 +59,7 @@ namespace Aufit {
 			get { return _startTime; }
 		}
 
-		public List<Phases> Phase {
+		public List<Phase> Phase {
 			get { return _phase; }
 		}
 
@@ -72,7 +72,7 @@ namespace Aufit {
 			_mfmWord = new List<ushort>(600);
 			_bitWidth = new List<int>(600);
 			_startTime = new List<int>(600);
-			_phase = new List<Phases>(600);
+			_phase = new List<Phase>(600);
 
 		}
 
@@ -85,7 +85,7 @@ namespace Aufit {
 		/// <param name="bitWidth">Current bitWidth value</param>
 		/// <param name="startTime">Byte start time</param>
 		/// <param name="phase">Current Phase</param>
-		public void addByte(byte data, ushort mfm, ushort bitWidth, int startTime, Phases phase) {
+		public void addByte(byte data, ushort mfm, ushort bitWidth, int startTime, Phase phase) {
 			_dataByte.Add(data);
 			_mfmWord.Add(mfm);
 			_bitWidth.Add(bitWidth);

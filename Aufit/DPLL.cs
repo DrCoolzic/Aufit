@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n</di
 	
 */
 
-namespace WD1772Package {
+namespace FDCPackage {
 
 /// <summary>The PLL Class implements a FD controller DPLL</summary>
 public class DPLL {

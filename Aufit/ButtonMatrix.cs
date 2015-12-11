@@ -32,7 +32,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-using WD1772Package;
+using FDCPackage;
 using KFStreamPackage;
 using GlobalPackage;
 

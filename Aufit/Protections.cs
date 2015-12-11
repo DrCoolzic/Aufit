@@ -28,7 +28,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using WD1772Package;
+using FDCPackage;
 using GlobalPackage;
 using System.Windows.Controls;
 
@@ -374,11 +374,8 @@ namespace Aufit {
 					// Truncated sector
 					if (dt.sectors[secIndex].flags.HasFlag(SectorFlags.TRUNC_SECT)) {
 						//dt.track.hasProtections = true;
-						writeInfo(info, String.Format("Sector truncated to {0} bits ({1} Bytes)", 
-							dt.sectors[secIndex].data.truncBitSize, dt.sectors[secIndex].data.truncBitSize / 16));
+						writeInfo(info, String.Format("Sector truncated to {0} Bytes)", dt.sectors[secIndex].data.truncByteCount));
 					}
-
-
 				}   // sector has data
 				else {
 					dt.track.hasProtections = true;

@@ -32,7 +32,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Diagnostics;
-using WD1772Package;
+using FDCPackage;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows;
@@ -135,7 +135,7 @@ namespace GlobalPackage {
 		public bool Formatted {
 			get { return (entropy < 6.5); }
 		}
-    }
+	}
 
 
 	/// <summary>Defines the position of bits in a unsigned int</summary>
@@ -220,15 +220,15 @@ namespace GlobalPackage {
 	public class Global {
 		// Button and Track Color
 		public static Color ProtectedTrackColor = Colors.Orange;    //  Aufit.Properties.Settings.Default.ProtectedTrackColor;
-		public static Color UnformattedTrackColor = Colors.SlateGray;	// Aufit.Properties.Settings.Default.UnformattedTrackColor;
+		public static Color UnformattedTrackColor = Colors.SlateGray;   // Aufit.Properties.Settings.Default.UnformattedTrackColor;
 		public static Color ShiftedTrackColor = Colors.Green;   // Aufit.Properties.Settings.Default.ShiftedTrackColor;
 		public static Color NormalTrackColor = Colors.LimeGreen;    // Aufit.Properties.Settings.Default.NormalTrackColor;
 		public static Color DataOneIdTrackColor = Colors.Blue;  // Aufit.Properties.Settings.Default.DataOneIdTrack;
-		public static Color DataTrackColor = Colors.LightBlue;	// Aufit.Properties.Settings.Default.DataTrack;
+		public static Color DataTrackColor = Colors.LightBlue;  // Aufit.Properties.Settings.Default.DataTrack;
 
 		// Sector Color
 		public static Color IGapColor = Colors.LightGreen;
-        public static Color ShortSectorColor = Colors.Aqua;
+		public static Color ShortSectorColor = Colors.Aqua;
 		public static Color BitRateSectorColor = Colors.Purple;
 		public static Color FuzzySectorColor = Colors.Orange;
 		public static Color LongSectorColor = Colors.Blue;
@@ -333,7 +333,6 @@ namespace GlobalPackage {
 			int maxBitWidth = 0;
 			int currentTime = 0;
 
-
 			Global.Disk[track, side].decodedData = new DecodedData();
 			int decodedCount = Global.Disk[track, side].fluxData.totalFluxCount + 1;
 			Global.Disk[track, side].decodedData.bitWidth = new ushort[decodedCount];
@@ -371,7 +370,7 @@ namespace GlobalPackage {
 			int first = Disk[track, side].fluxDataRev[rev].firstFluxIndex;
 			int last = (Disk[track, side].fluxDataRev[rev].firstFluxIndex + Disk[track, side].fluxDataRev[rev].fluxCount);
 			int[] fluxSegment = Disk[track, side].fluxData.fluxValue.Skip(first).Take(last - first).ToArray();
-			HistoData h  = computeSegmentHisto(fluxSegment);
+			HistoData h = computeSegmentHisto(fluxSegment);
 			Global.Disk[track, side].histoData = h;
 
 			// log information
@@ -552,29 +551,141 @@ namespace GlobalPackage {
 		}
 
 
-		//public static bool fluxOutOfBand(int flux, int range) {
-		//	if (((flux > (4000 - range)) && (flux < (4000 + range))) ||
-		//		((flux > (6000 - range)) && (flux < (6000 + range))) ||
-		//		((flux > (8000 - range)) && (flux < (8000 + range))))
-		//		return false;
-		//	return true;
-		//}
-
-
 		public static bool fluxInRange(int flux, int bitWidth, int range) {
-			//int upper_high = 4 * bitWidth + ((4 * percentage * bitWidth) / 100);
 			int upper_high = 4 * bitWidth + range;
 			int upper_low = 4 * bitWidth - range;
-			//int middle_high = 3 * bitWidth + ((3 * percentage * bitWidth) / 100);
 			int middle_high = 3 * bitWidth + range;
 			int middle_low = 3 * bitWidth - range;
 			int lower_high = 2 * bitWidth + range;
 			int lower_low = 2 * bitWidth - range;
 			bool inRange = (((flux < upper_high) && (flux > upper_low)) ||
-							((flux < middle_high) && (flux > lower_low)) ||
-							((flux < lower_high) && (flux > middle_low)));
-            return inRange;
+							((flux < middle_high) && (flux > middle_low)) ||
+							((flux < lower_high) && (flux > lower_low)));
+			return inRange;
+		}
+	}   // class Global
+
+
+	/// <summary>Information about a post GAP (inter sector gap)</summary>
+	public class GapInfoOld {
+			/// <summary></summary>
+			public int spliceTime;
+
+			/// <summary>Number of 4E gap leading char</summary>
+			public int count4E;
+
+			/// <summary>Number of 00 gap trailing char</summary>
+			public int count00;
+
+			/// <summary>True if char other than 4E/00 found</summary>
+			public bool badDataFound;
+
+			public void reset() {
+				badDataFound = false;
+				count00 = 0;
+				count4E = 0;
+				spliceTime = 0;
+			}
+
+
+		/// <summary>Fills GapInfo structure by scanning a  GAP field</summary>
+		/// <param name="gap">The gap field</param>
+		/// <param name="gi">The GapInfo structure</param>
+		/// <returns>True if bad gap values found</returns>
+		public static bool scanGap(GapField gap, GapInfoOld gi) {
+			gi.reset();
+			if (gap == null) return false;
+			bool in4E = false;
+
+			for (int i = gap.buffer.DataByte.Count - 1; i >= 0; i--) {
+				byte b = gap.buffer.DataByte[i];
+				if (!in4E && (isShifted00(b) || (i == (gap.buffer.DataByte.Count - 1)))) {
+					gi.count00++;
+					if (b != 0x00) {
+						gi.spliceTime = gap.buffer.StartTime[i];
+						gi.badDataFound = true;
+					}
+				}   // 00
+				else {
+					in4E = true;
+					gi.count4E++;
+					if ((b != 0x4E) && (i != 0)) {
+						gi.spliceTime = gap.buffer.StartTime[i];
+						gi.badDataFound = true;
+					}
+				}   // not 00
+			}   // all bytes
+			return gi.badDataFound;
 		}
 
-	}   // class Global
+
+		private bool checkGAP_OLD(GapField gap, GapInfoOld gi, bool skipFirst) {
+			bool in4E = true;
+			int setAside = 0;
+			gi.reset();
+			if (gap == null) return false;
+
+			for (int i = skipFirst ? 1 : 0; i < gap.buffer.DataByte.Count; i++) {
+				byte b = gap.buffer.DataByte[i];
+				if (in4E) {
+					if (isShifted00(b)) {
+						if (b != 0x00) {
+							if (!gi.badDataFound) {
+								gi.spliceTime = gap.buffer.StartTime[i];
+							}
+							gi.badDataFound = true;
+						}
+						setAside++;
+						if (setAside > 2) {
+							gi.count00 = setAside;
+							in4E = false;
+						}
+					}   // 00
+					else {
+						gi.count4E += setAside;
+						gi.count4E++;
+						setAside = 0;
+						if (b != 0x4E) {
+							if (!gi.badDataFound) {
+								gi.spliceTime = gap.buffer.StartTime[i];
+							}
+							gi.badDataFound = true;
+						}
+					}   // not 00
+				}   // in4E
+				else {
+					gi.count00++;
+					if (b != 0x00) {
+						if (!gi.badDataFound) {
+							gi.spliceTime = gap.buffer.StartTime[i];
+						}
+						gi.badDataFound = true;
+					}
+				}   // !in4e
+			}
+			return gi.badDataFound;
+		}
+
+
+		/// <summary>
+		/// Check if byte b is a possible MFM shifted value of 4E
+		/// </summary>
+		/// <param name="b">Byte value</param>
+		/// <returns>True if byte b is a possible shifted value of 4E</returns>
+		public static bool isShifted4E(byte b) {
+			return ((b == 0x4E) || (b == 0x12) || (b == 0xC9) || (b == 0x24) || (b == 0x93) || (b == 0x48) || (b == 0x27) || (b == 0x90) ||
+					(b == 0xE4) || (b == 0x21) || (b == 0x9C) || (b == 0x42) || (b == 0x39) || (b == 0x84) || (b == 0x72) || (b == 0x09));
+		}
+
+
+		/// <summary>
+		/// Check if byte b is a possible MFM shifted value of 00
+		/// </summary>
+		/// <param name="b">Byte to test</param>
+		/// <returns>True if byte b is a possible shifted value of 4E</returns>
+		public static bool isShifted00(byte b) {
+			return ((b == 0x00) || (b == 0xFF));
+		}
+	}	// class gapInfo
+
 }   // Aufit name space

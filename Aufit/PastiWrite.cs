@@ -33,7 +33,7 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media;
 using GlobalPackage;
-using WD1772Package;
+using FDCPackage;
 using Aufit;
 
 namespace PastiPackage {

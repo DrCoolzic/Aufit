@@ -8,7 +8,7 @@ using System.Windows.Controls;
 using System.Diagnostics;
 
 using GlobalPackage;
-using WD1772Package;
+using FDCPackage;
 using Aufit;
 
 namespace StdFormatPackage {

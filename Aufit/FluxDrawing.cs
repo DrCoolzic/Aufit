@@ -34,7 +34,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-using WD1772Package;
+using FDCPackage;
 using KFStreamPackage;
 using GlobalPackage;
 using Aufit;
@@ -251,6 +251,14 @@ namespace ChartPackage {
 			_win.tbFluxInfo.AppendText(String.Format(" Count={0}", fluxCount));
 			_win.tbFluxInfo.AppendText(String.Format(" - Entropy={0:F1}", dt.histoData.entropy));
 			//_win.tbFluxInfo.AppendText(String.Format(" - Debug z={0:F1} s={1} p={2}", _fluxChartLayout.zoom(), SpeedUp, pointsInViewport));
+
+			_win.tbFluxInfo.AppendText(String.Format(" - {0} bytes {1} sectors", dt.track.buffer.DataByte.Count, dt.sectors.Count));
+			if (dt.sectors.Count > 0) {
+				_win.tbFluxInfo.AppendText(String.Format(" First={0}", dt.sectors[dt.track.firstSectIndex].id.Sector));
+				if (dt.track.trackSpliceTime != -1)
+					_win.tbFluxInfo.AppendText(String.Format(" Splice @{0:F2}", dt.track.trackSpliceTime / 1000000.0));
+			}
+
 		}
 
 

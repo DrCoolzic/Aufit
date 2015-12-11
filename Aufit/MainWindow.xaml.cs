@@ -41,7 +41,7 @@ using System.Deployment.Application;
 
 using ChartPackage;
 using KFStreamPackage;
-using WD1772Package;
+using FDCPackage;
 using SCPReaderPackage;
 using GlobalPackage;
 using PastiPackage;
@@ -379,13 +379,13 @@ namespace Aufit {
 			_dataDrawing.drawTrackData(track, side, rev);
 			ButtonMatrix.setButtonBG(track, side);
 
-			Global.DiskTrack dt = Global.Disk[track, side];
-			tbFluxInfo.AppendText(String.Format(" - {0} bytes {1} sectors", dt.track.buffer.DataByte.Count, dt.sectors.Count));
-			if (dt.sectors.Count > 0) {
-				tbFluxInfo.AppendText(String.Format(" First={0}", dt.sectors[dt.track.firstSectIndex].id.Sector));
-				if (dt.track.trackSplice != null)
-					tbFluxInfo.AppendText(String.Format(" Splice @{0:F2}", dt.track.trackSplice.Item1 / 1000000.0));
-			}
+			//Global.DiskTrack dt = Global.Disk[track, side];
+			//tbFluxInfo.AppendText(String.Format(" - {0} bytes {1} sectors", dt.track.buffer.DataByte.Count, dt.sectors.Count));
+			//if (dt.sectors.Count > 0) {
+			//	tbFluxInfo.AppendText(String.Format(" First={0}", dt.sectors[dt.track.firstSectIndex].id.Sector));
+			//	if (dt.track.trackSplice != -1)
+			//		tbFluxInfo.AppendText(String.Format(" Splice @{0:F2}", dt.track.trackSplice / 1000000.0));
+			//}
 		}
 
 
@@ -602,7 +602,6 @@ namespace Aufit {
 					}
 				}
 				guiAndVisibility(true);
-
 			}
 			else {
 				BackgroundWorker bgWorker;
@@ -651,11 +650,22 @@ namespace Aufit {
 					ButtonMatrix.setButtonBG(track, side);
 				}
 			}
+			checkException();
+		}
+
+
+		private void checkException() {
 			string message = ImageErrorException.ExceptionMessage;
 			if (message != null) {
 				infoBox.AppendText(message);
 				infoBox.ScrollToEnd();
 				redDot.Visibility = System.Windows.Visibility.Visible;
+
+				TextBox iamInfo = new TextBox();
+				iamInfo.Text = message;
+				ToolTipService.SetToolTip(redDot, iamInfo);
+				ToolTipService.SetShowDuration(redDot, 100000);
+				redDot.ToolTip = iamInfo;
 			}   // we have found error
 		}
 
