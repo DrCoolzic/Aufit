@@ -665,9 +665,13 @@ namespace FDCPackage {
 							}
 							else {
 								phase = GapPhase.SXX;
-								splice = mfm.newSplice(forceSect ? SpliceType.Sector : SpliceType.Track, revTime);
-								if ((Global.Disk[track, side].track.trackSpliceTime == -1) && !forceSect)
-									Global.Disk[track, side].track.trackSpliceTime = splice.time;
+								if ((i - start) < 8)
+									splice = mfm.newSplice(SpliceType.Sector, revTime);
+								else {
+									splice = mfm.newSplice(forceSect ? SpliceType.Sector : SpliceType.Track, revTime);
+									if ((Global.Disk[track, side].track.trackSpliceTime == -1) && !forceSect)
+										Global.Disk[track, side].track.trackSpliceTime = splice.time;
+								}
                             }
 							gap.splices.Add(splice);
 						}

@@ -544,7 +544,9 @@ namespace Aufit {
 			ImageErrorException.resetException();
 			diskClear();
 			fdDataView.Document = null;
-			redDot.Visibility = System.Windows.Visibility.Hidden;
+			rbLayout.IsChecked = true;
+			_dataRev = _dataSide = _dataTrack = -1;
+            redDot.Visibility = System.Windows.Visibility.Hidden;
 			cbOutputFormat.SelectedIndex = 0;
 			tbSaveImage.Clear();
 			fdMasterView.Document = null;
