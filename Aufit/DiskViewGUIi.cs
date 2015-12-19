@@ -56,7 +56,7 @@ namespace Aufit {
 		Point center = new Point(diskHalfWindowSize, diskHalfWindowSize);
 		Brush DiskHighlightBrush = new SolidColorBrush(Colors.DarkGray);
 		Brush DiskBackgoundBrush = new SolidColorBrush(Colors.DimGray);
-		Brush ReferenceLineBrush = new SolidColorBrush(Colors.MediumBlue);
+		Brush ReferenceLineBrush = new SolidColorBrush(Colors.LightBlue);
 
 		EllipseGeometry clipRegionSide0 = new EllipseGeometry();
 		EllipseGeometry clipRegionSide1 = new EllipseGeometry();
@@ -575,6 +575,14 @@ namespace Aufit {
 							drawArc(sector, center, radius, timeAngle(start), timeAngle(stop), SecType.data2, grid);
 						}   // sector has extra data field
 
+						// draw splices in gaps
+						drawSplice(track, side, sector.id.gap, grid, radius);
+						if (sector.data != null)
+							drawSplice(track, side, sector.data.gap, grid, radius);
+						if (sector.dataNoId != null)
+							drawSplice(track, side, sector.dataNoId.gap, grid, radius);
+
+
 					}   // all sectors
 				}	// one or more sectors
 				else {
@@ -673,7 +681,29 @@ namespace Aufit {
 
 			});	// dispatcher
 			return true;
-		}	// End of drawDisk()
+		}   // End of drawDisk()
+
+
+		private void drawSplice(int track, int side, GapField gap, Grid grid, double radius) {
+			if (gap == null) return;
+			const int minDisplayWidth = 100000;
+			foreach (Splice splice in gap.splices) {
+				if (splice.type == SpliceType.Seq00) continue;
+				double startAngle = timeAngle(splice.time);
+				double stopAngle = timeAngle(splice.time + minDisplayWidth);
+				Path path = new Path();
+				path.StrokeThickness = (double)diskHalfWindowSize / 120; ;
+				PathGeometry pg = new PathGeometry();
+				path.Stroke = Brushes.Black;
+				if (splice.type == SpliceType.Track) {
+					path.Stroke = Brushes.Blue;
+				}
+				addArc(pg, startAngle, stopAngle, center, radius);
+				path.Data = pg;
+				Grid.SetZIndex(path, 500);
+				grid.Children.Add(path);
+			}   // all index
+		}
 
 
 		private void drawArc(Sector sector, Point center, double radius, double startAngle, double stopAngle, SecType type, Grid grid) {

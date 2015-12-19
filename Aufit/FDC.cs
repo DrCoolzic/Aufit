@@ -158,25 +158,25 @@ namespace FDCPackage {
 	}
 
 
-	/// <summary>The Type of splice</summary>
+	/// <summary>The Type of Splice</summary>
 	public enum SpliceType {
 		/// <summary>Sector Splice</summary>
 		Sector,
 		/// <summary>Track Splice</summary>
-		Track
+		Track,
+		/// <summary>Not realy a splice! Preamble sequence of $00</summary>
+		Seq00
 	}
 
 
 	/// <summary>Store Information about the a splice</summary>
 	public class Splice {
 		/// <summary>The type of splice</summary>
-		public SpliceType spliceType;
+		public SpliceType type;
 		/// <summary>The time of the splice</summary>
-		public int spliceTime;
+		public int time;
 		/// <summary>The index of the splice in the flux array</summary>
-		public int spliceIndex;
-
-		public int spliceCount;
+		public int bit;
 	}
 
 
@@ -188,13 +188,6 @@ namespace FDCPackage {
 		public BlockInfo info = new BlockInfo();
 		/// <summary>A list of Splices found in this GAP</summary>
 		public List<Splice> splices = new List<Splice>();
-
-		/// <summary>Number of 4E gap leading char</summary>
-		public int count4E;
-		/// <summary>Number of 00 gap trailing char</summary>
-		public int count00;
-		/// <summary>True if char other than 4E/00 found</summary>
-		public bool badDataFound;
 	}
 
 
@@ -251,7 +244,6 @@ namespace FDCPackage {
 
 		DM_HACK = Bit.BIT_31
 
-
 		// BAD_ID_CRC => id.info.crc != 0
 		// SECT_NO_DATA => data == null
 		// BAD_DATA_CRC => data.info.crc != 0
@@ -301,15 +293,6 @@ namespace FDCPackage {
 		SECTORS_NOT_STD_SIZE = Bit.BIT_09,
 		/// <summary>Track contains duplicate sectors</summary>
 		DUP_SEC_IN_TRACK = Bit.BIT_10
-
-		///// <summary>Shifted Track with data over index pulse</summary>
-		//public const uint DATA_OVER_IDX = Bit.BIT_08;
-		///// <summary>Shifted Track with data after index pulse</summary>
-		//public const uint DATA_AFTER_IDX = Bit.BIT_09;
-		///// <summary>Shifted Track with id over index pulse</summary>
-		//public const uint ID_OVER_IDX = Bit.BIT_10;
-		///// <summary>Shifted Track with id after index pulse</summary>
-		//public const uint ID_AFTER_IDX = Bit.BIT_11;
 	}
 
 
@@ -506,62 +489,198 @@ namespace FDCPackage {
 			return ((p == Phase.PostIdGap) || (p == Phase.PostDataGap));
 		}
 
+		//class ShiftRegister<T> {
+		//	private readonly T[] array;
+		//	private int front;
 
-		private static void checkSplice(int track, int side, int rev, GapField gap, bool forceSect) {
+		//	public ShiftRegister(T[] array) {
+		//		this.array = array;
+		//		front = 0;
+		//	}
+
+		//	public ShiftRegister(int size) {
+		//		array = new T[size];
+		//		front = 0;
+		//	}
+
+
+		//	public void ShiftIn(T val) {
+		//		array[front] = val;
+		//		front = (front + 1) % array.Length;
+		//	}
+
+
+		//	public T this[int index] {
+		//		get {
+		//			if (index > array.Length - 1) {
+		//				throw new IndexOutOfRangeException();
+		//			}
+		//			return array[(front + index) % array.Length];
+		//		}
+		//	}
+
+		//	public int Length { get { return array.Length; } }
+		//}
+
+		//class ShiftRegister {
+		//	static int[] R4E = new int[] { 3, 3, 3, 2, 2, 3 };
+		//	int[] register;
+		//	public ShiftRegister(int[] array) {
+		//		register = array;
+		//	}
+
+		//	public ShiftRegister(int size) {
+		//		register = new int[size];
+		//	}
+
+		//	public void shiftIn(int val) {
+		//		Array.Copy(register, 1, register, 0, register.Length - 1);
+		//		register[5] = val;
+		//	}
+
+  //          public bool Is4e {
+		//		get {
+		//			bool check =
+		//			register.SequenceEqual(new int[] { 3, 3, 3, 3, 2, 2 }) ||
+		//			 register.SequenceEqual(new int[] { 2, 3, 3, 3, 3, 2 }) ||
+		//			 register.SequenceEqual(new int[] { 2, 2, 3, 3, 3, 3 }) ||
+		//			 register.SequenceEqual(new int[] { 3, 2, 2, 3, 3, 3 }) ||
+		//			 register.SequenceEqual(new int[] { 3, 3, 2, 2, 3, 3 }) ||
+		//			 register.SequenceEqual(new int[] { 3, 3, 3, 2, 2, 3 });
+		//			return check;
+		//		}
+		//	}
+		//	public bool Is00 {
+		//		get { return (register.SequenceEqual(new int[] { 2, 2, 2, 2, 2, 2 })); }
+		//	}
+		//}
+
+
+		class MfmBits {
+			private int _index = 0;
+			private int[] _spacing = new int[6] { 3, 3, 3, 3, 2, 2 };
+			//private int[] _spacing = new int[6];
+			private int[] _bit = new int[6];
+			private int[] _time = new int[6];
+			//ShiftRegister sr = new ShiftRegister(new int[6] { 3, 3, 3, 3, 2, 2 });
+			//ShiftRegister<int> sr2 = new ShiftRegister<int>(6);
+
+			public void add(int spacing, int bit, int time) {
+				_spacing[_index] = spacing;
+				//sr.shiftIn(spacing);
+				_bit[_index] = bit;
+				_time[_index] = time;
+				_index = (_index + 1) % 6;
+			}
+
+			public Splice newSplice(SpliceType type, int revTime) {
+				Splice splice = new Splice();
+				splice.type = type;
+				splice.bit = _bit[_index];
+				splice.time = _time[_index];
+				if (splice.time > revTime)
+					splice.time -= revTime;
+				return splice;
+			}
+
+			public bool Is4e {
+				get {
+					bool check = _spacing.SequenceEqual(new int[] { 3, 3, 3, 3, 2, 2 }) ||
+					  _spacing.SequenceEqual(new int[] { 2, 3, 3, 3, 3, 2 }) ||
+					  _spacing.SequenceEqual(new int[] { 2, 2, 3, 3, 3, 3 }) ||
+					  _spacing.SequenceEqual(new int[] { 3, 2, 2, 3, 3, 3 }) ||
+					  _spacing.SequenceEqual(new int[] { 3, 3, 2, 2, 3, 3 }) ||
+					  _spacing.SequenceEqual(new int[] { 3, 3, 3, 2, 2, 3 });
+					//bool c2 = sr.Is4e;
+					return check;
+				 }
+            }
+
+			public bool Is00 {
+				get {
+					bool check = _spacing.SequenceEqual(new int[] { 2, 2, 2, 2, 2, 2 });
+					//bool c2 = sr.Is00;
+					return check;
+				}
+            }
+		}
+
+		public enum GapPhase { S4E, S00, SXX, SCT }
+		private static void scanGap(int track, int side, int rev, GapField gap, bool forceSect) {
 			if (gap == null) return;
 			if (gap.splices.Count > 0) return;
 
 			int currentTime = gap.info.startTime;
+			int currentBit = gap.info.startBit;
 			int start = gap.info.firstIndex;
 			int stop = gap.info.lastIndex;
+
 			int[] fluxSegment = Global.Disk[track, side].fluxData.fluxValue.Skip(start).Take(stop - start).ToArray();
+			// https://msdn.microsoft.com/en-us/library/1hsbd92d(v=vs.110).aspx
+			// int[] fluxSegment = new ArraySegment<int>(Global.Disk[track, side].fluxData.fluxValue, start, stop - start).ToArray<int>();
 			HistoData h = Global.computeSegmentHisto(fluxSegment);
 			if (!h.Formatted) return;
 
 			Splice splice = null;
-			Splice lastSplice = null;
-			int count4000 = 0;
+			GapPhase phase = GapPhase.SXX;
+			int fivty = (stop - start) / 2;
+			int count = 0;
+			int revTime = Global.Disk[track, side].fluxDataRev[rev].revolutionTime;
+
+			MfmBits mfm = new MfmBits();
 			for (int i = start; i < stop; i++) {
 				int flux = Global.Disk[track, side].fluxData.fluxValue[i];
-				int bitWidth = Global.Disk[track, side].decodedData.bitWidth[i];
-				int bitSpacing = Global.Disk[track, side].decodedData.bitSpacing[i];
-				if (flux < 5000) {
-					if (count4000++ > 8)
-						break;
-				}
-				else count4000 = 0;
 				currentTime += flux;
-				// flux out of band
-				if (((flux < 5000) && ((flux < MIN4000) || (flux > MAX4000))) ||
-					((flux > 5000) && ((flux < MIN6000) || (flux > MAX6000)))) {
-					splice = new Splice();
+				int bitSpacing = Global.Disk[track, side].decodedData.bitSpacing[i];
+				currentBit += bitSpacing;
+				mfm.add(bitSpacing, currentBit, currentTime);
 
-					splice.spliceCount = 1;
-					splice.spliceTime = currentTime;
-					if (currentTime >= Global.Disk[track, side].fluxDataRev[rev].revolutionTime)
-						splice.spliceTime -= Global.Disk[track, side].fluxDataRev[rev].revolutionTime;
-					if (forceSect || ((i - start) < 10))
-						splice.spliceType = SpliceType.Sector;
-					else
-						splice.spliceType = SpliceType.Track;
-					splice.spliceIndex = i;
-					if ((lastSplice == null) || ((currentTime - lastSplice.spliceTime) > 400000)) {
-						gap.splices.Add(splice);
-						lastSplice = splice;
-					}
-					else if (lastSplice != null)
-						lastSplice.spliceCount++;
-				}
+				switch(phase) {
+					case GapPhase.SXX:
+						if (mfm.Is4e) {
+							phase = GapPhase.S4E;
+						}
+						else if (mfm.Is00) {
+							phase = GapPhase.S00;
+							if ((i- start) < 8)
+								splice = mfm.newSplice(SpliceType.Sector, revTime);
+							else
+								splice = mfm.newSplice(SpliceType.Seq00, revTime);
+							gap.splices.Add(splice);
+						}
+						break;
+
+					case GapPhase.S4E:
+						if (!mfm.Is4e) {
+							phase = GapPhase.SCT;
+							count = 0;
+						}
+						break;
+
+					case GapPhase.SCT:
+						if (++count == 5) {
+							if (mfm.Is00) {
+								phase = GapPhase.S00;
+								splice = mfm.newSplice(SpliceType.Seq00, revTime);
+							}
+							else {
+								phase = GapPhase.SXX;
+								splice = mfm.newSplice(forceSect ? SpliceType.Sector : SpliceType.Track, revTime);
+								if ((Global.Disk[track, side].track.trackSpliceTime == -1) && !forceSect)
+									Global.Disk[track, side].track.trackSpliceTime = splice.time;
+                            }
+							gap.splices.Add(splice);
+						}
+						break;
+
+					case GapPhase.S00:
+						if (!mfm.Is00) {
+							phase = GapPhase.SXX;
+						}
+						break;
+				}	// phases
 			}   // for all index
-
-			Tuple<int, int> max = new Tuple<int, int>(0, 0);
-			for (int i = 0; i < gap.splices.Count; i++) {
-				if (gap.splices[i].spliceCount > max.Item2)
-					max = new Tuple<int, int>(gap.splices[i].spliceCount, i);
-			}
-			if (max.Item1 > 0)
-				Global.Disk[track, side].track.trackSpliceTime = gap.splices[max.Item2].spliceTime;
-		}
+		}	// scanGap
 
 
 		/// <summary>Read a track</summary>
@@ -1100,16 +1219,17 @@ namespace FDCPackage {
 			// search lastBlock
 			for (int secIndex = 0; secIndex < Global.Disk[track, side].sectors.Count; secIndex++) {
 				sector = Global.Disk[track, side].sectors[secIndex];
-				// search biggest post gap
-				if ((sector.dataNoId != null) && (sector.dataNoId.gap != null)) {
-					if (sector.dataNoId.gap.buffer.DataByte.Count > maxPostSize) {
-						maxPostSize = sector.dataNoId.gap.buffer.DataByte.Count;
-						lastBlock = secIndex;
-					}
-				}   // extra sector
-				else if ((sector.data != null) && (sector.data.gap != null)) {
-					if (sector.data.gap.buffer.DataByte.Count > maxPostSize) {
-						maxPostSize = sector.data.gap.buffer.DataByte.Count;
+
+				if ((sector.data != null) && (sector.data.gap != null)) {
+					int sum = 0;
+					if (sector.dataNoId != null) {
+						sum += sector.dataNoId.buffer.DataByte.Count;
+						if (sector.dataNoId.gap != null)
+							sum += sector.dataNoId.gap.buffer.DataByte.Count;
+					}   // extra sector
+					sum += sector.data.gap.buffer.DataByte.Count;
+                    if (sum > maxPostSize) {
+						maxPostSize = sum;
 						lastBlock = secIndex;
 					}
 				}   // sector with data
@@ -1126,26 +1246,18 @@ namespace FDCPackage {
 
 				// search splices
 				if (sector.id.gap != null)
-					checkSplice(track, side, rev, sector.id.gap, (sector.data != null) ? true : false);
+					scanGap(track, side, rev, sector.id.gap, (sector.data != null) ? true : false);
 				if ((sector.data != null) && (sector.data.gap != null))
-					checkSplice(track, side, rev, sector.data.gap, false);
-				if ((sector.data != null) && (sector.data.gap != null))
-					checkSplice(track, side, rev, sector.data.gap, false);
+					scanGap(track, side, rev, sector.data.gap, false);
+				if ((sector.dataNoId != null) && (sector.dataNoId.gap != null))
+					scanGap(track, side, rev, sector.dataNoId.gap, false);
+
 			}   // all sectors
 
-			// search track splice
 			if (lastTruncNFABlock != -1) {  // NFA win over largest gap
 				lastBlock = lastTruncNFABlock;
 				Global.Disk[track, side].track.trackSpliceTime = 0;
 			}
-			//else if (lastBlock != -1) {
-			//	sector = Global.Disk[track, side].sectors[lastBlock];
-			//	GapField gap = (sector.dataNoId != null) ? sector.dataNoId.postDataGap : (sector.data != null) ? sector.data.postDataGap : sector.id.postIdGap;
-			//	// TODO optimize
-			//	Splice splice = checkSplice(track, side, rev, gap);
-			//	if (splice != null)
-			//		Global.Disk[track, side].track.trackSplice = splice.spliceTime;
-			//}   // block found
 
 			int firstBlock = (lastBlock == (Global.Disk[track, side].sectors.Count - 1)) ? 0 : lastBlock + 1;
 			Global.Disk[track, side].track.firstSectIndex = firstBlock;
@@ -1153,9 +1265,6 @@ namespace FDCPackage {
 			// check protections
 			Protections.checkProtection(track, side);
 		}   // processTrack()
-
-
-
 
 
 		private static void transferInfo(IAM iam, BlockInfo info) {

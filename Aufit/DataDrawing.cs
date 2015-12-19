@@ -252,26 +252,29 @@ namespace ChartPackage {
 
 
 		private void drawSplice(int track, int side, GapField gap) {
+			const bool NO_SHOW = false;
 			if (gap == null) return;
 			foreach (Splice splice in gap.splices) {
+				if (NO_SHOW && (splice.type == SpliceType.Seq00)) continue;
 				Line spliceLine = new Line();
-				spliceLine.StrokeThickness = 1.5;
+				spliceLine.StrokeThickness = 2.5;
 				spliceLine.Stroke = Brushes.Red;
-				if (splice.spliceType == SpliceType.Track) {
-					spliceLine.StrokeThickness = 3.0;
+				if (splice.type == SpliceType.Track)
 					spliceLine.Stroke = Brushes.Blue;
+				else if (splice.type == SpliceType.Seq00) {
+					spliceLine.Stroke = Brushes.DarkGreen;
+					spliceLine.StrokeThickness = 1.0;
 				}
-				spliceLine.X1 = _dataChartLayout.NormPoint(new Point((double)splice.spliceTime / 1000000.0, 0)).X;
+					spliceLine.X1 = _dataChartLayout.NormPoint(new Point((double)splice.time / 1000000.0, 0)).X;
 				spliceLine.Y1 = _dataChartLayout.NormY(_dataChartLayout.Ymin);
-				spliceLine.X2 = _dataChartLayout.NormPoint(new Point((double)splice.spliceTime / 1000000.0, 0)).X;
+				spliceLine.X2 = _dataChartLayout.NormPoint(new Point((double)splice.time / 1000000.0, 0)).X;
 				spliceLine.Y2 = _dataChartLayout.NormY(_dataChartLayout.Ymax);
 				TextBox spliceInfo = new TextBox();
-				spliceInfo.Text = String.Format("{0} Splice @ {1:F2} ms", 
-					splice.spliceType, (double)splice.spliceTime / 1000000.0);
+				spliceInfo.Text = String.Format("{0} Splice @ {1:F2} ms bit={2}", 
+					splice.type, (double)splice.time / 1000000.0, splice.bit);
 				ToolTipService.SetToolTip(spliceLine, spliceInfo);
 				ToolTipService.SetShowDuration(spliceLine, 100000);
 				_dataChartLayout.GraphicCanvas.Children.Add(spliceLine);
-
 			}   // all index
 		}
 

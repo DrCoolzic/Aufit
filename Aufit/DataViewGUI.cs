@@ -244,8 +244,10 @@ namespace Aufit {
 
 				if (sector.id.gap != null) {
 					p.Inlines.Add(new Run("Inner GAP Field:") { FontWeight = FontWeights.Bold });
-					foreach (Splice splice in sector.id.gap.splices)
-						p.Inlines.Add(String.Format(" {0} Splice @{1:F2}ms {2}", splice.spliceType, splice.spliceTime / 1000000.0, splice.spliceCount));
+					foreach (Splice splice in sector.id.gap.splices) {
+						if (splice.type == SpliceType.Seq00) continue;
+						p.Inlines.Add(String.Format(" {0} Splice @{1:F2}ms bit={2}", splice.type, splice.time / 1000000.0, splice.bit));
+					}
 					p.Inlines.Add(new LineBreak());
 					p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
 						sector.id.gap.info.startBit, sector.id.gap.info.startByte, (double)sector.id.gap.info.startTime / 1000000.0));
@@ -309,8 +311,10 @@ namespace Aufit {
 					}   // fuzzy
 					if (sector.data.gap != null) {
 						p.Inlines.Add(new Run("Post GAP Field: ") { FontWeight = FontWeights.Bold });
-						foreach (Splice splice in sector.data.gap.splices)
-							p.Inlines.Add(String.Format(" {0} Splice @{1:F2}ms {2}", splice.spliceType, splice.spliceTime / 1000000.0, splice.spliceCount));
+						foreach (Splice splice in sector.data.gap.splices) {
+							if (splice.type == SpliceType.Seq00) continue;
+							p.Inlines.Add(String.Format(" {0} Splice @{1:F2}ms bit={2}", splice.type, splice.time / 1000000.0, splice.bit));
+						}
 						p.Inlines.Add(new LineBreak());
 						p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
 							sector.data.gap.info.startBit, sector.data.gap.info.startByte, (double)sector.data.gap.info.startTime / 1000000.0));
@@ -374,8 +378,10 @@ namespace Aufit {
 					}   // fuzzy
 					if (sector.dataNoId.gap != null) {
 						p.Inlines.Add(new Run("EXTRA POST GAP Field: ") { FontWeight = FontWeights.Bold });
-						foreach (Splice splice in sector.dataNoId.gap.splices)
-							p.Inlines.Add(String.Format(" {0} Splice @{1:F2}ms {2}", splice.spliceType, splice.spliceTime / 1000000.0, splice.spliceCount));
+						foreach (Splice splice in sector.dataNoId.gap.splices) {
+							if (splice.type == SpliceType.Seq00) continue;
+							p.Inlines.Add(String.Format(" {0} Splice @{1:F2}ms bit={2}", splice.type, splice.time / 1000000.0, splice.bit));
+						}
 						p.Inlines.Add(new LineBreak());
 						p.Inlines.Add(String.Format("   START b={0} B={1} T={2:F2}ms",
 							sector.dataNoId.gap.info.startBit, sector.dataNoId.gap.info.startByte, (double)sector.dataNoId.gap.info.startTime / 1000000.0));

@@ -94,7 +94,7 @@ namespace ChartPackage {
 
 			int bitAvgCount = 1;
 			if (_avgCheckBox.IsChecked == true)
-				bitAvgCount = 150;
+				bitAvgCount = 100;
 
 			if (track == -1) track = _track;
 			else _track = track;
@@ -121,9 +121,9 @@ namespace ChartPackage {
 			int lastFlux = Global.Disk[track, side].fluxDataRev[lastRev].firstFluxIndex + Global.Disk[track, side].fluxDataRev[lastRev].fluxCount - 1;
 
 			// populate
-			for (int i = start; i < stop; i++) {
-				if (i >= dt.fluxData.fluxValue.Length)
-					break;
+			if (stop >= dt.fluxData.fluxValue.Length)
+				stop = dt.fluxData.fluxValue.Length - 1;
+            for (int i = start; i < stop; i++) {
 				int flux = dt.fluxData.fluxValue[i];
 				currentTime += flux;
 
