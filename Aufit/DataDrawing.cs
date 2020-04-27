@@ -252,10 +252,11 @@ namespace ChartPackage {
 
 
 		private void drawSplice(int track, int side, GapField gap) {
-			const bool NO_SHOW = false;
+			// show or not the seq00 sequence position in gap
+			const bool SHOW = false;
 			if (gap == null) return;
 			foreach (Splice splice in gap.splices) {
-				if (NO_SHOW && (splice.type == SpliceType.Seq00)) continue;
+				if (!SHOW && (splice.type == SpliceType.Seq00)) continue;
 				Line spliceLine = new Line();
 				spliceLine.StrokeThickness = 2.5;
 				spliceLine.Stroke = Brushes.Red;

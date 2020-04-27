@@ -45,7 +45,7 @@ namespace KFStreamPackage {
 	/// Class to Process all KryoFlux Stream files
 	/// </summary>
 	public class ProcessStream {
-		private static bool _interpolate = true;
+		private static bool _interpolate = false;
 		/// <summary>
 		/// Reads, Parses and fills the DiskTracks[track, side] structure
 		/// </summary>
@@ -57,7 +57,7 @@ namespace KFStreamPackage {
 			KFReader stream = new KFReader();
 			StreamStatus status = stream.readStream(name);
 			if (status == StreamStatus.sdsOk) {
-				
+
 				Global.Disk[track, side].fluxData = new FluxData();
 				Global.Disk[track, side].fluxData.fluxValue = new int[stream.FluxCount];
 				Global.Disk[track, side].fluxData.totalFluxCount = stream.FluxCount;
@@ -68,7 +68,7 @@ namespace KFStreamPackage {
 				double tick = 1000000000.0 / stream.SampleClock;
 				double sample = tick;
 
-				for (int i = 0; i <= stream.Indexes[0].fluxPosition; i++ )
+				for (int i = 0; i <= stream.Indexes[0].fluxPosition; i++)
 					Global.Disk[track, side].fluxData.fluxValue[i] = (int)((double)stream.FluxValues[i] * sample);
 
 				for (int rev = 0; rev < stream.IndexCount - 1; rev++) {
@@ -79,29 +79,33 @@ namespace KFStreamPackage {
 					Global.Disk[track, side].fluxDataRev[rev].fluxCount = stream.Indexes[rev + 1].fluxPosition - stream.Indexes[rev].fluxPosition;
 					int offset = stream.Indexes[rev].fluxPosition;
 					Global.Disk[track, side].fluxDataRev[rev].firstFluxIndex = offset;
+					Global.Disk[track, side].fluxDataRev[rev].preIndexTime = (int)((double)stream.Indexes[rev].preIndexTime * sample);
 
 					for (int f = 0; f < Global.Disk[track, side].fluxDataRev[rev].fluxCount; f++) {
 						Global.Disk[track, side].fluxData.fluxValue[offset + f] = (int)((double)stream.FluxValues[offset + f] * sample);
 						int value = Global.Disk[track, side].fluxData.fluxValue[offset + f];
 						if (value > fluxMax) fluxMax = value;
 						if (value < fluxMin) fluxMin = value;
+
+						// The positions of the flux transitions are computed by adding flux values. In order to simplify display of transitions
+						// in case of NFA we split the first flux: We remove the preIndexTime from the first flux and we add this value to the 
+						// last flux in order to keep the length of the track to a correct value.
 						if ((double)stream.Indexes[rev].preIndexTime * sample > 10000.0) {
-							// If we have an NFA at border of revolution we split at position of the index.
-							// The pre-index part is added to the last transition and the post-index part
-							// is added to the first transition.
 							if (f == 0)
 								Global.Disk[track, side].fluxData.fluxValue[offset + f] -= (int)((double)stream.Indexes[rev].preIndexTime * sample);
 							else if (f == (Global.Disk[track, side].fluxDataRev[rev].fluxCount - 1))
 								Global.Disk[track, side].fluxData.fluxValue[offset + f] += (int)((double)(stream.Indexes[rev].preIndexTime * sample));
-						}	// NFA
-					}	// all flux in rev
-				}	// all rev
+						}   // NFA
+
+					}   // all flux in rev
+				}   // all rev
 
 				Global.Disk[track, side].fluxData.maxFlux = fluxMax;
 				Global.Disk[track, side].fluxData.minFlux = fluxMin;
 
 				return true;
-			}	// read correctly
+
+			}   // read correctly
 
 			Global.Disk[track, side].fluxData = null;
 			return false;
@@ -125,7 +129,7 @@ namespace KFStreamPackage {
 			if (Directory.Exists(sourceImage)) {
 				if (MessageBox.Show(String.Format("Directory already exists\n '{0}'\nDo you want to overwrite content", sourceImage),
 						"Overwrite directory content?", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.No)
-						return false;
+					return false;
 			}
 			Directory.CreateDirectory(sourceImage);
 
@@ -169,7 +173,7 @@ namespace KFStreamPackage {
 
 			}
 			return true;
-		}		
+		}
 
-	}	// streamProcess Class
-}	// name space
+	}   // streamProcess Class
+}   // name space

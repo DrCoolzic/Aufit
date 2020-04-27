@@ -1,3 +1,4 @@
+check index flux position when writing KF stream files
 check trackOffset + firstSyncOffset
 
 when fuzzy at end not possible to detect splice find other way?

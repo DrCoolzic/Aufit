@@ -277,7 +277,7 @@ namespace SCPReaderPackage {
 		/// Read asynchronously one track of an SCP file
 		/// </summary>
 		/// <param name="buffer">The read buffer</param>
-		/// <param name="trackSide">The Trackand Side parameter</param>
+		/// <param name="trackSide">The Track Side parameter</param>
 		/// <param name="trackHeaderPosition">Position of the header in the buffer</param>
 		/// <param name="revCount">Number of revision used</param>
 		/// <param name="infoBox">Text box to display log information</param>
@@ -377,21 +377,13 @@ namespace SCPReaderPackage {
 				if (rev == 0) {
 					timeMissingFromFirstRev = (ti.revInfo[0].revolutionTime - revFluxSum);
 				}	
-			}	// for all revolutions
+			}   // for all revolutions
 
 			// Here we compensate the best we can for the missing information from SCP
-			//if ((timeMissingFromFirstRev > 10000 / 25) && (revCount > 1)) {
-				//int nfa = ti.fluxValues[fluxOffset[1]];
-				for (int rev = 0; rev < revCount; rev++) {
-					int firstOffset = fluxOffset[rev];
-					//int lastOffset = firstOffset + ti.revInfo[rev].fluxCount - 1;
-					if (rev == 0) {
-						ti.fluxValues[firstOffset] += timeMissingFromFirstRev;
-						//MessageBox.Show(String.Format("NFA {0}", timeMissingFromFirstRev * 25));
-						//ti.fluxValues[lastOffset] += timeMissingFromFirstRev;
-					}
-				}	// all rev
-			//}
+			// in case of NFA over index
+			if ((timeMissingFromFirstRev > 10000 / 25) && (revCount > 1))
+				ti.fluxValues[fluxOffset[0]] += timeMissingFromFirstRev;
+			int preIndexTime = (revCount > 1) ? timeMissingFromFirstRev : 1;
 
 			// now we transfer to our Global Disk structure. Values are in NS
 			// with correction done on a revolution basis
@@ -410,13 +402,12 @@ namespace SCPReaderPackage {
 				Global.Disk[track, side].fluxDataRev[rev].revolutionTime = (int)((double)ti.revInfo[rev].revolutionTime * tick);
 				Global.Disk[track, side].fluxDataRev[rev].fluxCount = ti.revInfo[rev].fluxCount;
 				Global.Disk[track, side].fluxDataRev[rev].firstFluxIndex = fluxOffset[rev];
+                Global.Disk[track, side].fluxDataRev[rev].preIndexTime = (int)((double)preIndexTime * tick);
 
 				for (int f = 0; f < ti.revInfo[rev].fluxCount; f++) {
 					int flux = (int)((double)ti.fluxValues[offset + f] * tick);
 					Debug.Assert(flux >= 0, "Invalid negative flux read");
 					Global.Disk[track, side].fluxData.fluxValue[pos++] = flux;
-
-
 
 					flux = Global.Disk[track, side].fluxData.fluxValue[offset + f];
 					if (flux > _fluxMax) _fluxMax = flux;
