@@ -809,7 +809,7 @@
 							</CheckBox.ToolTip>
 						</CheckBox>
 						<CheckBox Grid.Column="4" x:Name="cbSync" Content="WriteSync" Margin="5,0,0,0" VerticalAlignment="Center" 
-							  HorizontalAlignment="Right" IsChecked="False">
+							  HorizontalAlignment="Right" IsChecked="True">
 							<CheckBox.ToolTip>
 								<ToolTip>
 									<TextBlock>Output WriteSync in STX format (only use if you understand)</TextBlock>

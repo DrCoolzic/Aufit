@@ -245,10 +245,10 @@ namespace ChartPackage {
 
 			_win.tbFluxInfo.Clear();
 			_win.tbFluxInfo.AppendText(String.Format("Track {0:D2}.{1} Rev {2}/{3}", track, side, rev + 1, dt.fluxDataRev.Count()));
-			_win.tbFluxInfo.AppendText(String.Format(" - Flux Range={0:F2}-{1:F2} µs",
+			_win.tbFluxInfo.AppendText(String.Format(" Flux={0:F2}-{1:F2} µs",
 				(double)dt.fluxData.minFlux / 1000.0, (double)dt.fluxData.maxFlux / 1000.0));
-			//_win.tbFluxInfo.AppendText(String.Format(" - Track length: {0:F3} ms", (double)currentTime / 1000000.0));
 			_win.tbFluxInfo.AppendText(String.Format(" Count={0}", fluxCount));
+			_win.tbFluxInfo.AppendText(String.Format(" - Length: {0:F3} ms", (double)currentTime / 1000000.0));
 			_win.tbFluxInfo.AppendText(String.Format(" - Entropy={0:F1}", dt.histoData.entropy));
 			//_win.tbFluxInfo.AppendText(String.Format(" - Debug z={0:F1} s={1} p={2}", _fluxChartLayout.zoom(), SpeedUp, pointsInViewport));
 

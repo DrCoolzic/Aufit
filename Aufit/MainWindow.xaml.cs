@@ -489,7 +489,8 @@ namespace Aufit {
 				flags |= ExportFlags.OPTIMIZE;
 				//flags |= ExportFlags.FORCE_DS;
 				//flags |= ExportFlags.DEBUG;
-				//flags |= ExportFlags.SYNC_HEAD;
+				flags |= ExportFlags.SYNC_HEAD;
+				//flags |= ExportFlags.FORCE_TRACK;
 				tbSaveImage.Clear();
 				tbSaveImage.AppendText(String.Format("Writing STX file {0}\n", fileName));
 				PastiWriter pasti = new PastiWriter(tbSaveImage);
@@ -718,8 +719,8 @@ namespace Aufit {
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {
 					fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, track, side);
-					bool streamOK = await ProcessStream.readStreamTrackAsync(fname, track, side);
-					if (streamOK) {
+					bool status = await ProcessStream.readStreamTrackAsync(fname, track, side);
+					if (status) {
 						//Global.mfmDecode(track, side);
 						Global.computeTrackHisto(track, side, 0, infoBox);
 						ButtonMatrix.setButtonBG(track, side);
@@ -754,8 +755,8 @@ namespace Aufit {
 			for (int side = 0; side < 2; side++) {
 				for (int track = 0; track < 84; track++) {
 					fname = String.Format("{0}\\{1}{2:D2}.{3}.raw", path, root, track, side);
-					bool streamOK = ProcessStream.readStreamTrack(fname, track, side);
-					if (streamOK) {
+					bool status = ProcessStream.readStreamTrack(fname, track, side);
+					if (status) {
 						Global.computeTrackHisto(track, side, 1, infoBox);
 						ButtonMatrix.setButtonBG(track, side);
 					}

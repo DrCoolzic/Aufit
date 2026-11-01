@@ -59,17 +59,15 @@ namespace GlobalPackage {
 		/// </summary>
 		public int firstFluxIndex;
 
-		/// <summary>
-		/// Time between the start of the fist flux and the index pulse for the current revolution.
-		/// The time is given nanosecond. Note that in the case of no flux area at the beginning 
-		/// of the track this value can be huge.
-		/// </summary>
-		//public int indexTime;
+        /// <summary>Gives the position of the index pulse inside the flux that contains it. The position 
+        /// before the index signal is given in nanoseconds . Note that in the case of no
+        /// flux area at the beginning of the track this value can be huge</summary>
+        public int preIndexTime;
 
-		/// <summary>
-		/// The number of flux transitions for this revolution.
-		/// </summary>
-		public int fluxCount;
+        /// <summary>
+        /// The number of flux transitions for this revolution.
+        /// </summary>
+        public int fluxCount;
 	}
 
 
@@ -219,12 +217,12 @@ namespace GlobalPackage {
 	/// </summary>
 	public class Global {
 		// Button and Track Color
-		public static Color ProtectedTrackColor = Colors.Orange;    //  Aufit.Properties.Settings.Default.ProtectedTrackColor;
-		public static Color UnformattedTrackColor = Colors.SlateGray;   // Aufit.Properties.Settings.Default.UnformattedTrackColor;
-		public static Color ShiftedTrackColor = Colors.Green;   // Aufit.Properties.Settings.Default.ShiftedTrackColor;
-		public static Color NormalTrackColor = Colors.LimeGreen;    // Aufit.Properties.Settings.Default.NormalTrackColor;
-		public static Color DataOneIdTrackColor = Colors.Blue;  // Aufit.Properties.Settings.Default.DataOneIdTrack;
-		public static Color DataTrackColor = Colors.LightBlue;  // Aufit.Properties.Settings.Default.DataTrack;
+		public static Color ProtectedTrackColor = Colors.Orange;                    // Aufit.Properties.Settings.Default.ProtectedTrackColor;
+		public static Color UnformattedTrackColor = Colors.SlateGray;               // Aufit.Properties.Settings.Default.UnformattedTrackColor;
+        public static Color ShiftedTrackColor = Color.FromRgb(0x42, 0xED, 0x42);    // Aufit.Properties.Settings.Default.ShiftedTrackColor;
+		public static Color NormalTrackColor = Colors.LimeGreen;                    // Aufit.Properties.Settings.Default.NormalTrackColor;
+		public static Color DataOneIdTrackColor = Colors.Blue;                      // Aufit.Properties.Settings.Default.DataOneIdTrack;
+		public static Color DataTrackColor = Colors.LightBlue;                      // Aufit.Properties.Settings.Default.DataTrack;
 
 		// Sector Color
 		public static Color IGapColor = Colors.LightGreen;
@@ -236,9 +234,7 @@ namespace GlobalPackage {
 		public static Color IdColor = Colors.Yellow;
 		public static Color NoIdDataColor = Colors.Yellow;
 
-
 		private static DiskTrack[,] _disk = new DiskTrack[85, 2];
-
 
 
 		/// <summary>

@@ -12,6 +12,7 @@ html/
 *.sln.docstates
 .vs/
 packages/
+.vs/
 #packages.config
 
 # Build results
