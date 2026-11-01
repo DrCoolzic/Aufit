@@ -37,9 +37,8 @@ namespace ChartPackage
     /// </summary>
     public class ChartLayout
     {
-
         /// <summary>
-        /// Enumerate the different grid line possible
+        /// Enumerates the different grid line possible
         /// </summary>
         public enum GridlinePatternEnum
         {
